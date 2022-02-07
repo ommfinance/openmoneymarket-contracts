@@ -1,1 +1,1 @@
-# openmoneymarket-contracts
+# openmoneymarket Java contracts
