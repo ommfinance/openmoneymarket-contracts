@@ -1,0 +1,39 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'foundation.icon:gradle-javaee-plugin:0.7.8'
+    }
+}
+
+subprojects {
+    repositories {
+        mavenCentral()
+    }
+
+    apply plugin: 'java'
+    apply plugin: 'foundation.icon.javaee'
+
+
+    dependencies {
+        compileOnly 'foundation.icon:javaee-api:0.9.0'
+        implementation 'foundation.icon:javaee-scorex:0.5.2'
+        implementation 'com.github.sink772:minimal-json:0.9.6'
+
+        testImplementation 'foundation.icon:javaee-unittest:0.9.2'
+        // Use JUnit Jupiter for testing.
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    // need to add this option to retrieve formal parameter names
+    compileJava {
+        options.compilerArgs += ['-parameters']
+    }
+}
