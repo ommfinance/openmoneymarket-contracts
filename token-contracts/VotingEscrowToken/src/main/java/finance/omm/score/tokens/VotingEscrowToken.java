@@ -1,5 +1,5 @@
 package finance.omm.score.tokens;
 
-public class BoostedOMM {
+public class VotingEscrowToken {
     //TODO
 }

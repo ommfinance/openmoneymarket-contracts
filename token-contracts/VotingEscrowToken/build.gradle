@@ -5,7 +5,7 @@ dependencies {
 }
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.tokens.BoostedOMM'
+    mainClassName = 'finance.omm.score.tokens.VotingEscrowToken'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
