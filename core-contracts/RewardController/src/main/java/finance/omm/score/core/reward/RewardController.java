@@ -32,8 +32,15 @@ public class RewardController {
     private final DictDB<BigInteger, BigInteger> inflationRate = Context.newDictDB(INFLATION_RATE, BigInteger.class);
 
 
-    public RewardController() {
+    public RewardController(BigInteger startTimestamp) {
+        if (this._timestampAtStart.getOrDefault(null) == null) {
+            this._timestampAtStart.set(startTimestamp);
+        }
+    }
 
+    @External(readonly = true)
+    public String name() {
+        return TAG;
     }
 
     @External
