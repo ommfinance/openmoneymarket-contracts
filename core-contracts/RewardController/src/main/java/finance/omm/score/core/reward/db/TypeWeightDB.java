@@ -1,6 +1,6 @@
 package finance.omm.score.core.reward.db;
 
-import finance.omm.score.core.reward.struct.WeightStruct;
+import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.utils.TimeConstants;
 import score.BranchDB;
 import score.Context;
@@ -11,7 +11,7 @@ import score.annotation.EventLog;
 import java.math.BigInteger;
 import java.util.Map;
 
-import static finance.omm.score.core.reward.utils.MathUtils.ICX;
+import static finance.omm.libs.math.MathUtils.ICX;
 
 public class TypeWeightDB {
 

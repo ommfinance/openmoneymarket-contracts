@@ -1,4 +1,4 @@
-package finance.omm.score.core.reward.utils;
+package finance.omm.libs.math;
 
 import java.math.BigInteger;
 
@@ -53,5 +53,23 @@ public class MathUtils {
 //        return (halfB + (a * EXA)) // b
         BigInteger halfSecond = second.divide(BigInteger.TWO);
         return halfSecond.add(first.multiply(ICX)).divide(halfSecond);
+    }
+
+    public static BigInteger convertToExa(BigInteger _amount, Integer _decimals) {
+        if (_decimals == 18) {
+            return _amount;
+        }
+        if (_decimals >= 0) {
+            return _amount.multiply(ICX).divide(pow10(_decimals));
+        }
+        return _amount;
+    }
+
+
+    public static BigInteger convertExaToOther(BigInteger _amount, Integer _decimals) {
+        if (_decimals >= 0) {
+            return _amount.multiply(pow10(_decimals)).divide(ICX);
+        }
+        return _amount;
     }
 }

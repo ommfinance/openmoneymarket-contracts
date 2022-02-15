@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+}
+
+version '0.1'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':libs:AddressProvider')
+    implementation project(':libs:Math')
+    implementation project(':libs:OMMStruct')
+
+    implementation 'foundation.icon:javaee-scorex:0.5.2'
+}
+
+test {
+    useJUnitPlatform()
+}

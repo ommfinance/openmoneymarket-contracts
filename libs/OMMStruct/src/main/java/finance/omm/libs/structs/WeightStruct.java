@@ -1,4 +1,4 @@
-package finance.omm.score.core.reward.struct;
+package finance.omm.libs.structs;
 
 import java.math.BigInteger;
 

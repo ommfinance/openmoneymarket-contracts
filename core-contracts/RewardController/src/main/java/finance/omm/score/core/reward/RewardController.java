@@ -1,9 +1,9 @@
 package finance.omm.score.core.reward;
 
+import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.db.AssetWeightDB;
 import finance.omm.score.core.reward.db.TypeWeightDB;
 import finance.omm.score.core.reward.model.Asset;
-import finance.omm.score.core.reward.struct.WeightStruct;
 import finance.omm.score.core.reward.utils.TimeConstants;
 import score.Address;
 import score.Context;
@@ -15,8 +15,8 @@ import score.annotation.Optional;
 import java.math.BigInteger;
 import java.util.Map;
 
+import static finance.omm.libs.math.MathUtils.*;
 import static finance.omm.score.core.reward.utils.Errors.*;
-import static finance.omm.score.core.reward.utils.MathUtils.*;
 import static finance.omm.score.core.reward.utils.TimeConstants.*;
 
 public class RewardController {

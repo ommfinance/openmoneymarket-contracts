@@ -1,0 +1,10 @@
+version = '0.0.1'
+
+dependencies {
+    implementation project(':libs:OMMStruct')
+}
+
+tasks.named('test') {
+    // Use JUnit Platform for unit tests.
+    useJUnitPlatform()
+}

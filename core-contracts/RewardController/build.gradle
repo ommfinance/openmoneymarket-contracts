@@ -1,7 +1,8 @@
 version = '0.0.1'
 
 dependencies {
-
+    implementation project(':libs:Math')
+    implementation project(':libs:OMMStruct')
 }
 
 optimizedJar {
