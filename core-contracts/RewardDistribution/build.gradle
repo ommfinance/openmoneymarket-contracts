@@ -12,6 +12,7 @@ dependencies {
     implementation project(':libs:AddressProvider')
     implementation project(':libs:Math')
     implementation project(':libs:OMMStruct')
+    implementation project(':libs:Utils')
 
     implementation 'foundation.icon:javaee-scorex:0.5.2'
 }

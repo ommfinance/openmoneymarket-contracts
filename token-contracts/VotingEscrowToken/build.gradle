@@ -26,7 +26,9 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-//        arg('', '')
+        arg('tokenAddress', 'cxb94c0da9a8e650cc09b2f6b1bbfaa957ab47ec4c')
+        arg('name', 'Voting escrow OMM token')
+        arg('symbol', 'veOMM')
     }
 }
 

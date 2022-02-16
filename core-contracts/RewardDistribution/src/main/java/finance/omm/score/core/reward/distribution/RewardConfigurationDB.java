@@ -2,7 +2,7 @@ package finance.omm.score.core.reward.distribution;
 
 import finance.omm.libs.math.MathUtils;
 import finance.omm.libs.structs.AssetConfig;
-import finance.omm.score.core.reward.distribution.utils.Check;
+import finance.omm.score.core.reward.distribution.utils.RewardDistributionException;
 import score.Address;
 import score.ArrayDB;
 import score.Context;
@@ -59,10 +59,6 @@ public class RewardConfigurationDB {
         _indexes = Context.newDictDB(key + ASSET_INDEXES, Integer.class);
     }
 
-    private void require(boolean condition, String message) {
-        Check.require(condition, message);
-    }
-
     private int get_index(Address asset) {
         return this._indexes.getOrDefault(asset, 0);
     }
@@ -98,8 +94,9 @@ public class RewardConfigurationDB {
     }
 
     public void setDistributionPercentage(String recipient, BigInteger percentage) {
-        Check.require(isRecipient(recipient), Check.ERROR_UNSUPPORTED_RECIPIENT,
-                TAG + " :: unsupported recipient " + recipient);
+        if (!isRecipient(recipient)) {
+            throw RewardDistributionException.invalidRecipient("unsupported recipient " + recipient);
+        }
         this._distributionPercentage.set(recipient, percentage);
     }
 
@@ -130,7 +127,9 @@ public class RewardConfigurationDB {
 
     public void removeAssetConfig(Address asset) {
         int index = get_index(asset);
-        Check.require(index != 0, Check.ERROR_ASSET_NOT_FOUND, TAG + " :: Asset not found " + asset);
+        if (index == 0) {
+            throw RewardDistributionException.invalidAsset("Asset not found " + asset);
+        }
 
         this._assetLevelPercentage.set(asset, null);
         this._rewardEntityMapping.set(asset, null);
@@ -170,8 +169,10 @@ public class RewardConfigurationDB {
             }
 
         }
-        Check.require(total_percentage.compareTo(ICX) <= 0, Check.ERROR_PERCENTAGE_MISMATCH,
-                TAG + " :: " + total_percentage.divide(ICX) + " should be less than or equals to 100%");
+        if (total_percentage.compareTo(ICX) > 0) {
+            throw RewardDistributionException.invalidTotalPercentage(total_percentage.divide(ICX) + " should be less "
+                    + "than or equals to 100%");
+        }
     }
 
     public Integer getPoolID(Address asset) {
@@ -217,7 +218,7 @@ public class RewardConfigurationDB {
             BigInteger _percentage = this.getAssetPercentage(asset);
             String _entity = this.getEntity(asset);
             if (_entity == null) {
-                Context.revert(Check.ERROR_ASSET_NOT_FOUND, "Unsupported entity :: " + asset);
+                throw RewardDistributionException.invalidAsset("Unsupported entity :: " + asset);
             }
             Map<String, BigInteger> _entityMap = (Map<String, BigInteger>) response.get(_entity);
             if (_entityMap == null) {
@@ -294,7 +295,9 @@ public class RewardConfigurationDB {
     }
 
     public void setAssetName(Address asset, String name) {
-        Check.require(is_valid_asset(asset), Check.ERROR_ASSET_NOT_FOUND, TAG + " :: Asset not found " + asset);
+        if (!is_valid_asset(asset)) {
+            throw RewardDistributionException.invalidAsset("Asset not found " + asset);
+        }
         this._assetName.set(asset, name);
     }
 

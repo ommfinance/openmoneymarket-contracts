@@ -5,7 +5,7 @@ import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.math.MathUtils;
 import finance.omm.libs.structs.*;
-import finance.omm.score.core.reward.distribution.utils.Check;
+import finance.omm.score.core.reward.distribution.utils.RewardDistributionException;
 import finance.omm.score.core.reward.distribution.utils.TimeConstants;
 import score.*;
 import score.annotation.EventLog;
@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 
 import static finance.omm.libs.math.MathUtils.*;
-import static finance.omm.score.core.reward.distribution.utils.Check.*;
 import static finance.omm.score.core.reward.distribution.utils.TimeConstants.DAYS_PER_YEAR;
 import static finance.omm.score.core.reward.distribution.utils.TimeConstants.DAY_IN_SECONDS;
 
@@ -93,9 +92,7 @@ public class RewardDistribution {
             totalPercentage = totalPercentage.add(_percentage);
             this._rewardConfig.setDistributionPercentage(_recipient, _percentage);
         }
-
-        Check.require(totalPercentage.equals(ICX), ERROR_PERCENTAGE_MISMATCH, TAG + " :: Percentage doesn't sum upto "
-                + "100%");
+        throw RewardDistributionException.invalidTotalPercentage(totalPercentage + " :: Percentage doesn't sum upto " + "100%");
 
     }
 
@@ -276,7 +273,9 @@ public class RewardDistribution {
         } else {
             totalStaked = Context.call(TotalStaked.class, asset, "getTotalStaked");
         }
-        Check.require(totalStaked != null, "total staked is null");
+        if (totalStaked == null) {
+            throw RewardDistributionException.unknown("total staked is null");
+        }
         return MathUtils.convertToExa(totalStaked.totalStaked, totalStaked.decimals);
     }
 
@@ -291,7 +290,9 @@ public class RewardDistribution {
         }
         UserAssetInput result = new UserAssetInput();
         result.asset = asset;
-        Check.require(supply != null, "supply is null");
+        if (supply == null) {
+            throw RewardDistributionException.unknown("supply is null");
+        }
 
         Integer _decimals = supply.decimals;
         result.userBalance = MathUtils.convertToExa(supply.principalUserBalance, _decimals);
@@ -308,24 +309,14 @@ public class RewardDistribution {
 
     private void checkOwner() {
         if (!Context.getOwner().equals(Context.getCaller())) {
-            throwError(ERROR_NOT_CONTRACT_OWNER, "Not Contract Owner");
+            throw RewardDistributionException.notOwner();
         }
     }
 
     private void checkGovernance() {
         if (!Context.getOwner().equals(this.addressProvider.getAddress(Contracts.GOVERNANCE.name()))) {
-            throwError(ERROR_NOT_CONTRACT_OWNER, "Not Governance contract");
+            throw RewardDistributionException.notGovernanceContract();
         }
     }
 
-    private void require(boolean condition, String message) {
-        if (!condition) {
-            throwError(ERROR_GENERIC, message);
-        }
-    }
-
-
-    private void throwError(Integer errorCode, String message) {
-        Context.revert(errorCode, message);
-    }
 }
