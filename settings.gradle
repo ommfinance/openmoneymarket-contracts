@@ -9,6 +9,6 @@ include 'libs:Math'
 findProject(':libs:Math')?.name = 'Math'
 include 'libs:OMMStruct'
 findProject(':libs:OMMStruct')?.name = 'OMMStruct'
-include 'libs:Utils'
-findProject(':libs:Utils')?.name = 'Utils'
+include 'libs:ScoreUtils'
+findProject(':libs:ScoreUtils')?.name = 'ScoreUtils'
 
