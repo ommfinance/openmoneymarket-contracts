@@ -1,4 +1,4 @@
-package finance.omm.libs.math;
+package finance.omm.utils.math;
 
 import java.math.BigInteger;
 

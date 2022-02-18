@@ -1,7 +1,7 @@
 package finance.omm.libs.address;
 
 
-import finance.omm.libs.address.struct.AddressDetail;
+import finance.omm.libs.structs.AddressDetail;
 import score.*;
 import score.annotation.External;
 

@@ -11,13 +11,15 @@ import score.DictDB;
 import score.VarDB;
 import score.annotation.External;
 import score.annotation.Optional;
+import scorex.util.ArrayList;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
-import static finance.omm.libs.math.MathUtils.*;
 import static finance.omm.score.core.reward.utils.Errors.*;
 import static finance.omm.score.core.reward.utils.TimeConstants.*;
+import static finance.omm.utils.math.MathUtils.*;
 
 public class RewardController {
     public static final String TAG = "Reward Controller";
@@ -188,6 +190,7 @@ public class RewardController {
     }
 
     private void checkTypeId(String typeId) {
+        List<String> a = new ArrayList<>();
         if (!typeWeightDB.isValidId(typeId)) {
             throwError(ERROR_INVALID_TYPE_ID, "Invalid typeId");
         }

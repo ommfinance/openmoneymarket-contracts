@@ -17,11 +17,11 @@ public class RewardDistributionException extends OMMException.RewardDistribution
     }
 
     public static RewardDistributionException notOwner() {
-        return new RewardDistributionException(Code.NotOwner, "Not an owner");
+        return new RewardDistributionException(Code.NotOwner, "require owner access");
     }
 
     public static RewardDistributionException notGovernanceContract() {
-        return new RewardDistributionException(Code.NotGovernanceContract, "Caller is not Governance contract");
+        return new RewardDistributionException(Code.NotGovernanceContract, "require Governance contract access");
     }
 
     public static RewardDistributionException invalidRecipient(String message) {

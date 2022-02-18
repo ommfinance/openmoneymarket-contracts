@@ -1,12 +1,13 @@
 package finance.omm.score.core.reward.distribution;
 
 
+import finance.omm.core.score.interfaces.RewardDistribution;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
-import finance.omm.libs.math.MathUtils;
 import finance.omm.libs.structs.*;
 import finance.omm.score.core.reward.distribution.utils.RewardDistributionException;
 import finance.omm.score.core.reward.distribution.utils.TimeConstants;
+import finance.omm.utils.math.MathUtils;
 import score.*;
 import score.annotation.EventLog;
 import score.annotation.External;
@@ -15,11 +16,11 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
-import static finance.omm.libs.math.MathUtils.*;
 import static finance.omm.score.core.reward.distribution.utils.TimeConstants.DAYS_PER_YEAR;
 import static finance.omm.score.core.reward.distribution.utils.TimeConstants.DAY_IN_SECONDS;
+import static finance.omm.utils.math.MathUtils.*;
 
-public class RewardDistribution {
+public class RewardDistributionImpl implements RewardDistribution {
     public static final String TAG = "Omm Reward Distribution Manager";
     public static final String REWARD_CONFIG = "rewardConfig";
     public static final String LAST_UPDATE_TIMESTAMP = "lastUpdateTimestamp";
@@ -42,8 +43,8 @@ public class RewardDistribution {
     public final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
     public final VarDB<Address> _addressProvider = Context.newVarDB("addressProvider", Address.class);
 
-    public RewardDistribution() {
-        addressProvider = new AddressProvider(this._addressProvider.get());
+    public RewardDistributionImpl() {
+        addressProvider = new AddressProvider(Address.fromString("cx0c436b120f3eabeb538b14fd30505917c3f35ee0"));
     }
 
     @EventLog(indexed = 1)
@@ -197,7 +198,7 @@ public class RewardDistribution {
         BigInteger newIndex = this._updateAssetStateInternal(_asset, _totalBalance);
 
         if (!userIndex.equals(newIndex) && !_userBalance.equals(BigInteger.ZERO)) {
-            accruedRewards = RewardDistribution._getRewards(_userBalance, newIndex, userIndex);
+            accruedRewards = RewardDistributionImpl._getRewards(_userBalance, newIndex, userIndex);
             this._userIndex.at(_user).set(_asset, newIndex);
             this.UserIndexUpdated(_user, _asset, userIndex, newIndex);
         }
@@ -222,8 +223,8 @@ public class RewardDistribution {
         BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(_assetInput.asset);
         BigInteger assetIndex = this._getAssetIndex(this._assetIndex.get(_assetInput.asset), _emissionPerSecond,
                 this._lastUpdateTimestamp.get(_assetInput.asset), _assetInput.totalBalance);
-        return RewardDistribution._getRewards(_assetInput.userBalance, assetIndex, this._userIndex.at(_user)
-                                                                                                  .get(_assetInput.asset));
+        return RewardDistributionImpl._getRewards(_assetInput.userBalance, assetIndex, this._userIndex.at(_user)
+                                                                                                      .get(_assetInput.asset));
     }
 
     @External(readonly = true)
@@ -302,8 +303,8 @@ public class RewardDistribution {
     }
 
     @External(readonly = true)
-    public Integer getPoolIDByAsset(Address _asset) {
-        return this._rewardConfig.getPoolID(_asset);
+    public BigInteger getPoolIDByAsset(Address _asset) {
+        return BigInteger.valueOf(this._rewardConfig.getPoolID(_asset));
     }
 
 

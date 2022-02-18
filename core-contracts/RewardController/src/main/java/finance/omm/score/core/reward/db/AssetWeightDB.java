@@ -12,7 +12,7 @@ import score.annotation.EventLog;
 import java.math.BigInteger;
 import java.util.Map;
 
-import static finance.omm.libs.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.ICX;
 
 public class AssetWeightDB {
 
