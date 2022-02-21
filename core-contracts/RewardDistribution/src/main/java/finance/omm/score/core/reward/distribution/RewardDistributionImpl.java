@@ -1,26 +1,38 @@
 package finance.omm.score.core.reward.distribution;
 
 
+import static finance.omm.utils.constants.TimeConstants.DAYS_PER_YEAR;
+import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
+import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.MILLION;
+import static finance.omm.utils.math.MathUtils.convertToExa;
+import static finance.omm.utils.math.MathUtils.pow;
+
 import finance.omm.core.score.interfaces.RewardDistribution;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
-import finance.omm.libs.structs.*;
-import finance.omm.score.core.reward.distribution.utils.RewardDistributionException;
-import finance.omm.score.core.reward.distribution.utils.TimeConstants;
+import finance.omm.libs.structs.AssetConfig;
+import finance.omm.libs.structs.DistPercentage;
+import finance.omm.libs.structs.SupplyDetails;
+import finance.omm.libs.structs.TotalStaked;
+import finance.omm.libs.structs.UserAssetInput;
+import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
+import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
-import score.*;
-import score.annotation.EventLog;
-import score.annotation.External;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-
-import static finance.omm.score.core.reward.distribution.utils.TimeConstants.DAYS_PER_YEAR;
-import static finance.omm.score.core.reward.distribution.utils.TimeConstants.DAY_IN_SECONDS;
-import static finance.omm.utils.math.MathUtils.*;
+import score.Address;
+import score.ArrayDB;
+import score.BranchDB;
+import score.Context;
+import score.DictDB;
+import score.VarDB;
+import score.annotation.EventLog;
+import score.annotation.External;
 
 public class RewardDistributionImpl implements RewardDistribution {
+
     public static final String TAG = "Omm Reward Distribution Manager";
     public static final String REWARD_CONFIG = "rewardConfig";
     public static final String LAST_UPDATE_TIMESTAMP = "lastUpdateTimestamp";
@@ -48,15 +60,18 @@ public class RewardDistributionImpl implements RewardDistribution {
     }
 
     @EventLog(indexed = 1)
-    public void AssetIndexUpdated(Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {}
+    public void AssetIndexUpdated(Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
+    }
 
 
     @EventLog(indexed = 2)
-    public void UserIndexUpdated(Address _user, Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {}
+    public void UserIndexUpdated(Address _user, Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
+    }
 
 
     @EventLog(indexed = 1)
-    public void AssetConfigUpdated(Address _asset, BigInteger _emissionPerSecond) {}
+    public void AssetConfigUpdated(Address _asset, BigInteger _emissionPerSecond) {
+    }
 
 
     @External(readonly = true)
@@ -76,7 +91,8 @@ public class RewardDistributionImpl implements RewardDistribution {
 
     @External(readonly = true)
     public Map<String, BigInteger> getIndexes(Address _user, Address _asset) {
-        return Map.of("userIndex", this._userIndex.at(_user).get(_asset), "assetIndex", this._assetIndex.get(_asset));
+        return Map.of("userIndex", this._userIndex.at(_user)
+                .get(_asset), "assetIndex", this._assetIndex.get(_asset));
     }
 
     @External
@@ -93,7 +109,10 @@ public class RewardDistributionImpl implements RewardDistribution {
             totalPercentage = totalPercentage.add(_percentage);
             this._rewardConfig.setDistributionPercentage(_recipient, _percentage);
         }
-        throw RewardDistributionException.invalidTotalPercentage(totalPercentage + " :: Percentage doesn't sum upto " + "100%");
+        if (!totalPercentage.equals(ICX)) {
+            throw RewardDistributionException.invalidTotalPercentage(
+                    totalPercentage + " :: Percentage doesn't sum upto 100%");
+        }
 
     }
 
@@ -170,7 +189,7 @@ public class RewardDistributionImpl implements RewardDistribution {
     }
 
     public BigInteger _updateAssetStateInternal(Address _asset, BigInteger _totalBalance) {
-        BigInteger oldIndex = this._assetIndex.get(_asset);
+        BigInteger oldIndex = this._assetIndex.getOrDefault(_asset, BigInteger.ZERO);
         BigInteger lastUpdateTimestamp = this._lastUpdateTimestamp.get(_asset);
 
         BigInteger currentTime = TimeConstants.getBlockTimestamp();
@@ -191,7 +210,7 @@ public class RewardDistributionImpl implements RewardDistribution {
     }
 
     public BigInteger _updateUserReserveInternal(Address _user, Address _asset, BigInteger _userBalance,
-                                                 BigInteger _totalBalance) {
+            BigInteger _totalBalance) {
         BigInteger userIndex = this._userIndex.at(_user).get(_asset);
         BigInteger accruedRewards = BigInteger.ZERO;
 
@@ -210,9 +229,10 @@ public class RewardDistributionImpl implements RewardDistribution {
     }
 
     public BigInteger _getAssetIndex(BigInteger _currentIndex, BigInteger _emissionPerSecond,
-                                     BigInteger _lastUpdateTimestamp, BigInteger _totalBalance) {
+            BigInteger _lastUpdateTimestamp, BigInteger _totalBalance) {
         BigInteger currentTime = TimeConstants.getBlockTimestamp();
-        if (_emissionPerSecond.equals(BigInteger.ZERO) || _totalBalance.equals(BigInteger.ZERO) || _lastUpdateTimestamp.equals(currentTime)) {
+        if (_emissionPerSecond.equals(BigInteger.ZERO) || _totalBalance.equals(BigInteger.ZERO)
+                || _lastUpdateTimestamp.equals(currentTime)) {
             return _currentIndex;
         }
         BigInteger timeDelta = currentTime.subtract(_lastUpdateTimestamp);
@@ -224,7 +244,7 @@ public class RewardDistributionImpl implements RewardDistribution {
         BigInteger assetIndex = this._getAssetIndex(this._assetIndex.get(_assetInput.asset), _emissionPerSecond,
                 this._lastUpdateTimestamp.get(_assetInput.asset), _assetInput.totalBalance);
         return RewardDistributionImpl._getRewards(_assetInput.userBalance, assetIndex, this._userIndex.at(_user)
-                                                                                                      .get(_assetInput.asset));
+                .get(_assetInput.asset));
     }
 
     @External(readonly = true)
@@ -243,27 +263,27 @@ public class RewardDistributionImpl implements RewardDistribution {
         } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
             return BigInteger.valueOf(34L).multiply(MILLION).divide(BigInteger.TEN);
         } else {
-            BigInteger index = _day.divide(DAYS_PER_YEAR.subtract(BigInteger.valueOf(4L)));
-            return BigInteger.valueOf(103L)
-                             .multiply(pow10(index.intValue()))
-                             .multiply(BigInteger.valueOf(3L))
-                             .multiply(BigInteger.valueOf(383L).multiply(MILLION))
-                             .divide(DAYS_PER_YEAR)
-                             .divide(BigInteger.valueOf(100L).multiply(pow10(index.intValue() - 1)));
+            BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
+            return pow(BigInteger.valueOf(103L), (index.intValue()))
+                    .multiply(BigInteger.valueOf(3L))
+                    .multiply(BigInteger.valueOf(383L).multiply(MILLION))
+                    .divide(DAYS_PER_YEAR)
+                    .divide(pow(BigInteger.valueOf(100L),
+                            (index.intValue() + 1)));
         }
     }
 
     @External(readonly = true)
     public BigInteger getDay() {
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
-        return timestamp.subtract(_timestampAtStart.get()).divide(DAY_IN_SECONDS);
+        return timestamp.subtract(_timestampAtStart.get())
+                .divide(DAY_IN_MICRO_SECONDS);
     }
 
     @External(readonly = true)
     public BigInteger getStartTimestamp() {
         return this._timestampAtStart.get();
     }
-
 
     public BigInteger _getTotalBalance(Address asset) {
         Integer poolId = this._rewardConfig.getPoolID(asset);
@@ -309,13 +329,15 @@ public class RewardDistributionImpl implements RewardDistribution {
 
 
     private void checkOwner() {
-        if (!Context.getOwner().equals(Context.getCaller())) {
+        if (!Context.getOwner()
+                .equals(Context.getCaller())) {
             throw RewardDistributionException.notOwner();
         }
     }
 
     private void checkGovernance() {
-        if (!Context.getOwner().equals(this.addressProvider.getAddress(Contracts.GOVERNANCE.name()))) {
+        if (!Context.getCaller()
+                .equals(this.addressProvider.getAddress(Contracts.GOVERNANCE.name()))) {
             throw RewardDistributionException.notGovernanceContract();
         }
     }

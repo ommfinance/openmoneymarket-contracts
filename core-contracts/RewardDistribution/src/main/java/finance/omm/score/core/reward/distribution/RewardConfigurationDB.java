@@ -1,20 +1,19 @@
 package finance.omm.score.core.reward.distribution;
 
+import static finance.omm.utils.math.MathUtils.ICX;
+
 import finance.omm.libs.structs.AssetConfig;
-import finance.omm.score.core.reward.distribution.utils.RewardDistributionException;
+import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import finance.omm.utils.math.MathUtils;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
 import score.Address;
 import score.ArrayDB;
 import score.Context;
 import score.DictDB;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-
-import static finance.omm.utils.math.MathUtils.ICX;
 
 public class RewardConfigurationDB {
     public static final String TAG = "Reward Configuration DB";

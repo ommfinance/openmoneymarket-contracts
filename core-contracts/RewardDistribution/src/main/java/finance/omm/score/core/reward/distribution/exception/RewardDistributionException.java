@@ -1,4 +1,4 @@
-package finance.omm.score.core.reward.distribution.utils;
+package finance.omm.score.core.reward.distribution.exception;
 
 import finance.omm.utils.exceptions.OMMException;
 
