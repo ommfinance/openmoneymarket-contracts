@@ -133,4 +133,15 @@ public class OMMException extends UserRevertException {
             this(code.code(), message);
         }
     }
+
+    public static class AddressProviderException extends OMMException {
+
+        public AddressProviderException(int code, String message) {
+            super(Type.RewardController, code, message);
+        }
+
+        public AddressProviderException(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
 }

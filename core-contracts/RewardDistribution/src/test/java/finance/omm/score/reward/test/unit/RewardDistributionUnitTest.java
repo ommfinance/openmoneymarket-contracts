@@ -1,10 +1,13 @@
 package finance.omm.score.reward.test.unit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.spy;
+
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
-import finance.omm.score.core.reward.distribution.RewardController;
+import finance.omm.score.core.reward.distribution.RewardDistributionImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,22 +15,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import score.Address;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.spy;
-
 public class RewardDistributionUnitTest extends TestBase {
     private static final ServiceManager sm = getServiceManager();
     private Account owner;
     private Score score;
-    private RewardController scoreSpy;
+    private RewardDistributionImpl scoreSpy;
 
     @BeforeEach
     void setup() throws Exception {
         owner = sm.createAccount(100);
 
-        score = sm.deploy(owner, RewardController.class);
+        score = sm.deploy(owner, RewardDistributionImpl.class);
 
-        scoreSpy = (RewardController) spy(score.getInstance());
+        scoreSpy = (RewardDistributionImpl) spy(score.getInstance());
         score.setInstance(scoreSpy);
     }
 

@@ -1,345 +1,290 @@
 package finance.omm.score.core.reward.distribution;
 
 
-import static finance.omm.utils.constants.TimeConstants.DAYS_PER_YEAR;
-import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
-import static finance.omm.utils.math.MathUtils.ICX;
-import static finance.omm.utils.math.MathUtils.MILLION;
-import static finance.omm.utils.math.MathUtils.convertToExa;
-import static finance.omm.utils.math.MathUtils.pow;
-
-import finance.omm.core.score.interfaces.RewardDistribution;
-import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
-import finance.omm.libs.structs.AssetConfig;
-import finance.omm.libs.structs.DistPercentage;
-import finance.omm.libs.structs.SupplyDetails;
-import finance.omm.libs.structs.TotalStaked;
 import finance.omm.libs.structs.UserAssetInput;
+import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import score.Address;
-import score.ArrayDB;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Optional;
 
-public class RewardDistributionImpl implements RewardDistribution {
+public class RewardDistributionImpl extends AbstractRewardDistribution {
 
-    public static final String TAG = "Omm Reward Distribution Manager";
-    public static final String REWARD_CONFIG = "rewardConfig";
-    public static final String LAST_UPDATE_TIMESTAMP = "lastUpdateTimestamp";
-    public static final String TIMESTAMP_AT_START = "timestampAtStart";
-    public static final String ASSET_INDEX = "assetIndex";
-    public static final String USER_INDEX = "userIndex";
-    public static final String RESERVE_ASSETS = "reserveAssets";
+    public static final String TAG = "Reward Distribution Controller";
+    public static final String USERS_UNCLAIMED_REWARDS = "usersUnclaimedRewards";
+    public static final String DAY = "day";
+    public static final String TOKEN_DIST_TRACKER = "tokenDistTracker";
+    public static final String IS_INITIALIZED = "isInitialized";
+    public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
 
-    public final AddressProvider addressProvider;
-
-    public final RewardConfigurationDB _rewardConfig = new RewardConfigurationDB(REWARD_CONFIG);
-
-    public final DictDB<Address, BigInteger> _lastUpdateTimestamp = Context.newDictDB(LAST_UPDATE_TIMESTAMP,
-            BigInteger.class);
-    public final DictDB<Address, BigInteger> _assetIndex = Context.newDictDB(ASSET_INDEX, BigInteger.class);
-    public final BranchDB<Address, DictDB<Address, BigInteger>> _userIndex = Context.newBranchDB(USER_INDEX,
-            BigInteger.class);
-
-    public final ArrayDB<Address> _reserveAssets = Context.newArrayDB(RESERVE_ASSETS, Address.class);
-    public final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
-    public final VarDB<Address> _addressProvider = Context.newVarDB("addressProvider", Address.class);
+    public final VarDB<BigInteger> _day = Context.newVarDB(DAY, BigInteger.class);
+    public final VarDB<Boolean> _isInitialized = Context.newVarDB(IS_INITIALIZED, Boolean.class);
+    public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
+    public final BranchDB<Address, DictDB<Address, BigInteger>> _usersUnclaimedRewards = Context.newBranchDB(
+            USERS_UNCLAIMED_REWARDS, BigInteger.class);
+    public final DictDB<String, BigInteger> _tokenDistTracker = Context.newDictDB(TOKEN_DIST_TRACKER, BigInteger.class);
 
     public RewardDistributionImpl() {
-        addressProvider = new AddressProvider(Address.fromString("cx0c436b120f3eabeb538b14fd30505917c3f35ee0"));
+        super(null);
     }
-
-    @EventLog(indexed = 1)
-    public void AssetIndexUpdated(Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
-    }
-
 
     @EventLog(indexed = 2)
-    public void UserIndexUpdated(Address _user, Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
-    }
+    public void Distribution(String _recipient, Address _user, BigInteger _value) {}
 
+    @EventLog()
+    public void OmmTokenMinted(BigInteger _day, BigInteger _value) {}
 
-    @EventLog(indexed = 1)
-    public void AssetConfigUpdated(Address _asset, BigInteger _emissionPerSecond) {
-    }
+    @EventLog()
+    public void RewardsAccrued(Address _user, Address _asset, BigInteger _rewards) {}
 
-
-    @External(readonly = true)
-    public Map<String, BigInteger> getAssetEmission() {
-        return this._rewardConfig.getAllEmissionPerSecond();
-    }
+    @EventLog()
+    public void RewardsClaimed(Address _user, BigInteger _rewards, String _msg) {}
 
     @External(readonly = true)
-    public List<Address> getAssets() {
-        return this._rewardConfig.getAssets();
+    public String name() {
+        return "OMM " + TAG;
     }
 
     @External(readonly = true)
-    public Map<String, String> getAssetNames() {
-        return this._rewardConfig.getAssetNames();
+    public String[] getRecipients() {
+        return _rewardConfig.getRecipients();
     }
 
-    @External(readonly = true)
-    public Map<String, BigInteger> getIndexes(Address _user, Address _asset) {
-        return Map.of("userIndex", this._userIndex.at(_user)
-                .get(_asset), "assetIndex", this._assetIndex.get(_asset));
+    @External()
+    public void handleAction(UserDetails _userAssetDetails) {
+        Address _asset = Context.getCaller();
+        _handleAction(_asset, _userAssetDetails);
     }
 
-    @External
-    public void setAssetName(Address _asset, String _name) {
-        checkOwner();
-        this._rewardConfig.setAssetName(_asset, _name);
-    }
-
-    public void _updateDistPercentage(DistPercentage[] _distPercentage) {
-        BigInteger totalPercentage = BigInteger.ZERO;
-        for (DistPercentage config : _distPercentage) {
-            String _recipient = config.recipient;
-            BigInteger _percentage = config.percentage;
-            totalPercentage = totalPercentage.add(_percentage);
-            this._rewardConfig.setDistributionPercentage(_recipient, _percentage);
-        }
-        if (!totalPercentage.equals(ICX)) {
-            throw RewardDistributionException.invalidTotalPercentage(
-                    totalPercentage + " :: Percentage doesn't sum upto 100%");
-        }
-
-    }
-
-    @External
-    public void setDistributionPercentage(DistPercentage[] _distPercentage) {
-        checkOwner();
-        this._updateDistPercentage(_distPercentage);
-        this.updateEmissionPerSecond();
-    }
-
-    @External(readonly = true)
-    public BigInteger getDistributionPercentage(String _recipient) {
-        return this._rewardConfig.getDistributionPercentage(_recipient);
-    }
-
-    @External(readonly = true)
-    public Map<String, BigInteger> getAllDistributionPercentage() {
-        return this._rewardConfig.getAllDistributionPercentage();
-    }
-
-    @External(readonly = true)
-    public BigInteger assetDistPercentage(Address asset) {
-        return this._rewardConfig.getAssetPercentage(asset);
-    }
-
-    @External(readonly = true)
-    public Map<String, ?> allAssetDistPercentage() {
-        return this._rewardConfig.getAssetConfigs();
-    }
-
-    @External(readonly = true)
-    public Map<String, Map<String, BigInteger>> distPercentageOfAllLP() {
-        return this._rewardConfig.assetConfigOfLiquidityProvider();
-    }
-
-    public void _configureAsset(BigInteger distributionPerDay, AssetConfig _assetConfig) {
-        Address asset = _assetConfig.asset;
-        this._rewardConfig.setAssetConfig(_assetConfig);
-        BigInteger _totalBalance = this._getTotalBalance(asset);
-        this._updateAssetStateInternal(asset, _totalBalance);
-        BigInteger _emissionPerSecond = this._rewardConfig.updateEmissionPerSecond(asset, distributionPerDay);
-        this.AssetConfigUpdated(asset, _emissionPerSecond);
-    }
-
-    @External
-    public void configureAssetConfigs(AssetConfig[] _assetConfig) {
+    @External()
+    public void disableRewardClaim() {
         checkGovernance();
-        BigInteger distributionPerDay = this.tokenDistributionPerDay(this.getDay());
-        for (AssetConfig config : _assetConfig) {
-            this._configureAsset(distributionPerDay, config);
-        }
+        _isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
-
-    @External
-    public void removeAssetConfig(Address _asset) {
+    @External()
+    public void enableRewardClaim() {
         checkGovernance();
-        BigInteger _totalBalance = this._getTotalBalance(_asset);
-        this._updateAssetStateInternal(_asset, _totalBalance);
-
-        this._rewardConfig.removeAssetConfig(_asset);
+        _isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
+    @External(readonly = true)
+    public Boolean isRewardClaimEnabled() {
+        return _isRewardClaimEnabled.get();
+    }
 
     @External
-    public void updateEmissionPerSecond() {
-        BigInteger distributionPerDay = this.tokenDistributionPerDay(this.getDay());
-        List<Address> _assets = this._rewardConfig.getAssets();
-        for (Address asset : _assets) {
-            BigInteger _totalBalance = this._getTotalBalance(asset);
-            this._updateAssetStateInternal(asset, _totalBalance);
-            this._rewardConfig.updateEmissionPerSecond(asset, distributionPerDay);
+    public void handleLPAction(Address _asset, UserDetails _userDetails) {
+        checkStakeLp();
+        _handleAction(_asset, _userDetails);
+    }
+
+    private void _handleAction(Address _asset, UserDetails _userDetails) {
+        BigInteger _decimals = _userDetails._decimals;
+        Address _user = _userDetails._user;
+        BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
+        BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalBalance, _decimals);
+        Context.require(_rewardConfig.is_valid_asset(_asset), TAG + " Asset not authorized ");
+        BigInteger accruedRewards = _updateUserReserveInternal(_user, _asset, _userBalance, _totalSupply);
+        if (!BigInteger.ZERO.equals(accruedRewards)) {
+            _usersUnclaimedRewards.at(_user).set(_asset, accruedRewards);
+            RewardsAccrued(_user, _asset, accruedRewards);
+
         }
     }
 
-    public BigInteger _updateAssetStateInternal(Address _asset, BigInteger _totalBalance) {
-        BigInteger oldIndex = this._assetIndex.getOrDefault(_asset, BigInteger.ZERO);
-        BigInteger lastUpdateTimestamp = this._lastUpdateTimestamp.get(_asset);
-
-        BigInteger currentTime = TimeConstants.getBlockTimestamp();
-
-        if (currentTime.equals(lastUpdateTimestamp)) {
-            return oldIndex;
+    @External(readonly = true)
+    public Map<String, ?> getDailyRewards(@Optional BigInteger _day) {
+        if (_day == null || BigInteger.ZERO.equals(_day)) {
+            _day = getDay();
         }
-        BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(_asset);
-
-        BigInteger newIndex = this._getAssetIndex(oldIndex, _emissionPerSecond, lastUpdateTimestamp, _totalBalance);
-        if (!newIndex.equals(oldIndex)) {
-            this._assetIndex.set(_asset, newIndex);
-            this.AssetIndexUpdated(_asset, oldIndex, newIndex);
+        BigInteger _distribution = tokenDistributionPerDay(_day);
+        BigInteger _totalRewards = BigInteger.ZERO;
+        List<Address> _assets = _rewardConfig.getAssets();
+        Map<String, Object> response = new HashMap<>();
+        for (Address _asset : _assets) {
+            String _assetName = _rewardConfig.getAssetName(_asset);
+            String _entity = _rewardConfig.getEntity(_asset);
+            if (_entity == null) {
+                throw RewardDistributionException.invalidAsset("Unsupported entity ::" + _asset);
+            }
+            BigInteger _percentage = _rewardConfig.getAssetPercentage(_asset);
+            Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(_entity);
+            if (entityMap == null) {
+                entityMap = new scorex.util.HashMap<>() {{
+                    put("total", BigInteger.ZERO);
+                }};
+            }
+            BigInteger total = entityMap.get("total");
+            BigInteger _distributionValue = MathUtils.exaMultiply(_distribution, _percentage);
+            entityMap.put(_assetName, _distributionValue);
+            entityMap.put("total", total.add(_distributionValue));
+            response.put(_entity, entityMap);
+            _totalRewards = _totalRewards.add(_distributionValue);
         }
+        response.put("day", _day);
+        response.put("total", _totalRewards);
+        return response;
 
-        this._lastUpdateTimestamp.set(_asset, currentTime);
-        return newIndex;
     }
 
-    public BigInteger _updateUserReserveInternal(Address _user, Address _asset, BigInteger _userBalance,
-            BigInteger _totalBalance) {
-        BigInteger userIndex = this._userIndex.at(_user).get(_asset);
+
+    @External(readonly = true)
+    public Map<String, ?> getRewards(Address _user) {
+        BigInteger totalRewards = BigInteger.ZERO;
+        Map<String, Object> response = new HashMap<>();
+        List<Address> _assets = _rewardConfig.getAssets();
+        for (Address _asset : _assets) {
+            String _assetName = _rewardConfig.getAssetName(_asset);
+            String _entity = _rewardConfig.getEntity(_asset);
+            Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(_entity);
+            if (entityMap == null) {
+                entityMap = new scorex.util.HashMap<>() {{
+                    put("total", BigInteger.ZERO);
+                }};
+            }
+            BigInteger total = entityMap.get("total");
+            UserAssetInput userAssetDetails = _getUserAssetDetails(_asset, _user);
+            BigInteger unclaimedRewards = _usersUnclaimedRewards.at(_user).get(_asset);
+            unclaimedRewards = unclaimedRewards.add(_getUnclaimedRewards(_user, userAssetDetails));
+            entityMap.put(_assetName, unclaimedRewards);
+            entityMap.put("total", total.add(unclaimedRewards));
+            response.put(_entity, entityMap);
+            totalRewards = totalRewards.add(unclaimedRewards);
+        }
+        response.put("total", totalRewards);
+        BigInteger timeInSeconds = TimeConstants.getBlockTimestamp().divide(TimeConstants.SECOND);
+        response.put("now", timeInSeconds);
+        return response;
+
+    }
+
+    @External
+    public void startDistribution() {
+        checkOwner();
+        if (BigInteger.ZERO.equals(getDay()) && !_isInitialized.get()) {
+            _mintDailyOmm();
+            updateEmissionPerSecond();
+            _isInitialized.set(Boolean.TRUE);
+
+        }
+    }
+
+    @External
+    public void claimRewards(Address _user) {
+        checkLendingPool();
+        Context.require(isRewardClaimEnabled(), "The reward claim is not enabled");
+        BigInteger unclaimedRewards = BigInteger.ZERO;
         BigInteger accruedRewards = BigInteger.ZERO;
-
-        BigInteger newIndex = this._updateAssetStateInternal(_asset, _totalBalance);
-
-        if (!userIndex.equals(newIndex) && !_userBalance.equals(BigInteger.ZERO)) {
-            accruedRewards = RewardDistributionImpl._getRewards(_userBalance, newIndex, userIndex);
-            this._userIndex.at(_user).set(_asset, newIndex);
-            this.UserIndexUpdated(_user, _asset, userIndex, newIndex);
+        List<Address> _assets = _rewardConfig.getAssets();
+        for (Address _asset : _assets) {
+            unclaimedRewards = unclaimedRewards.add(_usersUnclaimedRewards.at(_user).get(_asset));
+            UserAssetInput userAssetDetails = _getUserAssetDetails(_asset, _user);
+            accruedRewards = accruedRewards.add(
+                    _updateUserReserveInternal(_user, userAssetDetails.asset, userAssetDetails.userBalance,
+                            userAssetDetails.totalBalance));
+            _usersUnclaimedRewards.at(_user).set(_asset, BigInteger.ZERO);
         }
-        return accruedRewards;
-    }
-
-    private static BigInteger _getRewards(BigInteger _userBalance, BigInteger _assetIndex, BigInteger _userIndex) {
-        return MathUtils.exaMultiply(_userBalance, _assetIndex.subtract(_userIndex));
-    }
-
-    public BigInteger _getAssetIndex(BigInteger _currentIndex, BigInteger _emissionPerSecond,
-            BigInteger _lastUpdateTimestamp, BigInteger _totalBalance) {
-        BigInteger currentTime = TimeConstants.getBlockTimestamp();
-        if (_emissionPerSecond.equals(BigInteger.ZERO) || _totalBalance.equals(BigInteger.ZERO)
-                || _lastUpdateTimestamp.equals(currentTime)) {
-            return _currentIndex;
+        if (!BigInteger.ZERO.equals(accruedRewards)) {
+            unclaimedRewards = unclaimedRewards.add(accruedRewards);
         }
-        BigInteger timeDelta = currentTime.subtract(_lastUpdateTimestamp);
-        return MathUtils.exaMultiply(_emissionPerSecond.multiply(timeDelta), _totalBalance).add(_currentIndex);
+        if (BigInteger.ZERO.equals(unclaimedRewards)) {
+            return;
+        }
+        Context.call(this.getAddress(Contracts.OMM_TOKEN.name()), "transfer", _user, unclaimedRewards);
+        RewardsClaimed(_user, unclaimedRewards, "Asset rewards");
     }
 
-    public BigInteger _getUnclaimedRewards(Address _user, UserAssetInput _assetInput) {
-        BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(_assetInput.asset);
-        BigInteger assetIndex = this._getAssetIndex(this._assetIndex.get(_assetInput.asset), _emissionPerSecond,
-                this._lastUpdateTimestamp.get(_assetInput.asset), _assetInput.totalBalance);
-        return RewardDistributionImpl._getRewards(_assetInput.userBalance, assetIndex, this._userIndex.at(_user)
-                .get(_assetInput.asset));
+    @External
+    public void distribute() {
+        BigInteger day = _day.get();
+        if (day.compareTo(getDay()) > 0) {
+            return;
+        }
+        Address workerTokenAddress = this.getAddress(Contracts.WORKER_TOKEN.name());
+        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.name());
+        BigInteger totalSupply = Context.call(BigInteger.class, workerTokenAddress, "totalSupply");
+        BigInteger tokenDistTracker = _tokenDistTracker.get("worker");
+        List<Address> walletHolders = (List<Address>) Context.call(List.class, workerTokenAddress, "getWallets");
+        for (Address user : walletHolders) {
+            BigInteger userWorkerTokenBalance = Context.call(BigInteger.class, workerTokenAddress, "balanceOf", user);
+            if (BigInteger.ZERO.compareTo(tokenDistTracker) != 0) {
+                BigInteger tokenAmount = MathUtils.exaMultiply(MathUtils.exaDivide(userWorkerTokenBalance, totalSupply),
+                        tokenDistTracker);
+                Distribution("worker", user, tokenAmount);
+                Context.call(ommTokenAddress, "transfer", user, tokenAmount);
+                totalSupply = totalSupply.subtract(userWorkerTokenBalance);
+                tokenDistTracker = tokenDistTracker.subtract(tokenAmount);
+            }
+        }
+        Address daoFundAddress = this.getAddress(Contracts.DAO_FUND.name());
+        BigInteger tokenDistTrackerDaoFund = _tokenDistTracker.get("daoFund");
+        Context.call(ommTokenAddress, "transfer", daoFundAddress, tokenDistTrackerDaoFund);
+        Distribution("daoFund", daoFundAddress, tokenDistTrackerDaoFund);
+        _day.set(day.add(BigInteger.ONE));
+        _mintDailyOmm();
     }
 
     @External(readonly = true)
-    public BigInteger tokenDistributionPerDay(BigInteger _day) {
+    public BigInteger getDistributedDay() {
+        return _day.get();
+    }
 
-        if (MathUtils.isLesThanEqual(_day, BigInteger.ZERO)) {
-            return BigInteger.ZERO;
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(30L))) {
-            return MILLION;
-        } else if (MathUtils.isLesThanEqual(_day, DAYS_PER_YEAR)) {
-            return BigInteger.valueOf(4L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
-            return BigInteger.valueOf(3L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.valueOf(2L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.valueOf(34L).multiply(MILLION).divide(BigInteger.TEN);
-        } else {
-            BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
-            return pow(BigInteger.valueOf(103L), (index.intValue()))
-                    .multiply(BigInteger.valueOf(3L))
-                    .multiply(BigInteger.valueOf(383L).multiply(MILLION))
-                    .divide(DAYS_PER_YEAR)
-                    .divide(pow(BigInteger.valueOf(100L),
-                            (index.intValue() + 1)));
+    private void _mintDailyOmm() {
+        BigInteger day = _day.get();
+        BigInteger tokenDistributionPerDay = tokenDistributionPerDay(day);
+        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.name());
+        Context.call(ommTokenAddress, "mint", tokenDistributionPerDay);
+        List<String> recipients = new ArrayList<>() {{
+            add("worker");
+            add("daoFund");
+        }};
+        for (String recipient : recipients) {
+            BigInteger _distributionPercentage = getDistributionPercentage(recipient);
+            _tokenDistTracker.set(recipient, MathUtils.exaMultiply(tokenDistributionPerDay, _distributionPercentage));
         }
+        OmmTokenMinted(day, tokenDistributionPerDay);
     }
 
-    @External(readonly = true)
-    public BigInteger getDay() {
-        BigInteger timestamp = TimeConstants.getBlockTimestamp();
-        return timestamp.subtract(_timestampAtStart.get())
-                .divide(DAY_IN_MICRO_SECONDS);
+    @External
+    public void transferOmmToDaoFund(BigInteger _value) {
+        checkGovernance();
+        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.name());
+        Address daoFundAddress = this.getAddress(Contracts.DAO_FUND.name());
+        Context.call(ommTokenAddress, "transfer", daoFundAddress, _value);
     }
 
-    @External(readonly = true)
-    public BigInteger getStartTimestamp() {
-        return this._timestampAtStart.get();
-    }
-
-    public BigInteger _getTotalBalance(Address asset) {
-        Integer poolId = this._rewardConfig.getPoolID(asset);
-        TotalStaked totalStaked = null;
-        if (poolId > 0) {
-            totalStaked = Context.call(TotalStaked.class, addressProvider.getAddress(Contracts.STAKED_LP.name()),
-                    "getTotalStaked", poolId);
-        } else {
-            totalStaked = Context.call(TotalStaked.class, asset, "getTotalStaked");
-        }
-        if (totalStaked == null) {
-            throw RewardDistributionException.unknown("total staked is null");
-        }
-        return MathUtils.convertToExa(totalStaked.totalStaked, totalStaked.decimals);
-    }
-
-    public UserAssetInput _getUserAssetDetails(Address asset, Address user) {
-        Integer poolId = this._rewardConfig.getPoolID(asset);
-        SupplyDetails supply = null;
-        if (poolId > 0) {
-            supply = Context.call(SupplyDetails.class, addressProvider.getAddress(Contracts.STAKED_LP.name()),
-                    "getLPStakedSupply", poolId, user);
-        } else {
-            supply = Context.call(SupplyDetails.class, asset, "getPrincipalSupply", user);
-        }
-        UserAssetInput result = new UserAssetInput();
-        result.asset = asset;
-        if (supply == null) {
-            throw RewardDistributionException.unknown("supply is null");
-        }
-
-        BigInteger _decimals = BigInteger.valueOf(supply.decimals);
-        result.userBalance = MathUtils.convertToExa(supply.principalUserBalance, _decimals);
-        result.totalBalance = convertToExa(supply.principalTotalSupply, _decimals);
-        return result;
+    @External
+    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
 
     }
 
-    @External(readonly = true)
-    public BigInteger getPoolIDByAsset(Address _asset) {
-        return BigInteger.valueOf(this._rewardConfig.getPoolID(_asset));
-    }
-
-
-    protected void checkOwner() {
-        if (!Context.getOwner()
-                .equals(Context.getCaller())) {
-            throw RewardDistributionException.notOwner();
-        }
-    }
-
-    protected void checkGovernance() {
+    private void checkStakeLp() {
         if (!Context.getCaller()
-                .equals(this.addressProvider.getAddress(Contracts.GOVERNANCE.name()))) {
-            throw RewardDistributionException.notGovernanceContract();
+                .equals(this.getAddress(Contracts.STAKED_LP.name()))) {
+            throw RewardDistributionException.notStakedLp();
+        }
+    }
+
+    private void checkLendingPool() {
+        if (!Context.getCaller()
+                .equals(this.getAddress(Contracts.LENDING_POOL.name()))) {
+            throw RewardDistributionException.notLendingPool();
         }
     }
 
 }
+

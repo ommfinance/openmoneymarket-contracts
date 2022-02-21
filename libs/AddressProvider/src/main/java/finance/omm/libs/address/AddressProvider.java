@@ -2,21 +2,24 @@ package finance.omm.libs.address;
 
 
 import finance.omm.libs.structs.AddressDetail;
-import score.*;
+import finance.omm.utils.exceptions.OMMException;
+import java.util.Map;
+import score.Address;
+import score.ArrayDB;
+import score.Context;
+import score.DictDB;
+import score.VarDB;
 import score.annotation.External;
 
-import java.util.Map;
-
 public class AddressProvider {
-    public static final Integer ERROR_NOT_ADDRESS_PROVIDER = 1;
 
     public static final String _ADDRESSES = "addresses";
     public static final String _CONTRACTS = "contracts";
     public static final String _ADDRESS_PROVIDER = "addressProvider";
 
-    private final VarDB<Address> _addressProvider = Context.newVarDB(_ADDRESS_PROVIDER, Address.class);
-    private final DictDB<String, Address> _addresses = Context.newDictDB(_ADDRESSES, Address.class);
-    private final ArrayDB<String> _contracts = Context.newArrayDB(_CONTRACTS, String.class);
+    protected final VarDB<Address> _addressProvider = Context.newVarDB(_ADDRESS_PROVIDER, Address.class);
+    protected final DictDB<String, Address> _addresses = Context.newDictDB(_ADDRESSES, Address.class);
+    protected final ArrayDB<String> _contracts = Context.newArrayDB(_CONTRACTS, String.class);
 
 
     public AddressProvider(Address addressProvider) {
@@ -59,15 +62,10 @@ public class AddressProvider {
     }
 
 
-    private void checkAddressProvider() {
-        if (!Context.getOwner().equals(Context.getCaller())) {
-            throwError(ERROR_NOT_ADDRESS_PROVIDER, "Caller is not Address provider");
+    protected void checkAddressProvider() {
+        if (!Context.getCaller().equals(_addressProvider.get())) {
+            throw new OMMException.AddressProviderException(99, "require Address provider contract access");
         }
-    }
-
-
-    private void throwError(Integer errorCode, String message) {
-        Context.revert(errorCode, message);
     }
 
 
