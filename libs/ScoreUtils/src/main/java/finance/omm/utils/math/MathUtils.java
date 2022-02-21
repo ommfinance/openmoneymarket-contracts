@@ -26,9 +26,13 @@ public class MathUtils {
     }
 
     public static BigInteger pow10(int exponent) {
+        return pow(BigInteger.TEN, exponent);
+    }
+
+    public static BigInteger pow(BigInteger num, int exponent) {
         BigInteger result = BigInteger.ONE;
         for (int i = 0; i < exponent; i++) {
-            result = result.multiply(BigInteger.TEN);
+            result = result.multiply(num);
         }
         return result;
     }
@@ -49,10 +53,8 @@ public class MathUtils {
     }
 
     public static BigInteger exaDivide(BigInteger first, BigInteger second) {
-//        halfB = b // 2
-//        return (halfB + (a * EXA)) // b
         BigInteger halfSecond = second.divide(BigInteger.TWO);
-        return halfSecond.add(first.multiply(ICX)).divide(halfSecond);
+        return halfSecond.add(first.multiply(ICX)).divide(second);
     }
 
     public static BigInteger convertToExa(BigInteger _amount, Integer _decimals) {

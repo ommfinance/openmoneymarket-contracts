@@ -16,18 +16,15 @@
 
 package finance.omm.libs.test;
 
+import static foundation.icon.jsonrpc.IconJsonModule.hexToBytes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import foundation.icon.icx.KeyWallet;
 import foundation.icon.icx.Wallet;
 import foundation.icon.icx.data.TransactionResult;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.RevertedException;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.function.Executable;
-import score.UserRevertedException;
-
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -41,9 +38,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static foundation.icon.jsonrpc.IconJsonModule.hexToBytes;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.function.Executable;
+import score.UserRevertedException;
 
 @Tag("integration")
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
@@ -171,6 +170,7 @@ public interface ScoreIntegrationTest {
     }
 
     interface Faker {
+
         com.github.javafaker.Faker faker = new com.github.javafaker.Faker();
         Random random = new Random();
 

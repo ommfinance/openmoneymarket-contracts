@@ -5,12 +5,12 @@ import score.UserRevertException;
 import score.UserRevertedException;
 
 public class OMMException extends UserRevertException {
+
     /**
-     * OMMException.RewardDistribution => 0 ~
-     * OMMException.RESERVED => 80 ~ 99
+     * OMMException.RewardDistribution => 0 ~ OMMException.RESERVED => 80 ~ 99
      */
     enum Type {
-        RewardDistribution(0), RESERVED(80);
+        RewardController(0), RewardDistribution(10), RESERVED(80);
 
         int offset;
 
@@ -89,6 +89,7 @@ public class OMMException extends UserRevertException {
     }
 
     public interface Coded {
+
         int code();
 
         default boolean equals(OMMException e) {
@@ -112,6 +113,7 @@ public class OMMException extends UserRevertException {
     }
 
     public static class RewardDistribution extends OMMException {
+
         public RewardDistribution(int code, String message) {
             super(Type.RewardDistribution, code, message);
         }
@@ -121,4 +123,14 @@ public class OMMException extends UserRevertException {
         }
     }
 
+    public static class RewardController extends OMMException {
+
+        public RewardController(int code, String message) {
+            super(Type.RewardController, code, message);
+        }
+
+        public RewardController(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
 }
