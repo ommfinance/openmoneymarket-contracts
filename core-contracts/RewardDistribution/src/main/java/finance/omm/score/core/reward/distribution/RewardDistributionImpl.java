@@ -315,7 +315,7 @@ public class RewardDistributionImpl implements RewardDistribution {
             throw RewardDistributionException.unknown("supply is null");
         }
 
-        Integer _decimals = supply.decimals;
+        BigInteger _decimals = BigInteger.valueOf(supply.decimals);
         result.userBalance = MathUtils.convertToExa(supply.principalUserBalance, _decimals);
         result.totalBalance = convertToExa(supply.principalTotalSupply, _decimals);
         return result;
@@ -328,14 +328,14 @@ public class RewardDistributionImpl implements RewardDistribution {
     }
 
 
-    private void checkOwner() {
+    protected void checkOwner() {
         if (!Context.getOwner()
                 .equals(Context.getCaller())) {
             throw RewardDistributionException.notOwner();
         }
     }
 
-    private void checkGovernance() {
+    protected void checkGovernance() {
         if (!Context.getCaller()
                 .equals(this.addressProvider.getAddress(Contracts.GOVERNANCE.name()))) {
             throw RewardDistributionException.notGovernanceContract();
