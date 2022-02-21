@@ -57,12 +57,13 @@ public class MathUtils {
         return halfSecond.add(first.multiply(ICX)).divide(second);
     }
 
-    public static BigInteger convertToExa(BigInteger _amount, Integer _decimals) {
-        if (_decimals == 18) {
+    public static BigInteger convertToExa(BigInteger _amount, BigInteger _decimals) {
+        Integer decimal = _decimals.intValue();
+        if (decimal.equals(18)) {
             return _amount;
         }
-        if (_decimals >= 0) {
-            return _amount.multiply(ICX).divide(pow10(_decimals));
+        if (decimal >= 0) {
+            return _amount.multiply(ICX).divide(pow10(decimal));
         }
         return _amount;
     }
