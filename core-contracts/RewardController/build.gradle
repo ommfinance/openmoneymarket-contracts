@@ -1,12 +1,13 @@
 version = '0.0.1'
 
 dependencies {
+    implementation project(':libs:Score')
     implementation project(':libs:ScoreUtils')
     implementation project(':libs:OMMStruct')
 }
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.core.reward.RewardController'
+    mainClassName = 'finance.omm.score.core.reward.RewardControllerImpl'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -28,7 +29,7 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('startTimestamp', '1581724800')
+        arg('startTimestamp', '1581724800000000')
     }
 }
 
@@ -60,9 +61,4 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
         project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
 
     }
-
-
-//    def prefix = 'score.path.'
-//    systemProperty(prefix + project.name, optimizedJar.outputJarName)
-
 }

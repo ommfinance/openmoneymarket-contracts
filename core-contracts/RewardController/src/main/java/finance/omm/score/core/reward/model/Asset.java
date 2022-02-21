@@ -1,10 +1,9 @@
 package finance.omm.score.core.reward.model;
 
+import java.math.BigInteger;
 import score.Address;
 import score.ObjectReader;
 import score.ObjectWriter;
-
-import java.math.BigInteger;
 
 public class Asset {
     public final String id;
@@ -13,14 +12,9 @@ public class Asset {
     public BigInteger lpID;
     public Address address;
 
-    public Asset(String typeId, String id) {
+    public Asset(String id, String typeId) {
         this.id = id;
         this.typeId = typeId;
-    }
-
-
-    public Asset(String id) {
-        this("", id);
     }
 
     public static void writeObject(ObjectWriter w, Asset a) {

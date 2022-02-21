@@ -1,18 +1,18 @@
 package finance.omm.score.core.reward.db;
 
+import static finance.omm.utils.math.MathUtils.ICX;
+
 import finance.omm.libs.structs.WeightStruct;
+import finance.omm.score.core.reward.exception.RewardException;
 import finance.omm.score.core.reward.model.Asset;
-import finance.omm.score.core.reward.utils.TimeConstants;
+import finance.omm.utils.constants.TimeConstants;
+import java.math.BigInteger;
+import java.util.Map;
 import score.Address;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
-import score.annotation.EventLog;
-
-import java.math.BigInteger;
-import java.util.Map;
-
-import static finance.omm.utils.math.MathUtils.ICX;
+import scorex.util.HashMap;
 
 public class AssetWeightDB {
 
@@ -37,19 +37,17 @@ public class AssetWeightDB {
         this.nonce = Context.newDictDB(key + "Nonce", Integer.class);
     }
 
-    @EventLog(indexed = 2)
-    public void AssetAdded(String id, String name) {}
 
-    public void addAsset(String typeId, String name, Address address, BigInteger lpID) {
+    public String addAsset(String typeId, String name, Address address, BigInteger lpID) {
         Integer nonce = this.nonce.getOrDefault(typeId, 1);
         String id = getId(typeId, nonce);
-        Asset asset = new Asset(typeId, id);
+        Asset asset = new Asset(id, typeId);
         asset.address = address;
         asset.lpID = lpID;
         asset.name = name;
         this.assets.set(id, asset);
         this.nonce.set(typeId, nonce + 1);
-        AssetAdded(id, name);
+        return id;
     }
 
 
@@ -57,9 +55,13 @@ public class AssetWeightDB {
         Integer checkpointCounter = this.checkpointCounter.getOrDefault(typeId, 0);
         BigInteger latestCheckpoint = this.tCheckpoint.at(typeId).getOrDefault(checkpointCounter, BigInteger.ZERO);
         int compareValue = latestCheckpoint.compareTo(timestamp);
-        Context.require(compareValue <= 0, msg(" latest " + latestCheckpoint + " checkpoint exists than " + timestamp));
+        if (compareValue > 0) {
+            throw RewardException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
+        }
+
+        BigInteger total = this.totalCheckpoint.at(typeId).getOrDefault(checkpointCounter, BigInteger.ZERO);
         if (compareValue == 0) {
-            setWeights(typeId, weights, checkpointCounter);
+            setWeights(typeId, total, weights, checkpointCounter);
         } else {
             DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(typeId).at(checkpointCounter);
             Integer counter = checkpointCounter + 1;
@@ -70,38 +72,41 @@ public class AssetWeightDB {
                 BigInteger value = dictDB.get(key);
                 newCheckpoint.set(key, value);
             }
-            setWeights(typeId, weights, counter);
+            setWeights(typeId, total, weights, counter);
             this.tCheckpoint.at(typeId).set(counter, timestamp);
-
+            this.checkpointCounter.set(typeId, counter);
         }
     }
 
-    private void setWeights(String typeId, WeightStruct[] weights, Integer counter) {
+    private void setWeights(String typeId, BigInteger total, WeightStruct[] weights, Integer counter) {
         DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(typeId).at(counter);
-        BigInteger total = this.totalCheckpoint.at(typeId).getOrDefault(counter, BigInteger.ZERO);
         for (WeightStruct tw : weights) {
-            Context.require(isValidId(tw.id), msg("Invalid asset id :: " + tw.id));
+            if (!isValidId(tw.id)) {
+                throw RewardException.unknown(msg("Invalid asset id :: " + tw.id));
+            }
             BigInteger prevWeight = dictDB.getOrDefault(tw.id, BigInteger.ZERO);
             total = total.subtract(prevWeight).add(tw.weight);
             dictDB.set(tw.id, tw.weight);
         }
-        Context.require(total.equals(ICX), msg("Total distribution is not equals to 100%"));
+        if (!total.equals(ICX)) {
+            throw RewardException.invalidTotalPercentage();
+        }
         this.totalCheckpoint.at(typeId).set(counter, total);
     }
 
 
     private int searchCheckpoint(String typeId, int checkpoint, BigInteger timestamp) {
-        int lower = 0, upper = checkpoint - 1;
+        int lower = 0, upper = checkpoint;
         while (upper > lower) {
-            int mid = lower + (upper - lower) / 2;
+            int mid = (upper + lower + 1) / 2;
             BigInteger midTimestamp = this.tCheckpoint.at(typeId).get(mid);
             int value = midTimestamp.compareTo(timestamp);
-            if (value == 0) {
-                return mid;
-            } else if (value < 0) {
+            if (value < 0) {
                 lower = mid;
-            } else {
+            } else if (value > 0) {
                 upper = mid - 1;
+            } else {
+                return mid;
             }
         }
         return lower;
@@ -119,13 +124,17 @@ public class AssetWeightDB {
 
     public Map<String, BigInteger> getWeight(Asset asset, BigInteger timestamp) {
         String typeId = asset.typeId;
-        int index = searchCheckpoint(asset.typeId, this.checkpointCounter.get(typeId), timestamp);
-        return Map.of("index", BigInteger.valueOf(index), "value", this.wCheckpoint.at(typeId)
-                                                                                   .at(index)
-                                                                                   .getOrDefault(asset.id,
-                                                                                           BigInteger.ZERO),
+        Integer checkpointCounter = this.checkpointCounter.getOrDefault(typeId, 0);
+        int index = searchCheckpoint(typeId, checkpointCounter, timestamp);
+        return Map.of(
+                "index", BigInteger.valueOf(index),
+                "value", this.wCheckpoint.at(typeId)
+                        .at(index)
+                        .getOrDefault(asset.id,
+                                BigInteger.ZERO),
                 "timestamp", this.tCheckpoint.at(typeId)
-                                             .get(index));
+                        .get(index)
+        );
     }
 
     public BigInteger getTotal(String typeId) {
@@ -143,7 +152,7 @@ public class AssetWeightDB {
     }
 
     public String getId(String typeId, Integer id) {
-        return ID_PREFIX + typeId + id;
+        return ID_PREFIX + typeId + "_" + id;
     }
 
     public static String msg(String message) {
@@ -156,5 +165,20 @@ public class AssetWeightDB {
 
     public BigInteger getTimestamp(String typeId, int index) {
         return this.tCheckpoint.at(typeId).get(index);
+    }
+
+    public Integer getCheckpointCount(String typeId) {
+        return checkpointCounter.getOrDefault(typeId, 0);
+    }
+
+    public Map<String, BigInteger> getWeightByTimestamp(String typeId, BigInteger timestamp) {
+        int index = searchCheckpoint(typeId, this.checkpointCounter.get(typeId), timestamp);
+        DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(typeId).at(index);
+        Map<String, BigInteger> result = new HashMap<>();
+        for (int i = 1; i < this.nonce.get(typeId); i++) {
+            String id = getId(typeId, i);
+            result.put(id, dictDB.getOrDefault(id, BigInteger.ZERO));
+        }
+        return result;
     }
 }
