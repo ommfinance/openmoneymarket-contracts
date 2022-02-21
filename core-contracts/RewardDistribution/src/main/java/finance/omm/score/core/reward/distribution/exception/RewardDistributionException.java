@@ -36,10 +36,19 @@ public class RewardDistributionException extends OMMException.RewardDistribution
         return new RewardDistributionException(Code.InvalidTotalPercentage, message);
     }
 
+    public static RewardDistributionException notStakedLp() {
+        return new RewardDistributionException(Code.NotStakedLp, "only staked lp contract can call");
+    }
+
+    public static RewardDistributionException notLendingPool() {
+        return new RewardDistributionException(Code.NotLendingPool, "only lending pool contract can call");
+
+    }
+
     //OMMException.RewardDistribution => 0 ~ 5
     public enum Code implements OMMException.Coded {
         Unknown(0), NotOwner(1), InvalidRecipient(2), InvalidAsset(3), InvalidTotalPercentage(4),
-        NotGovernanceContract(5);
+        NotGovernanceContract(5), NotStakedLp(6), NotLendingPool(7);
 
         final int code;
 
