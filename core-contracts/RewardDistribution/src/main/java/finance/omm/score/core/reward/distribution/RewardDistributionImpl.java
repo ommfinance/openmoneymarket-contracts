@@ -96,7 +96,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         BigInteger _decimals = _userDetails._decimals;
         Address _user = _userDetails._user;
         BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
-        BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalBalance, _decimals);
+        BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
         Context.require(_rewardConfig.is_valid_asset(_asset), TAG + " Asset not authorized ");
         BigInteger accruedRewards = _updateUserReserveInternal(_user, _asset, _userBalance, _totalSupply);
         if (!BigInteger.ZERO.equals(accruedRewards)) {

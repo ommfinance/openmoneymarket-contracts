@@ -209,12 +209,12 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public BigInteger _updateUserReserveInternal(Address _user, Address _asset, BigInteger _userBalance,
             BigInteger _totalBalance) {
-        BigInteger userIndex = this._userIndex.at(_user).get(_asset);
+        BigInteger userIndex = this._userIndex.at(_user).getOrDefault(_asset, BigInteger.ZERO);
         BigInteger accruedRewards = BigInteger.ZERO;
 
         BigInteger newIndex = this._updateAssetStateInternal(_asset, _totalBalance);
 
-        if (!userIndex.equals(newIndex) && !_userBalance.equals(BigInteger.ZERO)) {
+        if (!userIndex.equals(newIndex) && !BigInteger.ZERO.equals(_userBalance)) {
             accruedRewards = AbstractRewardDistribution._getRewards(_userBalance, newIndex, userIndex);
             this._userIndex.at(_user).set(_asset, newIndex);
             this.UserIndexUpdated(_user, _asset, userIndex, newIndex);

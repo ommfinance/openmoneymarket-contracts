@@ -7,6 +7,6 @@ public class UserDetails {
 
     public Address _user;
     public BigInteger _userBalance;
-    public BigInteger _totalBalance;
+    public BigInteger _totalSupply;
     public BigInteger _decimals;
 }
