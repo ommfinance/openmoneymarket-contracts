@@ -82,7 +82,7 @@ public interface RewardDistribution {
     public void enableRewardClaim();
 
     @External(readonly = true)
-    public Boolean isRewardClaimEnabled();
+    public boolean isRewardClaimEnabled();
 
     @External
     public void handleLPAction(Address _asset, UserDetails _userDetails);

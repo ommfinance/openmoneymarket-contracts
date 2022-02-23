@@ -200,7 +200,7 @@ public class RewardConfigurationDB {
             return LIQUIDITY;
         } else if ("liquidityProvider".equals(_rewardEntity)) {
             return STAKING;
-        } else if ("'lendingBorrow'".equals(_rewardEntity)) {
+        } else if ("lendingBorrow".equals(_rewardEntity)) {
             return RESERVE;
         }
         return null;

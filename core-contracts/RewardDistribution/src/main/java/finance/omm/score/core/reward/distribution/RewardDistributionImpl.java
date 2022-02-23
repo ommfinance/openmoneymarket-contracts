@@ -8,8 +8,6 @@ import finance.omm.score.core.reward.distribution.exception.RewardDistributionEx
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import score.Address;
@@ -20,6 +18,8 @@ import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
+import scorex.util.ArrayList;
+import scorex.util.HashMap;
 
 public class RewardDistributionImpl extends AbstractRewardDistribution {
 
@@ -82,7 +82,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     @External(readonly = true)
-    public Boolean isRewardClaimEnabled() {
+    public boolean isRewardClaimEnabled() {
         return _isRewardClaimEnabled.get();
     }
 
@@ -152,7 +152,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             String _entity = _rewardConfig.getEntity(_asset);
             Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(_entity);
             if (entityMap == null) {
-                entityMap = new scorex.util.HashMap<>() {{
+                entityMap = new HashMap<>() {{
                     put("total", BigInteger.ZERO);
                 }};
             }
@@ -175,11 +175,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External
     public void startDistribution() {
         checkOwner();
-        if (BigInteger.ZERO.equals(getDay()) && !_isInitialized.get()) {
+        if (BigInteger.ZERO.equals(getDay()) && !_isInitialized.getOrDefault(false)) {
             _mintDailyOmm();
             updateEmissionPerSecond();
             _isInitialized.set(Boolean.TRUE);
-
         }
     }
 
@@ -218,7 +217,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.name());
         BigInteger totalSupply = Context.call(BigInteger.class, workerTokenAddress, "totalSupply");
         BigInteger tokenDistTracker = _tokenDistTracker.get("worker");
-        List<Address> walletHolders = (List<Address>) Context.call(List.class, workerTokenAddress, "getWallets");
+        List<Address> walletHolders = (List<Address>) Context.call(workerTokenAddress, "getWallets");
         for (Address user : walletHolders) {
             BigInteger userWorkerTokenBalance = Context.call(BigInteger.class, workerTokenAddress, "balanceOf", user);
             if (BigInteger.ZERO.compareTo(tokenDistTracker) != 0) {
