@@ -175,7 +175,7 @@ public class RewardConfigurationDB {
     }
 
     public Integer getPoolID(Address asset) {
-        return this._poolIDMapping.get(asset);
+        return this._poolIDMapping.getOrDefault(asset, 0);
     }
 
 

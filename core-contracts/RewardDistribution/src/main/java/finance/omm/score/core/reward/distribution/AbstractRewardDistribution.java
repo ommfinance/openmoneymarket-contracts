@@ -239,10 +239,11 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public BigInteger _getUnclaimedRewards(Address _user, UserAssetInput _assetInput) {
         BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(_assetInput.asset);
-        BigInteger assetIndex = this._getAssetIndex(this._assetIndex.get(_assetInput.asset), _emissionPerSecond,
-                this._lastUpdateTimestamp.get(_assetInput.asset), _assetInput.totalBalance);
+        BigInteger assetIndex = this._getAssetIndex(this._assetIndex.getOrDefault(_assetInput.asset, BigInteger.ZERO),
+                _emissionPerSecond,
+                this._lastUpdateTimestamp.getOrDefault(_assetInput.asset, BigInteger.ZERO), _assetInput.totalBalance);
         return AbstractRewardDistribution._getRewards(_assetInput.userBalance, assetIndex, this._userIndex.at(_user)
-                .get(_assetInput.asset));
+                .getOrDefault(_assetInput.asset, BigInteger.ZERO));
     }
 
     @External(readonly = true)
@@ -285,38 +286,44 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public BigInteger _getTotalBalance(Address asset) {
         Integer poolId = this._rewardConfig.getPoolID(asset);
-        TotalStaked totalStaked = null;
+        Map<String, ?> map = null;
         if (poolId > 0) {
-            totalStaked = Context.call(TotalStaked.class, getAddress(Contracts.STAKED_LP.name()),
+            map = (Map<String, ?>) Context.call(getAddress(Contracts.STAKED_LP.getKey()),
                     "getTotalStaked", poolId);
         } else {
-            totalStaked = Context.call(TotalStaked.class, asset, "getTotalStaked");
+            map = (Map<String, ?>) Context.call(asset, "getTotalStaked");
         }
-        if (totalStaked == null) {
+        if (map == null) {
             throw RewardDistributionException.unknown("total staked is null");
         }
+        TotalStaked totalStaked = TotalStaked.fromMap(map);
         return MathUtils.convertToExa(totalStaked.totalStaked, totalStaked.decimals);
     }
 
     public UserAssetInput _getUserAssetDetails(Address asset, Address user) {
         Integer poolId = this._rewardConfig.getPoolID(asset);
-        SupplyDetails supply = null;
+        UserAssetInput result = new UserAssetInput();
+
+        Map<String, ?> map = null;
         if (poolId > 0) {
-            supply = Context.call(SupplyDetails.class, getAddress(Contracts.STAKED_LP.name()),
+            map = (Map<String, ?>) Context.call(getAddress(Contracts.STAKED_LP.getKey()),
                     "getLPStakedSupply", poolId, user);
         } else {
-            supply = Context.call(SupplyDetails.class, asset, "getPrincipalSupply", user);
-        }
-        UserAssetInput result = new UserAssetInput();
-        result.asset = asset;
-        if (supply == null) {
-            throw RewardDistributionException.unknown("supply is null");
+            map = (Map<String, ?>) Context.call(asset, "getPrincipalSupply", user);
         }
 
-        BigInteger _decimals = BigInteger.valueOf(supply.decimals);
-        result.userBalance = MathUtils.convertToExa(supply.principalUserBalance, _decimals);
-        result.totalBalance = convertToExa(supply.principalTotalSupply, _decimals);
+        result.asset = asset;
+        if (map == null) {
+            throw RewardDistributionException.unknown("supply is null");
+        }
+        SupplyDetails supplyDetails = SupplyDetails.fromMap(map);
+
+        BigInteger _decimals = supplyDetails.decimals;
+        result.userBalance = MathUtils.convertToExa(supplyDetails.principalUserBalance, _decimals);
+        result.totalBalance = convertToExa(supplyDetails.principalTotalSupply, _decimals);
+
         return result;
+
 
     }
 
@@ -335,7 +342,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     protected void checkGovernance() {
         if (!Context.getCaller()
-                .equals(this.getAddress(Contracts.GOVERNANCE.name()))) {
+                .equals(this.getAddress(Contracts.GOVERNANCE.getKey()))) {
             throw RewardDistributionException.notGovernanceContract();
         }
     }

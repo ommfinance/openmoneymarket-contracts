@@ -158,7 +158,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             }
             BigInteger total = entityMap.get("total");
             UserAssetInput userAssetDetails = _getUserAssetDetails(_asset, _user);
-            BigInteger unclaimedRewards = _usersUnclaimedRewards.at(_user).get(_asset);
+            BigInteger unclaimedRewards = _usersUnclaimedRewards.at(_user).getOrDefault(_asset, BigInteger.ZERO);
             unclaimedRewards = unclaimedRewards.add(_getUnclaimedRewards(_user, userAssetDetails));
             entityMap.put(_assetName, unclaimedRewards);
             entityMap.put("total", total.add(unclaimedRewards));
@@ -203,7 +203,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         if (BigInteger.ZERO.equals(unclaimedRewards)) {
             return;
         }
-        Context.call(this.getAddress(Contracts.OMM_TOKEN.name()), "transfer", _user, unclaimedRewards);
+        Context.call(this.getAddress(Contracts.OMM_TOKEN.getKey()), "transfer", _user, unclaimedRewards);
         RewardsClaimed(_user, unclaimedRewards, "Asset rewards");
     }
 
@@ -213,8 +213,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         if (day.compareTo(getDay()) > 0) {
             return;
         }
-        Address workerTokenAddress = this.getAddress(Contracts.WORKER_TOKEN.name());
-        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.name());
+        Address workerTokenAddress = this.getAddress(Contracts.WORKER_TOKEN.getKey());
+        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.getKey());
         BigInteger totalSupply = Context.call(BigInteger.class, workerTokenAddress, "totalSupply");
         BigInteger tokenDistTracker = _tokenDistTracker.get("worker");
         List<Address> walletHolders = (List<Address>) Context.call(workerTokenAddress, "getWallets");
@@ -229,7 +229,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
                 tokenDistTracker = tokenDistTracker.subtract(tokenAmount);
             }
         }
-        Address daoFundAddress = this.getAddress(Contracts.DAO_FUND.name());
+        Address daoFundAddress = this.getAddress(Contracts.DAO_FUND.getKey());
         BigInteger tokenDistTrackerDaoFund = _tokenDistTracker.get("daoFund");
         Context.call(ommTokenAddress, "transfer", daoFundAddress, tokenDistTrackerDaoFund);
         Distribution("daoFund", daoFundAddress, tokenDistTrackerDaoFund);
@@ -245,7 +245,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     private void _mintDailyOmm() {
         BigInteger day = _day.get();
         BigInteger tokenDistributionPerDay = tokenDistributionPerDay(day);
-        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.name());
+        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.getKey());
         Context.call(ommTokenAddress, "mint", tokenDistributionPerDay);
         List<String> recipients = new ArrayList<>() {{
             add("worker");
@@ -261,8 +261,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External
     public void transferOmmToDaoFund(BigInteger _value) {
         checkGovernance();
-        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.name());
-        Address daoFundAddress = this.getAddress(Contracts.DAO_FUND.name());
+        Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.getKey());
+        Address daoFundAddress = this.getAddress(Contracts.DAO_FUND.getKey());
         Context.call(ommTokenAddress, "transfer", daoFundAddress, _value);
     }
 
@@ -273,14 +273,14 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     private void checkStakeLp() {
         if (!Context.getCaller()
-                .equals(this.getAddress(Contracts.STAKED_LP.name()))) {
+                .equals(this.getAddress(Contracts.STAKED_LP.getKey()))) {
             throw RewardDistributionException.notStakedLp();
         }
     }
 
     private void checkLendingPool() {
         if (!Context.getCaller()
-                .equals(this.getAddress(Contracts.LENDING_POOL.name()))) {
+                .equals(this.getAddress(Contracts.LENDING_POOL.getKey()))) {
             throw RewardDistributionException.notLendingPool();
         }
     }

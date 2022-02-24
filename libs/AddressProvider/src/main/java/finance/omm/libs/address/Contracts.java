@@ -40,4 +40,8 @@ public enum Contracts {
     public String toString() {
         return this.key;
     }
+
+    public String getKey() {
+        return key;
+    }
 }
