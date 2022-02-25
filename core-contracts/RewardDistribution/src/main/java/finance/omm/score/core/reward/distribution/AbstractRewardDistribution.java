@@ -99,6 +99,29 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         this._rewardConfig.setAssetName(_asset, _name);
     }
 
+    @External
+    public void setAssetIndex(Address _asset, BigInteger _index, BigInteger _timestamp) {
+        checkOwner();
+        _assetIndex.set(_asset, _index);
+        _lastUpdateTimestamp.set(_asset, _timestamp);
+    }
+
+    @External
+    public void setTimeStamp(BigInteger _timestamp) {
+        checkOwner();
+        List<Address> _assets = _rewardConfig.getAssets();
+        for (Address _asset : _assets) {
+            _lastUpdateTimestamp.set(_asset, _timestamp);
+        }
+
+    }
+
+    @External
+    public void setUserIndex(Address _user, BigInteger _index, Address _asset) {
+        checkOwner();
+        _userIndex.at(_user).set(_asset, _index);
+    }
+
     public void _updateDistPercentage(DistPercentage[] _distPercentage) {
         BigInteger totalPercentage = BigInteger.ZERO;
         for (DistPercentage config : _distPercentage) {
@@ -190,7 +213,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         BigInteger oldIndex = this._assetIndex.getOrDefault(_asset, BigInteger.ZERO);
         BigInteger lastUpdateTimestamp = this._lastUpdateTimestamp.get(_asset);
 
-        BigInteger currentTime = TimeConstants.getBlockTimestamp();
+        BigInteger currentTime = TimeConstants.getBlockTimestamp().divide(TimeConstants.SECOND);
 
         if (currentTime.equals(lastUpdateTimestamp)) {
             return oldIndex;
@@ -228,13 +251,13 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public BigInteger _getAssetIndex(BigInteger _currentIndex, BigInteger _emissionPerSecond,
             BigInteger _lastUpdateTimestamp, BigInteger _totalBalance) {
-        BigInteger currentTime = TimeConstants.getBlockTimestamp();
+        BigInteger currentTime = TimeConstants.getBlockTimestamp().divide(TimeConstants.SECOND);
         if (_emissionPerSecond.equals(BigInteger.ZERO) || _totalBalance.equals(BigInteger.ZERO)
                 || _lastUpdateTimestamp.equals(currentTime)) {
             return _currentIndex;
         }
         BigInteger timeDelta = currentTime.subtract(_lastUpdateTimestamp);
-        return MathUtils.exaMultiply(_emissionPerSecond.multiply(timeDelta), _totalBalance).add(_currentIndex);
+        return MathUtils.exaDivide(_emissionPerSecond.multiply(timeDelta), _totalBalance).add(_currentIndex);
     }
 
     public BigInteger _getUnclaimedRewards(Address _user, UserAssetInput _assetInput) {
