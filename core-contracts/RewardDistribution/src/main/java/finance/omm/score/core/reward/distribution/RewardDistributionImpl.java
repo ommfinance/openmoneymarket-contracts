@@ -142,6 +142,20 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
 
+    @External
+    public void setUserUnclaimedReward(Address _user, BigInteger _reward) {
+        checkOwner();
+        List<Address> _assets = _rewardConfig.getAssets();
+        for (Address _asset : _assets) {
+            _usersUnclaimedRewards.at(_user).set(_asset, _reward);
+        }
+    }
+
+    @External(readonly = true)
+    public BigInteger getUserAssetUnclaimedRewards(Address _user, Address _asset) {
+        return _usersUnclaimedRewards.at(_user).get(_asset);
+    }
+
     @External(readonly = true)
     public Map<String, ?> getRewards(Address _user) {
         BigInteger totalRewards = BigInteger.ZERO;
