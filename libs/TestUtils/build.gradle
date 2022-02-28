@@ -9,6 +9,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.9.6")
     implementation("com.github.javafaker:javafaker:1.0.2")
     implementation 'foundation.icon:javaee-unittest:0.9.2'
+    implementation 'org.mockito:mockito-core:4.3.1'
 
 }
 

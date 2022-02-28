@@ -8,7 +8,6 @@ import finance.omm.score.core.reward.model.Asset;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import java.util.Map;
-import score.Address;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
@@ -17,7 +16,7 @@ import scorex.util.HashMap;
 public class AssetWeightDB {
 
     private final static String TAG = "Entity Weight DB";
-    public static final String ID_PREFIX = "ASSET_";
+    public static final String ID_PREFIX = "ASSET-";
     private final DictDB<String, Asset> assets;
 
     private final BranchDB<String, BranchDB<Integer, DictDB<String, BigInteger>>> wCheckpoint;
@@ -38,12 +37,10 @@ public class AssetWeightDB {
     }
 
 
-    public String addAsset(String typeId, String name, Address address, BigInteger lpID) {
+    public String addAsset(String typeId, String name) {
         Integer nonce = this.nonce.getOrDefault(typeId, 1);
         String id = getId(typeId, nonce);
         Asset asset = new Asset(id, typeId);
-        asset.address = address;
-        asset.lpID = lpID;
         asset.name = name;
         this.assets.set(id, asset);
         this.nonce.set(typeId, nonce + 1);

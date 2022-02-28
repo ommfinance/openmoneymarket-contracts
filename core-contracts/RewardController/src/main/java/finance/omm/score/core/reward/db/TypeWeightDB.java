@@ -16,36 +16,35 @@ import scorex.util.HashMap;
 public class TypeWeightDB {
 
     private final static String TAG = "Type Weight DB";
-    public static final String ID_PREFIX = "TYPE_";
-    private final DictDB<String, String> name;
+    private final TypeDB names;
     private final BranchDB<Integer, DictDB<String, BigInteger>> wCheckpoint;
     private final DictDB<Integer, BigInteger> totalCheckpoint;
     private final DictDB<Integer, BigInteger> tCheckpoint;
     private final VarDB<Integer> checkpointCounter;
-    private final VarDB<Integer> nonce;
 
 
     public TypeWeightDB(String id) {
-        this.name = Context.newDictDB(id + "Name", String.class);
-        this.nonce = Context.newVarDB(id + "Nonce", Integer.class);
-
+        this.names = new TypeDB("type-key-name");
         this.checkpointCounter = Context.newVarDB(id + "CheckpointCounter", Integer.class);
         this.totalCheckpoint = Context.newDictDB(id + "Total", BigInteger.class);
         this.wCheckpoint = Context.newBranchDB(id + "WeightCheckpoint", BigInteger.class);
         this.tCheckpoint = Context.newDictDB(id + "TimestampCheckpoint", BigInteger.class);
     }
 
+    public boolean isKeyExists(String key) {
+        return names.getOrDefault(key, null) != null;
+    }
 
-    public String add(String name) {
-        Integer nonce = this.nonce.getOrDefault(1);
-        String id = getId(nonce);
-        this.nonce.set(nonce + 1);
-        this.name.set(id, name);
-        return id;
+
+    public void add(String key, String name) {
+        if (isKeyExists(key)) {
+            throw RewardException.unknown("duplicate key (" + key + ")");
+        }
+        this.names.put(key, name);
     }
 
     public boolean isValidId(String typeId) {
-        return this.name.get(typeId) != null;
+        return this.names.get(typeId) != null;
     }
 
     public void setWeights(WeightStruct[] weights, BigInteger timestamp) {
@@ -61,10 +60,8 @@ public class TypeWeightDB {
             setWeights(weights, total, checkpointCounter);
         } else {
             DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(checkpointCounter);
-            //TODO find better approach
             Integer counter = checkpointCounter + 1;
-            for (int i = 1; i < nonce.get(); i++) {
-                String key = getId(i);
+            for (String key : this.names.keySet()) {
                 BigInteger value = dictDB.get(key);
                 this.wCheckpoint.at(counter).set(key, value);
             }
@@ -142,15 +139,10 @@ public class TypeWeightDB {
         int index = searchCheckpoint(this.checkpointCounter.get(), timestamp);
         DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(index);
         Map<String, BigInteger> result = new HashMap<>();
-        for (int i = 1; i < this.nonce.get(); i++) {
-            String id = getId(i);
-            result.put(id, dictDB.getOrDefault(id, BigInteger.ZERO));
+        for (String key : this.names.keySet()) {
+            result.put(key, dictDB.getOrDefault(key, BigInteger.ZERO));
         }
         return result;
-    }
-
-    private String getId(Integer id) {
-        return ID_PREFIX + id;
     }
 }
 

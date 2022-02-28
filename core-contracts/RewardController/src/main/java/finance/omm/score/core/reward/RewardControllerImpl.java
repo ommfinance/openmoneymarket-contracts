@@ -9,6 +9,8 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static finance.omm.utils.math.MathUtils.pow;
 
 import finance.omm.core.score.interfaces.RewardController;
+import finance.omm.libs.address.AddressProvider;
+import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.db.AssetWeightDB;
 import finance.omm.score.core.reward.db.TypeWeightDB;
@@ -27,7 +29,7 @@ import score.annotation.External;
 import score.annotation.Optional;
 import scorex.util.ArrayList;
 
-public class RewardControllerImpl implements RewardController {
+public class RewardControllerImpl extends AddressProvider implements RewardController {
 
     public static final String TAG = "Reward Controller";
     public static final BigInteger DAYS_PER_YEAR = BigInteger.valueOf(365L);
@@ -38,7 +40,8 @@ public class RewardControllerImpl implements RewardController {
 
     private final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
 
-    public RewardControllerImpl(BigInteger startTimestamp) {
+    public RewardControllerImpl(Address addressProvider, BigInteger startTimestamp) {
+        super(addressProvider);
         if (this._timestampAtStart.getOrDefault(null) == null) {
             this._timestampAtStart.set(startTimestamp);
         }
@@ -50,12 +53,10 @@ public class RewardControllerImpl implements RewardController {
     }
 
     @External
-    public void addType(String name) {
-        checkOwner();
-        String id = typeWeightDB.add(name);
-        AddType(id, name);
+    public void addType(String key, String name) {
+        checkRewardDistribution();
+        typeWeightDB.add(key, name);
     }
-
 
     @External
     public void setTypeWeight(WeightStruct[] weights, @Optional BigInteger timestamp) {
@@ -68,20 +69,13 @@ public class RewardControllerImpl implements RewardController {
         SetTypeWeight(timestamp, "Type weight updated");
     }
 
+
+    @Override
     @External
-    public void addAsset(String typeId, String name, @Optional Address address, @Optional BigInteger poolID) {
-        checkOwner();
-        if (address == null && (poolID == null || poolID.equals(BigInteger.ZERO))) {
-            throw RewardException.invalidAsset("Nor address or poolID provided");
-        }
-
-        if (address != null && (poolID != null && !poolID.equals(BigInteger.ZERO))) {
-            throw RewardException.invalidAsset("Both address and poolID provided");
-        }
-
+    public String addAsset(String typeId, String name) {
+        checkRewardDistribution();
         checkTypeId(typeId);
-        String id = assetWeightDB.addAsset(typeId, name, address, poolID);
-        AssetAdded(id, typeId, name, address, poolID);
+        return assetWeightDB.addAsset(typeId, name);
     }
 
 
@@ -200,6 +194,12 @@ public class RewardControllerImpl implements RewardController {
         return Map.of("integrateIndex", integrateIndex, "timestamp", maximum);
     }
 
+    private void checkRewardDistribution() {
+        if (!Context.getCaller().equals(getAddress(Contracts.REWARDS.getKey()))) {
+            throw RewardException.notAuthorized("require reward distribution contract access");
+        }
+    }
+
     private void checkOwner() {
         if (!Context.getOwner().equals(Context.getCaller())) {
             throw RewardException.notOwner();
@@ -235,15 +235,7 @@ public class RewardControllerImpl implements RewardController {
     }
 
     @EventLog(indexed = 2)
-    public void AddType(String id, String name) {
-    }
-
-    @EventLog(indexed = 2)
     public void SetTypeWeight(BigInteger timestamp, String message) {
     }
 
-    @EventLog(indexed = 3)
-    public void AssetAdded(String id, String typeId, String name, @Optional Address address,
-            @Optional BigInteger poolID) {
-    }
 }

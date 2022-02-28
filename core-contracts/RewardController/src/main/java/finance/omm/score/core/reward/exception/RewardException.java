@@ -20,6 +20,10 @@ public class RewardException extends OMMException.RewardController {
         return new RewardException(Code.NotOwner, "require owner access");
     }
 
+    public static RewardException notAuthorized(String message) {
+        return new RewardException(Code.UnAuthorized, message);
+    }
+
     public static RewardException notGovernanceContract() {
         return new RewardException(Code.NotGovernanceContract, "require Governance contract access");
     }
@@ -39,7 +43,7 @@ public class RewardException extends OMMException.RewardController {
     //OMMException.RewardController => 0 ~ 5
     public enum Code implements OMMException.Coded {
         Unknown(0), NotOwner(1), NotGovernanceContract(2), NotValidTypeID(3), NotValidTotalPercentage(4),
-        NotValidAsset(5);
+        NotValidAsset(5), UnAuthorized(6);
 
         final int code;
 

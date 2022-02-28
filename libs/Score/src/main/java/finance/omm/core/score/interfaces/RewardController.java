@@ -2,7 +2,6 @@ package finance.omm.core.score.interfaces;
 
 import finance.omm.libs.structs.WeightStruct;
 import java.math.BigInteger;
-import score.Address;
 import score.annotation.External;
 import score.annotation.Optional;
 
@@ -13,14 +12,14 @@ public interface RewardController {
     public String name();
 
     @External
-    public void addType(String name);
+    public void addType(String key, String name);
 
 
     @External
     public void setTypeWeight(WeightStruct[] weights, @Optional BigInteger timestamp);
 
     @External
-    public void addAsset(String typeId, String name, @Optional Address address, @Optional BigInteger poolID);
+    public String addAsset(String typeId, String name);
 
     @External
     public void setAssetWeight(String typeId, WeightStruct[] weights, @Optional BigInteger timestamp);

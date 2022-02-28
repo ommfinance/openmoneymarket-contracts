@@ -1,7 +1,6 @@
 package finance.omm.score.core.reward.unit.test;
 
 
-import static finance.omm.score.core.reward.db.TypeWeightDB.ID_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -10,6 +9,8 @@ import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
+import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.AddressDetail;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.RewardControllerImpl;
 import finance.omm.score.core.reward.db.AssetWeightDB;
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-import score.Address;
 
 public class RewardControllerUnitTest extends TestBase {
 
@@ -34,6 +34,8 @@ public class RewardControllerUnitTest extends TestBase {
     private Account owner;
     private Score score;
     private RewardControllerImpl scoreSpy;
+
+    private static final String TYPE_ID_PREFIX = "Key-";
 
 
     private final Map<String, BigInteger> DISTRIBUTION_PERCENTAGE = new HashMap<>() {{
@@ -43,18 +45,9 @@ public class RewardControllerUnitTest extends TestBase {
         put("liquidityProvider", BigInteger.valueOf(20).multiply(ICX).divide(BigInteger.valueOf(100)));
     }};
 
-    private Map<String, Account> mockAddress = new HashMap<>() {{
-        put("mockAddressProvider", Account.newScoreAccount(1));
-        put("mockLendingPoolCore", Account.newScoreAccount(2));
-        put("mockLendingPool", Account.newScoreAccount(3));
-        put("mockOMMToken", Account.newScoreAccount(4));
-        put("mockWorkerToken", Account.newScoreAccount(5));
-        put("mockLPToken", Account.newScoreAccount(6));
-        put("mockDAOFund", Account.newScoreAccount(7));
-        put("mockStakedLP", Account.newScoreAccount(8));
-        put("mockGovernance", Account.newScoreAccount(9));
-        put("mockAsset1", Account.newScoreAccount(10));
-        put("mockAsset2", Account.newScoreAccount(11));
+    private Map<Contracts, Account> mockAddress = new HashMap<>() {{
+        put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
+        put(Contracts.REWARDS, Account.newScoreAccount(102));
     }};
     private final BigInteger startTimestamp = getTimestamp();
 
@@ -62,14 +55,27 @@ public class RewardControllerUnitTest extends TestBase {
     @BeforeEach
     void setup() throws Exception {
         owner = sm.createAccount(100);
-        score = sm.deploy(owner, RewardControllerImpl.class, startTimestamp);
+        score = sm.deploy(owner, RewardControllerImpl.class, mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(),
+                startTimestamp);
+        AddressDetail[] addressDetails = mockAddress.entrySet().stream().map(e -> {
+            AddressDetail ad = new AddressDetail();
+            ad.address = e.getValue().getAddress();
+            ad.name = e.getKey().toString();
+            return ad;
+        }).toArray(AddressDetail[]::new);
+
+        Object[] params = new Object[]{
+                addressDetails
+        };
+        score.invoke(mockAddress.get(Contracts.ADDRESS_PROVIDER), "setAddresses", params);
+
         scoreSpy = (RewardControllerImpl) spy(score.getInstance());
         score.setInstance(scoreSpy);
 
     }
 
-    private void addType(Account account, String name) {
-        score.invoke(account, "addType", name);
+    private void addType(Account account, String key, String name) {
+        score.invoke(account, "addType", key, name);
     }
 
     @DisplayName("verify token inflation rate")
@@ -89,22 +95,21 @@ public class RewardControllerUnitTest extends TestBase {
     @DisplayName("add type")
     @Test
     public void testAddType() {
-        addType(owner, "Type 1");
-        verify(scoreSpy).AddType(ID_PREFIX + 1, "Type 1");
+        addType(mockAddress.get(Contracts.REWARDS), "Key-1", "Type 1");
 
-        addType(owner, "Type 2");
-        verify(scoreSpy).AddType(ID_PREFIX + 2, "Type 2");
+        Executable call = () -> addType(mockAddress.get(Contracts.REWARDS), "Key-1", "Type 2");
+        expectErrorMessage(call, "duplicate key (Key-1)");
     }
 
     @DisplayName("invalid total type weight")
     @Test
     public void testSetInvalidTypeWeight() {
-        addType(owner, "Type 2");
+        addType(mockAddress.get(Contracts.REWARDS), "Key-1", "Type 1");
         WeightStruct[] weights = new WeightStruct[1];
 
         WeightStruct struct = new WeightStruct();
         struct.weight = BigInteger.TEN.multiply(ICX).divide(BigInteger.valueOf(100));
-        struct.id = ID_PREFIX + 1;
+        struct.id = "Key-1";
         weights[0] = struct;
 
         Object[] params = new Object[]{weights, BigInteger.ZERO};
@@ -186,7 +191,7 @@ public class RewardControllerUnitTest extends TestBase {
 
             Map<Integer, Long> value = values.get(i);
             for (Map.Entry<Integer, Long> entry : value.entrySet()) {
-                String id = ID_PREFIX + entry.getKey();
+                String id = "Key-" + entry.getKey();
                 BigInteger next = nextTime.get(id);
                 BigInteger exact = exactTime.get(id);
                 BigInteger expected = BigInteger.valueOf(entry.getValue())
@@ -198,7 +203,7 @@ public class RewardControllerUnitTest extends TestBase {
 
             value = values.get(i - 1);
             for (Map.Entry<Integer, Long> entry : value.entrySet()) {
-                String id = ID_PREFIX + entry.getKey();
+                String id = "Key-" + entry.getKey();
                 BigInteger prev = prevTime.get(id);
                 BigInteger expected = BigInteger.valueOf(entry.getValue())
                         .multiply(ICX)
@@ -214,11 +219,8 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     public void testAddAsset() {
         initTypeWeight(BigInteger.ZERO, 10L, 20L, 30L, 40L);
-        Address asset = Account.newScoreAccount(11).getAddress();
-        String typeId = ID_PREFIX + 1;
-        addAsset(1, typeId, asset);
-        verify(scoreSpy).AssetAdded(AssetWeightDB.ID_PREFIX + typeId + "_" + 1, typeId, "Asset 1", asset,
-                BigInteger.ZERO);
+        String typeId = "Key-" + 1;
+        addAsset(1, typeId);
     }
 
     @DisplayName("test asset weight")
@@ -227,13 +229,11 @@ public class RewardControllerUnitTest extends TestBase {
         initTypeWeight(BigInteger.ZERO, 25L, 75L);
         Map<String, BigInteger> snapshots = new HashMap<>();
 
-        Address asset = Account.newScoreAccount(101).getAddress();
-        String typeId = ID_PREFIX + 1;
-        addAsset(1, typeId, asset);
+        String typeId = TYPE_ID_PREFIX + 1;
+        addAsset(1, typeId);
 
-        Address asset_2 = Account.newScoreAccount(102).getAddress();
-        String typeId_2 = ID_PREFIX + 2;
-        addAsset(2, typeId_2, asset_2);
+        String typeId_2 = TYPE_ID_PREFIX + 2;
+        addAsset(2, typeId_2);
 
         initAssetWeight(BigInteger.ZERO, typeId, 10L, 20L, 30L, 40L);
         snapshots.put(typeId, getTimestamp());
@@ -275,13 +275,11 @@ public class RewardControllerUnitTest extends TestBase {
     public void testAssetWeightSnapshot() {
         initTypeWeight(BigInteger.ZERO, 25L, 75L);
 
-        Address asset = Account.newScoreAccount(101).getAddress();
-        String typeId = ID_PREFIX + 1;
-        addAsset(1, typeId, asset);
+        String typeId = TYPE_ID_PREFIX + 1;
+        addAsset(1, typeId);
 
-        Address asset_2 = Account.newScoreAccount(102).getAddress();
-        String typeId_2 = ID_PREFIX + 2;
-        addAsset(2, typeId_2, asset_2);
+        String typeId_2 = TYPE_ID_PREFIX + 2;
+        addAsset(2, typeId_2);
 
         initAssetWeight(BigInteger.ZERO, typeId, 10L, 20L, 30L, 40L);
         Map<Integer, BigInteger> snapshots = new HashMap<>();
@@ -367,7 +365,7 @@ public class RewardControllerUnitTest extends TestBase {
         sm.getBlock().increase(30 * 86400 / 2 - 3008);
         initTypeWeight(BigInteger.ZERO, 25L, 75L); //3 calls
 
-        String typeId = ID_PREFIX + 1;
+        String typeId = TYPE_ID_PREFIX + 1;
 
         initAssetWeight(BigInteger.ZERO, typeId, 10L, 20L, 30L, 40L); //5 calls
         BigInteger currentTimestamp = getTimestamp();
@@ -462,11 +460,11 @@ public class RewardControllerUnitTest extends TestBase {
         assertEquals(expectedIndex, index.floatValue() / ICX.floatValue(), 0.00001);
     }
 
-    private void addAsset(Integer id, String typeId, Address asset) {
+    private void addAsset(Integer id, String typeId) {
         Object[] params = new Object[]{
-                typeId, "Asset " + id, asset, BigInteger.ZERO
+                typeId, "Asset " + id
         };
-        score.invoke(owner, "addAsset", params);
+        score.invoke(mockAddress.get(Contracts.REWARDS), "addAsset", params);
     }
 
     private void setAssetWeight(BigInteger timestamp, String typeId, Map<Integer, Long> map) {
@@ -486,8 +484,7 @@ public class RewardControllerUnitTest extends TestBase {
         WeightStruct[] weights = new WeightStruct[values.length];
         IntStream.range(0, values.length)
                 .forEach(idx -> {
-                    Address asset = Account.newScoreAccount(100 + idx).getAddress();
-                    addAsset((idx + 1), typeId, asset);
+                    addAsset((idx + 1), typeId);
                     WeightStruct struct = new WeightStruct();
                     struct.weight = BigInteger.valueOf(values[idx]).multiply(ICX).divide(BigInteger.valueOf(100));
                     struct.id = AssetWeightDB.ID_PREFIX + typeId + "_" + (idx + 1);
@@ -504,7 +501,7 @@ public class RewardControllerUnitTest extends TestBase {
         WeightStruct[] weights = map.entrySet().stream().map(e -> {
             WeightStruct struct = new WeightStruct();
             struct.weight = BigInteger.valueOf(e.getValue()).multiply(ICX).divide(BigInteger.valueOf(100));
-            struct.id = ID_PREFIX + e.getKey();
+            struct.id = "Key-" + e.getKey();
             return struct;
         }).toArray(WeightStruct[]::new);
 
@@ -517,10 +514,10 @@ public class RewardControllerUnitTest extends TestBase {
         WeightStruct[] weights = new WeightStruct[values.length];
         IntStream.range(0, values.length)
                 .forEach(idx -> {
-                    addType(owner, "Type " + (idx + 1));
+                    addType(mockAddress.get(Contracts.REWARDS), "Key-" + (idx + 1), "Type " + (idx + 1));
                     WeightStruct struct = new WeightStruct();
                     struct.weight = BigInteger.valueOf(values[idx]).multiply(ICX).divide(BigInteger.valueOf(100));
-                    struct.id = ID_PREFIX + (idx + 1);
+                    struct.id = "Key-" + (idx + 1);
                     weights[idx] = struct;
                 });
 
