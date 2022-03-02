@@ -12,7 +12,7 @@ import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetail;
 import finance.omm.libs.structs.WeightStruct;
-import finance.omm.score.core.reward.RewardControllerImpl;
+import finance.omm.score.core.reward.RewardWeightControllerImpl;
 import finance.omm.score.core.reward.db.AssetWeightDB;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigDecimal;
@@ -33,17 +33,10 @@ public class RewardControllerUnitTest extends TestBase {
     private static final ServiceManager sm = getServiceManager();
     private Account owner;
     private Score score;
-    private RewardControllerImpl scoreSpy;
+    private RewardWeightControllerImpl scoreSpy;
 
     private static final String TYPE_ID_PREFIX = "Key-";
 
-
-    private final Map<String, BigInteger> DISTRIBUTION_PERCENTAGE = new HashMap<>() {{
-        put("worker", BigInteger.valueOf(30).multiply(ICX).divide(BigInteger.valueOf(100)));
-        put("daoFund", BigInteger.valueOf(40).multiply(ICX).divide(BigInteger.valueOf(100)));
-        put("lendingBorrow", BigInteger.valueOf(10).multiply(ICX).divide(BigInteger.valueOf(100)));
-        put("liquidityProvider", BigInteger.valueOf(20).multiply(ICX).divide(BigInteger.valueOf(100)));
-    }};
 
     private Map<Contracts, Account> mockAddress = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
@@ -55,7 +48,8 @@ public class RewardControllerUnitTest extends TestBase {
     @BeforeEach
     void setup() throws Exception {
         owner = sm.createAccount(100);
-        score = sm.deploy(owner, RewardControllerImpl.class, mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(),
+        score = sm.deploy(owner, RewardWeightControllerImpl.class,
+                mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(),
                 startTimestamp);
         AddressDetail[] addressDetails = mockAddress.entrySet().stream().map(e -> {
             AddressDetail ad = new AddressDetail();
@@ -69,13 +63,13 @@ public class RewardControllerUnitTest extends TestBase {
         };
         score.invoke(mockAddress.get(Contracts.ADDRESS_PROVIDER), "setAddresses", params);
 
-        scoreSpy = (RewardControllerImpl) spy(score.getInstance());
+        scoreSpy = (RewardWeightControllerImpl) spy(score.getInstance());
         score.setInstance(scoreSpy);
 
     }
 
-    private void addType(Account account, String key, String name) {
-        score.invoke(account, "addType", key, name);
+    private void addType(Account account, String key) {
+        score.invoke(account, "addType", key, Boolean.FALSE);
     }
 
     @DisplayName("verify token inflation rate")
@@ -95,16 +89,16 @@ public class RewardControllerUnitTest extends TestBase {
     @DisplayName("add type")
     @Test
     public void testAddType() {
-        addType(mockAddress.get(Contracts.REWARDS), "Key-1", "Type 1");
+        addType(mockAddress.get(Contracts.REWARDS), "Key-1");
 
-        Executable call = () -> addType(mockAddress.get(Contracts.REWARDS), "Key-1", "Type 2");
+        Executable call = () -> addType(mockAddress.get(Contracts.REWARDS), "Key-1");
         expectErrorMessage(call, "duplicate key (Key-1)");
     }
 
     @DisplayName("invalid total type weight")
     @Test
     public void testSetInvalidTypeWeight() {
-        addType(mockAddress.get(Contracts.REWARDS), "Key-1", "Type 1");
+        addType(mockAddress.get(Contracts.REWARDS), "Key-1");
         WeightStruct[] weights = new WeightStruct[1];
 
         WeightStruct struct = new WeightStruct();
@@ -514,7 +508,7 @@ public class RewardControllerUnitTest extends TestBase {
         WeightStruct[] weights = new WeightStruct[values.length];
         IntStream.range(0, values.length)
                 .forEach(idx -> {
-                    addType(mockAddress.get(Contracts.REWARDS), "Key-" + (idx + 1), "Type " + (idx + 1));
+                    addType(mockAddress.get(Contracts.REWARDS), "Key-" + (idx + 1));
                     WeightStruct struct = new WeightStruct();
                     struct.weight = BigInteger.valueOf(values[idx]).multiply(ICX).divide(BigInteger.valueOf(100));
                     struct.id = "Key-" + (idx + 1);

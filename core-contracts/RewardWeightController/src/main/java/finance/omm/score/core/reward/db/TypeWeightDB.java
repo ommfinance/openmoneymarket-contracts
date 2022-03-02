@@ -6,6 +6,8 @@ import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.exception.RewardException;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import score.BranchDB;
 import score.Context;
@@ -16,7 +18,7 @@ import scorex.util.HashMap;
 public class TypeWeightDB {
 
     private final static String TAG = "Type Weight DB";
-    private final TypeDB names;
+    private final TypeDB types;
     private final BranchDB<Integer, DictDB<String, BigInteger>> wCheckpoint;
     private final DictDB<Integer, BigInteger> totalCheckpoint;
     private final DictDB<Integer, BigInteger> tCheckpoint;
@@ -24,7 +26,7 @@ public class TypeWeightDB {
 
 
     public TypeWeightDB(String id) {
-        this.names = new TypeDB("type-key-name");
+        this.types = new TypeDB("type-key-name");
         this.checkpointCounter = Context.newVarDB(id + "CheckpointCounter", Integer.class);
         this.totalCheckpoint = Context.newDictDB(id + "Total", BigInteger.class);
         this.wCheckpoint = Context.newBranchDB(id + "WeightCheckpoint", BigInteger.class);
@@ -32,20 +34,21 @@ public class TypeWeightDB {
     }
 
     public boolean isKeyExists(String key) {
-        return names.getOrDefault(key, null) != null;
+        return types.getOrDefault(key, null) != null;
     }
 
 
-    public void add(String key, String name) {
+    public void add(String key, Boolean transferToContract) {
         if (isKeyExists(key)) {
             throw RewardException.unknown("duplicate key (" + key + ")");
         }
-        this.names.put(key, name);
+        this.types.put(key, transferToContract);
     }
 
     public boolean isValidId(String typeId) {
-        return this.names.get(typeId) != null;
+        return this.types.get(typeId) != null;
     }
+
 
     public void setWeights(WeightStruct[] weights, BigInteger timestamp) {
         Integer checkpointCounter = this.checkpointCounter.getOrDefault(0);
@@ -61,7 +64,7 @@ public class TypeWeightDB {
         } else {
             DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(checkpointCounter);
             Integer counter = checkpointCounter + 1;
-            for (String key : this.names.keySet()) {
+            for (String key : this.types.keySet()) {
                 BigInteger value = dictDB.get(key);
                 this.wCheckpoint.at(counter).set(key, value);
             }
@@ -116,6 +119,30 @@ public class TypeWeightDB {
         return TAG + " :: " + message;
     }
 
+    public List<String> getContractTypeIds() {
+        List<String> response = new ArrayList<>();
+        List<String> list = types.keySet();
+        for (String key : list) {
+            if (isContractType(key)) {
+                response.add(key);
+            }
+        }
+        return response;
+    }
+
+    public List<String> getTypeIds() {
+        return types.keySet();
+    }
+
+    public Map<String, BigInteger> weightOfAllTypes(BigInteger timestamp) {
+        Map<String, BigInteger> response = new HashMap<>();
+        for (String key : types.keySet()) {
+            Map<String, BigInteger> map = getWeight(key, timestamp);
+            response.put(key, map.get("value"));
+        }
+        return response;
+    }
+
 
     public Map<String, BigInteger> getWeight(String typeId) {
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
@@ -139,10 +166,15 @@ public class TypeWeightDB {
         int index = searchCheckpoint(this.checkpointCounter.get(), timestamp);
         DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(index);
         Map<String, BigInteger> result = new HashMap<>();
-        for (String key : this.names.keySet()) {
+        for (String key : this.types.keySet()) {
             result.put(key, dictDB.getOrDefault(key, BigInteger.ZERO));
         }
         return result;
+    }
+
+    public boolean isContractType(String typeId) {
+        Boolean isContract = this.types.get(typeId);
+        return Boolean.TRUE.compareTo(isContract) == 0;
     }
 }
 

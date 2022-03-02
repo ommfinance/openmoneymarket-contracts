@@ -3,12 +3,13 @@ package finance.omm.score.core.reward;
 import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.MONTH_IN_MICRO_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.YEAR_IN_MICRO_SECONDS;
+import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.MILLION;
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static finance.omm.utils.math.MathUtils.pow;
 
-import finance.omm.core.score.interfaces.RewardController;
+import finance.omm.core.score.interfaces.RewardWeightController;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.WeightStruct;
@@ -27,9 +28,9 @@ import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
-import scorex.util.ArrayList;
+import scorex.util.HashMap;
 
-public class RewardControllerImpl extends AddressProvider implements RewardController {
+public class RewardWeightControllerImpl extends AddressProvider implements RewardWeightController {
 
     public static final String TAG = "Reward Controller";
     public static final BigInteger DAYS_PER_YEAR = BigInteger.valueOf(365L);
@@ -40,7 +41,7 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
 
     private final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
 
-    public RewardControllerImpl(Address addressProvider, BigInteger startTimestamp) {
+    public RewardWeightControllerImpl(Address addressProvider, BigInteger startTimestamp) {
         super(addressProvider);
         if (this._timestampAtStart.getOrDefault(null) == null) {
             this._timestampAtStart.set(startTimestamp);
@@ -53,9 +54,18 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
     }
 
     @External
-    public void addType(String key, String name) {
+    public String addType(String key, boolean transferToContract) {
         checkRewardDistribution();
-        typeWeightDB.add(key, name);
+        typeWeightDB.add(key, transferToContract);
+        if (transferToContract) {
+            String id = assetWeightDB.addAsset(key, key);
+            WeightStruct weightStruct = new WeightStruct();
+            weightStruct.weight = ICX;
+            weightStruct.id = id;
+            setTypeWeight(new WeightStruct[]{weightStruct}, BigInteger.ZERO);
+            return id;
+        }
+        return null;
     }
 
     @External
@@ -67,6 +77,22 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
 
         typeWeightDB.setWeights(weights, timestamp);
         SetTypeWeight(timestamp, "Type weight updated");
+    }
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getTypeWeight(String typeId, @Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
+        return this.typeWeightDB.getWeight(typeId, timestamp);
+    }
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getALlTypeWeight(@Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
+        return this.typeWeightDB.weightOfAllTypes(timestamp);
     }
 
 
@@ -145,6 +171,7 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
         return tokenDistributionPerDay(_day).divide(DAY_IN_MICRO_SECONDS);
     }
 
+
     @External(readonly = true)
     public BigInteger getIntegrateIndex(String assetId, BigInteger totalSupply, BigInteger lastUpdatedTimestamp) {
         if (totalSupply.compareTo(BigInteger.ZERO) <= 0) {
@@ -154,6 +181,9 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
         BigInteger actual = timestamp;
         BigInteger integrateIndex = BigInteger.ZERO;
         Asset asset = assetWeightDB.getAsset(assetId);
+        if (asset == null) {
+            return BigInteger.ZERO;
+        }
         BigInteger initialTimestamp = this._timestampAtStart.get();
         //TODO other condition to exit loop
         while (timestamp.compareTo(initialTimestamp) >= 0 && timestamp.compareTo(lastUpdatedTimestamp) > 0) {
@@ -169,7 +199,6 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
 
     private Map<String, BigInteger> calculateIntegrateIndex(Asset asset, BigInteger start, BigInteger timestamp,
             BigInteger actual) {
-
         Map<String, BigInteger> assetWeight = assetWeightDB.getWeight(asset, timestamp);
         int assetIndex = assetWeight.get("index").intValue();
         BigInteger aTimestamp = assetWeight.get("timestamp");
@@ -187,10 +216,8 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
         if (maximum.equals(actual)) {
             return Map.of("integrateIndex", BigInteger.ZERO, "timestamp", actual);
         }
-
-        BigInteger integrateIndex =
-                exaMultiply(exaMultiply(inflationRate.get("rate"), tWeight), aWeight).multiply(
-                        actual.subtract(maximum).divide(TimeConstants.SECOND));
+        BigInteger rate = exaMultiply(exaMultiply(inflationRate.get("rate"), tWeight), aWeight);
+        BigInteger integrateIndex = rate.multiply(actual.subtract(maximum).divide(TimeConstants.SECOND));
         return Map.of("integrateIndex", integrateIndex, "timestamp", maximum);
     }
 
@@ -207,9 +234,12 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
     }
 
     private void checkTypeId(String typeId) {
-        List<String> a = new ArrayList<>();
         if (!typeWeightDB.isValidId(typeId)) {
             throw RewardException.notValidTypeId(typeId);
+        }
+
+        if (typeWeightDB.isContractType(typeId)) {
+            throw RewardException.unknown("Contract type can't have child assets");
         }
     }
 
@@ -232,6 +262,114 @@ public class RewardControllerImpl extends AddressProvider implements RewardContr
     @External(readonly = true)
     public Map<String, BigInteger> getAssetWeightByTimestamp(String typeId, BigInteger timestamp) {
         return this.assetWeightDB.getWeightByTimestamp(typeId, timestamp);
+    }
+
+    @External(readonly = true)
+    public BigInteger getAssetWeight(String assetId, @Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
+        Map<String, BigInteger> result = this.assetWeightDB.getWeight(assetId, timestamp);
+        return result.get("value");
+    }
+
+    @External(readonly = true)
+    public Map<String, ?> getAllAssetDistributionPercentage(@Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
+        List<String> typeIds = this.typeWeightDB.getTypeIds();
+        HashMap<String, Map<String, BigInteger>> response = new HashMap<>();
+        for (String typeId : typeIds) {
+            Map<String, BigInteger> typeWeight = typeWeightDB.getWeight(typeId, timestamp);
+            BigInteger tWeight = typeWeight.get("value");
+            Map<String, BigInteger> assetWeights = this.assetWeightDB.getAggregatedWeight(tWeight, typeId, timestamp);
+            response.put(typeId, assetWeights);
+        }
+        return response;
+    }
+
+    @External(readonly = true)
+    public Map<String, ?> getDailyRewards(@Optional BigInteger _day) {
+        BigInteger timestamp = TimeConstants.getBlockTimestamp();
+        if (_day == null || BigInteger.ZERO.equals(_day)) {
+            _day = getDay();
+        } else {
+            timestamp = this._timestampAtStart.get().add(_day.multiply(DAY_IN_MICRO_SECONDS));
+        }
+        BigInteger _distribution = tokenDistributionPerDay(_day);
+        List<String> typeIds = this.typeWeightDB.getTypeIds();
+        HashMap<String, Object> response = new HashMap<>();
+        BigInteger totalRewards = BigInteger.ZERO;
+        for (String typeId : typeIds) {
+            Map<String, BigInteger> typeWeight = typeWeightDB.getWeight(typeId, timestamp);
+            BigInteger tWeight = typeWeight.get("value");
+            BigInteger _distributionValue = exaMultiply(_distribution, tWeight);
+            Map<String, BigInteger> assetWeights = this.assetWeightDB.getAggregatedWeight(_distributionValue, typeId,
+                    timestamp);
+            response.put(typeId, assetWeights);
+            totalRewards = totalRewards.add(_distributionValue);
+        }
+        response.put("day", _day);
+        response.put("total", totalRewards);
+        return response;
+    }
+
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getDistPercentageOfLP(@Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
+        Map<String, BigInteger> lpAssetIds = (Map<String, BigInteger>) Context.call(
+                getAddress(Contracts.REWARDS.toString()), "getLiquidityProviders");
+
+        Map<String, BigInteger> response = new HashMap<>();
+        for (Map.Entry<String, BigInteger> entry : lpAssetIds.entrySet()) {
+            String assetId = entry.getKey();
+            BigInteger lpID = entry.getValue();
+            Asset asset = this.assetWeightDB.getAsset(assetId);
+            if (asset != null) {
+                BigInteger value = this.assetWeightDB.getWeight(assetId, timestamp).get("value");
+                response.put(lpID.toString(10), value);
+            }
+        }
+        return response;
+    }
+
+    @External(readonly = true)
+    public BigInteger getStartTimestamp() {
+        return this._timestampAtStart.get();
+    }
+
+    @External(readonly = true)
+    public String[] getTypes() {
+        return this.typeWeightDB.getTypeIds().toArray(String[]::new);
+    }
+
+    public String[] getContractTypeIds() {
+        return this.typeWeightDB.getContractTypeIds().toArray(String[]::new);
+    }
+
+    @External(readonly = true)
+    public Map<String, ?> distributionInfo(BigInteger day) {
+        Map<String, Object> response = new HashMap<>() {{
+            put("isValid", true);
+        }};
+        BigInteger today = getDay();
+
+        if (day.compareTo(today) > 0) {
+            response.put("isValid", false);
+            return response;
+        }
+        BigInteger distribution = BigInteger.ZERO;
+        for (int i = day.intValue(); i <= today.intValue(); i++) {
+            distribution = distribution.add(tokenDistributionPerDay(BigInteger.valueOf(i)));
+        }
+        response.put("distribution", distribution);
+        response.put("day", today);
+        response.put("contractTypeIds", getContractTypeIds());
+        return response;
     }
 
     @EventLog(indexed = 2)

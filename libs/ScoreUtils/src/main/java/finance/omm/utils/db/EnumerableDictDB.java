@@ -49,7 +49,7 @@ public class EnumerableDictDB<K, V> {
         indexes.set(ensureKeyType(key), i);
     }
 
-    private K getKey(Integer i) {
+    protected K getKey(Integer i) {
         return (i != null) ? keys.get(i) : null;
     }
 

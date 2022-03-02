@@ -1,13 +1,14 @@
 version = '0.0.1'
 
 dependencies {
+    implementation project(':libs:AddressProvider')
     implementation project(':libs:Score')
     implementation project(':libs:ScoreUtils')
     implementation project(':libs:OMMStruct')
 }
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.core.reward.RewardControllerImpl'
+    mainClassName = 'finance.omm.score.core.reward.RewardWeightControllerImpl'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -18,7 +19,7 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-            to = 'cxe2be18edcc3b40fa4f1d0e6f9090cf06be9d0211'
+            to = 'cx006ad3bd0564215ba43b308670410e9b20ff5bf6'
             nid = 0x53
         }
         mainnet {

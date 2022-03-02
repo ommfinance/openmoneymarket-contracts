@@ -5,14 +5,14 @@ import java.math.BigInteger;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public interface RewardController {
+public interface RewardWeightController {
 
 
     @External(readonly = true)
     public String name();
 
     @External
-    public void addType(String key, String name);
+    public String addType(String key, boolean isSystem);
 
 
     @External

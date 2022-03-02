@@ -1,6 +1,6 @@
 rootProject.name = 'openmoneymarket-contracts'
 include(':token-contracts:VotingEscrowToken')
-include(':core-contracts:RewardController')
+include(':core-contracts:RewardWeightController')
 include 'core-contracts:RewardDistribution'
 findProject(':core-contracts:RewardDistribution')?.name = 'RewardDistribution'
 include 'libs:AddressProvider'

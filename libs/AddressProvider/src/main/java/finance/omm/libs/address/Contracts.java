@@ -16,7 +16,7 @@ public enum Contracts {
     DELEGATION("delegation"),
     OMM_TOKEN("ommToken"),
     REWARDS("rewards"),
-    REWARD_CONTROLLER("rewardController"),
+    REWARD_WEIGHT_CONTROLLER("rewardController"),
     PRICE_ORACLE("priceOracle"),
     LENDING_POOL_CORE("lendingPoolCore"),
     LIQUIDATION_MANAGER("liquidationManager"),

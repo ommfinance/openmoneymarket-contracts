@@ -169,13 +169,34 @@ public class AssetWeightDB {
     }
 
     public Map<String, BigInteger> getWeightByTimestamp(String typeId, BigInteger timestamp) {
-        int index = searchCheckpoint(typeId, this.checkpointCounter.get(typeId), timestamp);
-        DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(typeId).at(index);
+        DictDB<String, BigInteger> dictDB = getCheckpoint(typeId, timestamp);
         Map<String, BigInteger> result = new HashMap<>();
         for (int i = 1; i < this.nonce.get(typeId); i++) {
             String id = getId(typeId, i);
-            result.put(id, dictDB.getOrDefault(id, BigInteger.ZERO));
+            BigInteger value = dictDB.getOrDefault(id, BigInteger.ZERO);
+            result.put(id, value);
         }
         return result;
     }
+
+    private DictDB<String, BigInteger> getCheckpoint(String typeId, BigInteger timestamp) {
+        int index = searchCheckpoint(typeId, this.checkpointCounter.get(typeId), timestamp);
+        return this.wCheckpoint.at(typeId).at(index);
+    }
+
+    public Map<String, BigInteger> getAggregatedWeight(BigInteger weight, String typeId, BigInteger timestamp) {
+        DictDB<String, BigInteger> dictDB = getCheckpoint(typeId, timestamp);
+        BigInteger total = BigInteger.ZERO;
+        Map<String, BigInteger> result = new HashMap<>();
+        for (int i = 1; i < this.nonce.get(typeId); i++) {
+            String id = getId(typeId, i);
+            String name = assets.get(id).name;
+            BigInteger value = dictDB.getOrDefault(id, BigInteger.ZERO);
+            result.put(name, value);
+            total = total.add(value);
+        }
+        result.put("total", total);
+        return result;
+    }
+
 }

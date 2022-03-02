@@ -2,9 +2,9 @@ package finance.omm.score.core.reward.db;
 
 import finance.omm.utils.db.EnumerableDictDB;
 
-public class TypeDB extends EnumerableDictDB<String, String> {
+public class TypeDB extends EnumerableDictDB<String, Boolean> {
 
     public TypeDB(String id) {
-        super(id, String.class, String.class);
+        super(id, String.class, Boolean.class);
     }
 }
