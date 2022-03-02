@@ -15,7 +15,12 @@ import score.DictDB;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
+/**
+ * delete me
+ */
+
 public class RewardConfigurationDB {
+
     public static final String TAG = "Reward Configuration DB";
     public static final String EMISSION_PER_SECOND = "EmissionPerSecond";
     public static final String ENTITY_DISTRIBUTION_PERCENTAGE = "EntityDistributionPercentage";
