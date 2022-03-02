@@ -43,8 +43,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             String.class, String.class);
 
 
-    public AbstractRewardDistribution(BigInteger _weight) {
-        super(null);
+    public AbstractRewardDistribution(String addressProvider, BigInteger _weight) {
+        super(addressProvider);
         assets = new Assets("assets");
         workingBalance = Context.newBranchDB("workingBalance", BigInteger.class);
         workingTotal = Context.newDictDB("workingTotal", BigInteger.class);
@@ -338,7 +338,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     @EventLog(indexed = 2)
-    public void AddType(String id, Boolean transferToContract) {
+    public void AddType(String id, boolean transferToContract) {
     }
 
     @EventLog(indexed = 1)

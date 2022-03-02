@@ -22,7 +22,6 @@ import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import score.Address;
 import score.Context;
 import score.VarDB;
 import score.annotation.EventLog;
@@ -41,7 +40,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     private final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
 
-    public RewardWeightControllerImpl(Address addressProvider, BigInteger startTimestamp) {
+    public RewardWeightControllerImpl(String addressProvider, BigInteger startTimestamp) {
         super(addressProvider);
         if (this._timestampAtStart.getOrDefault(null) == null) {
             this._timestampAtStart.set(startTimestamp);
@@ -342,14 +341,6 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         return this._timestampAtStart.get();
     }
 
-    @External(readonly = true)
-    public String[] getTypes() {
-        return this.typeWeightDB.getTypeIds().toArray(String[]::new);
-    }
-
-    public String[] getContractTypeIds() {
-        return this.typeWeightDB.getContractTypeIds().toArray(String[]::new);
-    }
 
     @External(readonly = true)
     public Map<String, ?> distributionInfo(BigInteger day) {
@@ -368,7 +359,6 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         }
         response.put("distribution", distribution);
         response.put("day", today);
-        response.put("contractTypeIds", getContractTypeIds());
         return response;
     }
 

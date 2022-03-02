@@ -1,4 +1,4 @@
-package finance.omm.score.core.reward.distribution;
+package finance.omm.score.core.reward.distribution.deleteme;
 
 import java.math.BigInteger;
 import score.Address;

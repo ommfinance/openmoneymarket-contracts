@@ -25,6 +25,7 @@ import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -60,12 +61,18 @@ public class RewardDistributionUnitTest extends TestBase {
     private BigInteger FOUR = BigInteger.valueOf(4);
 
 
+    private Map<Contracts, Account> mockAddress = new HashMap<>() {{
+        put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
+        put(Contracts.REWARDS, Account.newScoreAccount(102));
+    }};
+
     @BeforeEach
     void setup() throws Exception {
 
         owner = sm.createAccount(100);
 
-        score = sm.deploy(owner, RewardDistributionImpl.class, weight);
+        score = sm.deploy(owner, RewardDistributionImpl.class,
+                mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress().toString(), weight);
 
         RewardDistributionImpl t = (RewardDistributionImpl) score.getInstance();
         scoreSpy = spy(t);

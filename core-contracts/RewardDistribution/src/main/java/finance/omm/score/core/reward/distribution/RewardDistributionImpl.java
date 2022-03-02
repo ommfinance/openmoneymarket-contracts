@@ -34,8 +34,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     public final DictDB<String, String> dailyDistribution = Context.newDictDB(DAILY_DISTRIBUTION_MAP, String.class);
 
-    public RewardDistributionImpl(BigInteger _weight) {
-        super(_weight);
+    public RewardDistributionImpl(String addressProvider, BigInteger _weight) {
+        super(addressProvider, _weight);
     }
 
     @Override
@@ -46,8 +46,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @Override
     @External(readonly = true)
-    public List<Address> getAssets() {
-        return this.assets.keySet();
+    public Address[] getAssets() {
+        return this.assets.keySet().toArray(new Address[0]);
     }
 
     @Override

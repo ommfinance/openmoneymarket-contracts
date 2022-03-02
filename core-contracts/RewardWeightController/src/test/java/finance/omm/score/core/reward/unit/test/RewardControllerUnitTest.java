@@ -49,7 +49,7 @@ public class RewardControllerUnitTest extends TestBase {
     void setup() throws Exception {
         owner = sm.createAccount(100);
         score = sm.deploy(owner, RewardWeightControllerImpl.class,
-                mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(),
+                mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress().toString(),
                 startTimestamp);
         AddressDetail[] addressDetails = mockAddress.entrySet().stream().map(e -> {
             AddressDetail ad = new AddressDetail();

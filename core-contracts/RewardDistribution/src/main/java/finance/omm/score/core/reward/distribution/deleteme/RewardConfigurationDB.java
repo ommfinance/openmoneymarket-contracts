@@ -1,4 +1,4 @@
-package finance.omm.score.core.reward.distribution;
+package finance.omm.score.core.reward.distribution.deleteme;
 
 import static finance.omm.utils.math.MathUtils.ICX;
 
