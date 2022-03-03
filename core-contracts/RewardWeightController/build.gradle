@@ -1,10 +1,10 @@
 version = '0.0.1'
 
 dependencies {
-    implementation project(':libs:AddressProvider')
-    implementation project(':libs:Score')
-    implementation project(':libs:ScoreUtils')
-    implementation project(':libs:OMMStruct')
+    implementation project(':AddressProvider')
+    implementation project(':Score')
+    implementation project(':ScoreUtils')
+    implementation project(':OMMStruct')
 }
 
 optimizedJar {
@@ -57,6 +57,10 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
 
         systemProperty 'keystoreName', scoreTest.keystoreName
         systemProperty 'keystorePass', scoreTest.keystorePass
+
+        dependsOn optimizedJar
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
 
         dependsOn optimizedJar
         systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName

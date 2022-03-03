@@ -6,7 +6,7 @@ import score.Address;
 public class WorkingBalance {
 
     public Address user;
-    public String assetId;
+    public Address assetAddr;
     public BigInteger bOMMUserBalance;
     public BigInteger bOMMTotalSupply;
     public BigInteger tokenBalance;

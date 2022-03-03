@@ -11,9 +11,9 @@ import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetail;
+import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.RewardWeightControllerImpl;
-import finance.omm.score.core.reward.db.AssetWeightDB;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import score.Address;
 
 public class RewardControllerUnitTest extends TestBase {
 
@@ -36,6 +37,20 @@ public class RewardControllerUnitTest extends TestBase {
     private RewardWeightControllerImpl scoreSpy;
 
     private static final String TYPE_ID_PREFIX = "Key-";
+
+    Address[] addresses = new Address[]{
+            Account.newScoreAccount(1001).getAddress(),
+            Account.newScoreAccount(1002).getAddress(),
+            Account.newScoreAccount(1003).getAddress(),
+            Account.newScoreAccount(1004).getAddress(),
+            Account.newScoreAccount(1005).getAddress(),
+            Account.newScoreAccount(1006).getAddress(),
+            Account.newScoreAccount(1007).getAddress(),
+            Account.newScoreAccount(1008).getAddress(),
+            Account.newScoreAccount(1009).getAddress(),
+            Account.newScoreAccount(1010).getAddress(),
+            Account.newScoreAccount(1011).getAddress(),
+    };
 
 
     private Map<Contracts, Account> mockAddress = new HashMap<>() {{
@@ -69,7 +84,7 @@ public class RewardControllerUnitTest extends TestBase {
     }
 
     private void addType(Account account, String key) {
-        score.invoke(account, "addType", key, Boolean.FALSE);
+        score.invoke(account, "addType", key, Boolean.FALSE, Account.newScoreAccount(0).getAddress());
     }
 
     @DisplayName("verify token inflation rate")
@@ -99,11 +114,11 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     public void testSetInvalidTypeWeight() {
         addType(mockAddress.get(Contracts.REWARDS), "Key-1");
-        WeightStruct[] weights = new WeightStruct[1];
+        TypeWeightStruct[] weights = new TypeWeightStruct[1];
 
-        WeightStruct struct = new WeightStruct();
+        TypeWeightStruct struct = new TypeWeightStruct();
         struct.weight = BigInteger.TEN.multiply(ICX).divide(BigInteger.valueOf(100));
-        struct.id = "Key-1";
+        struct.key = "Key-1";
         weights[0] = struct;
 
         Object[] params = new Object[]{weights, BigInteger.ZERO};
@@ -213,8 +228,8 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     public void testAddAsset() {
         initTypeWeight(BigInteger.ZERO, 10L, 20L, 30L, 40L);
-        String typeId = "Key-" + 1;
-        addAsset(1, typeId);
+        String type = "Key-" + 1;
+        addAsset(type, addresses[1]);
     }
 
     @DisplayName("test asset weight")
@@ -224,12 +239,17 @@ public class RewardControllerUnitTest extends TestBase {
         Map<String, BigInteger> snapshots = new HashMap<>();
 
         String typeId = TYPE_ID_PREFIX + 1;
-        addAsset(1, typeId);
+//        addAsset(1, typeId);
 
         String typeId_2 = TYPE_ID_PREFIX + 2;
-        addAsset(2, typeId_2);
-
-        initAssetWeight(BigInteger.ZERO, typeId, 10L, 20L, 30L, 40L);
+//        addAsset(2, typeId_2);
+        Map<Address, Long> values = new HashMap<>() {{
+            put(addresses[0], 10L);
+            put(addresses[1], 20L);
+            put(addresses[2], 30L);
+            put(addresses[3], 40L);
+        }};
+        initAssetWeight(BigInteger.ZERO, 1, values);
         snapshots.put(typeId, getTimestamp());
 
         BigInteger checkpoints = (BigInteger) score.call("getAssetCheckpointCount",
@@ -237,7 +257,11 @@ public class RewardControllerUnitTest extends TestBase {
         assertEquals(BigInteger.ONE, checkpoints);
 
         BigInteger futureTime = getTimestamp().add(TimeConstants.SECOND.multiply(BigInteger.valueOf(100)));
-        initAssetWeight(futureTime, typeId_2, 50L, 50L);
+        values = new HashMap<>() {{
+            put(addresses[4], 50L);
+            put(addresses[5], 50L);
+        }};
+        initAssetWeight(futureTime, 2, values);
         snapshots.put(typeId_2, futureTime);
 
         checkpoints = (BigInteger) score.call("getAssetCheckpointCount",
@@ -245,8 +269,8 @@ public class RewardControllerUnitTest extends TestBase {
         assertEquals(BigInteger.ONE, checkpoints);
 
         setAssetWeight(BigInteger.ZERO, typeId, new HashMap<>() {{
-            put(1, 40L);
-            put(4, 10L);
+            put(addresses[0], 40L);
+            put(addresses[3], 10L);
         }});
         checkpoints = (BigInteger) score.call("getAssetCheckpointCount",
                 typeId);
@@ -255,8 +279,8 @@ public class RewardControllerUnitTest extends TestBase {
         //shouldn't able to set new asset weight if future weight is already exists
         BigInteger current = getTimestamp().add(TimeConstants.SECOND.multiply(BigInteger.TWO));
         Executable call = () -> setAssetWeight(BigInteger.ZERO, typeId_2, new HashMap<>() {{
-            put(1, 40L);
-            put(2, 60L);
+            put(addresses[1], 40L);
+            put(addresses[2], 60L);
         }});
         expectErrorMessage(call,
                 "latest " + snapshots.get(typeId_2) + " checkpoint exists than " + current);
@@ -264,36 +288,37 @@ public class RewardControllerUnitTest extends TestBase {
 
     }
 
+
     @DisplayName("asset weight snapshot")
     @Test
     public void testAssetWeightSnapshot() {
         initTypeWeight(BigInteger.ZERO, 25L, 75L);
 
         String typeId = TYPE_ID_PREFIX + 1;
-        addAsset(1, typeId);
 
         String typeId_2 = TYPE_ID_PREFIX + 2;
-        addAsset(2, typeId_2);
-
-        initAssetWeight(BigInteger.ZERO, typeId, 10L, 20L, 30L, 40L);
+        Map<Address, Long> addressMap = new HashMap<>() {{
+            put(addresses[0], 10L);
+            put(addresses[1], 20L);
+            put(addresses[2], 30L);
+            put(addresses[3], 40L);
+        }};
+        initAssetWeight(BigInteger.ZERO, 1, addressMap);
         Map<Integer, BigInteger> snapshots = new HashMap<>();
-        Map<Integer, Map<Integer, Long>> values = new HashMap<>();
+        Map<Integer, Map<Address, Long>> values = new HashMap<>();
         snapshots.put(1, getTimestamp());
-        values.put(1, new HashMap<>() {{
-            put(1, 10L);
-            put(2, 20L);
-            put(3, 30L);
-            put(4, 40L);
-        }});
+        values.put(1, addressMap);
 
-        initAssetWeight(BigInteger.ZERO, typeId_2, 25L, 25L, 25L, 25L);
+        Map<Address, Long> addressMap2 = new HashMap<>() {{
+            put(addresses[4], 25L);
+            put(addresses[5], 25L);
+            put(addresses[6], 25L);
+            put(addresses[7], 25L);
+        }};
+
+        initAssetWeight(BigInteger.ZERO, 2, addressMap2);
         snapshots.put(2, getTimestamp());
-        values.put(2, new HashMap<>() {{
-            put(1, 25L);
-            put(2, 25L);
-            put(3, 25L);
-            put(4, 25L);
-        }});
+        values.put(2, addressMap2);
         Random r = new Random();
 
         for (int i = 3; i <= 20; i++) {
@@ -302,13 +327,15 @@ public class RewardControllerUnitTest extends TestBase {
             long b = r.nextInt(25) + 1;
             long c = r.nextInt(25) + 1;
             long d = 100 - a - b - c;
-            Map<Integer, Long> map = new HashMap<>() {{
-                put(1, a);
-                put(2, b);
-                put(3, c);
-                put(4, d);
-            }};
+
             String type_id = i % 2 == 0 ? typeId_2 : typeId;
+            int startIndex = i % 2 == 0 ? 4 : 0;
+            Map<Address, Long> map = new HashMap<>() {{
+                put(addresses[startIndex + 0], a);
+                put(addresses[startIndex + 1], b);
+                put(addresses[startIndex + 2], c);
+                put(addresses[startIndex + 3], d);
+            }};
             setAssetWeight(BigInteger.ZERO, type_id, map);
             snapshots.put(i, getTimestamp());
             values.put(i, map);
@@ -317,19 +344,19 @@ public class RewardControllerUnitTest extends TestBase {
         for (int i = 20; i > 2; i--) {
             BigInteger timestamp = snapshots.get(i);
             String type_id = i % 2 == 0 ? typeId_2 : typeId;
-            Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
+            Map<Address, BigInteger> nextTime = (Map<Address, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp.add(BigInteger.ONE));
-            Map<String, BigInteger> exactTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
+            Map<Address, BigInteger> exactTime = (Map<Address, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp);
-            Map<String, BigInteger> prevTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
+            Map<Address, BigInteger> prevTime = (Map<Address, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp.subtract(BigInteger.ONE));
 
-            Map<Integer, Long> value = values.get(i);
-            for (Map.Entry<Integer, Long> entry : value.entrySet()) {
-                String id = AssetWeightDB.ID_PREFIX + type_id + "_" + entry.getKey();
+            Map<Address, Long> value = values.get(i);
+            for (Map.Entry<Address, Long> entry : value.entrySet()) {
+                Address id = entry.getKey();
                 BigInteger next = nextTime.get(id);
                 BigInteger exact = exactTime.get(id);
                 BigInteger expected = BigInteger.valueOf(entry.getValue())
@@ -340,8 +367,8 @@ public class RewardControllerUnitTest extends TestBase {
             }
 
             value = values.get(i - 2);
-            for (Map.Entry<Integer, Long> entry : value.entrySet()) {
-                String id = AssetWeightDB.ID_PREFIX + type_id + "_" + entry.getKey();
+            for (Map.Entry<Address, Long> entry : value.entrySet()) {
+                Address id = entry.getKey();
                 BigInteger prev = prevTime.get(id);
                 BigInteger expected = BigInteger.valueOf(entry.getValue())
                         .multiply(ICX)
@@ -360,12 +387,17 @@ public class RewardControllerUnitTest extends TestBase {
         initTypeWeight(BigInteger.ZERO, 25L, 75L); //3 calls
 
         String typeId = TYPE_ID_PREFIX + 1;
-
-        initAssetWeight(BigInteger.ZERO, typeId, 10L, 20L, 30L, 40L); //5 calls
+        Map<Address, Long> values = new HashMap<>() {{
+            put(addresses[0], 10L);
+            put(addresses[1], 20L);
+            put(addresses[2], 30L);
+            put(addresses[3], 40L);
+        }};
+        initAssetWeight(BigInteger.ZERO, 1, values); //5 calls
         BigInteger currentTimestamp = getTimestamp();
         sm.getBlock().increase(1000);
         Object[] params = new Object[]{
-                AssetWeightDB.ID_PREFIX + typeId + "_" + 1,
+                addresses[0],
                 BigInteger.valueOf(100).multiply(ICX),
                 currentTimestamp
         };
@@ -403,9 +435,9 @@ public class RewardControllerUnitTest extends TestBase {
 
         sm.getBlock().increase(599);
         setAssetWeight(BigInteger.ZERO, typeId, new HashMap<>() {{
-            put(1, 50L);
-            put(3, 10L);
-            put(4, 20L);
+            put(addresses[0], 50L);
+            put(addresses[2], 10L);
+            put(addresses[3], 20L);
         }}); //1 calls
         /*
           no change in rate till now
@@ -454,18 +486,18 @@ public class RewardControllerUnitTest extends TestBase {
         assertEquals(expectedIndex, index.floatValue() / ICX.floatValue(), 0.00001);
     }
 
-    private void addAsset(Integer id, String typeId) {
+    private void addAsset(String type, Address address) {
         Object[] params = new Object[]{
-                typeId, "Asset " + id
+                type, address, address.toString()
         };
         score.invoke(mockAddress.get(Contracts.REWARDS), "addAsset", params);
     }
 
-    private void setAssetWeight(BigInteger timestamp, String typeId, Map<Integer, Long> map) {
+    private void setAssetWeight(BigInteger timestamp, String typeId, Map<Address, Long> map) {
         WeightStruct[] weights = map.entrySet().stream().map(e -> {
             WeightStruct struct = new WeightStruct();
             struct.weight = BigInteger.valueOf(e.getValue()).multiply(ICX).divide(BigInteger.valueOf(100));
-            struct.id = AssetWeightDB.ID_PREFIX + typeId + "_" + e.getKey();
+            struct.address = e.getKey();
             return struct;
         }).toArray(WeightStruct[]::new);
 
@@ -474,30 +506,31 @@ public class RewardControllerUnitTest extends TestBase {
         score.invoke(owner, "setAssetWeight", params);
     }
 
-    private void initAssetWeight(BigInteger timestamp, String typeId, Long... values) {
-        WeightStruct[] weights = new WeightStruct[values.length];
-        IntStream.range(0, values.length)
-                .forEach(idx -> {
-                    addAsset((idx + 1), typeId);
-                    WeightStruct struct = new WeightStruct();
-                    struct.weight = BigInteger.valueOf(values[idx]).multiply(ICX).divide(BigInteger.valueOf(100));
-                    struct.id = AssetWeightDB.ID_PREFIX + typeId + "_" + (idx + 1);
-                    weights[idx] = struct;
-                });
+    private void initAssetWeight(BigInteger timestamp, Integer typeId, Map<Address, Long> values) {
+        String type = TYPE_ID_PREFIX + typeId;
+        WeightStruct[] weights = values.entrySet().stream().map(entry -> {
+            Address key = entry.getKey();
+            Long value = entry.getValue();
+            addAsset(type, key);
+            WeightStruct struct = new WeightStruct();
+            struct.weight = BigInteger.valueOf(value).multiply(ICX).divide(BigInteger.valueOf(100));
+            struct.address = key;
+            return struct;
+        }).toArray(WeightStruct[]::new);
 
-        Object[] params = new Object[]{typeId, weights, timestamp};
+        Object[] params = new Object[]{type, weights, timestamp};
 
         score.invoke(owner, "setAssetWeight", params);
     }
 
 
     private void setTypeWeight(BigInteger timestamp, Map<Integer, Long> map) {
-        WeightStruct[] weights = map.entrySet().stream().map(e -> {
-            WeightStruct struct = new WeightStruct();
+        TypeWeightStruct[] weights = map.entrySet().stream().map(e -> {
+            TypeWeightStruct struct = new TypeWeightStruct();
             struct.weight = BigInteger.valueOf(e.getValue()).multiply(ICX).divide(BigInteger.valueOf(100));
-            struct.id = "Key-" + e.getKey();
+            struct.key = "Key-" + e.getKey();
             return struct;
-        }).toArray(WeightStruct[]::new);
+        }).toArray(TypeWeightStruct[]::new);
 
         Object[] params = new Object[]{weights, timestamp};
 
@@ -505,13 +538,13 @@ public class RewardControllerUnitTest extends TestBase {
     }
 
     private void initTypeWeight(BigInteger timestamp, Long... values) {
-        WeightStruct[] weights = new WeightStruct[values.length];
+        TypeWeightStruct[] weights = new TypeWeightStruct[values.length];
         IntStream.range(0, values.length)
                 .forEach(idx -> {
                     addType(mockAddress.get(Contracts.REWARDS), "Key-" + (idx + 1));
-                    WeightStruct struct = new WeightStruct();
+                    TypeWeightStruct struct = new TypeWeightStruct();
                     struct.weight = BigInteger.valueOf(values[idx]).multiply(ICX).divide(BigInteger.valueOf(100));
-                    struct.id = "Key-" + (idx + 1);
+                    struct.key = "Key-" + (idx + 1);
                     weights[idx] = struct;
                 });
 

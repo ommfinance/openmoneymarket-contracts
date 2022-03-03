@@ -17,12 +17,12 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
     public static final String ASSET_INDEX = "asset-index";
     public static final String USER_INDEX = "user-index";
 
-    // assetId-> last update timestamp in seconds
-    public final DictDB<String, BigInteger> lastUpdateTimestamp;
-    // assetId-> index
-    public final DictDB<String, BigInteger> assetIndex;
-    // user-> assetId-> index
-    public final BranchDB<Address, DictDB<String, BigInteger>> userIndex;
+    // asset address -> last update timestamp in seconds
+    public final DictDB<Address, BigInteger> lastUpdateTimestamp;
+    // asset address-> index
+    public final DictDB<Address, BigInteger> assetIndex;
+    // user address-> asset-> index
+    public final BranchDB<Address, DictDB<Address, BigInteger>> userIndex;
 
 
     public Assets(String key) {
@@ -32,38 +32,28 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         userIndex = Context.newBranchDB(key + USER_INDEX, BigInteger.class);
     }
 
-    public BigInteger getUserIndex(String assetId, Address user) {
-        return this.userIndex.at(user).getOrDefault(assetId, BigInteger.ZERO);
+    public BigInteger getUserIndex(Address assetAddr, Address user) {
+        return this.userIndex.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
     }
 
-    public BigInteger getUserIndex(Address assetAddress, Address user) {
-        Asset asset = get(assetAddress);
-        return getUserIndex(asset.id, user);
+    public void setUserIndex(Address assetAddr, Address user, BigInteger newIndex) {
+        this.userIndex.at(user).set(assetAddr, newIndex);
     }
 
-    public void setUserIndex(String assetId, Address user, BigInteger newIndex) {
-        this.userIndex.at(user).set(assetId, newIndex);
+    public BigInteger getAssetIndex(Address assetAddr) {
+        return this.assetIndex.getOrDefault(assetAddr, BigInteger.ZERO);
     }
 
-    public BigInteger getAssetIndex(String assetId) {
-        return this.assetIndex.getOrDefault(assetId, BigInteger.ZERO);
+    public BigInteger getLastUpdateTimestamp(Address assetAddr) {
+        return this.lastUpdateTimestamp.get(assetAddr);
     }
 
-    public BigInteger getAssetIndex(Address assetAddress) {
-        Asset asset = get(assetAddress);
-        return getAssetIndex(asset.id);
+    public void setAssetIndex(Address assetAddr, BigInteger newIndex) {
+        this.assetIndex.set(assetAddr, newIndex);
     }
 
-    public BigInteger getLastUpdateTimestamp(String assetId) {
-        return this.lastUpdateTimestamp.get(assetId);
-    }
-
-    public void setAssetIndex(String assetId, BigInteger newIndex) {
-        this.assetIndex.set(assetId, newIndex);
-    }
-
-    public void setLastUpdateTimestamp(String assetId, BigInteger currentTime) {
-        this.lastUpdateTimestamp.set(assetId, currentTime);
+    public void setLastUpdateTimestamp(Address assetAddr, BigInteger currentTime) {
+        this.lastUpdateTimestamp.set(assetAddr, currentTime);
     }
 
     public Map<String, String> getAssetName() {
@@ -76,13 +66,13 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         return result;
     }
 
-    public Map<String, BigInteger> getLiquidityProviders() {
+    public Map<Address, BigInteger> getLiquidityProviders() {
         int size = size();
-        Map<String, BigInteger> result = new HashMap<>();
+        Map<Address, BigInteger> result = new HashMap<>();
         for (int i = 0; i < size; i++) {
             Asset asset = getByIndex(i);
             if (asset != null && BigInteger.ZERO.compareTo(asset.lpID) < 0) {
-                result.put(asset.id, asset.lpID);
+                result.put(asset.address, asset.lpID);
             }
         }
         return result;

@@ -1,11 +1,10 @@
 package finance.omm.libs.structs;
 
 import java.math.BigInteger;
-import score.Address;
 
-public class WeightStruct {
+public class TypeWeightStruct {
 
-    public Address address;
+    public String key;
     public BigInteger weight;
 
 }

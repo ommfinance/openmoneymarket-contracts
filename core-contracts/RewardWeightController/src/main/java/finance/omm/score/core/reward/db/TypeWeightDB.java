@@ -2,7 +2,7 @@ package finance.omm.score.core.reward.db;
 
 import static finance.omm.utils.math.MathUtils.ICX;
 
-import finance.omm.libs.structs.WeightStruct;
+import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.score.core.reward.exception.RewardException;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
@@ -50,7 +50,7 @@ public class TypeWeightDB {
     }
 
 
-    public void setWeights(WeightStruct[] weights, BigInteger timestamp) {
+    public void setWeights(TypeWeightStruct[] weights, BigInteger timestamp) {
         Integer checkpointCounter = this.checkpointCounter.getOrDefault(0);
         BigInteger latestCheckpoint = this.tCheckpoint.getOrDefault(checkpointCounter, BigInteger.ZERO);
         int compareValue = latestCheckpoint.compareTo(timestamp);
@@ -76,15 +76,15 @@ public class TypeWeightDB {
 
     }
 
-    private void setWeights(WeightStruct[] weights, BigInteger total, Integer counter) {
+    private void setWeights(TypeWeightStruct[] weights, BigInteger total, Integer counter) {
         DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(counter);
-        for (WeightStruct tw : weights) {
-            if (!isValidId(tw.id)) {
-                throw RewardException.unknown(msg("Invalid type id :: " + tw.id));
+        for (TypeWeightStruct tw : weights) {
+            if (!isValidId(tw.key)) {
+                throw RewardException.unknown(msg("Invalid type key :: " + tw.key));
             }
-            BigInteger prevWeight = dictDB.getOrDefault(tw.id, BigInteger.ZERO);
+            BigInteger prevWeight = dictDB.getOrDefault(tw.key, BigInteger.ZERO);
             total = total.subtract(prevWeight).add(tw.weight);
-            dictDB.set(tw.id, tw.weight);
+            dictDB.set(tw.key, tw.weight);
         }
         if (!total.equals(ICX)) {
             throw RewardException.invalidTotalPercentage();

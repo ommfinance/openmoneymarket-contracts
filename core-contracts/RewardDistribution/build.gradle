@@ -9,12 +9,13 @@ optimizedJar {
 }
 
 dependencies {
-    implementation project(':libs:AddressProvider')
-    implementation project(':libs:OMMStruct')
-    implementation project(':libs:ScoreUtils')
-    implementation project(':libs:Score')
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
+    compileOnly project(':RewardWeightController')
 
-    testImplementation project(':libs:TestUtils')
+    testImplementation project(':TestUtils')
 }
 
 deployJar {
@@ -61,9 +62,9 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
 
         systemProperty 'address', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
         systemProperty 'isUpdate', "true"
-        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
-        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value
-        }
+        systemProperty 'scoreFilePath',//path to zip project.tasks.optimizedJar.outputJarName
+                project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value
+                }
 
     }
 

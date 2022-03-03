@@ -35,12 +35,14 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public final UserClaimedRewards userClaimedRewards = new UserClaimedRewards("user-claimed-reward");
 
-    public final DictDB<String, BigInteger> workingTotal;
-    public final BranchDB<Address, DictDB<String, BigInteger>> workingBalance;
+    //asset address => total
+    public final DictDB<Address, BigInteger> workingTotal;
+    //user address = > asset address => total
+    public final BranchDB<Address, DictDB<Address, BigInteger>> workingBalance;
     public final VarDB<BigInteger> weight;
-    protected final EnumerableDictDB<String, String> transferToContractMap = new EnumerableDictDB<>(
+    protected final EnumerableDictDB<Address, String> transferToContractMap = new EnumerableDictDB<>(
             "transferToContract",
-            String.class, String.class);
+            Address.class, String.class);
 
 
     public AbstractRewardDistribution(String addressProvider, BigInteger _weight) {
@@ -67,25 +69,30 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     @External
     public void addType(String key, boolean transferToContract, @Optional String addressKey) {
         checkOwner();
-        String assetId = call(String.class, Contracts.REWARD_WEIGHT_CONTROLLER, "addType", key, transferToContract);
+        Object[] params = new Object[]{
+                key, transferToContract
+        };
         if (transferToContract) {
-            Address address = getAddress(Contracts.valueOf(addressKey).toString());
+            Address address = getAddress(Contracts.valueOf(addressKey).getKey());
+            params = new Object[]{
+                    key, true, address
+            };
             Context.require(address != null, "Address required for type if transferToContract is enable");
-            Asset asset = new Asset(assetId, key);
+            Asset asset = new Asset(address, key);
             asset.name = key;
-            asset.address = address;
             asset.lpID = null;
             assets.put(address, asset);
-            this.assets.setLastUpdateTimestamp(assetId, TimeConstants.getBlockTimestamp().divide(SECOND));
-            transferToContractMap.put(assetId, addressKey);
-            AssetAdded(assetId, key, key, address, null);
+            this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
+            transferToContractMap.put(address, addressKey);
+            AssetAdded(key, key, address, null);
         }
+        call(Contracts.REWARD_WEIGHT_CONTROLLER, "addType", params);
         AddType(key, transferToContract);
     }
 
 
     @External
-    public void addAsset(String typeId, String name, Address address, @Optional BigInteger poolID) {
+    public void addAsset(String type, String name, Address address, @Optional BigInteger poolID) {
         checkOwner();
 //        if (address == null && (poolID == null || poolID.equals(BigInteger.ZERO))) {
 //            throw RewardDistributionException.invalidAsset("Nor address or poolID provided");
@@ -95,15 +102,14 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 //            throw RewardDistributionException.invalidAsset("Both address and poolID provided");
 //        }
 
-        String id = call(String.class, Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", typeId, name);
+        call(Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", type, name, address);
 
-        Asset asset = new Asset(id, typeId);
+        Asset asset = new Asset(address, type);
         asset.name = name;
-        asset.address = address;
         asset.lpID = poolID;
         assets.put(address, asset);
-        this.assets.setLastUpdateTimestamp(id, TimeConstants.getBlockTimestamp().divide(SECOND));
-        AssetAdded(id, typeId, name, address, poolID);
+        this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
+        AssetAdded(type, name, address, poolID);
     }
 
     @External(readonly = true)
@@ -115,8 +121,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             if (asset == null) {
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
             }
-            BigInteger reward = getUserReward(asset.id, user, true);
-            Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(asset.typeId);
+            BigInteger reward = getUserReward(address, user, true);
+            Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(asset.type);
             if (entityMap == null) {
                 entityMap = new HashMap<>() {{
                     put("total", BigInteger.ZERO);
@@ -125,7 +131,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             BigInteger total = entityMap.get("total");
             entityMap.put(asset.name, reward);
             entityMap.put("total", total.add(reward));
-            response.put(asset.typeId, entityMap);
+            response.put(asset.type, entityMap);
             totalRewards = totalRewards.add(reward);
         }
 
@@ -148,12 +154,12 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             if (asset == null) {
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
             }
-            BigInteger reward = getUserReward(asset.id, user, false);
+            BigInteger reward = getUserReward(asset.address, user, false);
             accruedReward = accruedReward.add(reward);
             Map<String, BigInteger> balances = getUserBalance(user, asset);
 
             WorkingBalance workingBalance = new WorkingBalance();
-            workingBalance.assetId = asset.id;
+            workingBalance.assetAddr = asset.address;
             workingBalance.user = user;
             workingBalance.tokenBalance = balances.get("userBalance");
             workingBalance.tokenTotalSupply = balances.get("totalSupply");
@@ -179,46 +185,47 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
 
-    protected BigInteger getUserReward(String assetId, Address user, Boolean readonly) {
-        BigInteger userBalance = this.workingBalance.at(user).getOrDefault(assetId, BigInteger.ZERO);
-        BigInteger totalSupply = this.workingTotal.getOrDefault(assetId, BigInteger.ZERO);
-        BigInteger userIndex = this.assets.getUserIndex(assetId, user);
+    protected BigInteger getUserReward(Address assetAddr, Address user, Boolean readonly) {
+        BigInteger userBalance = this.workingBalance.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
+        BigInteger totalSupply = this.workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
+        BigInteger userIndex = this.assets.getUserIndex(assetAddr, user);
 
         BigInteger accruedRewards = BigInteger.ZERO;
 
-        BigInteger newIndex = this.getAssetIndex(assetId, totalSupply, readonly);
+        BigInteger newIndex = this.getAssetIndex(assetAddr, totalSupply, readonly);
 
         if (!userIndex.equals(newIndex) && !BigInteger.ZERO.equals(userBalance)) {
             accruedRewards = calculateReward(userBalance, newIndex, userIndex);
             if (!readonly) {
-                this.assets.setUserIndex(assetId, user, newIndex);
-                this.UserIndexUpdated(user, assetId, userIndex, newIndex);
+                this.assets.setUserIndex(assetAddr, user, newIndex);
+                this.UserIndexUpdated(user, assetAddr, userIndex, newIndex);
             }
         }
         return accruedRewards;
     }
 
 
-    protected BigInteger getAssetIndex(String assetId, BigInteger totalSupply, Boolean readonly) {
-        BigInteger oldIndex = this.assets.getAssetIndex(assetId);
-        BigInteger lastUpdateTimestamp = this.assets.getLastUpdateTimestamp(assetId);
+    protected BigInteger getAssetIndex(Address assetAddr, BigInteger totalSupply, Boolean readonly) {
+        BigInteger oldIndex = this.assets.getAssetIndex(assetAddr);
+        BigInteger lastUpdateTimestamp = this.assets.getLastUpdateTimestamp(assetAddr);
         BigInteger currentTime = TimeConstants.getBlockTimestamp().divide(SECOND);
 
         if (currentTime.equals(lastUpdateTimestamp)) {
             return oldIndex;
         }
         /*
-        reward weight controller store snapshot in microsecondsx
+        reward weight controller store snapshot in micro second
          */
-        BigInteger assetIndex = call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getIntegrateIndex", assetId,
+        BigInteger assetIndex = call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getIntegrateIndex",
+                assetAddr,
                 totalSupply, lastUpdateTimestamp.multiply(SECOND));
         BigInteger newIndex = oldIndex.add(assetIndex);
         if (!readonly) {
             if (!oldIndex.equals(newIndex)) {
-                this.assets.setAssetIndex(assetId, newIndex);
-                this.AssetIndexUpdated(assetId, oldIndex, newIndex);
+                this.assets.setAssetIndex(assetAddr, newIndex);
+                this.AssetIndexUpdated(assetAddr, oldIndex, newIndex);
             }
-            this.assets.setLastUpdateTimestamp(assetId, currentTime);
+            this.assets.setLastUpdateTimestamp(assetAddr, currentTime);
         }
         return newIndex;
     }
@@ -251,11 +258,11 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
 
-    protected void updateWorkingBalance(String assetId, Address user, BigInteger tokenBalance,
+    protected void updateWorkingBalance(Address assetAddr, Address user, BigInteger tokenBalance,
             BigInteger tokenTotalSupply) {
         Map<String, BigInteger> boostedBalance = getBoostedBalance(user);
         WorkingBalance balance = new WorkingBalance();
-        balance.assetId = assetId;
+        balance.assetAddr = assetAddr;
         balance.user = user;
         balance.tokenBalance = tokenBalance;
         balance.tokenTotalSupply = tokenTotalSupply;
@@ -273,9 +280,9 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     private void updateWorkingBalance(WorkingBalance balance) {
-        String assetId = balance.assetId;
+        Address assetAddr = balance.assetAddr;
         Address user = balance.user;
-        BigInteger currentWorkingBalance = this.workingBalance.at(user).getOrDefault(assetId, BigInteger.ZERO);
+        BigInteger currentWorkingBalance = this.workingBalance.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
 
         BigInteger weight = this.weight.getOrDefault(BigInteger.ZERO);
         BigInteger userBalance = balance.tokenBalance;
@@ -298,13 +305,13 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         }
 
         newWorkingBalance = userBalance.min(newWorkingBalance);
-        this.workingBalance.at(user).set(assetId, newWorkingBalance);
-        BigInteger workingTotal = this.workingTotal.getOrDefault(assetId, BigInteger.ZERO)
+        this.workingBalance.at(user).set(assetAddr, newWorkingBalance);
+        BigInteger workingTotal = this.workingTotal.getOrDefault(assetAddr, BigInteger.ZERO)
                 .add(newWorkingBalance)
                 .subtract(currentWorkingBalance);
-        this.workingTotal.set(assetId, workingTotal);
+        this.workingTotal.set(assetAddr, workingTotal);
 
-        this.WorkingBalanceUpdated(user, assetId, newWorkingBalance, workingTotal);
+        this.WorkingBalanceUpdated(user, assetAddr, newWorkingBalance, workingTotal);
     }
 
 
@@ -333,8 +340,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     @EventLog(indexed = 3)
-    public void AssetAdded(String id, String typeId, String name, Address address,
-            BigInteger poolID) {
+    public void AssetAdded(String type, String name, Address address, BigInteger poolID) {
     }
 
     @EventLog(indexed = 2)
@@ -342,19 +348,19 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     @EventLog(indexed = 1)
-    public void AssetIndexUpdated(String assetId, BigInteger _oldIndex, BigInteger _newIndex) {
+    public void AssetIndexUpdated(Address assetAddr, BigInteger _oldIndex, BigInteger _newIndex) {
     }
 
 
     @EventLog(indexed = 2)
-    public void UserIndexUpdated(Address _user, String assetId, BigInteger _oldIndex, BigInteger _newIndex) {
+    public void UserIndexUpdated(Address _user, Address assetAddr, BigInteger _oldIndex, BigInteger _newIndex) {
     }
 
     @EventLog()
     public void RewardsClaimed(Address _user, BigInteger _rewards, String _msg) {}
 
     @EventLog(indexed = 2)
-    public void WorkingBalanceUpdated(Address user, String assetId, BigInteger newWorkingBalance,
+    public void WorkingBalanceUpdated(Address user, Address assetAddr, BigInteger newWorkingBalance,
             BigInteger workingTotal) {
     }
 

@@ -17,6 +17,7 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.AddressDetail;
 import finance.omm.libs.structs.UserDetails;
 import finance.omm.libs.test.VarargAnyMatcher;
 import finance.omm.score.core.reward.distribution.RewardDistributionImpl;
@@ -60,10 +61,24 @@ public class RewardDistributionUnitTest extends TestBase {
     private BigInteger THREE = BigInteger.valueOf(3);
     private BigInteger FOUR = BigInteger.valueOf(4);
 
+    Address[] addresses = new Address[]{
+            Account.newScoreAccount(1001).getAddress(),
+            Account.newScoreAccount(1002).getAddress(),
+            Account.newScoreAccount(1003).getAddress(),
+            Account.newScoreAccount(1004).getAddress(),
+            Account.newScoreAccount(1005).getAddress(),
+            Account.newScoreAccount(1006).getAddress(),
+            Account.newScoreAccount(1007).getAddress(),
+            Account.newScoreAccount(1008).getAddress(),
+            Account.newScoreAccount(1009).getAddress(),
+            Account.newScoreAccount(1010).getAddress(),
+            Account.newScoreAccount(1011).getAddress(),
+    };
+
 
     private Map<Contracts, Account> mockAddress = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
-        put(Contracts.REWARDS, Account.newScoreAccount(102));
+        put(Contracts.REWARD_WEIGHT_CONTROLLER, Account.newScoreAccount(102));
     }};
 
     @BeforeEach
@@ -73,7 +88,7 @@ public class RewardDistributionUnitTest extends TestBase {
 
         score = sm.deploy(owner, RewardDistributionImpl.class,
                 mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress().toString(), weight);
-
+        setAddresses();
         RewardDistributionImpl t = (RewardDistributionImpl) score.getInstance();
         scoreSpy = spy(t);
         mockAssets(scoreSpy, Mockito.spy(scoreSpy.assets));
@@ -81,17 +96,31 @@ public class RewardDistributionUnitTest extends TestBase {
         sm.getBlock().increase(1_000_000);
     }
 
+    private void setAddresses() {
+        AddressDetail[] addressDetails = mockAddress.entrySet().stream().map(e -> {
+            AddressDetail ad = new AddressDetail();
+            ad.address = e.getValue().getAddress();
+            ad.name = e.getKey().toString();
+            return ad;
+        }).toArray(AddressDetail[]::new);
+
+        Object[] params = new Object[]{
+                addressDetails
+        };
+        score.invoke(mockAddress.get(Contracts.ADDRESS_PROVIDER), "setAddresses", params);
+    }
+
     @DisplayName("Add type")
     @Test
     void testAddType() {
 
         VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
-        doReturn(null).when(scoreSpy)
-                .call(eq(String.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addType"),
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addType"),
                         ArgumentMatchers.<Object>argThat(matcher));
         score.invoke(owner, "addType", "key-1", Boolean.FALSE, "");
 
-        verify(scoreSpy).call(String.class, Contracts.REWARD_WEIGHT_CONTROLLER, "addType", "key-1", Boolean.FALSE);
+        verify(scoreSpy).call(Contracts.REWARD_WEIGHT_CONTROLLER, "addType", "key-1", Boolean.FALSE);
         verify(scoreSpy).AddType("key-1", Boolean.FALSE);
     }
 
@@ -99,14 +128,14 @@ public class RewardDistributionUnitTest extends TestBase {
     @Test
     public void testAddAsset() {
         VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
-        doReturn("asset-id").when(scoreSpy)
-                .call(eq(String.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addAsset"),
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addAsset"),
                         ArgumentMatchers.<Object>argThat(matcher));
         Address asset = Account.newScoreAccount(11).getAddress();
         score.invoke(owner, "addAsset", "type-1", "asset-name", asset, BigInteger.ZERO);
 
-        verify(scoreSpy).call(String.class, Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", "type-1", "asset-name");
-        verify(scoreSpy).AssetAdded("asset-id", "type-1", "asset-name", asset, BigInteger.ZERO);
+        verify(scoreSpy).call(Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", "type-1", "asset-name", asset);
+        verify(scoreSpy).AssetAdded("type-1", "asset-name", asset, BigInteger.ZERO);
 
     }
 
@@ -121,8 +150,8 @@ public class RewardDistributionUnitTest extends TestBase {
         @BeforeEach
         void setup() throws Exception {
 
-            doReturn("asset-1", "asset-2", "asset-3", "asset-4").when(scoreSpy)
-                    .call(eq(String.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addAsset"),
+            doNothing().when(scoreSpy)
+                    .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addAsset"),
                             ArgumentMatchers.<Object>argThat(matcher));
             Account asset = Account.newScoreAccount(11);
             assets[0] = asset;
@@ -185,7 +214,7 @@ public class RewardDistributionUnitTest extends TestBase {
              */
             BigInteger workingTotal = details_1._userBalance;
             score.invoke(asset, "handleAction", details_1);
-            verify(scoreSpy).WorkingBalanceUpdated(details_1._user, "asset-" + (index + 1), details_1._userBalance,
+            verify(scoreSpy).WorkingBalanceUpdated(details_1._user, asset.getAddress(), details_1._userBalance,
                     workingTotal);
 
                 /*
@@ -193,7 +222,7 @@ public class RewardDistributionUnitTest extends TestBase {
              */
             workingTotal = workingTotal.add(details_2._userBalance);
             score.invoke(asset, "handleAction", details_2);
-            verify(scoreSpy).WorkingBalanceUpdated(details_2._user, "asset-" + (index + 1), details_2._userBalance,
+            verify(scoreSpy).WorkingBalanceUpdated(details_2._user, asset.getAddress(), details_2._userBalance,
                     workingTotal);
 
             /*
@@ -202,7 +231,7 @@ public class RewardDistributionUnitTest extends TestBase {
             BigInteger workingBalance = details_3._userBalance.multiply(weight).divide(ICX);
             workingTotal = workingTotal.add(workingBalance);
             score.invoke(asset, "handleAction", details_3);
-            verify(scoreSpy).WorkingBalanceUpdated(details_3._user, "asset-" + (index + 1), workingBalance,
+            verify(scoreSpy).WorkingBalanceUpdated(details_3._user, asset.getAddress(), workingBalance,
                     workingTotal);
         }
 
@@ -325,40 +354,47 @@ public class RewardDistributionUnitTest extends TestBase {
             }
 
             private void verifyAssetIndex(BigInteger newIndex) {
-                ArgumentCaptor<String> assetIdCapture = ArgumentCaptor.forClass(String.class);
+                ArgumentCaptor<Address> assetIdCapture = ArgumentCaptor.forClass(Address.class);
                 ArgumentCaptor<BigInteger> indexCapture = ArgumentCaptor.forClass(BigInteger.class);
 
                 verify(scoreSpy.assets, times(4)).setAssetIndex(assetIdCapture.capture(), indexCapture.capture());
 
-                assertEquals(Arrays.asList("asset-1", "asset-2", "asset-3", "asset-4"), assetIdCapture.getAllValues());
+                assertEquals(Arrays.asList(assets[0].getAddress(), assets[1].getAddress(), assets[2].getAddress(),
+                        assets[3].getAddress()), assetIdCapture.getAllValues());
                 assertEquals(Arrays.asList(newIndex, newIndex, newIndex, newIndex), indexCapture.getAllValues());
 
                 ArgumentCaptor<BigInteger> oldIndex = ArgumentCaptor.forClass(BigInteger.class);
-                assetIdCapture = ArgumentCaptor.forClass(String.class);
+                assetIdCapture = ArgumentCaptor.forClass(Address.class);
                 indexCapture = ArgumentCaptor.forClass(BigInteger.class);
                 verify(scoreSpy, times(4)).AssetIndexUpdated(assetIdCapture.capture(), oldIndex.capture(),
                         indexCapture.capture());
 
-                assertEquals(Arrays.asList("asset-1", "asset-2", "asset-3", "asset-4"), assetIdCapture.getAllValues());
+                assertEquals(Arrays.asList(assets[0].getAddress(), assets[1].getAddress(), assets[2].getAddress(),
+                                assets[3].getAddress()),
+                        assetIdCapture.getAllValues());
                 assertEquals(newIndex, indexCapture.getValue());
                 assertEquals(BigInteger.ZERO, oldIndex.getValue());
             }
 
             private void verifyUserIndex(BigInteger asset) {
-                ArgumentCaptor<String> assetIdCapture = ArgumentCaptor.forClass(String.class);
+                ArgumentCaptor<Address> assetIdCapture = ArgumentCaptor.forClass(Address.class);
                 ArgumentCaptor<BigInteger> indexCapture = ArgumentCaptor.forClass(BigInteger.class);
                 verify(scoreSpy.assets, times(4)).setUserIndex(assetIdCapture.capture(), any(), indexCapture.capture());
 
-                assertEquals(Arrays.asList("asset-1", "asset-2", "asset-3", "asset-4"), assetIdCapture.getAllValues());
+                assertEquals(Arrays.asList(assets[0].getAddress(), assets[1].getAddress(), assets[2].getAddress(),
+                                assets[3].getAddress()),
+                        assetIdCapture.getAllValues());
                 assertEquals(Arrays.asList(asset, asset, asset, asset), indexCapture.getAllValues());
 
-                assetIdCapture = ArgumentCaptor.forClass(String.class);
+                assetIdCapture = ArgumentCaptor.forClass(Address.class);
                 indexCapture = ArgumentCaptor.forClass(BigInteger.class);
                 ArgumentCaptor<BigInteger> oldIndex = ArgumentCaptor.forClass(BigInteger.class);
                 verify(scoreSpy, times(4)).UserIndexUpdated(any(), assetIdCapture.capture(), oldIndex.capture(),
                         indexCapture.capture());
 
-                assertEquals(Arrays.asList("asset-1", "asset-2", "asset-3", "asset-4"), assetIdCapture.getAllValues());
+                assertEquals(Arrays.asList(assets[0].getAddress(), assets[1].getAddress(), assets[2].getAddress(),
+                                assets[3].getAddress()),
+                        assetIdCapture.getAllValues());
                 assertEquals(Arrays.asList(asset, asset, asset, asset), indexCapture.getAllValues());
                 assertEquals(Arrays.asList(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO),
                         oldIndex.getAllValues());

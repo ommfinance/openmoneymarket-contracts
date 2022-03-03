@@ -5,6 +5,7 @@ import static finance.omm.utils.math.MathUtils.ICX;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AssetConfig;
 import finance.omm.libs.structs.DistPercentage;
+import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.UserDetails;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
@@ -69,10 +70,15 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 //not required
     }
 
+    /**
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#setTypeWeight(TypeWeightStruct[],
+     * BigInteger)}
+     */
     @Override
+    @Deprecated
     @External
     public void setDistributionPercentage(DistPercentage[] _distPercentage) {
-//not required
+        throw RewardDistributionException.unknown("Unsupported method user #setTypeWeight of reward weight controller");
     }
 
     /**
@@ -130,7 +136,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     @External(readonly = true)
-    public Map<String, BigInteger> getLiquidityProviders() {
+    public Map<Address, BigInteger> getLiquidityProviders() {
         return this.assets.getLiquidityProviders();
     }
 
@@ -201,7 +207,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     /**
-     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getTypes()}
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#
      */
     @Deprecated
     @External(readonly = true)
@@ -241,6 +247,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     @Override
+    @Deprecated
     @External
     public void startDistribution() {
         checkOwner();
@@ -270,14 +277,15 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         OmmTokenMinted(day, tokenDistribution);
         BigInteger transferToContract = BigInteger.ZERO;
 
-        for (String assetId : this.transferToContractMap.keySet()) {
-            BigInteger oldIndex = this.assets.getAssetIndex(assetId);
-            BigInteger newIndex = this.getAssetIndex(assetId, ICX, false);
+        for (Address key : this.transferToContractMap.keySet()) {
+            BigInteger oldIndex = this.assets.getAssetIndex(key);
+            BigInteger newIndex = this.getAssetIndex(key, ICX, false);
             BigInteger accruedRewards = calculateReward(ICX, newIndex, oldIndex);
             transferToContract = transferToContract.add(accruedRewards);
-            if (assetId.equals("workerToken_1")) {
+
+            if (Contracts.WORKER_TOKEN.getKey().equals(transferToContractMap.get(key))) {
                 distributeWorkerToken(accruedRewards);
-            } else if (assetId.equals("daoFund_1")) {
+            } else if (Contracts.WORKER_TOKEN.getKey().equals(transferToContractMap.get(key))) {
                 call(Contracts.OMM_TOKEN, "transfer", Contracts.DAO_FUND, accruedRewards);
                 Distribution("daoFund", getAddress(Contracts.DAO_FUND.toString()), accruedRewards);
             }
@@ -355,7 +363,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
         BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
 
-        updateWorkingBalance(asset.id, _user, _userBalance, _totalSupply);
+        updateWorkingBalance(_asset, _user, _userBalance, _totalSupply);
     }
 
     @EventLog()

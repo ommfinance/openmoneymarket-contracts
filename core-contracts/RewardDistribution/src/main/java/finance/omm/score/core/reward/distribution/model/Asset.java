@@ -8,33 +8,30 @@ import score.ObjectWriter;
 
 public class Asset {
 
-    public final String id;
-    public final String typeId;
+    public final String type;
     public String name;
     public BigInteger lpID;
     public Address address;
 
-    public Asset(String id, String typeId) {
-        this.id = id;
-        this.typeId = typeId;
+    public Asset(Address address, String type) {
+        this.type = type;
+        this.address = address;
     }
 
     public static void writeObject(ObjectWriter w, Asset a) {
-        w.beginList(5);
-        w.write(a.id);
-        w.write(a.typeId);
+        w.beginList(4);
+        w.write(a.address);
+        w.write(a.type);
         w.write(a.name);
         w.writeNullable(a.lpID);
-        w.writeNullable(a.address);
         w.end();
     }
 
     public static Asset readObject(ObjectReader r) {
         r.beginList();
-        Asset a = new Asset(r.readString(), r.readString());
+        Asset a = new Asset(r.readAddress(), r.readString());
         a.name = r.readString();
         a.lpID = r.readNullable(BigInteger.class);
-        a.address = r.readNullable(Address.class);
         r.end();
         return a;
     }

@@ -12,6 +12,7 @@ import static finance.omm.utils.math.MathUtils.pow;
 import finance.omm.core.score.interfaces.RewardWeightController;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.db.AssetWeightDB;
 import finance.omm.score.core.reward.db.TypeWeightDB;
@@ -22,6 +23,7 @@ import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import score.Address;
 import score.Context;
 import score.VarDB;
 import score.annotation.EventLog;
@@ -31,7 +33,7 @@ import scorex.util.HashMap;
 
 public class RewardWeightControllerImpl extends AddressProvider implements RewardWeightController {
 
-    public static final String TAG = "Reward Controller";
+    public static final String TAG = "Reward Weight Controller";
     public static final BigInteger DAYS_PER_YEAR = BigInteger.valueOf(365L);
     public static final String TIMESTAMP_AT_START = "timestampAtStart";
 
@@ -53,22 +55,25 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     @External
-    public String addType(String key, boolean transferToContract) {
+    public void addType(String key, boolean transferToContract, @Optional Address address) {
         checkRewardDistribution();
         typeWeightDB.add(key, transferToContract);
+
         if (transferToContract) {
-            String id = assetWeightDB.addAsset(key, key);
+            if (address == null) {
+                throw RewardException.unknown("asset address can't be null");
+            }
+            assetWeightDB.addAsset(key, address, key);
             WeightStruct weightStruct = new WeightStruct();
             weightStruct.weight = ICX;
-            weightStruct.id = id;
-            setTypeWeight(new WeightStruct[]{weightStruct}, BigInteger.ZERO);
-            return id;
+            weightStruct.address = address;
+            setAssetWeight(key, new WeightStruct[]{weightStruct}, BigInteger.ZERO);
         }
-        return null;
     }
 
+
     @External
-    public void setTypeWeight(WeightStruct[] weights, @Optional BigInteger timestamp) {
+    public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp) {
         checkOwner();
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
@@ -97,12 +102,11 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @Override
     @External
-    public String addAsset(String typeId, String name) {
+    public void addAsset(String type, Address address, String name) {
         checkRewardDistribution();
-        checkTypeId(typeId);
-        return assetWeightDB.addAsset(typeId, name);
+        checkTypeId(type);
+        assetWeightDB.addAsset(type, address, name);
     }
-
 
     @External
     public void setAssetWeight(String typeId, WeightStruct[] weights, @Optional BigInteger timestamp) {
@@ -172,14 +176,14 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public BigInteger getIntegrateIndex(String assetId, BigInteger totalSupply, BigInteger lastUpdatedTimestamp) {
+    public BigInteger getIntegrateIndex(Address address, BigInteger totalSupply, BigInteger lastUpdatedTimestamp) {
         if (totalSupply.compareTo(BigInteger.ZERO) <= 0) {
             return BigInteger.ZERO;
         }
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
         BigInteger actual = timestamp;
         BigInteger integrateIndex = BigInteger.ZERO;
-        Asset asset = assetWeightDB.getAsset(assetId);
+        Asset asset = assetWeightDB.getAsset(address);
         if (asset == null) {
             return BigInteger.ZERO;
         }
@@ -203,7 +207,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         BigInteger aTimestamp = assetWeight.get("timestamp");
         BigInteger aWeight = assetWeight.get("value");
 
-        Map<String, BigInteger> typeWeight = typeWeightDB.getWeight(asset.typeId, timestamp);
+        Map<String, BigInteger> typeWeight = typeWeightDB.getWeight(asset.type, timestamp);
         int typeIndex = typeWeight.get("index").intValue();
         BigInteger tTimestamp = typeWeight.get("timestamp");
         BigInteger tWeight = typeWeight.get("value");
@@ -259,16 +263,16 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public Map<String, BigInteger> getAssetWeightByTimestamp(String typeId, BigInteger timestamp) {
-        return this.assetWeightDB.getWeightByTimestamp(typeId, timestamp);
+    public Map<Address, BigInteger> getAssetWeightByTimestamp(String type, BigInteger timestamp) {
+        return this.assetWeightDB.getWeightByTimestamp(type, timestamp);
     }
 
     @External(readonly = true)
-    public BigInteger getAssetWeight(String assetId, @Optional BigInteger timestamp) {
+    public BigInteger getAssetWeight(Address asset, @Optional BigInteger timestamp) {
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
-        Map<String, BigInteger> result = this.assetWeightDB.getWeight(assetId, timestamp);
+        Map<String, BigInteger> result = this.assetWeightDB.getWeight(asset, timestamp);
         return result.get("value");
     }
 
@@ -320,20 +324,25 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
-        Map<String, BigInteger> lpAssetIds = (Map<String, BigInteger>) Context.call(
+        Map<Address, BigInteger> lpAssetIds = (Map<Address, BigInteger>) Context.call(
                 getAddress(Contracts.REWARDS.toString()), "getLiquidityProviders");
 
         Map<String, BigInteger> response = new HashMap<>();
-        for (Map.Entry<String, BigInteger> entry : lpAssetIds.entrySet()) {
-            String assetId = entry.getKey();
+        for (Map.Entry<Address, BigInteger> entry : lpAssetIds.entrySet()) {
+            Address assetAddress = entry.getKey();
             BigInteger lpID = entry.getValue();
-            Asset asset = this.assetWeightDB.getAsset(assetId);
+            Asset asset = this.assetWeightDB.getAsset(assetAddress);
             if (asset != null) {
-                BigInteger value = this.assetWeightDB.getWeight(assetId, timestamp).get("value");
+                BigInteger value = this.assetWeightDB.getWeight(asset, timestamp).get("value");
                 response.put(lpID.toString(10), value);
             }
         }
         return response;
+    }
+
+    @External(readonly = true)
+    public String[] getTypes() {
+        return this.typeWeightDB.getTypeIds().toArray(new String[0]);
     }
 
     @External(readonly = true)
