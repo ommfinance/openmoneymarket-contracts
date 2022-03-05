@@ -16,7 +16,7 @@ import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.db.AssetWeightDB;
 import finance.omm.score.core.reward.db.TypeWeightDB;
-import finance.omm.score.core.reward.exception.RewardException;
+import finance.omm.score.core.reward.exception.RewardWeightException;
 import finance.omm.score.core.reward.model.Asset;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
@@ -61,7 +61,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
         if (transferToContract) {
             if (address == null) {
-                throw RewardException.unknown("asset address can't be null");
+                throw RewardWeightException.unknown("asset address can't be null");
             }
             assetWeightDB.addAsset(key, address, key);
             WeightStruct weightStruct = new WeightStruct();
@@ -121,17 +121,17 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     @External(readonly = true)
     public BigInteger tokenDistributionPerDay(BigInteger _day) {
 
-        if (MathUtils.isLesThanEqual(_day, BigInteger.ZERO)) {
+        if (MathUtils.isLessThan(_day, BigInteger.ZERO)) {
             return BigInteger.ZERO;
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(30L))) {
+        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(30L))) {
             return MILLION;
-        } else if (MathUtils.isLesThanEqual(_day, DAYS_PER_YEAR)) {
+        } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR)) {
             return BigInteger.valueOf(4L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
+        } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
             return BigInteger.valueOf(3L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
+        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
             return BigInteger.valueOf(2L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
+        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
             return BigInteger.valueOf(34L).multiply(MILLION).divide(BigInteger.TEN);
         } else {
             BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
@@ -226,23 +226,23 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     private void checkRewardDistribution() {
         if (!Context.getCaller().equals(getAddress(Contracts.REWARDS.getKey()))) {
-            throw RewardException.notAuthorized("require reward distribution contract access");
+            throw RewardWeightException.notAuthorized("require reward distribution contract access");
         }
     }
 
     private void checkOwner() {
         if (!Context.getOwner().equals(Context.getCaller())) {
-            throw RewardException.notOwner();
+            throw RewardWeightException.notOwner();
         }
     }
 
     private void checkTypeId(String typeId) {
         if (!typeWeightDB.isValidId(typeId)) {
-            throw RewardException.notValidTypeId(typeId);
+            throw RewardWeightException.notValidTypeId(typeId);
         }
 
         if (typeWeightDB.isContractType(typeId)) {
-            throw RewardException.unknown("Contract type can't have child assets");
+            throw RewardWeightException.unknown("Contract type can't have child assets");
         }
     }
 
@@ -263,7 +263,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public Map<Address, BigInteger> getAssetWeightByTimestamp(String type, BigInteger timestamp) {
+    public Map<String, BigInteger> getAssetWeightByTimestamp(String type, BigInteger timestamp) {
         return this.assetWeightDB.getWeightByTimestamp(type, timestamp);
     }
 
@@ -342,7 +342,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External(readonly = true)
     public String[] getTypes() {
-        return this.typeWeightDB.getTypeIds().toArray(new String[0]);
+        return (String[]) this.typeWeightDB.getTypeIds().toArray();
     }
 
     @External(readonly = true)
@@ -356,16 +356,17 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         Map<String, Object> response = new HashMap<>() {{
             put("isValid", true);
         }};
-        BigInteger today = getDay();
+        BigInteger today = getDay().add(BigInteger.ONE);
 
-        if (day.compareTo(today) > 0) {
+        if (day.compareTo(today) >= 0) {
             response.put("isValid", false);
             return response;
         }
         BigInteger distribution = BigInteger.ZERO;
-        for (int i = day.intValue(); i <= today.intValue(); i++) {
+        for (int i = day.intValue(); i < today.intValue(); i++) {
             distribution = distribution.add(tokenDistributionPerDay(BigInteger.valueOf(i)));
         }
+
         response.put("distribution", distribution);
         response.put("day", today);
         return response;

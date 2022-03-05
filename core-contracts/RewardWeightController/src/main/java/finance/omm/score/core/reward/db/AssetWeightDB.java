@@ -4,7 +4,7 @@ import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 import finance.omm.libs.structs.WeightStruct;
-import finance.omm.score.core.reward.exception.RewardException;
+import finance.omm.score.core.reward.exception.RewardWeightException;
 import finance.omm.score.core.reward.model.Asset;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
@@ -47,7 +47,7 @@ public class AssetWeightDB {
 
     public void addAsset(String type, Address address, String name) {
         if (this.assets.get(address) != null) {
-            throw RewardException.invalidAsset(address + " already exists");
+            throw RewardWeightException.invalidAsset(address + " already exists");
         }
 
         Asset asset = new Asset(address, type);
@@ -62,9 +62,9 @@ public class AssetWeightDB {
         BigInteger latestCheckpoint = this.tCheckpoint.at(type).getOrDefault(checkpointCounter, BigInteger.ZERO);
         int compareValue = latestCheckpoint.compareTo(timestamp);
         if (compareValue > 0) {
-            throw RewardException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
+            throw RewardWeightException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
         }
-
+//
         BigInteger total = this.totalCheckpoint.at(type).getOrDefault(checkpointCounter, BigInteger.ZERO);
         if (compareValue == 0) {
             setWeights(type, total, weights, checkpointCounter);
@@ -89,17 +89,17 @@ public class AssetWeightDB {
     private void setWeights(String type, BigInteger total, WeightStruct[] weights, Integer counter) {
         DictDB<Address, BigInteger> dictDB = this.wCheckpoint.at(type).at(counter);
         for (WeightStruct tw : weights) {
-            Asset asset = this.assets.get(tw.address);
+            Address address = tw.address;
+            Asset asset = this.assets.get(address);
             if (asset == null) {
-                throw RewardException.unknown(msg("Invalid asset :: " + tw.address));
+                throw RewardWeightException.unknown(msg("Invalid asset :: " + tw.address));
             }
-            BigInteger prevWeight = dictDB.getOrDefault(tw.address, BigInteger.ZERO);
+            BigInteger prevWeight = dictDB.getOrDefault(address, BigInteger.ZERO);
             total = total.subtract(prevWeight).add(tw.weight);
-            dictDB.set(tw.address, tw.weight);
+            dictDB.set(address, tw.weight);
         }
         if (!total.equals(ICX)) {
-            System.out.println("total = " + total);
-            throw RewardException.invalidTotalPercentage();
+            throw RewardWeightException.invalidTotalPercentage();
         }
         this.totalCheckpoint.at(type).set(counter, total);
     }
@@ -173,16 +173,16 @@ public class AssetWeightDB {
         return checkpointCounter.getOrDefault(typeId, 0);
     }
 
-    public Map<Address, BigInteger> getWeightByTimestamp(String type, BigInteger timestamp) {
+    public Map<String, BigInteger> getWeightByTimestamp(String type, BigInteger timestamp) {
         DictDB<Address, BigInteger> dictDB = getCheckpoint(type, timestamp);
-        Map<Address, BigInteger> result = new HashMap<>();
+        Map<String, BigInteger> result = new HashMap<>();
 
         ArrayDB<Address> addresses = this.assetMap.at(type);
 
         for (int i = 0; i < addresses.size(); i++) {
             Address address = addresses.get(i);
             BigInteger value = dictDB.getOrDefault(address, BigInteger.ZERO);
-            result.put(address, value);
+            result.put(address.toString(), value);
         }
 
         return result;

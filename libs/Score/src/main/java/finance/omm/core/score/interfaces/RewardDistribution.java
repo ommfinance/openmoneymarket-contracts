@@ -23,56 +23,74 @@ public interface RewardDistribution {
     @External(readonly = true)
     public Map<String, BigInteger> getIndexes(Address _user, Address _asset);
 
+    @External(readonly = true)
+    public BigInteger getAssetIndex(Address _asset);
+
+    @External(readonly = true)
+    public BigInteger getLastUpdatedTimestamp(Address _asset);
+
     @External
     public void setAssetName(Address _asset, String _name);
 
+    @Deprecated
     @External
     public void setDistributionPercentage(DistPercentage[] _distPercentage);
 
+    @Deprecated
     @External(readonly = true)
     public BigInteger getDistributionPercentage(String _recipient);
 
     @External(readonly = true)
+    @Deprecated
     public Map<String, BigInteger> getAllDistributionPercentage();
 
+    @Deprecated
     @External(readonly = true)
     public BigInteger assetDistPercentage(Address asset);
 
+    @Deprecated
     @External(readonly = true)
     public Map<String, ?> allAssetDistPercentage();
 
+    @Deprecated
     @External(readonly = true)
     public Map<String, Map<String, BigInteger>> distPercentageOfAllLP();
 
+    @External(readonly = true)
+    public Map<String, BigInteger> getLiquidityProviders();
+
+    @Deprecated
     @External
     public void configureAssetConfigs(AssetConfig[] _assetConfig);
 
-
+    @Deprecated
     @External
     public void removeAssetConfig(Address _asset);
 
+    @Deprecated
     @External
     public void updateEmissionPerSecond();
 
+
+    @Deprecated
     @External(readonly = true)
     public BigInteger tokenDistributionPerDay(BigInteger _day);
 
+    @Deprecated
     @External(readonly = true)
     public BigInteger getDay();
 
+    @Deprecated
     @External(readonly = true)
     public BigInteger getStartTimestamp();
-
 
     @External(readonly = true)
     public BigInteger getPoolIDByAsset(Address _asset);
 
-
+    @Deprecated
     @External(readonly = true)
     public String[] getRecipients();
 
-    @External()
-    public void handleAction(UserDetails _userAssetDetails);
 
     @External()
     public void disableRewardClaim();
@@ -83,21 +101,13 @@ public interface RewardDistribution {
     @External(readonly = true)
     public boolean isRewardClaimEnabled();
 
-    @External
-    public void handleLPAction(Address _asset, UserDetails _userDetails);
-
+    @Deprecated
     @External(readonly = true)
-    public Map<String, ?> getDailyRewards(@Optional BigInteger _day);
+    public Map<String, ?> getDailyRewards(BigInteger _day);
 
-
-    @External(readonly = true)
-    public Map<String, ?> getRewards(Address _user);
-
+    @Deprecated
     @External
     public void startDistribution();
-
-    @External
-    public void claimRewards(Address _user);
 
     @External
     public void distribute();
@@ -110,5 +120,31 @@ public interface RewardDistribution {
 
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data);
+
+
+    @External()
+    public void handleAction(UserDetails _userAssetDetails);
+
+    @External
+    public void handleLPAction(Address _asset, UserDetails _userDetails);
+
+    @External
+    public void setWeight(BigInteger _weight);
+
+    @External
+    public void addType(String key, boolean transferToContract);
+
+
+    @External
+    public void addAsset(String type, String name, Address address, @Optional BigInteger poolID);
+
+    @External(readonly = true)
+    public Map<String, ?> getRewards(Address user);
+
+    @External
+    public void claimRewards(Address user);
+
+    @External(readonly = true)
+    public BigInteger getClaimedReward(Address user);
 
 }

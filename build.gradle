@@ -71,9 +71,6 @@ subprojects {
         scoreTest.put('url', props.getOrDefault(prefix + 'url', 'http://localhost:9082/api/v3'))
         scoreTest.put('nid', props.getOrDefault(prefix + 'nid', 3))
 
-        scoreTest.put('tester.keystoreName', props.get(prefix + 'tester.keystoreName'))
-        scoreTest.put('tester.keystorePass', props.get(prefix + 'tester.keystorePass'))
-
         ext['scoreTest'] = scoreTest
     }
     loadProperties()

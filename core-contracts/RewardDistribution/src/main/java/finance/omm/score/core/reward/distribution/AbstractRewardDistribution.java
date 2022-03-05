@@ -67,23 +67,26 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     @External
-    public void addType(String key, boolean transferToContract, @Optional String addressKey) {
+    public void addType(String key, boolean transferToContract) {
         checkOwner();
         Object[] params = new Object[]{
                 key, transferToContract
         };
         if (transferToContract) {
-            Address address = getAddress(Contracts.valueOf(addressKey).getKey());
+            Address address = getAddress(key);
+            if (address == null) {
+                throw RewardDistributionException.unknown(
+                        "Address required for type if transferToContract is enable (" + key + ")");
+            }
             params = new Object[]{
                     key, true, address
             };
-            Context.require(address != null, "Address required for type if transferToContract is enable");
             Asset asset = new Asset(address, key);
             asset.name = key;
             asset.lpID = null;
             assets.put(address, asset);
             this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
-            transferToContractMap.put(address, addressKey);
+            transferToContractMap.put(address, key);
             AssetAdded(key, key, address, null);
         }
         call(Contracts.REWARD_WEIGHT_CONTROLLER, "addType", params);

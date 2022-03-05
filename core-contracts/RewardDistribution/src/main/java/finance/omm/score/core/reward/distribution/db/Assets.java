@@ -3,12 +3,12 @@ package finance.omm.score.core.reward.distribution.db;
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.db.EnumerableDictDB;
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.Map;
 import score.Address;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
+import scorex.util.HashMap;
 
 public class Assets extends EnumerableDictDB<Address, Asset> {
 
@@ -66,13 +66,13 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         return result;
     }
 
-    public Map<Address, BigInteger> getLiquidityProviders() {
+    public Map<String, BigInteger> getLiquidityProviders() {
         int size = size();
-        Map<Address, BigInteger> result = new HashMap<>();
+        Map<String, BigInteger> result = new HashMap<>();
         for (int i = 0; i < size; i++) {
             Asset asset = getByIndex(i);
             if (asset != null && BigInteger.ZERO.compareTo(asset.lpID) < 0) {
-                result.put(asset.address, asset.lpID);
+                result.put(asset.address.toString(), asset.lpID);
             }
         }
         return result;

@@ -2,6 +2,8 @@ package finance.omm.score.core.reward.unit.test;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -344,19 +346,19 @@ public class RewardControllerUnitTest extends TestBase {
         for (int i = 20; i > 2; i--) {
             BigInteger timestamp = snapshots.get(i);
             String type_id = i % 2 == 0 ? typeId_2 : typeId;
-            Map<Address, BigInteger> nextTime = (Map<Address, BigInteger>) score.call("getAssetWeightByTimestamp",
+            Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp.add(BigInteger.ONE));
-            Map<Address, BigInteger> exactTime = (Map<Address, BigInteger>) score.call("getAssetWeightByTimestamp",
+            Map<String, BigInteger> exactTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp);
-            Map<Address, BigInteger> prevTime = (Map<Address, BigInteger>) score.call("getAssetWeightByTimestamp",
+            Map<String, BigInteger> prevTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp.subtract(BigInteger.ONE));
 
             Map<Address, Long> value = values.get(i);
             for (Map.Entry<Address, Long> entry : value.entrySet()) {
-                Address id = entry.getKey();
+                String id = entry.getKey().toString();
                 BigInteger next = nextTime.get(id);
                 BigInteger exact = exactTime.get(id);
                 BigInteger expected = BigInteger.valueOf(entry.getValue())
@@ -368,7 +370,7 @@ public class RewardControllerUnitTest extends TestBase {
 
             value = values.get(i - 2);
             for (Map.Entry<Address, Long> entry : value.entrySet()) {
-                Address id = entry.getKey();
+                String id = entry.getKey().toString();
                 BigInteger prev = prevTime.get(id);
                 BigInteger expected = BigInteger.valueOf(entry.getValue())
                         .multiply(ICX)
@@ -484,6 +486,48 @@ public class RewardControllerUnitTest extends TestBase {
         emissionPerSecond = 0.40f * 0.50f * 400_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
         expectedIndex = expectedIndex + emissionPerSecond * time_delta.floatValue() / 100;
         assertEquals(expectedIndex, index.floatValue() / ICX.floatValue(), 0.00001);
+    }
+
+    @DisplayName("test distribution info")
+    @Test
+    public void testDistributionInfo() {
+
+        Map<String, ?> result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(1L));
+
+        assertFalse((boolean) result.get("isValid"));
+
+        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(0L));
+
+        assertTrue((boolean) result.get("isValid"));
+        assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));
+        assertEquals(BigInteger.valueOf(1L), result.get("day"));
+
+        sm.getBlock().increase(86400 / 2);//1
+
+        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(1L));
+
+        assertTrue((boolean) result.get("isValid"));
+        assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));//2-1
+        assertEquals(BigInteger.valueOf(2L), result.get("day"));//1+1
+
+        sm.getBlock().increase(86400 * 4 / 2);//1+4 = 5
+        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(2L));
+        assertTrue((boolean) result.get("isValid"));
+        assertEquals(BigInteger.valueOf(6L), result.get("day")); //5+1
+        assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)).multiply(BigInteger.valueOf(4L)),
+                result.get("distribution"));//6-2
+
+        sm.getBlock().increase(86400 * 25 / 2);//5+25=30
+        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(25L));
+        assertTrue((boolean) result.get("isValid"));
+        assertEquals(BigInteger.valueOf(31L), result.get("day")); //30+1=31
+        //31-25 => 25+26+27+28+29+30
+        //last 5 day of first month  (25+26+27+28+29 1M) 5days
+        BigInteger total = ICX.multiply(BigInteger.valueOf(1_000_000)).multiply(BigInteger.valueOf(5L));
+        //31st day (30 400k)
+        total = total.add(ICX.multiply(BigInteger.valueOf(400_000)));
+        assertEquals(total, result.get("distribution"));
+
     }
 
     private void addAsset(String type, Address address) {

@@ -12,11 +12,9 @@ import finance.omm.score.core.reward.distribution.exception.RewardDistributionEx
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.Context;
-import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
@@ -26,14 +24,12 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public static final String DAY = "day";
     public static final String IS_INITIALIZED = "isInitialized";
     public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
-    public static final String DAILY_DISTRIBUTION_MAP = "dailyDistribution";
 
 
-    public final VarDB<BigInteger> _day = Context.newVarDB(DAY, BigInteger.class);
+    public final VarDB<BigInteger> distributedDay = Context.newVarDB(DAY, BigInteger.class);
     public final VarDB<Boolean> _isInitialized = Context.newVarDB(IS_INITIALIZED, Boolean.class);
     public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
 
-    public final DictDB<String, String> dailyDistribution = Context.newDictDB(DAILY_DISTRIBUTION_MAP, String.class);
 
     public RewardDistributionImpl(String addressProvider, BigInteger _weight) {
         super(addressProvider, _weight);
@@ -48,7 +44,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Override
     @External(readonly = true)
     public Address[] getAssets() {
-        return this.assets.keySet().toArray(new Address[0]);
+        return this.assets.keyArray();
     }
 
     @Override
@@ -63,6 +59,17 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         return Map.of("userIndex", this.assets.getUserIndex(_asset, _user)
                 , "assetIndex", this.assets.getAssetIndex(_asset));
     }
+
+    @External(readonly = true)
+    public BigInteger getAssetIndex(Address _asset) {
+        return this.assets.getAssetIndex(_asset);
+    }
+
+    @External(readonly = true)
+    public BigInteger getLastUpdatedTimestamp(Address _asset) {
+        return this.assets.getLastUpdateTimestamp(_asset);
+    }
+
 
     @Override
     @External
@@ -104,7 +111,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     /**
-     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getAssetWeight(String,
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getAssetWeight(Address,
      * BigInteger)}
      */
     @Override
@@ -136,7 +143,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     @External(readonly = true)
-    public Map<Address, BigInteger> getLiquidityProviders() {
+    public Map<String, BigInteger> getLiquidityProviders() {
         return this.assets.getLiquidityProviders();
     }
 
@@ -229,7 +236,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         _isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
-    @Override
+    //    @Override
     @External(readonly = true)
     public boolean isRewardClaimEnabled() {
         return _isRewardClaimEnabled.get();
@@ -259,7 +266,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @Override
     public void distribute() {
-        BigInteger day = _day.get();
+        BigInteger day = distributedDay.getOrDefault(BigInteger.ZERO);  //0
 
         @SuppressWarnings("unchecked")
         Class<Map<String, ?>> clazz = (Class) Map.class;
@@ -271,10 +278,13 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         }
         BigInteger tokenDistribution = (BigInteger) distributionInfo.get("distribution");
         BigInteger newDay = (BigInteger) distributionInfo.get("day");
-
-        _day.set(newDay);
+        if (tokenDistribution.equals(BigInteger.ZERO)) {
+            return;
+        }
+        distributedDay.set(newDay);
         call(Contracts.OMM_TOKEN, "mint", tokenDistribution);
-        OmmTokenMinted(day, tokenDistribution);
+        OmmTokenMinted(newDay, tokenDistribution, newDay.subtract(day));
+
         BigInteger transferToContract = BigInteger.ZERO;
 
         for (Address key : this.transferToContractMap.keySet()) {
@@ -285,14 +295,14 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
             if (Contracts.WORKER_TOKEN.getKey().equals(transferToContractMap.get(key))) {
                 distributeWorkerToken(accruedRewards);
-            } else if (Contracts.WORKER_TOKEN.getKey().equals(transferToContractMap.get(key))) {
+            } else if (Contracts.DAO_FUND.getKey().equals(transferToContractMap.get(key))) {
                 call(Contracts.OMM_TOKEN, "transfer", Contracts.DAO_FUND, accruedRewards);
                 Distribution("daoFund", getAddress(Contracts.DAO_FUND.toString()), accruedRewards);
             }
         }
 
-        if (transferToContract.compareTo(tokenDistribution) < 0) {
-            throw RewardDistributionException.unknown("transfer to contract exceed daily distribution");
+        if (transferToContract.compareTo(tokenDistribution) > 0) {
+            throw RewardDistributionException.unknown("transfer to contract exceed total distribution");
         }
 
     }
@@ -303,8 +313,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
      */
     @Deprecated
     private void distributeWorkerToken(BigInteger reward) {
-        Class<List<Address>> clazz = (Class) List.class;
-        List<Address> walletHolders = call(clazz, Contracts.WORKER_TOKEN, "getWallets");
+        Address[] walletHolders = call(Address[].class, Contracts.WORKER_TOKEN, "getWallets");
         BigInteger totalSupply = call(BigInteger.class, Contracts.WORKER_TOKEN, "totalSupply");
         BigInteger total = BigInteger.ZERO;
         for (Address user : walletHolders) {
@@ -324,7 +333,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Override
     @External(readonly = true)
     public BigInteger getDistributedDay() {
-        return this._day.get();
+        return this.distributedDay.get();
     }
 
     @Override
@@ -367,7 +376,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     @EventLog()
-    public void OmmTokenMinted(BigInteger _day, BigInteger _value) {}
+    public void OmmTokenMinted(BigInteger _day, BigInteger _value, BigInteger _days) {}
 
     @EventLog(indexed = 2)
     public void Distribution(String _recipient, Address _user, BigInteger _value) {}

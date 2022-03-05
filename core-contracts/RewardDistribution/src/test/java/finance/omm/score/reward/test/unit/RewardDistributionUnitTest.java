@@ -1,5 +1,6 @@
 package finance.omm.score.reward.test.unit;
 
+import static finance.omm.utils.constants.TimeConstants.SECOND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -79,6 +80,8 @@ public class RewardDistributionUnitTest extends TestBase {
     private Map<Contracts, Account> mockAddress = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
         put(Contracts.REWARD_WEIGHT_CONTROLLER, Account.newScoreAccount(102));
+        put(Contracts.DAO_FUND, Account.newScoreAccount(103));
+        put(Contracts.WORKER_TOKEN, Account.newScoreAccount(104));
     }};
 
     @BeforeEach
@@ -118,7 +121,7 @@ public class RewardDistributionUnitTest extends TestBase {
         doNothing().when(scoreSpy)
                 .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addType"),
                         ArgumentMatchers.<Object>argThat(matcher));
-        score.invoke(owner, "addType", "key-1", Boolean.FALSE, "");
+        score.invoke(owner, "addType", "key-1", Boolean.FALSE);
 
         verify(scoreSpy).call(Contracts.REWARD_WEIGHT_CONTROLLER, "addType", "key-1", Boolean.FALSE);
         verify(scoreSpy).AddType("key-1", Boolean.FALSE);
@@ -413,6 +416,102 @@ public class RewardDistributionUnitTest extends TestBase {
         }
     }
 
+    @DisplayName("test distribute")
+    @Test
+    void testDistribute_forZEROday() {
+        Class<Map<String, ?>> clazz = (Class) Map.class;
+        Map<String, ?> result = new HashMap<>() {{
+            put("isValid", true);
+            put("distribution", BigInteger.ZERO);
+            put("day", BigInteger.ZERO);
+        }};
+        doReturn(result).when(scoreSpy)
+                .call(eq(clazz), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("distributionInfo"),
+                        any(BigInteger.class));
+        score.invoke(owner, "distribute");
+
+    }
+
+    @DisplayName("test distribute")
+    @ParameterizedTest
+    @MethodSource("distributeArgument")
+    void testDistribute(Map<String, ?> response) {
+
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addType"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+        score.invoke(owner, "addType", "workerToken", Boolean.TRUE);
+
+        score.invoke(owner, "addType", "daoFund", Boolean.TRUE);
+
+        Class<Map<String, ?>> clazz = (Class) Map.class;
+        BigInteger distribution = (BigInteger) response.get("distribution");
+        doReturn(response).when(scoreSpy)
+                .call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "distributionInfo",
+                        BigInteger.ZERO);
+        doNothing().when(scoreSpy).call(Contracts.OMM_TOKEN, "mint", distribution);
+        mockTokenDistribution();
+
+        BigInteger newIndex = ICX.divide(BigInteger.valueOf(1_000_000));
+        doReturn(newIndex).when(scoreSpy)
+                .call(eq(BigInteger.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getIntegrateIndex"),
+                        any(Address.class),
+                        eq(ICX), any(BigInteger.class));
+
+        sm.getBlock().increase(86400);
+        score.invoke(owner, "distribute");
+
+        BigInteger timestamp = BigInteger.valueOf(sm.getBlock().getTimestamp()).divide(SECOND);
+
+        verify(scoreSpy).OmmTokenMinted(BigInteger.ZERO, distribution,
+                ((BigInteger) response.get("day")).subtract(BigInteger.ZERO));
+        verify(scoreSpy).Distribution(eq("daoFund"), eq(mockAddress.get(Contracts.DAO_FUND).getAddress()),
+                Mockito.any(BigInteger.class));
+        verify(scoreSpy, times(2)).AssetIndexUpdated(any(), eq(BigInteger.ZERO),
+                eq(newIndex));
+
+        BigInteger daoIndex = (BigInteger) score.call("getAssetIndex",
+                mockAddress.get(Contracts.DAO_FUND).getAddress());
+        BigInteger workerTokenIndex = (BigInteger) score.call("getAssetIndex",
+                mockAddress.get(Contracts.WORKER_TOKEN).getAddress());
+
+        assertEquals(newIndex, daoIndex);
+        assertEquals(newIndex, workerTokenIndex);
+
+        BigInteger daoTime = (BigInteger) score.call("getLastUpdatedTimestamp",
+                mockAddress.get(Contracts.DAO_FUND).getAddress());
+        BigInteger workerTime = (BigInteger) score.call("getLastUpdatedTimestamp",
+                mockAddress.get(Contracts.WORKER_TOKEN).getAddress());
+
+        assertEquals(timestamp, daoTime);
+        assertEquals(timestamp, workerTime);
+
+        BigInteger scoreDay = (BigInteger) score.call("getDistributedDay");
+        assertEquals((BigInteger) response.get("day"), scoreDay);
+    }
+
+    private void mockTokenDistribution() {
+        doReturn(new Address[0]).when(scoreSpy).call(Address[].class, Contracts.WORKER_TOKEN, "getWallets");
+        doReturn(BigInteger.ZERO).when(scoreSpy).call(BigInteger.class, Contracts.WORKER_TOKEN, "totalSupply");
+
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.OMM_TOKEN), eq("transfer"), eq(Contracts.DAO_FUND), any(BigInteger.class));
+
+    }
+
+
+    static Stream<Arguments> distributeArgument() {
+        //                user1 working balance min(100*0.4+100*200/400*0.6,100)=70
+        //                user2 working balance min(200*0.4+300*0/400*0.6,200)=80
+        return Stream.of(
+                Arguments.of(Map.of(
+                        "isValid", true,
+                        "distribution", ICX.multiply(BigInteger.valueOf(1_000_000)),
+                        "day", BigInteger.TEN
+                ))
+        );
+    }
 
     static Stream<Arguments> userRewards() {
         //                user1 working balance min(100*0.4+100*200/400*0.6,100)=70

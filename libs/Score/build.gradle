@@ -1,8 +1,6 @@
 version '0.0.1'
 
-repositories {
-    mavenCentral()
-}
+optimizedJar.enabled = false
 
 dependencies {
     implementation project(':OMMStruct')

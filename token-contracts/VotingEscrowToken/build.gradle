@@ -1,7 +1,11 @@
 version = '0.0.1'
 
 dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
 
+    testImplementation project(':TestUtils')
 }
 
 optimizedJar {

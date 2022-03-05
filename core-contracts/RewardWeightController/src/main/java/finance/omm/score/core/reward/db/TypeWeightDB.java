@@ -3,16 +3,16 @@ package finance.omm.score.core.reward.db;
 import static finance.omm.utils.math.MathUtils.ICX;
 
 import finance.omm.libs.structs.TypeWeightStruct;
-import finance.omm.score.core.reward.exception.RewardException;
+import finance.omm.score.core.reward.exception.RewardWeightException;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
 import score.VarDB;
+import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
 public class TypeWeightDB {
@@ -40,7 +40,7 @@ public class TypeWeightDB {
 
     public void add(String key, Boolean transferToContract) {
         if (isKeyExists(key)) {
-            throw RewardException.unknown("duplicate key (" + key + ")");
+            throw RewardWeightException.unknown("duplicate key (" + key + ")");
         }
         this.types.put(key, transferToContract);
     }
@@ -56,7 +56,7 @@ public class TypeWeightDB {
         int compareValue = latestCheckpoint.compareTo(timestamp);
 
         if (compareValue > 0) {
-            throw RewardException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
+            throw RewardWeightException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
         }
         BigInteger total = this.totalCheckpoint.getOrDefault(checkpointCounter, BigInteger.ZERO);
         if (compareValue == 0) {
@@ -80,14 +80,14 @@ public class TypeWeightDB {
         DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(counter);
         for (TypeWeightStruct tw : weights) {
             if (!isValidId(tw.key)) {
-                throw RewardException.unknown(msg("Invalid type key :: " + tw.key));
+                throw RewardWeightException.unknown(msg("Invalid type key :: " + tw.key));
             }
             BigInteger prevWeight = dictDB.getOrDefault(tw.key, BigInteger.ZERO);
             total = total.subtract(prevWeight).add(tw.weight);
             dictDB.set(tw.key, tw.weight);
         }
         if (!total.equals(ICX)) {
-            throw RewardException.invalidTotalPercentage();
+            throw RewardWeightException.invalidTotalPercentage();
         }
         this.totalCheckpoint.set(counter, total);
     }

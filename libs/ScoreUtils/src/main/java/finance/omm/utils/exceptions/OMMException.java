@@ -123,13 +123,13 @@ public class OMMException extends UserRevertException {
         }
     }
 
-    public static class RewardController extends OMMException {
+    public static class RewardWeightError extends OMMException {
 
-        public RewardController(int code, String message) {
+        public RewardWeightError(int code, String message) {
             super(Type.RewardController, code, message);
         }
 
-        public RewardController(Coded code, String message) {
+        public RewardWeightError(Coded code, String message) {
             this(code.code(), message);
         }
     }

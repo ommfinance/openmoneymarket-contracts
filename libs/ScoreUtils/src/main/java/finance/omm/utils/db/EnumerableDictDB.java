@@ -155,6 +155,15 @@ public class EnumerableDictDB<K, V> {
         }
     }
 
+    public K[] keyArray() {
+        int size = size();
+        K[] keySet = (K[]) new Object[size];
+        for (int i = 0; i < size; i++) {
+            keySet[i] = getKey(i);
+        }
+        return keySet;
+    }
+
     public List<K> keySet() {
         List<K> keySet = new ArrayList<>();
         int size = size();
