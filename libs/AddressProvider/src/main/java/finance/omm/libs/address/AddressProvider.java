@@ -22,9 +22,9 @@ public class AddressProvider {
     protected final ArrayDB<String> _contracts = Context.newArrayDB(_CONTRACTS, String.class);
 
 
-    public AddressProvider(String addressProvider) {
+    public AddressProvider(Address addressProvider) {
         if (_addressProvider.getOrDefault(null) == null) {
-            _addressProvider.set(Address.fromString(addressProvider));
+            _addressProvider.set(addressProvider);
         }
     }
 

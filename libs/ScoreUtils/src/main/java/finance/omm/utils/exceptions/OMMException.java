@@ -10,7 +10,7 @@ public class OMMException extends UserRevertException {
      * OMMException.RewardDistribution => 0 ~ OMMException.RESERVED => 80 ~ 99
      */
     enum Type {
-        RewardController(0), RewardDistribution(10), RESERVED(80);
+        RewardController(0), RewardDistribution(10), bOMMException(20), RESERVED(80);
 
         int offset;
 
@@ -141,6 +141,17 @@ public class OMMException extends UserRevertException {
         }
 
         public AddressProviderException(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class BOMMException extends OMMException {
+
+        public BOMMException(int code, String message) {
+            super(Type.bOMMException, code, message);
+        }
+
+        public BOMMException(Coded code, String message) {
             this(code.code(), message);
         }
     }

@@ -6,6 +6,7 @@ dependencies {
     implementation project(':Score')
 
     testImplementation project(':TestUtils')
+    testImplementation 'com.github.sink772:javaee-tokens:0.6.1'
 }
 
 optimizedJar {
@@ -30,9 +31,10 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
+        arg('addressProvider', 'cx1e6fcc68f8007b88fdde5503229d421de3b62c3a')
         arg('tokenAddress', 'cxb94c0da9a8e650cc09b2f6b1bbfaa957ab47ec4c')
-        arg('name', 'Voting escrow OMM token')
-        arg('symbol', 'veOMM')
+        arg('name', 'Boosted OMM token')
+        arg('symbol', 'bOMM')
     }
 }
 

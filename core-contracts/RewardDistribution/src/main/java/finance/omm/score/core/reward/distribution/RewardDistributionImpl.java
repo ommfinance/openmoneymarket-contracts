@@ -31,7 +31,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
 
 
-    public RewardDistributionImpl(String addressProvider, BigInteger _weight) {
+    public RewardDistributionImpl(Address addressProvider, BigInteger _weight) {
         super(addressProvider, _weight);
     }
 

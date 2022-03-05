@@ -1,5 +1,6 @@
 package finance.omm.utils.constants;
 
+import finance.omm.utils.math.UnsignedBigInteger;
 import java.math.BigInteger;
 import score.Context;
 
@@ -14,6 +15,8 @@ public class TimeConstants {
 
     public static final BigInteger DAYS_PER_YEAR = BigInteger.valueOf(365L);
     public static final BigInteger YEAR_IN_MICRO_SECONDS = DAYS_PER_YEAR.multiply(DAY_IN_MICRO_SECONDS);
+
+    public static final UnsignedBigInteger U_WEEK_IN_MICRO_SECONDS = new UnsignedBigInteger(WEEK_IN_MICRO_SECONDS);
 
     /**
      * get current block timestamp in microseconds
