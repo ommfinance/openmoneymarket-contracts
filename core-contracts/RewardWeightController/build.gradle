@@ -1,0 +1,70 @@
+version = '0.0.1'
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':Score')
+    implementation project(':ScoreUtils')
+    implementation project(':OMMStruct')
+}
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.core.reward.RewardWeightControllerImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = 'cx603f3466aa7744541043ade4dd0cd70f030a2786'
+            nid = 0x53
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('addressProvider', 'cx1e6fcc68f8007b88fdde5503229d421de3b62c3a')
+        arg('startTimestamp', '1581724800000000')
+    }
+}
+
+test {
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
+}
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    options {
+        description = 'Runs integration tests.'
+        group = 'verification'
+
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+        testLogging.showStandardStreams = true
+
+
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        systemProperty 'keystoreName', scoreTest.keystoreName
+        systemProperty 'keystorePass', scoreTest.keystorePass
+
+        dependsOn optimizedJar
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+        dependsOn optimizedJar
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+    }
+}

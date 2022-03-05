@@ -1,0 +1,79 @@
+version '0.1'
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.core.reward.distribution.RewardDistributionImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
+    compileOnly project(':RewardWeightController')
+
+    testImplementation project(':TestUtils')
+}
+
+deployJar {
+    endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+//            to = 'cxe22d0a74c23fb482b6e44408c152530b76fd42bc'
+            nid = 0x53
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('addressProvider', 'cx1e6fcc68f8007b88fdde5503229d421de3b62c3a')
+        arg('_weight', "0x58d15e176280000")
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        systemProperty 'keyStore', scoreTest.keystoreName
+        systemProperty 'keyPassword', scoreTest.keystorePass
+
+        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+
+        systemProperty 'address', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
+        systemProperty 'isUpdate', "true"
+        systemProperty 'scoreFilePath',//path to zip project.tasks.optimizedJar.outputJarName
+                project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value
+                }
+
+    }
+
+//
+//    testClassesDirs = sourceSets.intTest.output.classesDirs
+//    classpath = sourceSets.intTest.runtimeClasspath
+
+
+//    def prefix = 'score.path.'
+//    systemProperty(prefix + project.name, optimizedJar.outputJarName)
+
+}

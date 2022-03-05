@@ -1,0 +1,13 @@
+version = '0.0.1'
+
+optimizedJar.enabled = false
+
+dependencies {
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+}
+
+tasks.named('test') {
+    // Use JUnit Platform for unit tests.
+    useJUnitPlatform()
+}

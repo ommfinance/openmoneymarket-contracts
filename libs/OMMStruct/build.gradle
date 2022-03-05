@@ -1,0 +1,11 @@
+version = '0.0.1'
+
+optimizedJar.enabled = false
+
+dependencies {
+
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
