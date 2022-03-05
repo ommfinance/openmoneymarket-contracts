@@ -15,21 +15,32 @@ package finance.omm.score.tokens;
  * limitations under the License.
  */
 
+import static finance.omm.utils.constants.AddressConstant.ZERO_ADDRESS;
+
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import finance.omm.score.tokens.utils.UnsignedBigInteger;
-import score.*;
+import finance.omm.core.score.interfaces.VeToken;
+import finance.omm.libs.address.AddressProvider;
+import finance.omm.score.tokens.exception.BoostedOMMException;
+import finance.omm.utils.constants.TimeConstants;
+import finance.omm.utils.db.EnumerableSet;
+import finance.omm.utils.math.UnsignedBigInteger;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import score.Address;
+import score.BranchDB;
+import score.Context;
+import score.DictDB;
+import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
+import scorex.util.ArrayList;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+public class VotingEscrowToken extends AddressProvider implements VeToken {
 
-public class VotingEscrowToken {
-    public static final BigInteger MAXTIME = BigInteger.valueOf(4L).multiply(TimeConstants.YEAR);
+    public static final BigInteger MAXTIME = BigInteger.valueOf(4L).multiply(TimeConstants.YEAR_IN_MICRO_SECONDS);
     private static final UnsignedBigInteger MULTIPLIER = UnsignedBigInteger.pow10(18);
 
     private static final int DEPOSIT_FOR_TYPE = 0;
@@ -83,7 +94,8 @@ public class VotingEscrowToken {
     public void Supply(BigInteger prevSupply, BigInteger supply) {
     }
 
-    public VotingEscrowToken(Address tokenAddress, String name, String symbol) {
+    public VotingEscrowToken(Address addressProvider, Address tokenAddress, String name, String symbol) {
+        super(addressProvider);
         this.admin.set(Context.getCaller());
         this.tokenAddress = tokenAddress;
 
@@ -106,24 +118,17 @@ public class VotingEscrowToken {
         }
     }
 
-    private static BigInteger pow10(int exponent) {
-        BigInteger result = BigInteger.ONE;
-        for (int i = 0; i < exponent; i++) {
-            result = result.multiply(BigInteger.TEN);
-        }
-        return result;
-    }
 
     @External
     public void commitTransferOwnership(Address address) {
-        ownerRequired("Commit Transfer Ownership");
+        ownerRequired();
         futureAdmin.set(address);
         CommitOwnership(address);
     }
 
     @External
     public void applyTransferOwnership() {
-        ownerRequired("Apply transfer ownership");
+        ownerRequired();
         Address futureAdmin = this.futureAdmin.get();
         Context.require(futureAdmin != null, "Apply transfer ownership: Admin not set");
         this.admin.set(futureAdmin);
@@ -140,7 +145,8 @@ public class VotingEscrowToken {
 
     @External(readonly = true)
     public BigInteger getTotalLocked() {
-        BigInteger contractBalance = Context.call(BigInteger.class, this.tokenAddress, "balanceOf", Context.getAddress());
+        BigInteger contractBalance = Context.call(BigInteger.class, this.tokenAddress, "balanceOf",
+                Context.getAddress());
         return contractBalance;
 
     }
@@ -149,7 +155,7 @@ public class VotingEscrowToken {
     public List<Address> getUsers(int start, int end) {
         Context.require(end - start <= 100, "Get users :Fetch only 100 users at a time");
         Context.require(end <= users.length(), "Get users : end cannot be greater than list size");
-        List<Address> userList = new ArrayList<Address>();
+        List<Address> userList = new ArrayList<>();
         for (int index = start; index <= end; ++index) {
             userList.add(users.at(index));
         }
@@ -184,7 +190,7 @@ public class VotingEscrowToken {
         UnsignedBigInteger blockTimestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
         UnsignedBigInteger blockHeight = UnsignedBigInteger.valueOf(Context.getBlockHeight());
 
-        if (!address.equals(Constants.ZERO_ADDRESS)) {
+        if (!address.equals(ZERO_ADDRESS)) {
             //            Calculate slopes and biases
             //            Kept at zero when they have to
             if (oldLocked.end.compareTo(blockTimestamp) > 0 && oldLocked.amount.compareTo(BigInteger.ZERO) > 0) {
@@ -232,10 +238,11 @@ public class VotingEscrowToken {
         }
 
         //      Go over week's to fill history and calculate what the current point is
-        UnsignedBigInteger timeIterator = lastCheckPoint.divide(TimeConstants.U_WEEK).multiply(TimeConstants.U_WEEK);
+        UnsignedBigInteger timeIterator = lastCheckPoint.divide(TimeConstants.U_WEEK_IN_MICRO_SECONDS)
+                .multiply(TimeConstants.U_WEEK_IN_MICRO_SECONDS);
 
         for (int index = 0; index < 255; ++index) {
-            timeIterator = timeIterator.add(TimeConstants.U_WEEK);
+            timeIterator = timeIterator.add(TimeConstants.U_WEEK_IN_MICRO_SECONDS);
             BigInteger dSlope = BigInteger.ZERO;
             if (timeIterator.compareTo(blockTimestamp) > 0) {
                 timeIterator = blockTimestamp;
@@ -270,7 +277,7 @@ public class VotingEscrowToken {
         }
 
         this.epoch.set(epoch);
-        if (!address.equals(Constants.ZERO_ADDRESS)) {
+        if (!address.equals(ZERO_ADDRESS)) {
             lastPoint.slope = lastPoint.slope.add(uNew.slope.subtract(uOld.slope));
             lastPoint.bias = lastPoint.bias.add(uNew.bias.subtract(uOld.bias));
 
@@ -284,7 +291,7 @@ public class VotingEscrowToken {
 
         this.pointHistory.set(epoch, lastPoint.toByteArray());
 
-        if (!address.equals(Constants.ZERO_ADDRESS)) {
+        if (!address.equals(ZERO_ADDRESS)) {
             if (oldLocked.end.compareTo(blockTimestamp) > 0) {
                 oldDSlope = oldDSlope.add(uOld.slope);
                 if (newLocked.end.equals(oldLocked.end)) {
@@ -307,7 +314,7 @@ public class VotingEscrowToken {
     }
 
     private void depositFor(Address address, BigInteger value, BigInteger unlockTime, LockedBalance lockedBalance,
-                            int type) {
+            int type) {
         LockedBalance locked = lockedBalance.newLockedBalance();
         BigInteger supplyBefore = this.supply.get();
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
@@ -329,7 +336,7 @@ public class VotingEscrowToken {
 
     @External
     public void checkpoint() {
-        this.checkpoint(Constants.ZERO_ADDRESS, new LockedBalance(), new LockedBalance());
+        this.checkpoint(ZERO_ADDRESS, new LockedBalance(), new LockedBalance());
     }
 
     private void depositFor(Address address, BigInteger value) {
@@ -355,7 +362,8 @@ public class VotingEscrowToken {
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
         this.assertNotContract(sender);
 
-        unlockTime = unlockTime.divide(TimeConstants.WEEK).multiply(TimeConstants.WEEK);
+        unlockTime = unlockTime.divide(TimeConstants.WEEK_IN_MICRO_SECONDS)
+                .multiply(TimeConstants.WEEK_IN_MICRO_SECONDS);
         LockedBalance locked = LockedBalance.toLockedBalance(this.locked.get(sender));
 
         Context.require(value.compareTo(BigInteger.ZERO) > 0, "Create Lock: Need non zero value");
@@ -426,8 +434,9 @@ public class VotingEscrowToken {
 
         this.assertNotContract(sender);
         LockedBalance locked = LockedBalance.toLockedBalance(this.locked.get(sender));
-        UnsignedBigInteger _unlockTime = new UnsignedBigInteger(unlockTime).divide(TimeConstants.U_WEEK)
-                .multiply(TimeConstants.U_WEEK);
+        UnsignedBigInteger _unlockTime = new UnsignedBigInteger(unlockTime).divide(
+                        TimeConstants.U_WEEK_IN_MICRO_SECONDS)
+                .multiply(TimeConstants.U_WEEK_IN_MICRO_SECONDS);
 
         Context.require(locked.amount.compareTo(BigInteger.ZERO) > 0, "Increase unlock time: Nothing is locked");
         Context.require(locked.getEnd().compareTo(blockTimestamp) > 0, "Increase unlock time: Lock expired");
@@ -555,11 +564,11 @@ public class VotingEscrowToken {
 
     private BigInteger supplyAt(Point point, BigInteger time) {
         Point lastPoint = point.newPoint();
-        UnsignedBigInteger timestampIterator = lastPoint.timestamp.divide(TimeConstants.U_WEEK)
-                .multiply(TimeConstants.U_WEEK);
+        UnsignedBigInteger timestampIterator = lastPoint.timestamp.divide(TimeConstants.U_WEEK_IN_MICRO_SECONDS)
+                .multiply(TimeConstants.U_WEEK_IN_MICRO_SECONDS);
         UnsignedBigInteger uTime = new UnsignedBigInteger(time);
         for (int index = 0; index < 255; ++index) {
-            timestampIterator = timestampIterator.add(TimeConstants.U_WEEK);
+            timestampIterator = timestampIterator.add(TimeConstants.U_WEEK_IN_MICRO_SECONDS);
             BigInteger dSlope = BigInteger.ZERO;
             if (timestampIterator.compareTo(time) > 0) {
                 timestampIterator = uTime;
@@ -652,7 +661,9 @@ public class VotingEscrowToken {
         return this.decimals;
     }
 
-    private void ownerRequired(String method) {
-        Context.require(Context.getCaller() == this.admin.get(), method + " :: Only admin can call this method");
+    private void ownerRequired() {
+        if (!Context.getCaller().equals(this.admin.get())) {
+            throw BoostedOMMException.notOwner();
+        }
     }
 }

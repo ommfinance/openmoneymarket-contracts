@@ -18,12 +18,11 @@
 
 package finance.omm.score.tokens;
 
-import finance.omm.score.tokens.utils.UnsignedBigInteger;
+import finance.omm.utils.math.UnsignedBigInteger;
+import java.math.BigInteger;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
-
-import java.math.BigInteger;
 
 public class Point {
 

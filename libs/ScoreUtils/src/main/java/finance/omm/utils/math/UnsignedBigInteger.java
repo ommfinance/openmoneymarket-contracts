@@ -1,8 +1,9 @@
-package finance.omm.score.tokens.utils;
+package finance.omm.utils.math;
 
+import finance.omm.utils.exceptions.OMMException;
 import java.math.BigInteger;
 
-public class UnsignedBigInteger extends Number implements Comparable<UnsignedBigInteger> {
+public class UnsignedBigInteger implements Comparable<UnsignedBigInteger> {
 
 
     private final BigInteger value;
@@ -14,7 +15,7 @@ public class UnsignedBigInteger extends Number implements Comparable<UnsignedBig
 
 
     public UnsignedBigInteger(BigInteger value) {
-        Utils.require(value.signum() >= 0, "invalid value for unsigned numbers");
+        require(value.signum() >= 0, "invalid value for unsigned numbers");
         this.value = value;
     }
 
@@ -52,7 +53,7 @@ public class UnsignedBigInteger extends Number implements Comparable<UnsignedBig
 
     public UnsignedBigInteger subtract(UnsignedBigInteger other) {
         BigInteger diff = value.subtract(other.value);
-        Utils.require(diff.signum() >= 0, "subtraction underflow for unsigned numbers");
+        require(diff.signum() >= 0, "subtraction underflow for unsigned numbers");
         return new UnsignedBigInteger(diff, true);
     }
 
@@ -62,13 +63,13 @@ public class UnsignedBigInteger extends Number implements Comparable<UnsignedBig
     }
 
     public UnsignedBigInteger divide(UnsignedBigInteger other) {
-        Utils.require(other.value.signum() != 0, "division by zero");
+        require(other.value.signum() != 0, "division by zero");
         return new UnsignedBigInteger(value.divide(other.value), true);
     }
 
 
     public UnsignedBigInteger mod(UnsignedBigInteger divisor) {
-        Utils.require(divisor.value.signum() != 0, "mod by zero");
+        require(divisor.value.signum() != 0, "mod by zero");
         return new UnsignedBigInteger(value.mod(divisor.value), true);
     }
 
@@ -104,7 +105,8 @@ public class UnsignedBigInteger extends Number implements Comparable<UnsignedBig
 
     @Override
     public boolean equals(Object other) {
-        return other == this || (other instanceof UnsignedBigInteger && value.equals(((UnsignedBigInteger) other).value));
+        return other == this || (other instanceof UnsignedBigInteger && value.equals(
+                ((UnsignedBigInteger) other).value));
     }
 
     @Override
@@ -137,22 +139,18 @@ public class UnsignedBigInteger extends Number implements Comparable<UnsignedBig
         return value.toByteArray();
     }
 
-    @Override
     public int intValue() {
         return value.intValue();
     }
 
-    @Override
     public long longValue() {
         return value.longValue();
     }
 
-    @Override
     public float floatValue() {
         return value.floatValue();
     }
 
-    @Override
     public double doubleValue() {
         return value.doubleValue();
     }
@@ -164,6 +162,12 @@ public class UnsignedBigInteger extends Number implements Comparable<UnsignedBig
             result = result.multiply(UnsignedBigInteger.TEN);
         }
         return result;
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) {
+            throw OMMException.unknown(message);
+        }
     }
 
 }

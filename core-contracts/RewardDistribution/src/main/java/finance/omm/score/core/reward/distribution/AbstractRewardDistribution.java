@@ -45,7 +45,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             Address.class, String.class);
 
 
-    public AbstractRewardDistribution(String addressProvider, BigInteger _weight) {
+    public AbstractRewardDistribution(Address addressProvider, BigInteger _weight) {
         super(addressProvider);
         assets = new Assets("assets");
         workingBalance = Context.newBranchDB("workingBalance", BigInteger.class);

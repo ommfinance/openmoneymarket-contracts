@@ -16,10 +16,12 @@
 
 package finance.omm.score.tokens;
 
+import finance.omm.score.tokens.exception.BoostedOMMException;
 import score.Context;
 import score.VarDB;
 
 public class NonReentrant {
+
     private final VarDB<Boolean> lock;
 
     public NonReentrant(String contractName) {
@@ -29,11 +31,17 @@ public class NonReentrant {
     public void updateLock(boolean lock) {
         boolean lockStatus = this.lock.getOrDefault(false);
         if (lock) {
-            Context.require(!lockStatus, "Reentrancy Lock: Can't change. The contract lock state: " + lockStatus);
+            require(!lockStatus, "Reentrancy Lock: Can't change. The contract lock state: " + lockStatus);
             this.lock.set(true);
         } else {
-            Context.require(lockStatus, "Reentrancy Lock: Can't change. The contract lock state: " + lockStatus);
+            require(lockStatus, "Reentrancy Lock: Can't change. The contract lock state: " + lockStatus);
             this.lock.set(false);
+        }
+    }
+
+    private static void require(Boolean condition, String message) {
+        if (!condition) {
+            throw BoostedOMMException.reentrancy(message);
         }
     }
 }

@@ -1,4 +1,4 @@
-package finance.omm.score.tokens;
+package finance.omm.utils.db;
 
 /*
  * Copyright 2021 ICON Foundation

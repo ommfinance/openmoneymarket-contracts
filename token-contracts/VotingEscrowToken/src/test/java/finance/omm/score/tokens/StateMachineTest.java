@@ -16,21 +16,25 @@
 
 package finance.omm.score.tokens;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import com.iconloop.score.token.irc2.IRC2Mintable;
-import org.json.JSONObject;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.function.Executable;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.json.JSONObject;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 @DisplayName("Statemachine Tests")
 public class StateMachineTest extends TestBase {
@@ -178,7 +182,7 @@ public class StateMachineTest extends TestBase {
                             .getAddress(),
                     BigInteger.valueOf(deltaBlock + 1));
 
-            String expectedErrorMessage = "Reverted(82): subtraction underflow for unsigned numbers";
+            String expectedErrorMessage = "subtraction underflow for unsigned numbers";
             expectErrorMessage(balanceOf, expectedErrorMessage);
         }
 
