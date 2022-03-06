@@ -19,25 +19,27 @@
  */
 package finance.omm.score.tokens;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import com.iconloop.score.token.irc2.IRC2Basic;
+import java.math.BigInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import score.Context;
 
-import java.math.BigInteger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 class BoostedOmmTest extends TestBase {
+
     private static final ServiceManager sm = getServiceManager();
     private static final Account owner = sm.createAccount();
     private Score veOmmScore;
     private Score tokenScore;
+
+    private Account addressProvider = Account.newScoreAccount(1001);
 
     private static final String name = "OMM Token";
     private static final String symbol = "Omm";
@@ -57,7 +59,8 @@ class BoostedOmmTest extends TestBase {
     @BeforeEach
     public void setup() throws Exception {
         tokenScore = sm.deploy(owner, IRC2BasicToken.class, name, symbol, decimals, initialSupply);
-        veOmmScore = sm.deploy(owner, VotingEscrowToken.class, tokenScore.getAddress(), bOmmName, bOmmSymbol);
+        veOmmScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+                bOmmName, bOmmSymbol);
     }
 
     @Test

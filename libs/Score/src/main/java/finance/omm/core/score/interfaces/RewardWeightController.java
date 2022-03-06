@@ -3,6 +3,7 @@ package finance.omm.core.score.interfaces;
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.WeightStruct;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.annotation.External;
@@ -66,7 +67,7 @@ public interface RewardWeightController {
     public Map<String, BigInteger> getDistPercentageOfLP(@Optional BigInteger timestamp);
 
     @External(readonly = true)
-    public String[] getTypes();
+    public List<String> getTypes();
 
     @External(readonly = true)
     public BigInteger getStartTimestamp();

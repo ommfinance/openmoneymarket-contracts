@@ -38,11 +38,14 @@ import org.junit.jupiter.api.function.Executable;
 
 @DisplayName("Statemachine Tests")
 public class StateMachineTest extends TestBase {
+
     private static final Long WEEK = 7 * 86400L * 1000000L;
     private static final Long MAX_TIME = 4 * 365 * 86400L * 1000000L;
     private static final BigInteger MINT_AMOUNT = BigInteger.TEN.pow(40);
     private static final ServiceManager sm = getServiceManager();
     private static final Account owner = sm.createAccount();
+
+    private Account addressProvider = Account.newScoreAccount(1001);
 
     private final ArrayList<Account> accounts = new ArrayList<>();
     private final long MAXIMUM_LOCK_WEEKS = 208;
@@ -52,6 +55,7 @@ public class StateMachineTest extends TestBase {
     private Score tokenScore;
 
     public static class OmmToken extends IRC2Mintable {
+
         public OmmToken(String _name, String _symbol, int _decimals) {
             super(_name, _symbol, _decimals);
         }
@@ -89,7 +93,8 @@ public class StateMachineTest extends TestBase {
     @BeforeEach
     public void setup() throws Exception {
         tokenScore = sm.deploy(owner, OmmToken.class, "Balance Token", "OMM", 18);
-        bOmmScore = sm.deploy(owner, VotingEscrowToken.class, tokenScore.getAddress(), "Boosted Omm", "bOMM");
+        bOmmScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+                "Boosted Omm", "bOMM");
         setupAccounts();
     }
 

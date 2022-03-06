@@ -29,6 +29,7 @@ public enum Contracts {
     DAO_FUND("daoFund"),
     BAND_ORACLE("bandOracle"),
     STAKED_LP("stakedLP"),
+    BOOSTED_OMM("bOMM"),
     DEX("dex");
 
 

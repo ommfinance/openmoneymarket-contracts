@@ -90,7 +90,7 @@ public class RewardDistributionUnitTest extends TestBase {
         owner = sm.createAccount(100);
 
         score = sm.deploy(owner, RewardDistributionImpl.class,
-                mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress().toString(), weight);
+                mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(), weight);
         setAddresses();
         RewardDistributionImpl t = (RewardDistributionImpl) score.getInstance();
         scoreSpy = spy(t);

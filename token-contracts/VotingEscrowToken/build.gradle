@@ -31,8 +31,8 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('addressProvider', 'cx1e6fcc68f8007b88fdde5503229d421de3b62c3a')
-        arg('tokenAddress', 'cxb94c0da9a8e650cc09b2f6b1bbfaa957ab47ec4c')
+        arg('addressProvider', 'cx36e3408f031983d220d99b1a58849ac443d2c585')
+        arg('tokenAddress', 'cx70e6916a0faa72d0f135a62dfad9af9cc71205b1')
         arg('name', 'Boosted OMM token')
         arg('symbol', 'bOMM')
     }

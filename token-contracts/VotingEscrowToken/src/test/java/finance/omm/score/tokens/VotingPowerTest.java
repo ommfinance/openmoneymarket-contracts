@@ -1,21 +1,24 @@
 package finance.omm.score.tokens;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.score.tokens.utils.IRC2Token;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test voting power in the following scenario.
@@ -52,6 +55,8 @@ public class VotingPowerTest extends TestBase {
     private static final Account alice = sm.createAccount();
     private static final Account bob = sm.createAccount();
 
+    private Account addressProvider = Account.newScoreAccount(1001);
+
     public static BigInteger SECOND = BigInteger.TEN.pow(6);
     public static BigInteger HOUR = SECOND.multiply(BigInteger.valueOf(3600L));
     public static BigInteger DAY = HOUR.multiply(BigInteger.valueOf(24L));
@@ -63,7 +68,8 @@ public class VotingPowerTest extends TestBase {
     @BeforeEach
     public void setup() throws Exception {
         tokenScore = sm.deploy(owner, IRC2Token.class, INITIAL_SUPPLY);
-        bBALNScore = sm.deploy(owner, VotingEscrowToken.class, tokenScore.getAddress(), BOOSTED_OMM, VE_OMM_SYMBOL);
+        bBALNScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+                BOOSTED_OMM, VE_OMM_SYMBOL);
         tokenScore.invoke(owner, "mintTo", alice.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
         tokenScore.invoke(owner, "mintTo", bob.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
 

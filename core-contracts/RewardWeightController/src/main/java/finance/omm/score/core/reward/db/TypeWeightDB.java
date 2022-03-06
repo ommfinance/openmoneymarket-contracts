@@ -130,7 +130,7 @@ public class TypeWeightDB {
         return response;
     }
 
-    public List<String> getTypeIds() {
+    public List<String> getTypes() {
         return types.keySet();
     }
 

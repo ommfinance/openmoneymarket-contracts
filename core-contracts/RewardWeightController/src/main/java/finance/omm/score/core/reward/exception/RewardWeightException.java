@@ -28,7 +28,7 @@ public class RewardWeightException extends OMMException.RewardWeightError {
         return new RewardWeightException(Code.NotGovernanceContract, "require Governance contract access");
     }
 
-    public static RewardWeightException notValidTypeId(String typeId) {
+    public static RewardWeightException notValidType(String typeId) {
         return new RewardWeightException(Code.NotGovernanceContract, "type id is not valid :: " + typeId);
     }
 

@@ -186,7 +186,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     /**
-     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getDay()} BigInteger)}}
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getDay()}
      */
     @Deprecated
     @External(readonly = true)
@@ -214,7 +214,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     /**
-     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getTypes()}
      */
     @Deprecated
     @External(readonly = true)

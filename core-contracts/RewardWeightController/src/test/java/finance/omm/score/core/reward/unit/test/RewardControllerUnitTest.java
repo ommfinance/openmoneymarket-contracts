@@ -66,7 +66,7 @@ public class RewardControllerUnitTest extends TestBase {
     void setup() throws Exception {
         owner = sm.createAccount(100);
         score = sm.deploy(owner, RewardWeightControllerImpl.class,
-                mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress().toString(),
+                mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(),
                 startTimestamp);
         AddressDetail[] addressDetails = mockAddress.entrySet().stream().map(e -> {
             AddressDetail ad = new AddressDetail();
@@ -240,11 +240,11 @@ public class RewardControllerUnitTest extends TestBase {
         initTypeWeight(BigInteger.ZERO, 25L, 75L);
         Map<String, BigInteger> snapshots = new HashMap<>();
 
-        String typeId = TYPE_ID_PREFIX + 1;
-//        addAsset(1, typeId);
+        String type = TYPE_ID_PREFIX + 1;
+//        addAsset(1, type);
 
-        String typeId_2 = TYPE_ID_PREFIX + 2;
-//        addAsset(2, typeId_2);
+        String type_2 = TYPE_ID_PREFIX + 2;
+//        addAsset(2, type_2);
         Map<Address, Long> values = new HashMap<>() {{
             put(addresses[0], 10L);
             put(addresses[1], 20L);
@@ -252,10 +252,10 @@ public class RewardControllerUnitTest extends TestBase {
             put(addresses[3], 40L);
         }};
         initAssetWeight(BigInteger.ZERO, 1, values);
-        snapshots.put(typeId, getTimestamp());
+        snapshots.put(type, getTimestamp());
 
         BigInteger checkpoints = (BigInteger) score.call("getAssetCheckpointCount",
-                typeId);
+                type);
         assertEquals(BigInteger.ONE, checkpoints);
 
         BigInteger futureTime = getTimestamp().add(TimeConstants.SECOND.multiply(BigInteger.valueOf(100)));
@@ -264,28 +264,28 @@ public class RewardControllerUnitTest extends TestBase {
             put(addresses[5], 50L);
         }};
         initAssetWeight(futureTime, 2, values);
-        snapshots.put(typeId_2, futureTime);
+        snapshots.put(type_2, futureTime);
 
         checkpoints = (BigInteger) score.call("getAssetCheckpointCount",
-                typeId_2);
+                type_2);
         assertEquals(BigInteger.ONE, checkpoints);
 
-        setAssetWeight(BigInteger.ZERO, typeId, new HashMap<>() {{
+        setAssetWeight(BigInteger.ZERO, type, new HashMap<>() {{
             put(addresses[0], 40L);
             put(addresses[3], 10L);
         }});
         checkpoints = (BigInteger) score.call("getAssetCheckpointCount",
-                typeId);
+                type);
         assertEquals(BigInteger.TWO, checkpoints);
 
         //shouldn't able to set new asset weight if future weight is already exists
         BigInteger current = getTimestamp().add(TimeConstants.SECOND.multiply(BigInteger.TWO));
-        Executable call = () -> setAssetWeight(BigInteger.ZERO, typeId_2, new HashMap<>() {{
+        Executable call = () -> setAssetWeight(BigInteger.ZERO, type_2, new HashMap<>() {{
             put(addresses[1], 40L);
             put(addresses[2], 60L);
         }});
         expectErrorMessage(call,
-                "latest " + snapshots.get(typeId_2) + " checkpoint exists than " + current);
+                "latest " + snapshots.get(type_2) + " checkpoint exists than " + current);
 
 
     }
@@ -296,9 +296,9 @@ public class RewardControllerUnitTest extends TestBase {
     public void testAssetWeightSnapshot() {
         initTypeWeight(BigInteger.ZERO, 25L, 75L);
 
-        String typeId = TYPE_ID_PREFIX + 1;
+        String type = TYPE_ID_PREFIX + 1;
 
-        String typeId_2 = TYPE_ID_PREFIX + 2;
+        String type_2 = TYPE_ID_PREFIX + 2;
         Map<Address, Long> addressMap = new HashMap<>() {{
             put(addresses[0], 10L);
             put(addresses[1], 20L);
@@ -330,7 +330,7 @@ public class RewardControllerUnitTest extends TestBase {
             long c = r.nextInt(25) + 1;
             long d = 100 - a - b - c;
 
-            String type_id = i % 2 == 0 ? typeId_2 : typeId;
+            String type_id = i % 2 == 0 ? type_2 : type;
             int startIndex = i % 2 == 0 ? 4 : 0;
             Map<Address, Long> map = new HashMap<>() {{
                 put(addresses[startIndex + 0], a);
@@ -345,7 +345,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         for (int i = 20; i > 2; i--) {
             BigInteger timestamp = snapshots.get(i);
-            String type_id = i % 2 == 0 ? typeId_2 : typeId;
+            String type_id = i % 2 == 0 ? type_2 : type;
             Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp.add(BigInteger.ONE));
@@ -388,7 +388,7 @@ public class RewardControllerUnitTest extends TestBase {
         sm.getBlock().increase(30 * 86400 / 2 - 3008);
         initTypeWeight(BigInteger.ZERO, 25L, 75L); //3 calls
 
-        String typeId = TYPE_ID_PREFIX + 1;
+        String type = TYPE_ID_PREFIX + 1;
         Map<Address, Long> values = new HashMap<>() {{
             put(addresses[0], 10L);
             put(addresses[1], 20L);
@@ -436,7 +436,7 @@ public class RewardControllerUnitTest extends TestBase {
         assertEquals(expectedIndex, index.floatValue() / ICX.floatValue(), 0.00001);
 
         sm.getBlock().increase(599);
-        setAssetWeight(BigInteger.ZERO, typeId, new HashMap<>() {{
+        setAssetWeight(BigInteger.ZERO, type, new HashMap<>() {{
             put(addresses[0], 50L);
             put(addresses[2], 10L);
             put(addresses[3], 20L);
@@ -537,7 +537,7 @@ public class RewardControllerUnitTest extends TestBase {
         score.invoke(mockAddress.get(Contracts.REWARDS), "addAsset", params);
     }
 
-    private void setAssetWeight(BigInteger timestamp, String typeId, Map<Address, Long> map) {
+    private void setAssetWeight(BigInteger timestamp, String type, Map<Address, Long> map) {
         WeightStruct[] weights = map.entrySet().stream().map(e -> {
             WeightStruct struct = new WeightStruct();
             struct.weight = BigInteger.valueOf(e.getValue()).multiply(ICX).divide(BigInteger.valueOf(100));
@@ -545,7 +545,7 @@ public class RewardControllerUnitTest extends TestBase {
             return struct;
         }).toArray(WeightStruct[]::new);
 
-        Object[] params = new Object[]{typeId, weights, timestamp};
+        Object[] params = new Object[]{type, weights, timestamp};
 
         score.invoke(owner, "setAssetWeight", params);
     }

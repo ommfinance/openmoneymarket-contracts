@@ -13,9 +13,9 @@ import scorex.util.HashMap;
 public class Assets extends EnumerableDictDB<Address, Asset> {
 
 
-    public static final String LAST_UPDATE_TIMESTAMP = "last-update-timestamp";
-    public static final String ASSET_INDEX = "asset-index";
-    public static final String USER_INDEX = "user-index";
+    public static final String LAST_UPDATE_TIMESTAMP = "lastUpdateTimestamp";
+    public static final String ASSET_INDEX = "assetIndex";
+    public static final String USER_INDEX = "userIndex";
 
     // asset address -> last update timestamp in seconds
     public final DictDB<Address, BigInteger> lastUpdateTimestamp;

@@ -22,7 +22,7 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-//            to = 'cxe22d0a74c23fb482b6e44408c152530b76fd42bc'
+            to = 'cx3807f5159a37e31291ba0ec58a09cd023dfdcdbe'
             nid = 0x53
         }
         mainnet {
@@ -33,7 +33,7 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('addressProvider', 'cx1e6fcc68f8007b88fdde5503229d421de3b62c3a')
+        arg('addressProvider', 'cx36e3408f031983d220d99b1a58849ac443d2c585')
         arg('_weight', "0x58d15e176280000")
     }
 }
