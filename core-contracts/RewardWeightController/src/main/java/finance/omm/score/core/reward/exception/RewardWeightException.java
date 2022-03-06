@@ -40,7 +40,7 @@ public class RewardWeightException extends OMMException.RewardWeightError {
         return new RewardWeightException(Code.NotValidAsset, message);
     }
 
-    //OMMException.RewardController => 0 ~ 5
+    //OMMException.RewardWeightController =>10 ~
     public enum Code implements OMMException.Coded {
         Unknown(0), NotOwner(1), NotGovernanceContract(2), NotValidTypeID(3), NotValidTotalPercentage(4),
         NotValidAsset(5), UnAuthorized(6);
@@ -54,15 +54,6 @@ public class RewardWeightException extends OMMException.RewardWeightError {
         @Override
         public int code() {
             return code;
-        }
-
-        static public Code of(int code) {
-            for (Code c : values()) {
-                if (c.code == code) {
-                    return c;
-                }
-            }
-            throw new IllegalArgumentException();
         }
     }
 }

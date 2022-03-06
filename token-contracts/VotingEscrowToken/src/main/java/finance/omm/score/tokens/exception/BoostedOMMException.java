@@ -38,14 +38,5 @@ public class BoostedOMMException extends OMMException.BOMMException {
 
         @Override
         public int code() {return code;}
-
-        static public Code of(int code) {
-            for (Code c : values()) {
-                if (c.code == code) {
-                    return c;
-                }
-            }
-            throw new IllegalArgumentException();
-        }
     }
 }

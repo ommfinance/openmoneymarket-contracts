@@ -7,10 +7,10 @@ import score.UserRevertedException;
 public class OMMException extends UserRevertException {
 
     /**
-     * OMMException.RewardDistribution => 0 ~ OMMException.RESERVED => 80 ~ 99
+     * OMMException.RESERVED => 80 ~ 99
      */
     enum Type {
-        RewardController(0), RewardDistribution(10), bOMMException(20), RESERVED(80);
+        RewardWeightController(0), RewardDistribution(10), bOMMException(20), RESERVED(80);
 
         int offset;
 
@@ -21,7 +21,7 @@ public class OMMException extends UserRevertException {
         int apply(int code) {
             code = offset + code;
             if (this.equals(RESERVED) || code >= values()[ordinal() + 1].offset) {
-                throw new IllegalArgumentException();
+//                throw new IllegalArgumentException();
             }
             return code;
         }
@@ -126,21 +126,10 @@ public class OMMException extends UserRevertException {
     public static class RewardWeightError extends OMMException {
 
         public RewardWeightError(int code, String message) {
-            super(Type.RewardController, code, message);
+            super(Type.RewardWeightController, code, message);
         }
 
         public RewardWeightError(Coded code, String message) {
-            this(code.code(), message);
-        }
-    }
-
-    public static class AddressProviderException extends OMMException {
-
-        public AddressProviderException(int code, String message) {
-            super(Type.RewardController, code, message);
-        }
-
-        public AddressProviderException(Coded code, String message) {
             this(code.code(), message);
         }
     }

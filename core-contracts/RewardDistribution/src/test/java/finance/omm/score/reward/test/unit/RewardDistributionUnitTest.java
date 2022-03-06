@@ -137,7 +137,7 @@ public class RewardDistributionUnitTest extends TestBase {
         Address asset = Account.newScoreAccount(11).getAddress();
         score.invoke(owner, "addAsset", "type-1", "asset-name", asset, BigInteger.ZERO);
 
-        verify(scoreSpy).call(Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", "type-1", "asset-name", asset);
+        verify(scoreSpy).call(Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", "type-1", asset, "asset-name");
         verify(scoreSpy).AssetAdded("type-1", "asset-name", asset, BigInteger.ZERO);
 
     }

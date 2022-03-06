@@ -87,7 +87,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             assets.put(address, asset);
             this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
             transferToContractMap.put(address, key);
-            AssetAdded(key, key, address, null);
+            AssetAdded(key, key, address, BigInteger.ZERO);
         }
         call(Contracts.REWARD_WEIGHT_CONTROLLER, "addType", params);
         AddType(key, transferToContract);
@@ -105,7 +105,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 //            throw RewardDistributionException.invalidAsset("Both address and poolID provided");
 //        }
 
-        call(Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", type, name, address);
+        call(Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", type, address, name);
 
         Asset asset = new Asset(address, type);
         asset.name = name;

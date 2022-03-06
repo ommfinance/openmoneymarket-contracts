@@ -67,7 +67,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             WeightStruct weightStruct = new WeightStruct();
             weightStruct.weight = ICX;
             weightStruct.address = address;
-            setAssetWeight(key, new WeightStruct[]{weightStruct}, BigInteger.ZERO);
+            _setAssetWeight(key, new WeightStruct[]{weightStruct}, BigInteger.ZERO);
         }
     }
 
@@ -111,6 +111,10 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     @External
     public void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp) {
         checkOwner();
+        _setAssetWeight(type, weights, timestamp);
+    }
+
+    private void _setAssetWeight(String type, WeightStruct[] weights, BigInteger timestamp) {
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }

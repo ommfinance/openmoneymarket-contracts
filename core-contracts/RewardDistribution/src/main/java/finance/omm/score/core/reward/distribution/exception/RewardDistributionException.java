@@ -45,7 +45,7 @@ public class RewardDistributionException extends OMMException.RewardDistribution
 
     }
 
-    //OMMException.RewardDistribution => 0 ~ 5
+    //OMMException.RewardDistribution => 10 ~
     public enum Code implements OMMException.Coded {
         Unknown(0), NotOwner(1), InvalidRecipient(2), InvalidAsset(3), InvalidTotalPercentage(4),
         NotGovernanceContract(5), NotStakedLp(6), NotLendingPool(7);
@@ -57,13 +57,5 @@ public class RewardDistributionException extends OMMException.RewardDistribution
         @Override
         public int code() {return code;}
 
-        static public Code of(int code) {
-            for (Code c : values()) {
-                if (c.code == code) {
-                    return c;
-                }
-            }
-            throw new IllegalArgumentException();
-        }
     }
 }

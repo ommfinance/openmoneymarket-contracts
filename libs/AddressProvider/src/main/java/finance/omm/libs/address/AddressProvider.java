@@ -2,7 +2,6 @@ package finance.omm.libs.address;
 
 
 import finance.omm.libs.structs.AddressDetail;
-import finance.omm.utils.exceptions.OMMException;
 import java.util.Map;
 import score.Address;
 import score.ArrayDB;
@@ -63,9 +62,7 @@ public class AddressProvider {
 
 
     protected void checkAddressProvider() {
-        if (!Context.getCaller().equals(_addressProvider.get())) {
-            throw new OMMException.AddressProviderException(99, "require Address provider contract access");
-        }
+        Context.require(Context.getCaller().equals(_addressProvider.get()), "require Address provider contract access");
     }
 
 
