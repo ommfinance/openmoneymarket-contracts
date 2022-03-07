@@ -146,19 +146,19 @@ public class TypeWeightDB {
     public Map<String, BigInteger> weightOfAllTypes(BigInteger timestamp) {
         Map<String, BigInteger> response = new HashMap<>();
         for (String key : types.keySet()) {
-            Map<String, BigInteger> map = getWeight(key, timestamp);
+            Map<String, BigInteger> map = searchTypeWeight(key, timestamp);
             response.put(key, map.get("value"));
         }
         return response;
     }
 
 
-    public Map<String, BigInteger> getWeight(String type) {
+    public Map<String, BigInteger> searchTypeWeight(String type) {
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
-        return getWeight(type, timestamp);
+        return searchTypeWeight(type, timestamp);
     }
 
-    public Map<String, BigInteger> getWeight(String type, BigInteger timestamp) {
+    public Map<String, BigInteger> searchTypeWeight(String type, BigInteger timestamp) {
         int index = searchCheckpoint(timestamp);
         return Map.of("index", BigInteger.valueOf(index), "value", this.wCheckpoint.at(index)
                         .getOrDefault(type,

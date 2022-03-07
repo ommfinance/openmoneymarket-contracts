@@ -294,10 +294,12 @@ public class RewardControllerUnitTest extends TestBase {
     @DisplayName("asset weight snapshot")
     @Test
     public void testAssetWeightSnapshot() {
-        initTypeWeight(BigInteger.ZERO, 25L, 75L);
+
+        Long typeWeight = 25L;
+        Long typeWeight_2 = 75L;
+        initTypeWeight(BigInteger.ZERO, typeWeight, typeWeight_2);
 
         String type = TYPE_ID_PREFIX + 1;
-
         String type_2 = TYPE_ID_PREFIX + 2;
         Map<Address, Long> addressMap = new HashMap<>() {{
             put(addresses[0], 10L);
@@ -346,6 +348,7 @@ public class RewardControllerUnitTest extends TestBase {
         for (int i = 20; i > 2; i--) {
             BigInteger timestamp = snapshots.get(i);
             String type_id = i % 2 == 0 ? type_2 : type;
+            Long typeW = i % 2 == 0 ? typeWeight_2 : typeWeight;
             Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp.add(BigInteger.ONE));
@@ -357,13 +360,15 @@ public class RewardControllerUnitTest extends TestBase {
                     timestamp.subtract(BigInteger.ONE));
 
             Map<Address, Long> value = values.get(i);
+
             for (Map.Entry<Address, Long> entry : value.entrySet()) {
+
                 String id = entry.getKey().toString();
                 BigInteger next = nextTime.get(id);
                 BigInteger exact = exactTime.get(id);
-                BigInteger expected = BigInteger.valueOf(entry.getValue())
+                BigInteger expected = BigInteger.valueOf(entry.getValue() * typeW)
                         .multiply(ICX)
-                        .divide(BigInteger.valueOf(100));
+                        .divide(BigInteger.valueOf(10_000));
                 assertEquals(expected, next, "next data not match at " + id);
                 assertEquals(expected, exact, "exact data not match at " + id);
             }
@@ -372,9 +377,9 @@ public class RewardControllerUnitTest extends TestBase {
             for (Map.Entry<Address, Long> entry : value.entrySet()) {
                 String id = entry.getKey().toString();
                 BigInteger prev = prevTime.get(id);
-                BigInteger expected = BigInteger.valueOf(entry.getValue())
+                BigInteger expected = BigInteger.valueOf(entry.getValue() * typeW)
                         .multiply(ICX)
-                        .divide(BigInteger.valueOf(100));
+                        .divide(BigInteger.valueOf(10_000));
 
                 assertEquals(expected, prev, "previous data not match at " + id);
             }

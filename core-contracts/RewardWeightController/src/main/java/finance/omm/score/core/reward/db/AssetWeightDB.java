@@ -132,17 +132,8 @@ public class AssetWeightDB {
         return lower;
     }
 
-    public Map<String, BigInteger> getWeight(Address assetAddress) {
-        BigInteger timestamp = TimeConstants.getBlockTimestamp();
-        return getWeight(assetAddress, timestamp);
-    }
 
-    public Map<String, BigInteger> getWeight(Address assetAddress, BigInteger timestamp) {
-        Asset asset = getAsset(assetAddress);
-        return getWeight(asset, timestamp);
-    }
-
-    public Map<String, BigInteger> getWeight(Asset asset, BigInteger timestamp) {
+    public Map<String, BigInteger> searchAssetWeight(Asset asset, BigInteger timestamp) {
         String typeId = asset.type;
         int index = searchCheckpoint(typeId, timestamp);
         return Map.of(
@@ -182,7 +173,7 @@ public class AssetWeightDB {
         return checkpointCounter.getOrDefault(typeId, 0);
     }
 
-    public Map<String, BigInteger> getWeightByTimestamp(String type, BigInteger timestamp) {
+    public Map<String, BigInteger> getWeightByTimestamp(String type, BigInteger typeWeight, BigInteger timestamp) {
         DictDB<Address, BigInteger> dictDB = getCheckpoint(type, timestamp);
         Map<String, BigInteger> result = new HashMap<>();
 
@@ -191,7 +182,7 @@ public class AssetWeightDB {
         for (int i = 0; i < addresses.size(); i++) {
             Address address = addresses.get(i);
             BigInteger value = dictDB.getOrDefault(address, BigInteger.ZERO);
-            result.put(address.toString(), value);
+            result.put(address.toString(), exaMultiply(value, typeWeight));
         }
 
         return result;

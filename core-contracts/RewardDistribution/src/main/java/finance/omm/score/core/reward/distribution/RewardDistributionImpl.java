@@ -20,7 +20,6 @@ import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
-import score.annotation.Payable;
 
 public class RewardDistributionImpl extends AbstractRewardDistribution {
 
@@ -390,10 +389,4 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @EventLog(indexed = 2)
     public void Distribution(String _recipient, Address _user, BigInteger _value) {}
 
-
-    @Payable
-    @External
-    public void temp() {
-
-    }
 }

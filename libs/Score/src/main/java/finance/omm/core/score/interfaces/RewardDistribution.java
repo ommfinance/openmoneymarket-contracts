@@ -9,7 +9,6 @@ import java.util.Map;
 import score.Address;
 import score.annotation.External;
 import score.annotation.Optional;
-import score.annotation.Payable;
 
 public interface RewardDistribution {
 
@@ -158,9 +157,5 @@ public interface RewardDistribution {
 
     @External(readonly = true)
     Map<String, BigInteger> getWorkingTotal();
-
-    @Payable
-    @External
-    void temp();
 
 }
