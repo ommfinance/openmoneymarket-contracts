@@ -84,11 +84,11 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     @External(readonly = true)
-    public Map<String, BigInteger> getTypeWeight(String type, @Optional BigInteger timestamp) {
+    public BigInteger getTypeWeight(String type, @Optional BigInteger timestamp) {
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
-        return this.typeWeightDB.getWeight(type, timestamp);
+        return this.typeWeightDB.getWeight(type, timestamp).get("value");
     }
 
     @External(readonly = true)
@@ -327,7 +327,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public Map<String, BigInteger> getDistPercentageOfLP(@Optional BigInteger timestamp) {
+    public Map<String, ?> getDistPercentageOfLP(@Optional BigInteger timestamp) {
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
@@ -343,7 +343,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
                 response.put(lpID.toString(10), value);
             }
         }
-        return response;
+        return Map.of("liquidity", response);
     }
 
     @External(readonly = true)

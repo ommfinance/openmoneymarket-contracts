@@ -105,7 +105,7 @@ public class AssetWeightDB {
     }
 
     private int searchCheckpoint(String type, BigInteger timestamp) {
-        Integer checkpointCount = checkpointCounter.getOrDefault(type, 0);
+        Integer checkpointCount = checkpointCounter.getOrDefault(type, 1);
         DictDB<Integer, BigInteger> timeCheckpoints = this.tCheckpoint.at(type);
         BigInteger latestTimestamp = timeCheckpoints.getOrDefault(checkpointCount, BigInteger.ZERO);
         if (latestTimestamp.compareTo(timestamp) <= 0) {
@@ -116,7 +116,7 @@ public class AssetWeightDB {
 
 
     private int searchCheckpoint(DictDB<Integer, BigInteger> timeCheckpoints, int checkpoint, BigInteger timestamp) {
-        int lower = 0, upper = checkpoint;
+        int lower = 1, upper = checkpoint;
         while (upper > lower) {
             int mid = (upper + lower + 1) / 2;
             BigInteger midTimestamp = timeCheckpoints.getOrDefault(mid, BigInteger.ZERO);
@@ -214,7 +214,7 @@ public class AssetWeightDB {
             Asset asset = this.assets.get(address);
             if (asset != null) {
                 String name = asset.name;
-                BigInteger value = exaMultiply(dictDB.getOrDefault(asset.address, BigInteger.ZERO), weight);
+                BigInteger value = exaMultiply(dictDB.getOrDefault(address, BigInteger.ZERO), weight);
                 result.put(name, value);
                 total = total.add(value);
             }

@@ -93,7 +93,7 @@ public class TypeWeightDB {
     }
 
     private int searchCheckpoint(BigInteger timestamp) {
-        Integer checkpointCount = checkpointCounter.getOrDefault(0);
+        Integer checkpointCount = checkpointCounter.getOrDefault(1);
         BigInteger latestTimestamp = this.tCheckpoint.getOrDefault(checkpointCount, BigInteger.ZERO);
         if (latestTimestamp.compareTo(timestamp) <= 0) {
             return checkpointCount;
@@ -102,7 +102,7 @@ public class TypeWeightDB {
     }
 
     private int searchCheckpoint(int checkpoint, BigInteger timestamp) {
-        int lower = 0, upper = checkpoint;
+        int lower = 1, upper = checkpoint;
         while (upper > lower) {
             int mid = (upper + lower + 1) / 2;
             BigInteger midTimestamp = this.tCheckpoint.getOrDefault(mid, BigInteger.ZERO);
@@ -153,15 +153,15 @@ public class TypeWeightDB {
     }
 
 
-    public Map<String, BigInteger> getWeight(String typeId) {
+    public Map<String, BigInteger> getWeight(String type) {
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
-        return getWeight(typeId, timestamp);
+        return getWeight(type, timestamp);
     }
 
-    public Map<String, BigInteger> getWeight(String typeId, BigInteger timestamp) {
+    public Map<String, BigInteger> getWeight(String type, BigInteger timestamp) {
         int index = searchCheckpoint(timestamp);
         return Map.of("index", BigInteger.valueOf(index), "value", this.wCheckpoint.at(index)
-                        .getOrDefault(typeId,
+                        .getOrDefault(type,
                                 BigInteger.ZERO),
                 "timestamp", this.tCheckpoint.get(index));
     }
