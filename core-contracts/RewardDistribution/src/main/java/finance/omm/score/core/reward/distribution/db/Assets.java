@@ -3,6 +3,7 @@ package finance.omm.score.core.reward.distribution.db;
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.db.EnumerableDictDB;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.BranchDB;
@@ -56,22 +57,13 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         this.lastUpdateTimestamp.set(assetAddr, currentTime);
     }
 
-    public Map<String, String> getAssetName() {
-        int size = size();
-        Map<String, String> result = new HashMap<>();
-        for (int i = 0; i < size; i++) {
-            Address key = getKey(i);
-            result.put(key.toString(), get(key).name);
-        }
-        return result;
-    }
 
     public Map<String, BigInteger> getLiquidityProviders() {
         int size = size();
         Map<String, BigInteger> result = new HashMap<>();
         for (int i = 0; i < size; i++) {
             Asset asset = getByIndex(i);
-            if (asset != null && BigInteger.ZERO.compareTo(asset.lpID) < 0) {
+            if (asset != null && asset.lpID != null && BigInteger.ZERO.compareTo(asset.lpID) < 0) {
                 result.put(asset.address.toString(), asset.lpID);
             }
         }
@@ -80,5 +72,21 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
 
     public BigInteger getPoolIDByAddress(Address asset) {
         return this.get(asset).lpID;
+    }
+
+    public Map<String, String> getAssetName() {
+        return getAssetName(List.of());
+    }
+
+    public Map<String, String> getAssetName(List<Address> excludes) {
+        int size = size();
+        Map<String, String> result = new HashMap<>();
+        for (int i = 0; i < size; i++) {
+            Address key = getKey(i);
+            if (!excludes.contains(key)) {
+                result.put(key.toString(), get(key).name);
+            }
+        }
+        return result;
     }
 }

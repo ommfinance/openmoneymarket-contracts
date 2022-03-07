@@ -92,11 +92,20 @@ public class TypeWeightDB {
         this.totalCheckpoint.set(counter, total);
     }
 
+    private int searchCheckpoint(BigInteger timestamp) {
+        Integer checkpointCount = checkpointCounter.getOrDefault(0);
+        BigInteger latestTimestamp = this.tCheckpoint.getOrDefault(checkpointCount, BigInteger.ZERO);
+        if (latestTimestamp.compareTo(timestamp) <= 0) {
+            return checkpointCount;
+        }
+        return searchCheckpoint(checkpointCount, timestamp);
+    }
+
     private int searchCheckpoint(int checkpoint, BigInteger timestamp) {
         int lower = 0, upper = checkpoint;
         while (upper > lower) {
             int mid = (upper + lower + 1) / 2;
-            BigInteger midTimestamp = this.tCheckpoint.get(mid);
+            BigInteger midTimestamp = this.tCheckpoint.getOrDefault(mid, BigInteger.ZERO);
             int value = midTimestamp.compareTo(timestamp);
             if (value < 0) {
                 lower = mid;
@@ -111,7 +120,7 @@ public class TypeWeightDB {
 
 
     public BigInteger getTotal(BigInteger timestamp) {
-        int index = searchCheckpoint(this.checkpointCounter.get(), timestamp);
+        int index = searchCheckpoint(timestamp);
         return this.totalCheckpoint.get(index);
     }
 
@@ -150,7 +159,7 @@ public class TypeWeightDB {
     }
 
     public Map<String, BigInteger> getWeight(String typeId, BigInteger timestamp) {
-        int index = searchCheckpoint(this.checkpointCounter.get(), timestamp);
+        int index = searchCheckpoint(timestamp);
         return Map.of("index", BigInteger.valueOf(index), "value", this.wCheckpoint.at(index)
                         .getOrDefault(typeId,
                                 BigInteger.ZERO),
@@ -163,7 +172,7 @@ public class TypeWeightDB {
     }
 
     public Map<String, BigInteger> getWeightByTimestamp(BigInteger timestamp) {
-        int index = searchCheckpoint(this.checkpointCounter.get(), timestamp);
+        int index = searchCheckpoint(timestamp);
         DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(index);
         Map<String, BigInteger> result = new HashMap<>();
         for (String key : this.types.keySet()) {

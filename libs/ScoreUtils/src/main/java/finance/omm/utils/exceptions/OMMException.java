@@ -21,7 +21,7 @@ public class OMMException extends UserRevertException {
         int apply(int code) {
             code = offset + code;
             if (this.equals(RESERVED) || code >= values()[ordinal() + 1].offset) {
-//                throw new IllegalArgumentException();
+                throw new IllegalArgumentException();
             }
             return code;
         }
