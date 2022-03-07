@@ -104,12 +104,22 @@ public class AssetWeightDB {
         this.totalCheckpoint.at(type).set(counter, total);
     }
 
+    private int searchCheckpoint(String type, BigInteger timestamp) {
+        Integer checkpointCount = checkpointCounter.getOrDefault(type, 0);
+        DictDB<Integer, BigInteger> timeCheckpoints = this.tCheckpoint.at(type);
+        BigInteger latestTimestamp = timeCheckpoints.getOrDefault(checkpointCount, BigInteger.ZERO);
+        if (latestTimestamp.compareTo(timestamp) <= 0) {
+            return checkpointCount;
+        }
+        return searchCheckpoint(timeCheckpoints, checkpointCount, timestamp);
+    }
 
-    private int searchCheckpoint(String type, int checkpoint, BigInteger timestamp) {
+
+    private int searchCheckpoint(DictDB<Integer, BigInteger> timeCheckpoints, int checkpoint, BigInteger timestamp) {
         int lower = 0, upper = checkpoint;
         while (upper > lower) {
             int mid = (upper + lower + 1) / 2;
-            BigInteger midTimestamp = this.tCheckpoint.at(type).get(mid);
+            BigInteger midTimestamp = timeCheckpoints.getOrDefault(mid, BigInteger.ZERO);
             int value = midTimestamp.compareTo(timestamp);
             if (value < 0) {
                 lower = mid;
@@ -134,8 +144,7 @@ public class AssetWeightDB {
 
     public Map<String, BigInteger> getWeight(Asset asset, BigInteger timestamp) {
         String typeId = asset.type;
-        Integer checkpointCounter = this.checkpointCounter.getOrDefault(typeId, 0);
-        int index = searchCheckpoint(typeId, checkpointCounter, timestamp);
+        int index = searchCheckpoint(typeId, timestamp);
         return Map.of(
                 "index", BigInteger.valueOf(index),
                 "value", this.wCheckpoint.at(typeId)
@@ -153,7 +162,7 @@ public class AssetWeightDB {
     }
 
     public BigInteger getTotal(String typeId, BigInteger timestamp) {
-        int index = searchCheckpoint(typeId, this.checkpointCounter.get(typeId), timestamp);
+        int index = searchCheckpoint(typeId, timestamp);
         return this.totalCheckpoint.at(typeId).getOrDefault(index, BigInteger.ZERO);
     }
 
@@ -189,7 +198,7 @@ public class AssetWeightDB {
     }
 
     private DictDB<Address, BigInteger> getCheckpoint(String type, BigInteger timestamp) {
-        int index = searchCheckpoint(type, this.checkpointCounter.get(type), timestamp);
+        int index = searchCheckpoint(type, timestamp);
         return this.wCheckpoint.at(type).at(index);
     }
 

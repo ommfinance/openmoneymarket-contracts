@@ -18,9 +18,11 @@ import score.Context;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Optional;
 
 public class RewardDistributionImpl extends AbstractRewardDistribution {
 
+    public static final String TAG = "Reward distribution";
     public static final String DAY = "day";
     public static final String IS_INITIALIZED = "isInitialized";
     public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
@@ -33,6 +35,11 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     public RewardDistributionImpl(Address addressProvider, BigInteger _weight) {
         super(addressProvider, _weight);
+    }
+
+    @External(readonly = true)
+    public String name() {
+        return "OMM " + TAG;
     }
 
     @Override
@@ -72,10 +79,12 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
 
     @Override
+    @Deprecated
     @External
     public void setAssetName(Address _asset, String _name) {
-//not required
+        Context.println("setAssetName-called" + Context.getCaller());
     }
+
 
     /**
      * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#setTypeWeight(TypeWeightStruct[],
@@ -85,7 +94,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External
     public void setDistributionPercentage(DistPercentage[] _distPercentage) {
-        throw RewardDistributionException.unknown("Unsupported method user #setTypeWeight of reward weight controller");
+        Context.println("setDistributionPercentage-called" + Context.getCaller());
     }
 
     /**
@@ -96,7 +105,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External(readonly = true)
     public BigInteger getDistributionPercentage(String _recipient) {
-        throw RewardDistributionException.unknown("Unsupported method user #getTypeWeight of reward weight controller");
+        return call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getTypeWeight", _recipient);
     }
 
     /**
@@ -106,8 +115,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External(readonly = true)
     @Deprecated
     public Map<String, BigInteger> getAllDistributionPercentage() {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #getALlTypeWeight of reward weight controller");
+        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getALlTypeWeight");
     }
 
     /**
@@ -118,8 +126,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External(readonly = true)
     public BigInteger assetDistPercentage(Address asset) {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #getAssetWeight of reward weight controller");
+        return call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getAssetWeight", asset);
     }
 
     /**
@@ -128,8 +135,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External(readonly = true)
     public Map<String, ?> allAssetDistPercentage() {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #getAllAssetDistributionPercentage of reward weight controller");
+        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getAllAssetDistributionPercentage");
     }
 
     /**
@@ -138,8 +144,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External(readonly = true)
     public Map<String, Map<String, BigInteger>> distPercentageOfAllLP() {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #getDistPercentageOfLP of reward weight controller");
+        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getDistPercentageOfLP");
     }
 
     @External(readonly = true)
@@ -154,24 +159,21 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External
     public void configureAssetConfigs(AssetConfig[] _assetConfig) {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #setAssetWeight of reward weight controller");
+        Context.println("configureAssetConfigs-called" + Context.getCaller());
     }
 
     @Override
     @Deprecated
     @External
     public void removeAssetConfig(Address _asset) {
-        throw RewardDistributionException.unknown(
-                "Unsupported method remove is not supported set value to 0");
+        Context.println("removeAssetConfig-called" + Context.getCaller());
     }
 
     @Override
     @Deprecated
     @External
     public void updateEmissionPerSecond() {
-        throw RewardDistributionException.unknown(
-                "Unsupported method no need to call update emission per seconds");
+        Context.println("updateEmissionPerSecond-called" + Context.getCaller());
     }
 
     /**
@@ -181,8 +183,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External(readonly = true)
     public BigInteger tokenDistributionPerDay(BigInteger _day) {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #tokenDistributionPerDay of reward weight controller");
+        return call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "tokenDistributionPerDay", _day);
     }
 
     /**
@@ -191,8 +192,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External(readonly = true)
     public BigInteger getDay() {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #getDay of reward weight controller");
+        return call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getDay");
     }
 
     /**
@@ -203,8 +203,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Override
     @External(readonly = true)
     public BigInteger getStartTimestamp() {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #getStartTimestamp of reward weight controller");
+        return call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getStartTimestamp");
     }
 
     @Override
@@ -219,8 +218,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @External(readonly = true)
     public String[] getRecipients() {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #getTypes of reward weight controller");
+        return call(String[].class, Contracts.REWARD_WEIGHT_CONTROLLER, "getTypes");
     }
 
 
@@ -248,9 +246,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @Deprecated
     @Override
     @External(readonly = true)
-    public Map<String, ?> getDailyRewards(BigInteger _day) {
-        throw RewardDistributionException.unknown(
-                "Unsupported method user #getDailyRewards of reward weight controller");
+    public Map<String, ?> getDailyRewards(@Optional BigInteger _day) {
+        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getDailyRewards", _day);
     }
 
     @Override

@@ -285,14 +285,17 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
+        BigInteger total = BigInteger.ZERO;
         List<String> types = this.typeWeightDB.getTypes();
-        HashMap<String, Map<String, BigInteger>> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
         for (String type : types) {
             Map<String, BigInteger> typeWeight = typeWeightDB.getWeight(type, timestamp);
             BigInteger tWeight = typeWeight.get("value");
             Map<String, BigInteger> assetWeights = this.assetWeightDB.getAggregatedWeight(tWeight, type, timestamp);
+            total = total.add(assetWeights.get("total"));
             response.put(type, assetWeights);
         }
+        response.put("total", total);
         return response;
     }
 
@@ -306,7 +309,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         }
         BigInteger _distribution = tokenDistributionPerDay(_day);
         List<String> types = this.typeWeightDB.getTypes();
-        HashMap<String, Object> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
         BigInteger totalRewards = BigInteger.ZERO;
         for (String type : types) {
             Map<String, BigInteger> typeWeight = typeWeightDB.getWeight(type, timestamp);
