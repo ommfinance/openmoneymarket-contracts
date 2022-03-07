@@ -21,11 +21,16 @@ package finance.omm.score.tokens;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.spy;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
+import finance.omm.libs.address.Contracts;
+import finance.omm.libs.test.VarargAnyMatcher;
 import finance.omm.score.tokens.utils.IRC2Token;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -37,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentMatchers;
 
 
 public class BoostedOMMUnlockTest extends TestBase {
@@ -45,6 +51,8 @@ public class BoostedOMMUnlockTest extends TestBase {
     private static final Account owner = sm.createAccount();
     private Score veOMMScore;
     private Score tokenScore;
+
+    private VotingEscrowToken scoreSpy;
 
     private Account addressProvider = Account.newScoreAccount(1001);
 
@@ -60,6 +68,16 @@ public class BoostedOMMUnlockTest extends TestBase {
         tokenScore = sm.deploy(owner, IRC2Token.class, INITIAL_SUPPLY);
         veOMMScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 BOOSTED_OMM, B_OMM_SYMBOL);
+        scoreSpy = (VotingEscrowToken) spy(veOMMScore.getInstance());
+        veOMMScore.setInstance(scoreSpy);
+
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+        doNothing().when(scoreSpy)
+                .scoreCall(eq(Contracts.DELEGATION), eq("updateDelegations"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+        doNothing().when(scoreSpy)
+                .scoreCall(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
+
     }
 
     @ParameterizedTest

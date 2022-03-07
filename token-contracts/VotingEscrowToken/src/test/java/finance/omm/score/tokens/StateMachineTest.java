@@ -17,12 +17,17 @@
 package finance.omm.score.tokens;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.spy;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import com.iconloop.score.token.irc2.IRC2Mintable;
+import finance.omm.libs.address.Contracts;
+import finance.omm.libs.test.VarargAnyMatcher;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +40,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.ArgumentMatchers;
 
 @DisplayName("Statemachine Tests")
 public class StateMachineTest extends TestBase {
@@ -54,6 +60,8 @@ public class StateMachineTest extends TestBase {
     private Score bOmmScore;
     private Score tokenScore;
 
+    private VotingEscrowToken scoreSpy;
+
     public static class OmmToken extends IRC2Mintable {
 
         public OmmToken(String _name, String _symbol, int _decimals) {
@@ -62,6 +70,7 @@ public class StateMachineTest extends TestBase {
     }
 
     private static class VotingBalance {
+
         public BigInteger value;
         public BigInteger unlockTime;
 
@@ -92,9 +101,11 @@ public class StateMachineTest extends TestBase {
 
     @BeforeEach
     public void setup() throws Exception {
-        tokenScore = sm.deploy(owner, OmmToken.class, "Balance Token", "OMM", 18);
+        tokenScore = sm.deploy(owner, OmmToken.class, "OMM Token", "OMM", 18);
         bOmmScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 "Boosted Omm", "bOMM");
+        scoreSpy = (VotingEscrowToken) spy(bOmmScore.getInstance());
+        bOmmScore.setInstance(scoreSpy);
         setupAccounts();
     }
 
@@ -117,6 +128,13 @@ public class StateMachineTest extends TestBase {
 
     public void createLock(Account account, BigInteger value, long unlockTime) {
         byte[] createLockParams = tokenData("createLock", Map.of("unlockTime", unlockTime));
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+
+        doNothing().when(scoreSpy)
+                .scoreCall(eq(Contracts.DELEGATION), eq("updateDelegations"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+        doNothing().when(scoreSpy)
+                .scoreCall(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
 
         VotingBalance vote = votingBalances.getOrDefault(account, new VotingBalance());
         vote.value = vote.value.add(value);

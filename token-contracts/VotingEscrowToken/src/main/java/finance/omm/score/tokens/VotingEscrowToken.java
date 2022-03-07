@@ -337,7 +337,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         Supply(supplyBefore, supplyBefore.add(value));
 
         //calling update delegation
-        Context.call(getAddress(Contracts.DELEGATION.getKey()), "updateDelegation", address);
+        scoreCall(Contracts.DELEGATION, "updateDelegations", address);
         // calling handle action for rewards
         UserDetails _userDetails = new UserDetails();
         _userDetails._user = address;
@@ -345,8 +345,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         _userDetails._userBalance = balanceOf(address, BigInteger.ZERO);
         _userDetails._totalSupply = totalSupply(BigInteger.ZERO);
 
-        Context.call(getAddress(Contracts.REWARDS.name()), "handleAction", _userDetails);
-
+        scoreCall(Contracts.REWARDS, "handleAction", _userDetails);
     }
 
     @External
@@ -691,5 +690,13 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         if (!Context.getCaller().equals(this.admin.get())) {
             throw BoostedOMMException.notOwner();
         }
+    }
+
+    public void scoreCall(Contracts contract, String method, Object... params) {
+        Context.call(getAddress(contract.getKey()), method, params);
+    }
+
+    public <K> K scoreCall(Class<K> kClass, Contracts contract, String method, Object... params) {
+        return Context.call(kClass, getAddress(contract.getKey()), method, params);
     }
 }

@@ -1,11 +1,16 @@
 package finance.omm.score.tokens;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.spy;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
+import finance.omm.libs.address.Contracts;
+import finance.omm.libs.test.VarargAnyMatcher;
 import finance.omm.score.tokens.utils.IRC2Token;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
@@ -19,6 +24,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 
 /**
  * Test voting power in the following scenario.
@@ -44,6 +50,7 @@ import org.junit.jupiter.api.Test;
  * After the test is done, check all over again with balanceOfAt / totalSupplyAt
  */
 public class VotingPowerTest extends TestBase {
+
     private static final ServiceManager sm = getServiceManager();
     private static final Account owner = sm.createAccount();
     private Score bBALNScore;
@@ -54,6 +61,8 @@ public class VotingPowerTest extends TestBase {
     private static final String VE_OMM_SYMBOL = "veOMM";
     private static final Account alice = sm.createAccount();
     private static final Account bob = sm.createAccount();
+
+    private VotingEscrowToken scoreSpy;
 
     private Account addressProvider = Account.newScoreAccount(1001);
 
@@ -73,13 +82,13 @@ public class VotingPowerTest extends TestBase {
         tokenScore.invoke(owner, "mintTo", alice.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
         tokenScore.invoke(owner, "mintTo", bob.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
 
-
         ServiceManager.Block currentBlock = sm.getBlock();
         currentBlock.increase(1_000_000);
 //        Move to timing which is good for testing - beginning of a UTC week
         BigInteger timestamp = getBlockTimestamp();
         setBlockTimestamp(timestamp.divide(WEEK).add(BigInteger.ONE).multiply(WEEK).longValue());
-
+        scoreSpy = (VotingEscrowToken) spy(bBALNScore.getInstance());
+        bBALNScore.setInstance(scoreSpy);
     }
 
     @Test
@@ -401,6 +410,13 @@ public class VotingPowerTest extends TestBase {
     }
 
     private void createLock(Account account, BigInteger lockUntil, BigInteger amount) {
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+        doNothing().when(scoreSpy)
+                .scoreCall(eq(Contracts.DELEGATION), eq("updateDelegations"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+        doNothing().when(scoreSpy)
+                .scoreCall(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
+
         Map<String, Object> map = new HashMap<>();
         map.put("method", "createLock");
         map.put("params", Map.of("unlockTime", lockUntil));
