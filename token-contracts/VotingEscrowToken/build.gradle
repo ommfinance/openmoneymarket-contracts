@@ -4,7 +4,7 @@ dependencies {
     implementation project(':AddressProvider')
     implementation project(':ScoreUtils')
     implementation project(':Score')
-
+    implementation project(':OMMStruct')
     testImplementation project(':TestUtils')
     testImplementation 'com.github.sink772:javaee-tokens:0.6.1'
 }
