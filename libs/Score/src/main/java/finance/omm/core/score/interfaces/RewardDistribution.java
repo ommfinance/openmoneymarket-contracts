@@ -4,10 +4,12 @@ import finance.omm.libs.structs.AssetConfig;
 import finance.omm.libs.structs.DistPercentage;
 import finance.omm.libs.structs.UserDetails;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.annotation.External;
 import score.annotation.Optional;
+import score.annotation.Payable;
 
 public interface RewardDistribution {
 
@@ -18,7 +20,7 @@ public interface RewardDistribution {
     Map<String, BigInteger> getAssetEmission();
 
     @External(readonly = true)
-    Address[] getAssets();
+    List<Address> getAssets();
 
     @External(readonly = true)
     Map<String, String> getAssetNames();
@@ -156,5 +158,9 @@ public interface RewardDistribution {
 
     @External(readonly = true)
     Map<String, BigInteger> getWorkingTotal();
+
+    @Payable
+    @External
+    void temp();
 
 }

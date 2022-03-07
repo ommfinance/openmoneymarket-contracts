@@ -331,12 +331,11 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
-        Map<Address, BigInteger> lpAssetIds = (Map<Address, BigInteger>) Context.call(
+        Map<String, BigInteger> lpAssetIds = (Map<String, BigInteger>) Context.call(
                 getAddress(Contracts.REWARDS.toString()), "getLiquidityProviders");
-
         Map<String, BigInteger> response = new HashMap<>();
-        for (Map.Entry<Address, BigInteger> entry : lpAssetIds.entrySet()) {
-            Address assetAddress = entry.getKey();
+        for (Map.Entry<String, BigInteger> entry : lpAssetIds.entrySet()) {
+            Address assetAddress = Address.fromString(entry.getKey());
             BigInteger lpID = entry.getValue();
             Asset asset = this.assetWeightDB.getAsset(assetAddress);
             if (asset != null) {

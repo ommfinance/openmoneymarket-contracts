@@ -47,6 +47,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
     @DisplayName("asset not found")
     @Test
     void invalidSetAsset() {
+        scoreClient.temp();
         Address asset = Faker.address(Address.Type.CONTRACT);
         assertUserRevert(RewardDistributionException.invalidAsset("Asset not found"),
                 () -> scoreClient.setAssetName(asset, "_temp"), null);

@@ -152,7 +152,7 @@ public class AssetWeightDB {
                         .getOrDefault(asset.address,
                                 BigInteger.ZERO),
                 "timestamp", this.tCheckpoint.at(typeId)
-                        .get(index)
+                        .getOrDefault(index, BigInteger.ZERO)
         );
     }
 

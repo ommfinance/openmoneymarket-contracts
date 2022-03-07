@@ -12,6 +12,7 @@ import finance.omm.score.core.reward.distribution.exception.RewardDistributionEx
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.Context;
@@ -19,6 +20,7 @@ import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
+import score.annotation.Payable;
 
 public class RewardDistributionImpl extends AbstractRewardDistribution {
 
@@ -50,8 +52,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @Override
     @External(readonly = true)
-    public Address[] getAssets() {
-        return this.assets.keyArray();
+    public List<Address> getAssets() {
+        return this.assets.keySet();
     }
 
     @Override
@@ -160,6 +162,16 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External
     public void configureAssetConfigs(AssetConfig[] _assetConfig) {
         Context.println("configureAssetConfigs-called" + Context.getCaller());
+    }
+
+    /**
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#setAssetWeight(String,
+     * WeightStruct[], BigInteger)}}
+     */
+    @Deprecated
+    @External
+    public void configureAssetConfig(AssetConfig _assetConfig) {
+        Context.println("configureAssetConfig-called" + Context.getCaller());
     }
 
     @Override
@@ -378,4 +390,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @EventLog(indexed = 2)
     public void Distribution(String _recipient, Address _user, BigInteger _value) {}
 
+
+    @Payable
+    @External
+    public void temp() {
+
+    }
 }
