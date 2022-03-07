@@ -37,8 +37,8 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     public static final BigInteger DAYS_PER_YEAR = BigInteger.valueOf(365L);
     public static final String TIMESTAMP_AT_START = "timestampAtStart";
 
-    public final TypeWeightDB typeWeightDB = new TypeWeightDB("type");
-    public final AssetWeightDB assetWeightDB = new AssetWeightDB("asset");
+    public final TypeWeightDB typeWeightDB = new TypeWeightDB("types");
+    public final AssetWeightDB assetWeightDB = new AssetWeightDB("assets");
 
     private final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
 
@@ -337,7 +337,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         Map<String, BigInteger> lpAssetIds = (Map<String, BigInteger>) Context.call(
                 getAddress(Contracts.REWARDS.toString()), "getLiquidityProviders");
         Map<String, BigInteger> response = new HashMap<>();
-        BigInteger typeWeight = this.getTypeWeight("liquidityProvider", timestamp);
+        BigInteger typeWeight = this.getTypeWeight("liquidity", timestamp);
 
         for (Map.Entry<String, BigInteger> entry : lpAssetIds.entrySet()) {
             Address assetAddress = Address.fromString(entry.getKey());

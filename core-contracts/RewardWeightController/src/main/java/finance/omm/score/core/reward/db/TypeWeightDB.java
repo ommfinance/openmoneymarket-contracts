@@ -26,7 +26,7 @@ public class TypeWeightDB {
 
 
     public TypeWeightDB(String id) {
-        this.types = new TypeDB("type-key-name");
+        this.types = new TypeDB(id + "type-key-name");
         this.checkpointCounter = Context.newVarDB(id + "CheckpointCounter", Integer.class);
         this.totalCheckpoint = Context.newDictDB(id + "Total", BigInteger.class);
         this.wCheckpoint = Context.newBranchDB(id + "WeightCheckpoint", BigInteger.class);

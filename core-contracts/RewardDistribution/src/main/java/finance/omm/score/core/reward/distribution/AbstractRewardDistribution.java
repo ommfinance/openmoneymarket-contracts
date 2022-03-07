@@ -48,7 +48,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public AbstractRewardDistribution(Address addressProvider, BigInteger _weight) {
         super(addressProvider);
-        assets = new Assets("temp");
+        //TODO pass empty key for c-testnet
+        assets = new Assets("assets-temp");
         workingBalance = Context.newBranchDB("workingBalance", BigInteger.class);
         workingTotal = Context.newDictDB("workingTotal", BigInteger.class);
         weight = Context.newVarDB("weight", BigInteger.class);
