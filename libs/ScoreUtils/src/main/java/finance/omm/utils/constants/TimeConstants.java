@@ -10,6 +10,7 @@ public class TimeConstants {
     public static final BigInteger MINUTE_IN_MICRO_SECONDS = BigInteger.valueOf(60L).multiply(SECOND);
     public static final BigInteger HOUR_IN_MICRO_SECONDS = BigInteger.valueOf(60L).multiply(MINUTE_IN_MICRO_SECONDS);
     public static final BigInteger DAY_IN_MICRO_SECONDS = BigInteger.valueOf(24L).multiply(HOUR_IN_MICRO_SECONDS);
+    public static final BigInteger DAY_IN_SECONDS = BigInteger.valueOf(60 * 60 * 24);
     public static final BigInteger WEEK_IN_MICRO_SECONDS = BigInteger.valueOf(7L).multiply(DAY_IN_MICRO_SECONDS);
     public static final BigInteger MONTH_IN_MICRO_SECONDS = BigInteger.valueOf(30L).multiply(DAY_IN_MICRO_SECONDS);
 
