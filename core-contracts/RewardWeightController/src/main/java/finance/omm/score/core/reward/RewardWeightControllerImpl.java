@@ -119,6 +119,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             timestamp = TimeConstants.getBlockTimestamp();
         }
         assetWeightDB.setWeights(type, weights, timestamp);
+        SetAssetWeight(type, timestamp, "Asset weight updated");
     }
 
 
@@ -303,6 +304,31 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     @External(readonly = true)
+    public Map<String, BigInteger> getAssetDailyRewards(@Optional BigInteger _day) {
+        BigInteger timestamp = TimeConstants.getBlockTimestamp();
+        if (_day == null || BigInteger.ZERO.equals(_day)) {
+            _day = getDay();
+        } else {
+            timestamp = this._timestampAtStart.get().add(_day.multiply(DAY_IN_MICRO_SECONDS));
+        }
+        BigInteger _distribution = tokenDistributionPerDay(_day);
+        List<String> types = this.typeWeightDB.getTypes();
+        Map<String, BigInteger> response = new HashMap<>();
+        for (String type : types) {
+            Map<String, BigInteger> typeWeight = typeWeightDB.searchTypeWeight(type, timestamp);
+            BigInteger tWeight = typeWeight.get("value");
+            BigInteger _distributionValue = exaMultiply(_distribution, tWeight);
+            Map<String, BigInteger> assetWeights = this.assetWeightDB.getAggregatedWeight(_distributionValue, type,
+                    timestamp);
+            assetWeights.remove("total");
+            response.putAll(assetWeights);
+        }
+        response.put("day", _day);
+        return response;
+    }
+
+
+    @External(readonly = true)
     public Map<String, ?> getDailyRewards(@Optional BigInteger _day) {
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
         if (_day == null || BigInteger.ZERO.equals(_day)) {
@@ -386,6 +412,10 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @EventLog(indexed = 2)
     public void SetTypeWeight(BigInteger timestamp, String message) {
+    }
+
+    @EventLog(indexed = 2)
+    public void SetAssetWeight(String type, BigInteger timestamp, String asset_weight_updated) {
     }
 
 }

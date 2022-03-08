@@ -65,8 +65,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         Map<String, BigInteger> response = new HashMap<>();
         DictDB<Address, BigInteger> balances = workingBalance.at(user);
         for (Map.Entry<String, String> entry : assets.entrySet()) {
-            BigInteger userBalance = balances.getOrDefault(Address.fromString(entry.getKey()), BigInteger.ZERO);
-            response.put(entry.getValue(), userBalance);
+            BigInteger userWorkingBalance = balances.getOrDefault(Address.fromString(entry.getKey()), BigInteger.ZERO);
+            response.put(entry.getValue(), userWorkingBalance);
         }
         return response;
     }
@@ -76,8 +76,9 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         Map<String, String> assets = this.assets.getAssetName(this.transferToContractMap.keySet());
         Map<String, BigInteger> response = new HashMap<>();
         for (Map.Entry<String, String> entry : assets.entrySet()) {
-            BigInteger userBalance = workingTotal.getOrDefault(Address.fromString(entry.getKey()), BigInteger.ZERO);
-            response.put(entry.getValue(), userBalance);
+            BigInteger assetWorkingTotal = workingTotal.getOrDefault(Address.fromString(entry.getKey()),
+                    BigInteger.ZERO);
+            response.put(entry.getValue(), assetWorkingTotal);
         }
         return response;
     }

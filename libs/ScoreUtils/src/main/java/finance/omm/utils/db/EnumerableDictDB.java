@@ -164,7 +164,7 @@ public class EnumerableDictDB<K, V> {
         return keySet;
     }
 
-    public List<K> keySet(List<Address> excludes) {
+    public List<K> keySet(List<K> excludes) {
         List<K> keySet = new ArrayList<>();
         int size = size();
         for (int i = 0; i < size; i++) {

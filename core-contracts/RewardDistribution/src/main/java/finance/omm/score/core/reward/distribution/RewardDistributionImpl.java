@@ -1,6 +1,8 @@
 package finance.omm.score.core.reward.distribution;
 
 import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.exaDivide;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AssetConfig;
@@ -16,10 +18,12 @@ import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.Context;
+import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
+import scorex.util.HashMap;
 
 public class RewardDistributionImpl extends AbstractRewardDistribution {
 
@@ -353,6 +357,28 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @Override
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
+
+    }
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getUserDailyReward(Address user) {
+        Map<String, String> assets = this.assets.getAssetName(this.transferToContractMap.keySet());
+
+        Map<String, BigInteger> dailyRewards = call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER,
+                "getAssetDailyRewards");
+
+        DictDB<Address, BigInteger> balances = workingBalance.at(user);
+        Map<String, BigInteger> response = new HashMap<>();
+        for (Map.Entry<String, String> entry : assets.entrySet()) {
+            Address assetAddr = Address.fromString(entry.getKey());
+            String name = entry.getValue();
+            BigInteger userWorkingBalance = balances.getOrDefault(assetAddr, BigInteger.ZERO);
+            BigInteger assetWorkingTotal = workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
+            BigInteger dailyReward = dailyRewards.get(name);
+
+            response.put(name, exaMultiply(dailyReward, exaDivide(userWorkingBalance, assetWorkingTotal)));
+        }
+        return response;
 
     }
 
