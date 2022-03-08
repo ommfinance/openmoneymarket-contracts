@@ -21,6 +21,9 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import finance.omm.core.score.interfaces.VeToken;
 import finance.omm.libs.address.AddressProvider;
+import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.SupplyDetails;
+import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.tokens.exception.BoostedOMMException;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.db.EnumerableSet;
@@ -332,6 +335,17 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
 
         Deposit(address, value, locked.getEnd(), type, blockTimestamp);
         Supply(supplyBefore, supplyBefore.add(value));
+
+        //calling update delegation
+        scoreCall(Contracts.DELEGATION, "updateDelegations", address);
+        // calling handle action for rewards
+        UserDetails _userDetails = new UserDetails();
+        _userDetails._user = address;
+        _userDetails._decimals = BigInteger.valueOf(decimals());
+        _userDetails._userBalance = balanceOf(address, BigInteger.ZERO);
+        _userDetails._totalSupply = totalSupply(BigInteger.ZERO);
+
+        scoreCall(Contracts.REWARDS, "handleAction", _userDetails);
     }
 
     @External
@@ -632,6 +646,17 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
     }
 
     @External(readonly = true)
+    public SupplyDetails getPrincipalSupply(Address _user) {
+        SupplyDetails response = new SupplyDetails();
+        response.decimals = BigInteger.valueOf(decimals());
+        response.principalUserBalance = balanceOf(_user, BigInteger.ZERO);
+        response.principalTotalSupply = totalSupply(BigInteger.ZERO);
+
+        return response;
+
+    }
+
+    @External(readonly = true)
     public Address admin() {
         return this.admin.get();
     }
@@ -665,5 +690,13 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         if (!Context.getCaller().equals(this.admin.get())) {
             throw BoostedOMMException.notOwner();
         }
+    }
+
+    public void scoreCall(Contracts contract, String method, Object... params) {
+        Context.call(getAddress(contract.getKey()), method, params);
+    }
+
+    public <K> K scoreCall(Class<K> kClass, Contracts contract, String method, Object... params) {
+        return Context.call(kClass, getAddress(contract.getKey()), method, params);
     }
 }

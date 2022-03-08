@@ -4,7 +4,7 @@ dependencies {
     implementation project(':AddressProvider')
     implementation project(':ScoreUtils')
     implementation project(':Score')
-
+    implementation project(':OMMStruct')
     testImplementation project(':TestUtils')
     testImplementation 'com.github.sink772:javaee-tokens:0.6.1'
 }
@@ -21,6 +21,7 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = 'cxc0baa03725aebad6dae298067b20855859d0767e'
             nid = 0x53
         }
         mainnet {

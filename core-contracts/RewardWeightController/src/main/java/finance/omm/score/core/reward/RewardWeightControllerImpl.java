@@ -1,6 +1,7 @@
 package finance.omm.score.core.reward;
 
 import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
+import static finance.omm.utils.constants.TimeConstants.DAY_IN_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.MONTH_IN_MICRO_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.YEAR_IN_MICRO_SECONDS;
 import static finance.omm.utils.math.MathUtils.ICX;
@@ -175,7 +176,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     private BigInteger getInflationRate(BigInteger _day) {
-        return tokenDistributionPerDay(_day).divide(DAY_IN_MICRO_SECONDS);
+        return tokenDistributionPerDay(_day).divide(DAY_IN_SECONDS);
     }
 
 
