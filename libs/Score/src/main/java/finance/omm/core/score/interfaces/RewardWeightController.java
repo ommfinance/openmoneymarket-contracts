@@ -74,7 +74,7 @@ public interface RewardWeightController {
 
 
     @External(readonly = true)
-    public Map<String, ?> distributionInfo(BigInteger day);
+    public Map<String, ?> distributionDetails(BigInteger day);
 
 
 }

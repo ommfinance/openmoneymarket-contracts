@@ -357,7 +357,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public Map<String, ?> distributionInfo(BigInteger day) {
+    public Map<String, ?> distributionDetails(BigInteger day) {
         Map<String, Object> response = new HashMap<>() {{
             put("isValid", true);
         }};

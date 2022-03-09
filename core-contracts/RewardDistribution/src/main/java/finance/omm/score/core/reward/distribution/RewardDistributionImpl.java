@@ -270,14 +270,15 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
         @SuppressWarnings("unchecked")
         Class<Map<String, ?>> clazz = (Class) Map.class;
-        Map<String, ?> distributionInfo = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "distributionInfo", day);
-        Boolean isValid = (Boolean) distributionInfo.get("isValid");
+        Map<String, ?> distributionDetails = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "distributionDetails",
+                day);
+        Boolean isValid = (Boolean) distributionDetails.get("isValid");
 
         if (!isValid) {
             return;
         }
-        BigInteger tokenDistribution = (BigInteger) distributionInfo.get("distribution");
-        BigInteger newDay = (BigInteger) distributionInfo.get("day");
+        BigInteger tokenDistribution = (BigInteger) distributionDetails.get("distribution");
+        BigInteger newDay = (BigInteger) distributionDetails.get("day");
         if (tokenDistribution.equals(BigInteger.ZERO)) {
             return;
         }
