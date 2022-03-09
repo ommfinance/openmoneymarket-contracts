@@ -18,6 +18,7 @@ import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.db.EnumerableDictDB;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.BranchDB;
@@ -47,7 +48,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public AbstractRewardDistribution(Address addressProvider, BigInteger _weight) {
         super(addressProvider);
-        assets = new Assets("temp");
+        //TODO pass empty key for c-testnet
+        assets = new Assets("assets-temp");
         workingBalance = Context.newBranchDB("workingBalance", BigInteger.class);
         workingTotal = Context.newDictDB("workingTotal", BigInteger.class);
         weight = Context.newVarDB("weight", BigInteger.class);
@@ -56,6 +58,31 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         }
         weight.set(_weight);
     }
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getWorkingBalances(Address user) {
+        Map<String, String> assets = this.assets.getAssetName(this.transferToContractMap.keySet());
+        Map<String, BigInteger> response = new HashMap<>();
+        DictDB<Address, BigInteger> balances = workingBalance.at(user);
+        for (Map.Entry<String, String> entry : assets.entrySet()) {
+            BigInteger userWorkingBalance = balances.getOrDefault(Address.fromString(entry.getKey()), BigInteger.ZERO);
+            response.put(entry.getValue(), userWorkingBalance);
+        }
+        return response;
+    }
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getWorkingTotal() {
+        Map<String, String> assets = this.assets.getAssetName(this.transferToContractMap.keySet());
+        Map<String, BigInteger> response = new HashMap<>();
+        for (Map.Entry<String, String> entry : assets.entrySet()) {
+            BigInteger assetWorkingTotal = workingTotal.getOrDefault(Address.fromString(entry.getKey()),
+                    BigInteger.ZERO);
+            response.put(entry.getValue(), assetWorkingTotal);
+        }
+        return response;
+    }
+
 
     @External
     public void setWeight(BigInteger _weight) {
@@ -119,7 +146,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     public Map<String, ?> getRewards(Address user) {
         BigInteger totalRewards = BigInteger.ZERO;
         Map<String, Object> response = new HashMap<>();
-        for (Address address : this.assets.keySet()) {
+        List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+        for (Address address : assets) {
             Asset asset = this.assets.get(address);
             if (asset == null) {
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
@@ -152,7 +180,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         BigInteger bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
 
         BigInteger accruedReward = BigInteger.ZERO;
-        for (Address address : this.assets.keySet()) {
+        List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+        for (Address address : assets) {
             Asset asset = this.assets.get(address);
             if (asset == null) {
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
@@ -277,8 +306,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     protected Map<String, BigInteger> getBoostedBalance(Address user) {
-        BigInteger bOMMUserBalance = call(BigInteger.class, Contracts.OMM_TOKEN, "balanceOf", user);
-        BigInteger bOMMTotalSupply = call(BigInteger.class, Contracts.OMM_TOKEN, "totalSupply");
+        BigInteger bOMMUserBalance = call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user);
+        BigInteger bOMMTotalSupply = call(BigInteger.class, Contracts.BOOSTED_OMM, "totalSupply");
         return Map.of("bOMMUserBalance", bOMMUserBalance, "bOMMTotalSupply", bOMMTotalSupply);
     }
 

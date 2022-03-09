@@ -164,13 +164,20 @@ public class EnumerableDictDB<K, V> {
         return keySet;
     }
 
-    public List<K> keySet() {
+    public List<K> keySet(List<K> excludes) {
         List<K> keySet = new ArrayList<>();
         int size = size();
         for (int i = 0; i < size; i++) {
-            keySet.add(getKey(i));
+            K k = getKey(i);
+            if (!excludes.contains(k)) {
+                keySet.add(k);
+            }
         }
         return keySet;
+    }
+
+    public List<K> keySet() {
+        return keySet(List.of());
     }
 
     public List<Object> supportedKeySet() {

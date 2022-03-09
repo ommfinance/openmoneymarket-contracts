@@ -22,7 +22,7 @@ public interface RewardWeightController {
     public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp);
 
     @External(readonly = true)
-    public Map<String, BigInteger> getTypeWeight(String typeId, @Optional BigInteger timestamp);
+    public BigInteger getTypeWeight(String typeId, @Optional BigInteger timestamp);
 
     @External(readonly = true)
     public Map<String, BigInteger> getALlTypeWeight(@Optional BigInteger timestamp);
@@ -64,7 +64,7 @@ public interface RewardWeightController {
     public Map<String, ?> getDailyRewards(@Optional BigInteger _day);
 
     @External(readonly = true)
-    public Map<String, BigInteger> getDistPercentageOfLP(@Optional BigInteger timestamp);
+    public Map<String, ?> getDistPercentageOfLP(@Optional BigInteger timestamp);
 
     @External(readonly = true)
     public List<String> getTypes();

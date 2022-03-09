@@ -4,6 +4,7 @@ import finance.omm.libs.structs.AssetConfig;
 import finance.omm.libs.structs.DistPercentage;
 import finance.omm.libs.structs.UserDetails;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.annotation.External;
@@ -12,139 +13,149 @@ import score.annotation.Optional;
 public interface RewardDistribution {
 
     @External(readonly = true)
-    public Map<String, BigInteger> getAssetEmission();
+    String name();
 
     @External(readonly = true)
-    public Address[] getAssets();
+    Map<String, BigInteger> getAssetEmission();
 
     @External(readonly = true)
-    public Map<String, String> getAssetNames();
+    List<Address> getAssets();
 
     @External(readonly = true)
-    public Map<String, BigInteger> getIndexes(Address _user, Address _asset);
+    Map<String, String> getAssetNames();
 
     @External(readonly = true)
-    public BigInteger getAssetIndex(Address _asset);
+    Map<String, BigInteger> getIndexes(Address _user, Address _asset);
 
     @External(readonly = true)
-    public BigInteger getLastUpdatedTimestamp(Address _asset);
+    BigInteger getAssetIndex(Address _asset);
+
+    @External(readonly = true)
+    BigInteger getLastUpdatedTimestamp(Address _asset);
 
     @External
-    public void setAssetName(Address _asset, String _name);
-
-    @Deprecated
-    @External
-    public void setDistributionPercentage(DistPercentage[] _distPercentage);
-
-    @Deprecated
-    @External(readonly = true)
-    public BigInteger getDistributionPercentage(String _recipient);
-
-    @External(readonly = true)
-    @Deprecated
-    public Map<String, BigInteger> getAllDistributionPercentage();
-
-    @Deprecated
-    @External(readonly = true)
-    public BigInteger assetDistPercentage(Address asset);
-
-    @Deprecated
-    @External(readonly = true)
-    public Map<String, ?> allAssetDistPercentage();
-
-    @Deprecated
-    @External(readonly = true)
-    public Map<String, Map<String, BigInteger>> distPercentageOfAllLP();
-
-    @External(readonly = true)
-    public Map<String, BigInteger> getLiquidityProviders();
+    void setAssetName(Address _asset, String _name);
 
     @Deprecated
     @External
-    public void configureAssetConfigs(AssetConfig[] _assetConfig);
+    void setDistributionPercentage(DistPercentage[] _distPercentage);
+
+    @Deprecated
+    @External(readonly = true)
+    BigInteger getDistributionPercentage(String _recipient);
+
+    @External(readonly = true)
+    @Deprecated
+    Map<String, BigInteger> getAllDistributionPercentage();
+
+    @Deprecated
+    @External(readonly = true)
+    BigInteger assetDistPercentage(Address asset);
+
+    @Deprecated
+    @External(readonly = true)
+    Map<String, ?> allAssetDistPercentage();
+
+    @Deprecated
+    @External(readonly = true)
+    Map<String, Map<String, BigInteger>> distPercentageOfAllLP();
+
+    @External(readonly = true)
+    Map<String, BigInteger> getLiquidityProviders();
 
     @Deprecated
     @External
-    public void removeAssetConfig(Address _asset);
+    void configureAssetConfigs(AssetConfig[] _assetConfig);
 
     @Deprecated
     @External
-    public void updateEmissionPerSecond();
+    void removeAssetConfig(Address _asset);
+
+    @Deprecated
+    @External
+    void updateEmissionPerSecond();
 
 
     @Deprecated
     @External(readonly = true)
-    public BigInteger tokenDistributionPerDay(BigInteger _day);
+    BigInteger tokenDistributionPerDay(BigInteger _day);
 
     @Deprecated
     @External(readonly = true)
-    public BigInteger getDay();
+    BigInteger getDay();
 
     @Deprecated
     @External(readonly = true)
-    public BigInteger getStartTimestamp();
+    BigInteger getStartTimestamp();
 
     @External(readonly = true)
-    public BigInteger getPoolIDByAsset(Address _asset);
+    BigInteger getPoolIDByAsset(Address _asset);
 
     @Deprecated
     @External(readonly = true)
-    public String[] getRecipients();
+    String[] getRecipients();
 
 
     @External()
-    public void disableRewardClaim();
+    void disableRewardClaim();
 
     @External()
-    public void enableRewardClaim();
+    void enableRewardClaim();
 
     @External(readonly = true)
-    public boolean isRewardClaimEnabled();
+    boolean isRewardClaimEnabled();
 
     @Deprecated
     @External(readonly = true)
-    public Map<String, ?> getDailyRewards(BigInteger _day);
+    Map<String, ?> getDailyRewards(BigInteger _day);
 
     @Deprecated
     @External
-    public void startDistribution();
+    void startDistribution();
 
     @External
-    public void distribute();
+    void distribute();
 
     @External(readonly = true)
-    public BigInteger getDistributedDay();
+    BigInteger getDistributedDay();
 
     @External
-    public void transferOmmToDaoFund(BigInteger _value);
+    void transferOmmToDaoFund(BigInteger _value);
 
     @External
-    public void tokenFallback(Address _from, BigInteger _value, byte[] _data);
+    void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
 
     @External()
-    public void handleAction(UserDetails _userAssetDetails);
+    void handleAction(UserDetails _userAssetDetails);
 
     @External
-    public void handleLPAction(Address _asset, UserDetails _userDetails);
+    void handleLPAction(Address _asset, UserDetails _userDetails);
 
     @External
-    public void setWeight(BigInteger _weight);
+    void setWeight(BigInteger _weight);
 
     @External
-    public void addType(String key, boolean transferToContract);
+    void addType(String key, boolean transferToContract);
 
 
     @External
-    public void addAsset(String type, String name, Address address, @Optional BigInteger poolID);
+    void addAsset(String type, String name, Address address, @Optional BigInteger poolID);
 
     @External(readonly = true)
-    public Map<String, ?> getRewards(Address user);
+    Map<String, ?> getRewards(Address user);
 
     @External
-    public void claimRewards(Address user);
+    void claimRewards(Address user);
 
     @External(readonly = true)
-    public BigInteger getClaimedReward(Address user);
+    BigInteger getClaimedReward(Address user);
+
+
+    @External(readonly = true)
+    Map<String, BigInteger> getWorkingBalances(Address user);
+
+    @External(readonly = true)
+    Map<String, BigInteger> getWorkingTotal();
 
 }

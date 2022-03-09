@@ -26,7 +26,7 @@ public class TypeWeightDB {
 
 
     public TypeWeightDB(String id) {
-        this.types = new TypeDB("type-key-name");
+        this.types = new TypeDB(id + "type-key-name");
         this.checkpointCounter = Context.newVarDB(id + "CheckpointCounter", Integer.class);
         this.totalCheckpoint = Context.newDictDB(id + "Total", BigInteger.class);
         this.wCheckpoint = Context.newBranchDB(id + "WeightCheckpoint", BigInteger.class);
@@ -92,11 +92,20 @@ public class TypeWeightDB {
         this.totalCheckpoint.set(counter, total);
     }
 
+    private int searchCheckpoint(BigInteger timestamp) {
+        Integer checkpointCount = checkpointCounter.getOrDefault(1);
+        BigInteger latestTimestamp = this.tCheckpoint.getOrDefault(checkpointCount, BigInteger.ZERO);
+        if (latestTimestamp.compareTo(timestamp) <= 0) {
+            return checkpointCount;
+        }
+        return searchCheckpoint(checkpointCount, timestamp);
+    }
+
     private int searchCheckpoint(int checkpoint, BigInteger timestamp) {
-        int lower = 0, upper = checkpoint;
+        int lower = 1, upper = checkpoint;
         while (upper > lower) {
             int mid = (upper + lower + 1) / 2;
-            BigInteger midTimestamp = this.tCheckpoint.get(mid);
+            BigInteger midTimestamp = this.tCheckpoint.getOrDefault(mid, BigInteger.ZERO);
             int value = midTimestamp.compareTo(timestamp);
             if (value < 0) {
                 lower = mid;
@@ -111,7 +120,7 @@ public class TypeWeightDB {
 
 
     public BigInteger getTotal(BigInteger timestamp) {
-        int index = searchCheckpoint(this.checkpointCounter.get(), timestamp);
+        int index = searchCheckpoint(timestamp);
         return this.totalCheckpoint.get(index);
     }
 
@@ -137,22 +146,22 @@ public class TypeWeightDB {
     public Map<String, BigInteger> weightOfAllTypes(BigInteger timestamp) {
         Map<String, BigInteger> response = new HashMap<>();
         for (String key : types.keySet()) {
-            Map<String, BigInteger> map = getWeight(key, timestamp);
+            Map<String, BigInteger> map = searchTypeWeight(key, timestamp);
             response.put(key, map.get("value"));
         }
         return response;
     }
 
 
-    public Map<String, BigInteger> getWeight(String typeId) {
+    public Map<String, BigInteger> searchTypeWeight(String type) {
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
-        return getWeight(typeId, timestamp);
+        return searchTypeWeight(type, timestamp);
     }
 
-    public Map<String, BigInteger> getWeight(String typeId, BigInteger timestamp) {
-        int index = searchCheckpoint(this.checkpointCounter.get(), timestamp);
+    public Map<String, BigInteger> searchTypeWeight(String type, BigInteger timestamp) {
+        int index = searchCheckpoint(timestamp);
         return Map.of("index", BigInteger.valueOf(index), "value", this.wCheckpoint.at(index)
-                        .getOrDefault(typeId,
+                        .getOrDefault(type,
                                 BigInteger.ZERO),
                 "timestamp", this.tCheckpoint.get(index));
     }
@@ -163,7 +172,7 @@ public class TypeWeightDB {
     }
 
     public Map<String, BigInteger> getWeightByTimestamp(BigInteger timestamp) {
-        int index = searchCheckpoint(this.checkpointCounter.get(), timestamp);
+        int index = searchCheckpoint(timestamp);
         DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(index);
         Map<String, BigInteger> result = new HashMap<>();
         for (String key : this.types.keySet()) {

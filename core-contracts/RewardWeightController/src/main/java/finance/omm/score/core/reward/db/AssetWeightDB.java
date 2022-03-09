@@ -104,12 +104,22 @@ public class AssetWeightDB {
         this.totalCheckpoint.at(type).set(counter, total);
     }
 
+    private int searchCheckpoint(String type, BigInteger timestamp) {
+        Integer checkpointCount = checkpointCounter.getOrDefault(type, 1);
+        DictDB<Integer, BigInteger> timeCheckpoints = this.tCheckpoint.at(type);
+        BigInteger latestTimestamp = timeCheckpoints.getOrDefault(checkpointCount, BigInteger.ZERO);
+        if (latestTimestamp.compareTo(timestamp) <= 0) {
+            return checkpointCount;
+        }
+        return searchCheckpoint(timeCheckpoints, checkpointCount, timestamp);
+    }
 
-    private int searchCheckpoint(String type, int checkpoint, BigInteger timestamp) {
-        int lower = 0, upper = checkpoint;
+
+    private int searchCheckpoint(DictDB<Integer, BigInteger> timeCheckpoints, int checkpoint, BigInteger timestamp) {
+        int lower = 1, upper = checkpoint;
         while (upper > lower) {
             int mid = (upper + lower + 1) / 2;
-            BigInteger midTimestamp = this.tCheckpoint.at(type).get(mid);
+            BigInteger midTimestamp = timeCheckpoints.getOrDefault(mid, BigInteger.ZERO);
             int value = midTimestamp.compareTo(timestamp);
             if (value < 0) {
                 lower = mid;
@@ -122,20 +132,10 @@ public class AssetWeightDB {
         return lower;
     }
 
-    public Map<String, BigInteger> getWeight(Address assetAddress) {
-        BigInteger timestamp = TimeConstants.getBlockTimestamp();
-        return getWeight(assetAddress, timestamp);
-    }
 
-    public Map<String, BigInteger> getWeight(Address assetAddress, BigInteger timestamp) {
-        Asset asset = getAsset(assetAddress);
-        return getWeight(asset, timestamp);
-    }
-
-    public Map<String, BigInteger> getWeight(Asset asset, BigInteger timestamp) {
+    public Map<String, BigInteger> searchAssetWeight(Asset asset, BigInteger timestamp) {
         String typeId = asset.type;
-        Integer checkpointCounter = this.checkpointCounter.getOrDefault(typeId, 0);
-        int index = searchCheckpoint(typeId, checkpointCounter, timestamp);
+        int index = searchCheckpoint(typeId, timestamp);
         return Map.of(
                 "index", BigInteger.valueOf(index),
                 "value", this.wCheckpoint.at(typeId)
@@ -143,7 +143,7 @@ public class AssetWeightDB {
                         .getOrDefault(asset.address,
                                 BigInteger.ZERO),
                 "timestamp", this.tCheckpoint.at(typeId)
-                        .get(index)
+                        .getOrDefault(index, BigInteger.ZERO)
         );
     }
 
@@ -153,7 +153,7 @@ public class AssetWeightDB {
     }
 
     public BigInteger getTotal(String typeId, BigInteger timestamp) {
-        int index = searchCheckpoint(typeId, this.checkpointCounter.get(typeId), timestamp);
+        int index = searchCheckpoint(typeId, timestamp);
         return this.totalCheckpoint.at(typeId).getOrDefault(index, BigInteger.ZERO);
     }
 
@@ -173,7 +173,7 @@ public class AssetWeightDB {
         return checkpointCounter.getOrDefault(typeId, 0);
     }
 
-    public Map<String, BigInteger> getWeightByTimestamp(String type, BigInteger timestamp) {
+    public Map<String, BigInteger> getWeightByTimestamp(String type, BigInteger typeWeight, BigInteger timestamp) {
         DictDB<Address, BigInteger> dictDB = getCheckpoint(type, timestamp);
         Map<String, BigInteger> result = new HashMap<>();
 
@@ -182,14 +182,14 @@ public class AssetWeightDB {
         for (int i = 0; i < addresses.size(); i++) {
             Address address = addresses.get(i);
             BigInteger value = dictDB.getOrDefault(address, BigInteger.ZERO);
-            result.put(address.toString(), value);
+            result.put(address.toString(), exaMultiply(value, typeWeight));
         }
 
         return result;
     }
 
     private DictDB<Address, BigInteger> getCheckpoint(String type, BigInteger timestamp) {
-        int index = searchCheckpoint(type, this.checkpointCounter.get(type), timestamp);
+        int index = searchCheckpoint(type, timestamp);
         return this.wCheckpoint.at(type).at(index);
     }
 
@@ -205,7 +205,7 @@ public class AssetWeightDB {
             Asset asset = this.assets.get(address);
             if (asset != null) {
                 String name = asset.name;
-                BigInteger value = exaMultiply(dictDB.getOrDefault(asset.address, BigInteger.ZERO), weight);
+                BigInteger value = exaMultiply(dictDB.getOrDefault(address, BigInteger.ZERO), weight);
                 result.put(name, value);
                 total = total.add(value);
             }
