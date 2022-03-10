@@ -5,10 +5,10 @@ import score.Address;
 
 public class WorkingBalance {
 
-    public Address user;
+    public Address userAddr;
     public Address assetAddr;
     public BigInteger bOMMUserBalance;
     public BigInteger bOMMTotalSupply;
-    public BigInteger tokenBalance;
-    public BigInteger tokenTotalSupply;
+    public BigInteger userBalance;
+    public BigInteger totalSupply;
 }

@@ -9,11 +9,11 @@ public class SupplyDetails {
     public BigInteger principalUserBalance;
     public BigInteger principalTotalSupply;
 
-    public static SupplyDetails fromMap(Map<String, ?> map) {
+    public static SupplyDetails fromMap(Map<String, BigInteger> map) {
         SupplyDetails supplyDetails = new SupplyDetails();
-        supplyDetails.decimals = (BigInteger) map.get("decimals");
-        supplyDetails.principalUserBalance = (BigInteger) map.get("principalUserBalance");
-        supplyDetails.principalTotalSupply = (BigInteger) map.get("principalTotalSupply");
+        supplyDetails.decimals = map.get("decimals");
+        supplyDetails.principalUserBalance = map.get("principalUserBalance");
+        supplyDetails.principalTotalSupply = map.get("principalTotalSupply");
         return supplyDetails;
     }
 }

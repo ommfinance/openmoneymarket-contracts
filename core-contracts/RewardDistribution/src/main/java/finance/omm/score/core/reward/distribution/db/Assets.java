@@ -14,12 +14,12 @@ import scorex.util.HashMap;
 public class Assets extends EnumerableDictDB<Address, Asset> {
 
 
-    public static final String LAST_UPDATE_TIMESTAMP = "lastUpdateTimestamp";
+    public static final String LAST_UPDATE_TIMESTAMP = "indexUpdatedTimestamp";
     public static final String ASSET_INDEX = "assetIndex";
     public static final String USER_INDEX = "userIndex";
 
     // asset address -> last update timestamp in seconds
-    public final DictDB<Address, BigInteger> lastUpdateTimestamp;
+    private final DictDB<Address, BigInteger> indexUpdatedTimestamp;
     // asset address-> index
     public final DictDB<Address, BigInteger> assetIndex;
     // user address-> asset-> index
@@ -28,7 +28,7 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
 
     public Assets(String key) {
         super(key, Address.class, Asset.class);
-        lastUpdateTimestamp = Context.newDictDB(key + LAST_UPDATE_TIMESTAMP, BigInteger.class);
+        indexUpdatedTimestamp = Context.newDictDB(key + LAST_UPDATE_TIMESTAMP, BigInteger.class);
         assetIndex = Context.newDictDB(key + ASSET_INDEX, BigInteger.class);
         userIndex = Context.newBranchDB(key + USER_INDEX, BigInteger.class);
     }
@@ -45,8 +45,8 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         return this.assetIndex.getOrDefault(assetAddr, BigInteger.ZERO);
     }
 
-    public BigInteger getLastUpdateTimestamp(Address assetAddr) {
-        return this.lastUpdateTimestamp.get(assetAddr);
+    public BigInteger getIndexUpdateTimestamp(Address assetAddr) {
+        return this.indexUpdatedTimestamp.get(assetAddr);
     }
 
     public void setAssetIndex(Address assetAddr, BigInteger newIndex) {
@@ -54,7 +54,7 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
     }
 
     public void setLastUpdateTimestamp(Address assetAddr, BigInteger currentTime) {
-        this.lastUpdateTimestamp.set(assetAddr, currentTime);
+        this.indexUpdatedTimestamp.set(assetAddr, currentTime);
     }
 
 

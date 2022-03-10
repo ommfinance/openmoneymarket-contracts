@@ -1,4 +1,4 @@
-package finance.omm.score.core.reward.distribution.deleteme;
+package finance.omm.score.core.reward.distribution.legacy;
 
 import static finance.omm.utils.math.MathUtils.ICX;
 
@@ -15,10 +15,7 @@ import score.DictDB;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
-/**
- * delete me
- */
-
+@Deprecated
 public class RewardConfigurationDB {
 
     public static final String TAG = "Reward Configuration DB";

@@ -10,6 +10,7 @@ import finance.omm.libs.structs.DistPercentage;
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.UserDetails;
 import finance.omm.libs.structs.WeightStruct;
+import finance.omm.libs.structs.WorkingBalance;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.math.MathUtils;
@@ -29,6 +30,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     public static final String TAG = "Reward distribution";
     public static final String DAY = "day";
+
     public static final String IS_INITIALIZED = "isInitialized";
     public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
 
@@ -38,8 +40,11 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
 
 
-    public RewardDistributionImpl(Address addressProvider, BigInteger _weight) {
+    public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate, BigInteger _weight) {
         super(addressProvider, _weight);
+        if (this.bOMMRewardStartDate.get() == null) {
+            this.bOMMRewardStartDate.set(bOMMRewardStartDate);
+        }
     }
 
     @External(readonly = true)
@@ -79,7 +84,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @External(readonly = true)
     public BigInteger getLastUpdatedTimestamp(Address _asset) {
-        return this.assets.getLastUpdateTimestamp(_asset);
+        return this.getIndexUpdateTimestamp(_asset);
     }
 
 
@@ -407,7 +412,21 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
         BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
 
-        updateWorkingBalance(_asset, _user, _userBalance, _totalSupply);
+        Map<String, BigInteger> boostedBalance = getBoostedBalance(_user);
+        WorkingBalance balance = new WorkingBalance();
+        balance.assetAddr = _asset;
+        balance.userAddr = _user;
+        balance.userBalance = _userBalance;
+        balance.totalSupply = _totalSupply;
+        balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
+        balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
+
+        /*
+         * legacy reward update
+         */
+        legacyRewards.accumulateUserRewards(balance, this.bOMMRewardStartDate.get(), false);
+
+        updateWorkingBalance(balance);
     }
 
     @EventLog()
