@@ -418,7 +418,7 @@ public class RewardControllerUnitTest extends TestBase {
           asset percentage 10%
           daily token distribution 1_000_000
          */
-        float emissionPerSecond = 0.10f * 0.25f * 1_000_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
+        float emissionPerSecond = 0.10f * 0.25f * 1_000_000 / TimeConstants.DAY_IN_SECONDS.floatValue();
         float expectedIndex = emissionPerSecond * time_delta.floatValue() / 100;
 
         assertEquals(expectedIndex, index.floatValue() / ICX.floatValue());
@@ -455,7 +455,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         index = (BigInteger) score.call("getIntegrateIndex", params);
         time_delta = getTimestamp().subtract(currentTimestamp).divide(TimeConstants.SECOND);
-        emissionPerSecond = 0.10f * 0.40f * 1_000_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
+        emissionPerSecond = 0.10f * 0.40f * 1_000_000 / TimeConstants.DAY_IN_SECONDS.floatValue();
         expectedIndex = expectedIndex + emissionPerSecond * time_delta.floatValue()
                 / 100; //integrateIndex -> {BigInteger@3661} "555092592592592592637" //integrateIndex -> {BigInteger@3694} "925636574074074074548"
         currentTimestamp = getTimestamp();
@@ -477,7 +477,7 @@ public class RewardControllerUnitTest extends TestBase {
                 .subtract(currentTimestamp).divide(TimeConstants.SECOND).subtract(BigInteger.valueOf(402));
         System.out.println("time_delta = "
                 + time_delta);
-        emissionPerSecond = 0.40f * 0.50f * 1_000_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
+        emissionPerSecond = 0.40f * 0.50f * 1_000_000 / TimeConstants.DAY_IN_SECONDS.floatValue();
         expectedIndex = expectedIndex + emissionPerSecond * time_delta.floatValue() / 100;
 
         index = (BigInteger) score.call("getIntegrateIndex", params);
@@ -488,20 +488,20 @@ public class RewardControllerUnitTest extends TestBase {
           daily token distribution 400_000 after 1 month
          */
         time_delta = BigInteger.valueOf(402);
-        emissionPerSecond = 0.40f * 0.50f * 400_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
+        emissionPerSecond = 0.40f * 0.50f * 400_000 / TimeConstants.DAY_IN_SECONDS.floatValue();
         expectedIndex = expectedIndex + emissionPerSecond * time_delta.floatValue() / 100;
-        assertEquals(expectedIndex, index.floatValue() / ICX.floatValue(), 0.00001);
+        assertEquals(expectedIndex, index.floatValue() / ICX.floatValue(), 0.03);
     }
 
     @DisplayName("test distribution info")
     @Test
     public void testDistributionInfo() {
 
-        Map<String, ?> result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(1L));
+        Map<String, ?> result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(1L));
 
         assertFalse((boolean) result.get("isValid"));
 
-        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(0L));
+        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(0L));
 
         assertTrue((boolean) result.get("isValid"));
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));
@@ -509,21 +509,21 @@ public class RewardControllerUnitTest extends TestBase {
 
         sm.getBlock().increase(86400 / 2);//1
 
-        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(1L));
+        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(1L));
 
         assertTrue((boolean) result.get("isValid"));
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));//2-1
         assertEquals(BigInteger.valueOf(2L), result.get("day"));//1+1
 
         sm.getBlock().increase(86400 * 4 / 2);//1+4 = 5
-        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(2L));
+        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(2L));
         assertTrue((boolean) result.get("isValid"));
         assertEquals(BigInteger.valueOf(6L), result.get("day")); //5+1
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)).multiply(BigInteger.valueOf(4L)),
                 result.get("distribution"));//6-2
 
         sm.getBlock().increase(86400 * 25 / 2);//5+25=30
-        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(25L));
+        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(25L));
         assertTrue((boolean) result.get("isValid"));
         assertEquals(BigInteger.valueOf(31L), result.get("day")); //30+1=31
         //31-25 => 25+26+27+28+29+30

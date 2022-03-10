@@ -205,8 +205,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             /*
              * legacy reward update
              */
-            BigInteger oldReward = BigInteger.ZERO;//legacyRewards.accumulateUserRewards(workingBalance, this.bOMMRewardStartDate.get(),
-            //false);
+            BigInteger oldReward = legacyRewards.accumulateUserRewards(workingBalance, this.bOMMRewardStartDate.get(),
+                    false);
 
             BigInteger reward = getUserReward(asset.address, user, false);
             accruedReward = accruedReward.add(reward).add(oldReward);

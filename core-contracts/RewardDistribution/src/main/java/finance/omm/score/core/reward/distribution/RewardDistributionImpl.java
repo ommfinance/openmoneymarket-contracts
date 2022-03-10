@@ -381,11 +381,34 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             BigInteger userWorkingBalance = balances.getOrDefault(assetAddr, BigInteger.ZERO);
             BigInteger assetWorkingTotal = workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
             BigInteger dailyReward = dailyRewards.get(name);
-
-            response.put(name, exaMultiply(dailyReward, exaDivide(userWorkingBalance, assetWorkingTotal)));
+            if (!assetWorkingTotal.equals(BigInteger.ZERO)) {
+                response.put(name, exaMultiply(dailyReward, exaDivide(userWorkingBalance, assetWorkingTotal)));
+            } else {
+                response.put(name, BigInteger.ZERO);
+            }
         }
         return response;
+    }
 
+
+    @External
+    public void kick(Address user) {
+        Map<String, BigInteger> bOMMBalances = getBoostedBalance(user);
+        if (!bOMMBalances.get("bOMMUserBalance").equals(BigInteger.ZERO)) {
+            throw RewardDistributionException.unknown(user + " OMM locking is not expired");
+        }
+        List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+        for (Address address : assets) {
+            Asset asset = this.assets.get(address);
+            if (asset == null) {
+                continue;
+            }
+            WorkingBalance workingBalance = getUserBalance(user, address, asset.lpID);
+            workingBalance.bOMMUserBalance = bOMMBalances.get("bOMMUserBalance");
+            workingBalance.bOMMTotalSupply = bOMMBalances.get("bOMMTotalSupply");
+
+            updateWorkingBalance(workingBalance);
+        }
     }
 
     @Override
