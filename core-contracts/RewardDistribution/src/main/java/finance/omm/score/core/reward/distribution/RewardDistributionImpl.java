@@ -392,18 +392,20 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
 
     @External
-    public void kick(Address user) {
-        Map<String, BigInteger> bOMMBalances = getBoostedBalance(user);
+    public void kick(Address userAddr) {
+        Map<String, BigInteger> bOMMBalances = getBoostedBalance(userAddr);
         if (!bOMMBalances.get("bOMMUserBalance").equals(BigInteger.ZERO)) {
-            throw RewardDistributionException.unknown(user + " OMM locking is not expired");
+            throw RewardDistributionException.unknown(userAddr + " OMM locking is not expired");
         }
         List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
-        for (Address address : assets) {
-            Asset asset = this.assets.get(address);
+        for (Address assetAddr : assets) {
+            Asset asset = this.assets.get(assetAddr);
             if (asset == null) {
                 continue;
             }
-            WorkingBalance workingBalance = getUserBalance(user, address, asset.lpID);
+            updateIndexes(assetAddr, userAddr);
+
+            WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, asset.lpID);
             workingBalance.bOMMUserBalance = bOMMBalances.get("bOMMUserBalance");
             workingBalance.bOMMTotalSupply = bOMMBalances.get("bOMMTotalSupply");
 
@@ -425,20 +427,24 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         _handleAction(_asset, _userDetails);
     }
 
-    private void _handleAction(Address _asset, UserDetails _userDetails) {
-        Asset asset = this.assets.get(_asset);
+    private void _handleAction(Address assetAddr, UserDetails _userDetails) {
+        Asset asset = this.assets.get(assetAddr);
         if (asset == null) {
-            throw RewardDistributionException.invalidAsset("Asset is null (" + _asset + ")");
+            throw RewardDistributionException.invalidAsset("Asset is null (" + assetAddr + ")");
         }
+
+        Address userAddr = _userDetails._user;
+
+        updateIndexes(assetAddr, userAddr);
+
         BigInteger _decimals = _userDetails._decimals;
-        Address _user = _userDetails._user;
         BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
         BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
 
-        Map<String, BigInteger> boostedBalance = getBoostedBalance(_user);
+        Map<String, BigInteger> boostedBalance = getBoostedBalance(userAddr);
         WorkingBalance balance = new WorkingBalance();
-        balance.assetAddr = _asset;
-        balance.userAddr = _user;
+        balance.assetAddr = assetAddr;
+        balance.userAddr = userAddr;
         balance.userBalance = _userBalance;
         balance.totalSupply = _totalSupply;
         balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
@@ -449,6 +455,9 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
          */
         legacyRewards.accumulateUserRewards(balance, this.bOMMRewardStartDate.get(), false);
 
+        balance = getUserBalance(userAddr, assetAddr, asset.lpID);
+        balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
+        balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
         updateWorkingBalance(balance);
     }
 

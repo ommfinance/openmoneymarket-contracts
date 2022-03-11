@@ -159,7 +159,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             BigInteger oldReward = legacyRewards.accumulateUserRewards(workingBalance,
                     this.bOMMRewardStartDate.get(),
                     true);
-            BigInteger reward = getUserReward(address, user, true).add(oldReward);
+            BigInteger reward = getUserReward(address, user).add(oldReward);
             Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(asset.type);
             if (entityMap == null) {
                 entityMap = new HashMap<>() {{
@@ -208,8 +208,11 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             BigInteger oldReward = legacyRewards.accumulateUserRewards(workingBalance, this.bOMMRewardStartDate.get(),
                     false);
 
-            BigInteger reward = getUserReward(asset.address, user, false);
-            accruedReward = accruedReward.add(reward).add(oldReward);
+            BigInteger newReward = updateIndexes(asset.address, user);
+
+            accruedReward = accruedReward.add(newReward).add(oldReward);
+
+            this.assets.clearAccruedReward(user, asset.address);
             /*
              * clear legacy reward
              */
@@ -255,28 +258,49 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         return userClaimedRewards.getOrDefault(user, BigInteger.ZERO);
     }
 
-
-    protected BigInteger getUserReward(Address assetAddr, Address user, Boolean readonly) {
+    protected BigInteger updateIndexes(Address assetAddr, Address user) {
         BigInteger userBalance = this.workingBalance.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
-        BigInteger totalSupply = this.workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
+
         BigInteger userIndex = this.assets.getUserIndex(assetAddr, user);
 
-        BigInteger accruedRewards = BigInteger.ZERO;
+        BigInteger newIndex = this.getAssetIndex(assetAddr, false);
 
-        BigInteger newIndex = this.getAssetIndex(assetAddr, totalSupply, readonly);
-
-        if (!userIndex.equals(newIndex) && !BigInteger.ZERO.equals(userBalance)) {
-            accruedRewards = calculateReward(userBalance, newIndex, userIndex);
-            if (!readonly) {
-                this.assets.setUserIndex(assetAddr, user, newIndex);
-                this.UserIndexUpdated(user, assetAddr, userIndex, newIndex);
-            }
+        BigInteger accruedRewards = this.assets.getAccruedRewards(assetAddr, user);
+        if (newIndex.equals(userIndex)) {
+            return accruedRewards;
         }
-        return accruedRewards;
+
+        BigInteger totalReward = calculateReward(userBalance, newIndex, userIndex).add(accruedRewards);
+
+        if (!accruedRewards.equals(totalReward)) {
+            this.assets.setAccruedRewards(user, assetAddr, accruedRewards);
+            this.assets.setUserIndex(assetAddr, user, newIndex);
+            this.UserIndexUpdated(user, assetAddr, userIndex, newIndex);
+        }
+        return totalReward;
     }
 
 
+    protected BigInteger getUserReward(Address assetAddr, Address user) {
+        BigInteger userBalance = this.workingBalance.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
+
+        BigInteger userIndex = this.assets.getUserIndex(assetAddr, user);
+
+        BigInteger accruedRewards = this.assets.getAccruedRewards(assetAddr, user);
+
+        BigInteger newIndex = this.getAssetIndex(assetAddr, true);
+
+        return calculateReward(userBalance, newIndex, userIndex).add(accruedRewards);
+    }
+
+    protected BigInteger getAssetIndex(Address assetAddr, Boolean readonly) {
+        BigInteger totalSupply = this.workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
+
+        return getAssetIndex(assetAddr, totalSupply, readonly);
+    }
+
     protected BigInteger getAssetIndex(Address assetAddr, BigInteger totalSupply, Boolean readonly) {
+
         BigInteger oldIndex = this.assets.getAssetIndex(assetAddr);
         BigInteger lastUpdateTimestamp = getIndexUpdateTimestamp(assetAddr);
         BigInteger currentTime = TimeConstants.getBlockTimestamp().divide(SECOND);
