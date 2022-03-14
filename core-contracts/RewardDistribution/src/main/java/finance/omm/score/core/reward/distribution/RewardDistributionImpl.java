@@ -40,8 +40,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
 
 
-    public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate, BigInteger _weight) {
-        super(addressProvider, _weight);
+    public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate) {
+        super(addressProvider);
         if (this.bOMMRewardStartDate.get() == null) {
             this.bOMMRewardStartDate.set(bOMMRewardStartDate);
         }
@@ -437,6 +437,9 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
         updateIndexes(assetAddr, userAddr);
 
+        /*
+         * legacy reward update start
+         */
         BigInteger _decimals = _userDetails._decimals;
         BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
         BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
@@ -450,10 +453,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
         balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
 
-        /*
-         * legacy reward update
-         */
         legacyRewards.accumulateUserRewards(balance, this.bOMMRewardStartDate.get(), false);
+        /*
+         * legacy reward update end
+         */
 
         balance = getUserBalance(userAddr, assetAddr, asset.lpID);
         balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
