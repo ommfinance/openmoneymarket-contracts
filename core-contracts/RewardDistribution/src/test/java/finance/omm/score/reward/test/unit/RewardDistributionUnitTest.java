@@ -8,7 +8,6 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -249,8 +248,8 @@ public class RewardDistributionUnitTest extends TestBase {
         @DisplayName("rewards")
         class TestReward {
 
-            long user1Balance = 100;
-            long user2Balance = 200;
+            SupplyDetails details = createSupplyDetails(100);
+
 
             @BeforeEach
             void setup() {
@@ -259,22 +258,19 @@ public class RewardDistributionUnitTest extends TestBase {
                 UserDetails details_2 = createUserDetail(1, user2Balance);
                 details_2._totalSupply = details_1._totalSupply.add(details_2._userBalance);
 
-                BigInteger bOMMbalance_1 = BigInteger.valueOf(200).multiply(ICX);
-
                 doReturn(BigInteger.ZERO).when(scoreSpy)
                         .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", details_2._user);
 
                 for (Account asset : assets) {
-                    doReturn(bOMMbalance_1).when(scoreSpy)
-                            .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", details_1._user);
-                    doReturn(bOMMbalance_1.multiply(TWO)).when(scoreSpy)
+                    doReturn(bOMMBalance, BigInteger.ZERO).when(scoreSpy)
+                            .call(eq(BigInteger.class), eq(Contracts.BOOSTED_OMM), eq("balanceOf"), any());
+                    doReturn(bOMMBalance.multiply(TWO)).when(scoreSpy)
                             .call(BigInteger.class, Contracts.BOOSTED_OMM, "totalSupply");
 
-                    sm.getBlock().increase(999);
                     score.invoke(asset, "handleAction", details_1);
-                    sm.getBlock().increase(999);
                     score.invoke(asset, "handleAction", details_2);
                 }
+                sm.getBlock().increase(999);
             }
 
             @ParameterizedTest
@@ -286,11 +282,6 @@ public class RewardDistributionUnitTest extends TestBase {
                         .call(eq(BigInteger.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getIntegrateIndex"),
                                 ArgumentMatchers.<Object>argThat(matcher));
 
-                SupplyDetails details = new SupplyDetails();
-                details.decimals = BigInteger.valueOf(12);
-                details.principalUserBalance = BigInteger.valueOf(100).multiply(ICX);
-                details.principalTotalSupply = BigInteger.valueOf(1000).multiply(ICX);
-
                 doReturn(details).when(scoreSpy).fetchUserBalance(any(), any(), any());
 
                 Map<String, ?> result = (Map<String, ?>) score.call("getRewards", users.get(userIndex).getAddress());
@@ -300,7 +291,7 @@ public class RewardDistributionUnitTest extends TestBase {
 
                 verify(scoreSpy, never()).AssetIndexUpdated(any(), any(), any());
                 verify(scoreSpy, never()).UserIndexUpdated(any(), any(), any(), any());
-//                user1 working balance min(100*0.4+100*200/400*0.6,100)=70
+//                user1 working balance min(100*0.4+200*200/400*0.6,100)=100
 
                 Map<String, BigInteger> type1 = (Map<String, BigInteger>) result.get("type-1");
                 assertEquals(BigInteger.valueOf(weight).multiply(ICX), type1.get("total"));
@@ -324,7 +315,7 @@ public class RewardDistributionUnitTest extends TestBase {
             @MethodSource("finance.omm.score.reward.test.unit.RewardDistributionUnitTest#claimRewards")
             void claimRewards_shouldReturnGroupRewards(int userIndex, Long tokenBalance, Long bBalance,
                     long workingBalance, long workingTotal) {
-                reset(scoreSpy);
+                clearInvocations(scoreSpy);
                 Account user = users.get(userIndex);
 
                 doReturn(BigInteger.valueOf(bBalance).multiply(ICX)).when(scoreSpy)
@@ -531,8 +522,8 @@ public class RewardDistributionUnitTest extends TestBase {
         //                user1 working balance min(100*0.4+100*200/400*0.6,100)=70
         //                user2 working balance min(200*0.4+300*0/400*0.6,200)=80
         return Stream.of(
-                Arguments.of(0, 70L), //with boost
-                Arguments.of(1, 80L) //without boost
+                Arguments.of(0, 100L), //with boost
+                Arguments.of(1, 40L) //without boost
         );
     }
 
@@ -542,8 +533,8 @@ public class RewardDistributionUnitTest extends TestBase {
         //                user2 working balance min(200*0.4+300*0/400*0.6,200)=80
         return Stream.of(
                 //userIndex,userTokenBalance,userBoostedBalance,userWorkingBalance,workingTotalBalace
-                Arguments.of(0, 100L, 300L, 70L, 150L), //with boost
-                Arguments.of(1, 200L, 200L, 80L, 150L) //without boost
+                Arguments.of(0, 100L, 300L, 100L, 140L), //with boost
+                Arguments.of(1, 200L, 200L, 40L, 140L) //without boost
         );
     }
 

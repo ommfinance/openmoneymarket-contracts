@@ -34,7 +34,7 @@ deployJar {
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
         arg('addressProvider', 'cx36e3408f031983d220d99b1a58849ac443d2c585')
-        arg('_weight', "0x58d15e176280000")
+        arg('bOMMRewardStartDate', '1646438400000000')
     }
 }
 
