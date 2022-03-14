@@ -53,14 +53,14 @@ public class RewardDistributionUnitTest extends TestBase {
     private Score score;
     private RewardDistributionImpl scoreSpy;
     private float floatWeight = 0.4f;
-    private BigInteger weight = BigInteger.valueOf((long) (floatWeight * 100))
-            .multiply(ICX)
-            .divide(BigInteger.valueOf(100));
 
 
     private BigInteger TWO = BigInteger.TWO;
     private BigInteger THREE = BigInteger.valueOf(3);
     private BigInteger FOUR = BigInteger.valueOf(4);
+    private BigInteger HUNDRED = BigInteger.valueOf(100);
+    private BigInteger FORTY = BigInteger.valueOf(40L);
+    private BigInteger SIXTY = BigInteger.valueOf(60L);
 
     Address[] addresses = new Address[]{
             Account.newScoreAccount(1001).getAddress(),
@@ -94,7 +94,7 @@ public class RewardDistributionUnitTest extends TestBase {
         BigInteger bOMMCutOff = BigInteger.valueOf(sm.getBlock().getTimestamp());
 
         score = sm.deploy(owner, RewardDistributionImpl.class,
-                MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), bOMMCutOff, weight);
+                MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), bOMMCutOff);
         setAddresses();
         RewardDistributionImpl t = (RewardDistributionImpl) score.getInstance();
         scoreSpy = spy(t);
@@ -199,13 +199,22 @@ public class RewardDistributionUnitTest extends TestBase {
             UserDetails details_2 = createUserDetail(1, 200);
             UserDetails details_3 = createUserDetail(2, 400);
 
+            doReturn(BigInteger.ZERO).when(scoreSpy)
+                    .call(eq(BigInteger.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getIntegrateIndex"),
+                            ArgumentMatchers.<Object>argThat(matcher));
+
+            SupplyDetails details = createSupplyDetails(200);
+
+            doReturn(details).when(scoreSpy).fetchUserBalance(any(), any(), any());
+
             int index = 0;
             Account asset = assets[index];
 
             BigInteger bOMMbalance_1 = BigInteger.valueOf(200).multiply(ICX);
             BigInteger bOMMbalance_2 = BigInteger.valueOf(400).multiply(ICX);
+            BigInteger totalbOMMbalance = bOMMbalance_1.add(bOMMbalance_2);
 
-            doReturn(bOMMbalance_1, bOMMbalance_2, BigInteger.ZERO).when(scoreSpy)
+            doReturn(bOMMbalance_1).when(scoreSpy)
                     .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", details_1._user);
 
             doReturn(bOMMbalance_2).when(scoreSpy)
@@ -214,29 +223,45 @@ public class RewardDistributionUnitTest extends TestBase {
             doReturn(BigInteger.ZERO).when(scoreSpy)
                     .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", details_3._user);
 
-            doReturn(bOMMbalance_1, bOMMbalance_1.add(bOMMbalance_2), bOMMbalance_1.add(bOMMbalance_2)).when(scoreSpy)
+            doReturn(bOMMbalance_1, totalbOMMbalance, totalbOMMbalance).when(scoreSpy)
                     .call(BigInteger.class, Contracts.BOOSTED_OMM, "totalSupply");
 
             /*
             user 1
+            workingbalance=min(supply*0.4+totalSupply*bOMMBalance/totalbOMMbalance*0.6,supply)
              */
-            BigInteger workingTotal = details_1._userBalance;
+
+            BigInteger workingBalance = details.principalUserBalance.multiply(FORTY).divide(HUNDRED)
+                    .add(details.principalTotalSupply.multiply(bOMMbalance_1)
+                            .divide(bOMMbalance_1)
+                            .multiply(SIXTY).divide(HUNDRED))
+                    .min(details.principalUserBalance);
+            BigInteger workingTotal = workingBalance;
             score.invoke(asset, "handleAction", details_1);
-            verify(scoreSpy).WorkingBalanceUpdated(details_1._user, asset.getAddress(), details_1._userBalance,
+            verify(scoreSpy).WorkingBalanceUpdated(details_1._user, asset.getAddress(), workingBalance,
                     workingTotal);
 
                 /*
             user 2
              */
-            workingTotal = workingTotal.add(details_2._userBalance);
+            workingBalance = details.principalUserBalance.multiply(FORTY).divide(HUNDRED)
+                    .add(details.principalTotalSupply.multiply(bOMMbalance_2)
+                            .divide(totalbOMMbalance)
+                            .multiply(SIXTY).divide(HUNDRED))
+                    .min(details.principalUserBalance);
+            workingTotal = workingTotal.add(workingBalance);
             score.invoke(asset, "handleAction", details_2);
-            verify(scoreSpy).WorkingBalanceUpdated(details_2._user, asset.getAddress(), details_2._userBalance,
+            verify(scoreSpy).WorkingBalanceUpdated(details_2._user, asset.getAddress(), workingBalance,
                     workingTotal);
 
             /*
             user 3 : no boost
              */
-            BigInteger workingBalance = details_3._userBalance.multiply(weight).divide(ICX);
+            workingBalance = details.principalUserBalance.multiply(FORTY).divide(HUNDRED)
+                    .add(details.principalTotalSupply.multiply(BigInteger.ZERO)
+                            .divide(totalbOMMbalance)
+                            .multiply(SIXTY).divide(HUNDRED))
+                    .min(details.principalUserBalance);
             workingTotal = workingTotal.add(workingBalance);
             score.invoke(asset, "handleAction", details_3);
             verify(scoreSpy).WorkingBalanceUpdated(details_3._user, asset.getAddress(), workingBalance,
@@ -253,13 +278,21 @@ public class RewardDistributionUnitTest extends TestBase {
 
             @BeforeEach
             void setup() {
-                UserDetails details_1 = createUserDetail(0, user1Balance);
+                UserDetails details_1 = createUserDetail(0, 100);
                 details_1._totalSupply = details_1._userBalance;
-                UserDetails details_2 = createUserDetail(1, user2Balance);
+
+                UserDetails details_2 = createUserDetail(1, 100);
                 details_2._totalSupply = details_1._totalSupply.add(details_2._userBalance);
 
                 doReturn(BigInteger.ZERO).when(scoreSpy)
-                        .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", details_2._user);
+                        .call(eq(BigInteger.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getIntegrateIndex"),
+                                ArgumentMatchers.<Object>argThat(matcher));
+
+                doReturn(details).when(scoreSpy).fetchUserBalance(any(), any(), any());
+
+                BigInteger bOMMBalance = BigInteger.valueOf(200).multiply(ICX);
+
+                sm.getBlock().increase(999);
 
                 for (Account asset : assets) {
                     doReturn(bOMMBalance, BigInteger.ZERO).when(scoreSpy)
@@ -277,6 +310,7 @@ public class RewardDistributionUnitTest extends TestBase {
             @MethodSource("finance.omm.score.reward.test.unit.RewardDistributionUnitTest#userRewards")
             void getRewards_shouldReturnGroupRewards(int userIndex, long weight) {
                 clearInvocations(scoreSpy);
+                clearInvocations(scoreSpy.assets);
 
                 doReturn(ICX).when(scoreSpy)
                         .call(eq(BigInteger.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getIntegrateIndex"),
@@ -414,9 +448,17 @@ public class RewardDistributionUnitTest extends TestBase {
             Account account = users.get(index);
             UserDetails details = new UserDetails();
             details._decimals = BigInteger.valueOf(18);
-            details._totalSupply = BigInteger.valueOf(1000).multiply(ICX);
+            details._totalSupply = BigInteger.valueOf(1000 + balance).multiply(ICX);
             details._userBalance = BigInteger.valueOf(balance).multiply(ICX);
             details._user = account.getAddress();
+            return details;
+        }
+
+        private SupplyDetails createSupplyDetails(long balance) {
+            SupplyDetails details = new SupplyDetails();
+            details.decimals = BigInteger.valueOf(18);
+            details.principalUserBalance = BigInteger.valueOf(balance).multiply(ICX);
+            details.principalTotalSupply = BigInteger.valueOf(1000 + balance).multiply(ICX);
             return details;
         }
     }
