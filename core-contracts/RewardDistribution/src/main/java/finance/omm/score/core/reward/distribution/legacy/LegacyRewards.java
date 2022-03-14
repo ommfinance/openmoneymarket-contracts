@@ -39,17 +39,13 @@ public class LegacyRewards {
 
         BigInteger lastUpdateTimestamp = this._lastUpdateTimestamp.getOrDefault(assetAddress, cutOffTimestamp);
 
-        if (cutOffTimestamp.equals(lastUpdateTimestamp)) {
+        if (totalBalance.equals(BigInteger.ZERO) || cutOffTimestamp.equals(lastUpdateTimestamp)) {
             return BigInteger.ZERO;
         }
         BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(assetAddress);
         BigInteger timeDelta = cutOffTimestamp.subtract(lastUpdateTimestamp);
 
-        if (!totalBalance.equals(BigInteger.ZERO)) {
-            return exaDivide(_emissionPerSecond.multiply(timeDelta), totalBalance);
-        }
-
-        return BigInteger.ZERO;
+        return exaDivide(_emissionPerSecond.multiply(timeDelta), totalBalance);
     }
 
     public void clear(Address userAddr, Address assetAddr) {
