@@ -337,7 +337,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         Supply(supplyBefore, supplyBefore.add(value));
 
         //calling update delegation
-        scoreCall(Contracts.DELEGATION, "updateDelegations", address);
+        scoreCall(Contracts.DELEGATION, "updateDelegations", null, address);
         // calling handle action for rewards
         UserDetails _userDetails = new UserDetails();
         _userDetails._user = address;
