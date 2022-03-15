@@ -30,3 +30,16 @@ hs_err_pid*
 gradle.properties
 *.json
 
+
+# Ignore Gradle build output directory
+build
+
+out
+.class
+.project
+.settings
+.classpath
+*/bin/
+/bin/
+bin/
+

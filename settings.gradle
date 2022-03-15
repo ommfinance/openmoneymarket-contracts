@@ -23,4 +23,17 @@ findProject(":TestUtils").projectDir = file("libs/TestUtils")
 include(':Score')
 findProject(":Score").projectDir = file("libs/Score")
 
+include('commons')
+findProject(":commons").projectDir = file("libs/commons")
 
+include('dao-fund')
+findProject(":dao-fund").projectDir = file("core-contracts/dao-fund")
+
+include('free-provider')
+findProject(":free-provider").projectDir = file("core-contracts/free-provider")
+
+include('worker-token')
+findProject(":worker-token").projectDir = file("token-contracts/worker-token")
+
+include('testinteg')
+findProject(":testinteg").projectDir = file("libs/testinteg")

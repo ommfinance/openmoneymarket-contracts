@@ -1,0 +1,40 @@
+version = '0.1.0'
+
+dependencies {
+    compileOnly 'foundation.icon:javaee-api:0.9.1'
+ //   implementation project(':commons')
+
+    testImplementation 'foundation.icon:javaee-unittest:0.9.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    testImplementation 'org.junit.platform:junit-platform-commons:1.7.0'
+    testImplementation 'foundation.icon:icon-sdk:2.0.0'
+    testImplementation 'org.mockito:mockito-inline:4.3.0'
+	testImplementation project(':testinteg')
+}
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.WorkerToken'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        local {
+            uri = 'http://localhost:9082/api/v3'
+            nid = 0x3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+	parameters {
+		arg('_initialSupply', '5000')
+		arg('_decimals', '10')
+	}
+}
+
+test {
+    useJUnitPlatform()
+}
