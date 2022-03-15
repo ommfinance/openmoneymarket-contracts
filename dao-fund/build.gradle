@@ -1,0 +1,75 @@
+version = '0.1.0'
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.DaoFund'
+    dependsOn(':commons:build')
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        local {
+            uri = 'http://localhost:9082/api/v3'
+            nid = 0x3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+	parameters {
+		arg('_addressProvider', 'cxa755b2ef6eb46c1e817c636be3c21d26c81fe6cc')
+	}
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
+sourceSets {
+	itest {
+	    compileClasspath += sourceSets.main.output + configurations.compileClasspath
+	    runtimeClasspath += sourceSets.main.output + compileClasspath
+
+	}
+}
+
+configurations {
+    itestImplementation.extendsFrom implementation
+    itestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    compileOnly 'foundation.icon:javaee-api:0.9.1'
+    implementation project(':commons')
+
+    // test dependencies
+    testImplementation 'foundation.icon:javaee-unittest:0.9.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    testImplementation 'org.junit.platform:junit-platform-commons:1.7.0'
+
+    // integration test dependencies
+    itestImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    itestImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    itestImplementation 'org.junit.platform:junit-platform-commons:1.7.0'
+
+	itestImplementation 'foundation.icon:icon-sdk:2.0.0'
+	itestImplementation project(':testinteg')
+}
+
+tasks.register('itest', Test) {
+    useJUnitPlatform()
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.itest.output.classesDirs
+    classpath = sourceSets.itest.runtimeClasspath
+
+    systemProperty('env.props', new File(project(':testinteg').projectDir, 'conf/env.props'))
+
+    def prefix = 'score.path.'
+    systemProperty(prefix + project.name, optimizedJar.outputJarName)
+}
