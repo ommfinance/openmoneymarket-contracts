@@ -1,6 +1,5 @@
 # openmoneymarket Java contracts
 
-
 ### build all scores:
 
 `./gradlew clean build optimizedJar`
