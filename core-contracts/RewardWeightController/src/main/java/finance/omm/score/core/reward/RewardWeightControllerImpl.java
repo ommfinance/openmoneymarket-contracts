@@ -156,22 +156,43 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         return timestamp.subtract(_timestampAtStart.get()).divide(DAY_IN_MICRO_SECONDS);
     }
 
+    /*
+    _timestampAtStart=0;
+    rate changes in [0,100,1000];
+
+    if tInMicroSeconds=1100 then;
+    rateChangeOn=1000;
+
+
+    if tInMicroSeconds=1000 then;
+    rateChangeOn=100;
+     */
     private Map<String, BigInteger> getInflationRateByTimestamp(BigInteger tInMicroSeconds) {
-        BigInteger startTimestamp = _timestampAtStart.get();
-        BigInteger timeDelta = tInMicroSeconds.subtract(startTimestamp);
-        if (timeDelta.compareTo(BigInteger.ZERO) > 0) {
-            BigInteger numberOfYears = timeDelta.divide(YEAR_IN_MICRO_SECONDS);
-            if (numberOfYears.equals(BigInteger.ZERO) && timeDelta.compareTo(MONTH_IN_MICRO_SECONDS) > 0) {
-                startTimestamp = startTimestamp.add(MONTH_IN_MICRO_SECONDS);
-            }
-            startTimestamp = startTimestamp.add(numberOfYears.multiply(YEAR_IN_MICRO_SECONDS));
+        BigInteger rateChangedOn = _timestampAtStart.get();
+
+        if (tInMicroSeconds.compareTo(rateChangedOn) <= 0) {
+            return Map.of(
+                    "rateChangedOn", rateChangedOn,
+                    "rate", getInflationRate(BigInteger.ZERO)
+            );
         }
+        /*
+         *convert tInMicroSeconds=1000 to 999ms
+         */
+        BigInteger timeDelta = tInMicroSeconds.subtract(BigInteger.ONE).subtract(rateChangedOn);
 
-        BigInteger delta = startTimestamp.subtract(_timestampAtStart.get());
+        BigInteger numberOfYears = timeDelta.divide(YEAR_IN_MICRO_SECONDS);
 
-        BigInteger numberOfDay = delta.divide(DAY_IN_MICRO_SECONDS).add(BigInteger.ONE);
+        if (numberOfYears.equals(BigInteger.ZERO) && timeDelta.compareTo(MONTH_IN_MICRO_SECONDS) > 0) {
+            rateChangedOn = rateChangedOn.add(MONTH_IN_MICRO_SECONDS);
+        }
+        rateChangedOn = rateChangedOn.add(numberOfYears.multiply(YEAR_IN_MICRO_SECONDS));
+
+        BigInteger delta = rateChangedOn.subtract(_timestampAtStart.get());
+
+        BigInteger numberOfDay = delta.divide(DAY_IN_MICRO_SECONDS);
         return Map.of(
-                "startTimestamp", startTimestamp,
+                "rateChangedOn", rateChangedOn,
                 "rate", getInflationRate(numberOfDay)
         );
     }
@@ -182,52 +203,52 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public BigInteger getIntegrateIndex(Address address, BigInteger totalSupply, BigInteger lastUpdatedTimestamp) {
+    public BigInteger getIntegrateIndex(Address assetAddr, BigInteger totalSupply, BigInteger lastUpdatedTimestamp) {
         if (totalSupply.compareTo(BigInteger.ZERO) <= 0) {
             return BigInteger.ZERO;
         }
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
-        BigInteger actual = timestamp;
+
         BigInteger integrateIndex = BigInteger.ZERO;
-        Asset asset = assetWeightDB.getAsset(address);
+        Asset asset = assetWeightDB.getAsset(assetAddr);
         if (asset == null) {
             return BigInteger.ZERO;
         }
         BigInteger initialTimestamp = this._timestampAtStart.get();
+        BigInteger prevTimestamp = BigInteger.ZERO;
         //TODO other condition to exit loop
-        while (timestamp.compareTo(initialTimestamp) >= 0 && timestamp.compareTo(lastUpdatedTimestamp) > 0) {
-            Map<String, BigInteger> result = calculateIntegrateIndex(asset, lastUpdatedTimestamp, timestamp, actual);
-            integrateIndex = integrateIndex.add(exaDivide(result.get("integrateIndex"), totalSupply));
-            actual = result.get("timestamp");
-            timestamp = actual.subtract(BigInteger.ONE);
+        while (timestamp.compareTo(initialTimestamp) >= 0 && timestamp.compareTo(lastUpdatedTimestamp) > 0
+                && !timestamp.equals(prevTimestamp)) {
+            prevTimestamp = timestamp;
+            Map<String, BigInteger> result = calculateRewardDistribution(asset, lastUpdatedTimestamp, timestamp);
+            integrateIndex = integrateIndex.add(exaDivide(result.get("totalRewards"), totalSupply));
+            timestamp = result.get("timestamp");
         }
 
         return integrateIndex;
     }
 
 
-    private Map<String, BigInteger> calculateIntegrateIndex(Asset asset, BigInteger start, BigInteger timestamp,
-            BigInteger actual) {
+    private Map<String, BigInteger> calculateRewardDistribution(Asset asset, BigInteger start, BigInteger timestamp) {
         Map<String, BigInteger> assetWeight = assetWeightDB.searchAssetWeight(asset, timestamp);
-        int assetIndex = assetWeight.get("index").intValue();
         BigInteger aTimestamp = assetWeight.get("timestamp");
         BigInteger aWeight = assetWeight.get("value");
 
         Map<String, BigInteger> typeWeight = typeWeightDB.searchTypeWeight(asset.type, timestamp);
-        int typeIndex = typeWeight.get("index").intValue();
         BigInteger tTimestamp = typeWeight.get("timestamp");
         BigInteger tWeight = typeWeight.get("value");
 
         Map<String, BigInteger> inflationRate = getInflationRateByTimestamp(timestamp);
 
-        BigInteger maximum = aTimestamp.max(tTimestamp).max(inflationRate.get("startTimestamp")).max(start);
+        BigInteger maximum = aTimestamp.max(tTimestamp).max(inflationRate.get("rateChangedOn")).max(start);
 
-        if (maximum.equals(actual)) {
-            return Map.of("integrateIndex", BigInteger.ZERO, "timestamp", actual);
+        if (maximum.equals(timestamp)) {
+            return Map.of("totalRewards", BigInteger.ZERO, "timestamp", timestamp);
         }
         BigInteger rate = exaMultiply(exaMultiply(inflationRate.get("rate"), tWeight), aWeight);
-        BigInteger integrateIndex = rate.multiply(actual.subtract(maximum).divide(TimeConstants.SECOND));
-        return Map.of("integrateIndex", integrateIndex, "timestamp", maximum);
+        BigInteger timeDeltaInSeconds = timestamp.subtract(maximum).divide(TimeConstants.SECOND);
+        BigInteger totalReward = rate.multiply(timeDeltaInSeconds);
+        return Map.of("totalRewards", totalReward, "timestamp", maximum);
     }
 
     private void checkRewardDistribution() {

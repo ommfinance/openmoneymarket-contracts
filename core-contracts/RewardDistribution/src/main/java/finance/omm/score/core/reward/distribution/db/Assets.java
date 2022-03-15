@@ -14,23 +14,28 @@ import scorex.util.HashMap;
 public class Assets extends EnumerableDictDB<Address, Asset> {
 
 
-    public static final String LAST_UPDATE_TIMESTAMP = "lastUpdateTimestamp";
+    public static final String LAST_UPDATE_TIMESTAMP = "indexUpdatedTimestamp";
     public static final String ASSET_INDEX = "assetIndex";
     public static final String USER_INDEX = "userIndex";
+    public static final String USERS_ACCRUED_REWARDS = "user-accrued-rewards";
 
     // asset address -> last update timestamp in seconds
-    public final DictDB<Address, BigInteger> lastUpdateTimestamp;
+    private final DictDB<Address, BigInteger> indexUpdatedTimestamp;
     // asset address-> index
     public final DictDB<Address, BigInteger> assetIndex;
     // user address-> asset-> index
     public final BranchDB<Address, DictDB<Address, BigInteger>> userIndex;
 
+    // user address-> asset-> rewards
+    private final BranchDB<Address, DictDB<Address, BigInteger>> userAccruedRewards;
+
 
     public Assets(String key) {
         super(key, Address.class, Asset.class);
-        lastUpdateTimestamp = Context.newDictDB(key + LAST_UPDATE_TIMESTAMP, BigInteger.class);
+        indexUpdatedTimestamp = Context.newDictDB(key + LAST_UPDATE_TIMESTAMP, BigInteger.class);
         assetIndex = Context.newDictDB(key + ASSET_INDEX, BigInteger.class);
         userIndex = Context.newBranchDB(key + USER_INDEX, BigInteger.class);
+        userAccruedRewards = Context.newBranchDB(USERS_ACCRUED_REWARDS, BigInteger.class);
     }
 
     public BigInteger getUserIndex(Address assetAddr, Address user) {
@@ -45,8 +50,8 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         return this.assetIndex.getOrDefault(assetAddr, BigInteger.ZERO);
     }
 
-    public BigInteger getLastUpdateTimestamp(Address assetAddr) {
-        return this.lastUpdateTimestamp.get(assetAddr);
+    public BigInteger getIndexUpdateTimestamp(Address assetAddr) {
+        return this.indexUpdatedTimestamp.get(assetAddr);
     }
 
     public void setAssetIndex(Address assetAddr, BigInteger newIndex) {
@@ -54,7 +59,7 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
     }
 
     public void setLastUpdateTimestamp(Address assetAddr, BigInteger currentTime) {
-        this.lastUpdateTimestamp.set(assetAddr, currentTime);
+        this.indexUpdatedTimestamp.set(assetAddr, currentTime);
     }
 
 
@@ -88,5 +93,17 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
             }
         }
         return result;
+    }
+
+    public BigInteger getAccruedRewards(Address userAddr, Address assetAddr) {
+        return this.userAccruedRewards.at(userAddr).getOrDefault(assetAddr, BigInteger.ZERO);
+    }
+
+    public void setAccruedRewards(Address userAddr, Address assetAddr, BigInteger value) {
+        this.userAccruedRewards.at(userAddr).set(assetAddr, value);
+    }
+
+    public void clearAccruedReward(Address userAddr, Address assetAddr) {
+        setAccruedRewards(userAddr, assetAddr, null);
     }
 }

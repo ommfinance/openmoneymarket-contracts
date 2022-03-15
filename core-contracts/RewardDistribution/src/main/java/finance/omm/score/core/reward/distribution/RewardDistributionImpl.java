@@ -10,6 +10,7 @@ import finance.omm.libs.structs.DistPercentage;
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.UserDetails;
 import finance.omm.libs.structs.WeightStruct;
+import finance.omm.libs.structs.WorkingBalance;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.math.MathUtils;
@@ -29,6 +30,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     public static final String TAG = "Reward distribution";
     public static final String DAY = "day";
+
     public static final String IS_INITIALIZED = "isInitialized";
     public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
 
@@ -38,8 +40,11 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
 
 
-    public RewardDistributionImpl(Address addressProvider, BigInteger _weight) {
-        super(addressProvider, _weight);
+    public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate) {
+        super(addressProvider);
+        if (this.bOMMRewardStartDate.get() == null) {
+            this.bOMMRewardStartDate.set(bOMMRewardStartDate);
+        }
     }
 
     @External(readonly = true)
@@ -79,7 +84,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @External(readonly = true)
     public BigInteger getLastUpdatedTimestamp(Address _asset) {
-        return this.assets.getLastUpdateTimestamp(_asset);
+        return this.getIndexUpdateTimestamp(_asset);
     }
 
 
@@ -376,11 +381,36 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             BigInteger userWorkingBalance = balances.getOrDefault(assetAddr, BigInteger.ZERO);
             BigInteger assetWorkingTotal = workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
             BigInteger dailyReward = dailyRewards.get(name);
-
-            response.put(name, exaMultiply(dailyReward, exaDivide(userWorkingBalance, assetWorkingTotal)));
+            if (!assetWorkingTotal.equals(BigInteger.ZERO)) {
+                response.put(name, exaMultiply(dailyReward, exaDivide(userWorkingBalance, assetWorkingTotal)));
+            } else {
+                response.put(name, BigInteger.ZERO);
+            }
         }
         return response;
+    }
 
+
+    @External
+    public void kick(Address userAddr) {
+        Map<String, BigInteger> bOMMBalances = getBoostedBalance(userAddr);
+        if (!bOMMBalances.get("bOMMUserBalance").equals(BigInteger.ZERO)) {
+            throw RewardDistributionException.unknown(userAddr + " OMM locking is not expired");
+        }
+        List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+        for (Address assetAddr : assets) {
+            Asset asset = this.assets.get(assetAddr);
+            if (asset == null) {
+                continue;
+            }
+            updateIndexes(assetAddr, userAddr);
+
+            WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, asset.lpID);
+            workingBalance.bOMMUserBalance = bOMMBalances.get("bOMMUserBalance");
+            workingBalance.bOMMTotalSupply = bOMMBalances.get("bOMMTotalSupply");
+
+            updateWorkingBalance(workingBalance);
+        }
     }
 
     @Override
@@ -397,17 +427,41 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         _handleAction(_asset, _userDetails);
     }
 
-    private void _handleAction(Address _asset, UserDetails _userDetails) {
-        Asset asset = this.assets.get(_asset);
+    private void _handleAction(Address assetAddr, UserDetails _userDetails) {
+        Asset asset = this.assets.get(assetAddr);
         if (asset == null) {
-            throw RewardDistributionException.invalidAsset("Asset is null (" + _asset + ")");
+            throw RewardDistributionException.invalidAsset("Asset is null (" + assetAddr + ")");
         }
+
+        Address userAddr = _userDetails._user;
+
+        updateIndexes(assetAddr, userAddr);
+
+        /*
+         * legacy reward update start
+         */
         BigInteger _decimals = _userDetails._decimals;
-        Address _user = _userDetails._user;
         BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
         BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
 
-        updateWorkingBalance(_asset, _user, _userBalance, _totalSupply);
+        Map<String, BigInteger> boostedBalance = getBoostedBalance(userAddr);
+        WorkingBalance balance = new WorkingBalance();
+        balance.assetAddr = assetAddr;
+        balance.userAddr = userAddr;
+        balance.userBalance = _userBalance;
+        balance.totalSupply = _totalSupply;
+        balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
+        balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
+
+        legacyRewards.accumulateUserRewards(balance, this.bOMMRewardStartDate.get(), false);
+        /*
+         * legacy reward update end
+         */
+
+        balance = getUserBalance(userAddr, assetAddr, asset.lpID);
+        balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
+        balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
+        updateWorkingBalance(balance);
     }
 
     @EventLog()
