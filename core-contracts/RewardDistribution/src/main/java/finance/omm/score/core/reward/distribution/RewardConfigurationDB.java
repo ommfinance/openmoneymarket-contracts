@@ -16,6 +16,7 @@ import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
 public class RewardConfigurationDB {
+
     public static final String TAG = "Reward Configuration DB";
     public static final String EMISSION_PER_SECOND = "EmissionPerSecond";
     public static final String ENTITY_DISTRIBUTION_PERCENTAGE = "EntityDistributionPercentage";
@@ -73,7 +74,7 @@ public class RewardConfigurationDB {
     private void add_asset(Address asset) {
         if (get_index(asset) == 0) {
             this._assets.add(asset);
-            this._indexes.set(asset, this._assets.size());
+            this._indexes.set(asset, this.size());
         }
     }
 

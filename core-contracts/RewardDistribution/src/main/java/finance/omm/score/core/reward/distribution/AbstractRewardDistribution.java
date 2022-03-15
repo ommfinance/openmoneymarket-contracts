@@ -38,7 +38,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     public static final String TIMESTAMP_AT_START = "timestampAtStart";
     public static final String ASSET_INDEX = "assetIndex";
     public static final String USER_INDEX = "userIndex";
-    public static final String RESERVE_ASSETS = "reserveAssets";
+//    public static final String RESERVE_ASSETS = "reserveAssets";
 
     public final RewardConfigurationDB _rewardConfig = new RewardConfigurationDB(REWARD_CONFIG);
 
@@ -99,12 +99,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         this._rewardConfig.setAssetName(_asset, _name);
     }
 
-    @External
-    public void setAssetIndex(Address _asset, BigInteger _index, BigInteger _timestamp) {
-        checkOwner();
-        _assetIndex.set(_asset, _index);
-        _lastUpdateTimestamp.set(_asset, _timestamp);
-    }
 
     @External
     public void setTimeStamp(BigInteger _timestamp) {
@@ -116,11 +110,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     }
 
-    @External
-    public void setUserIndex(Address _user, BigInteger _index, Address _asset) {
-        checkOwner();
-        _userIndex.at(_user).set(_asset, _index);
-    }
 
     public void _updateDistPercentage(DistPercentage[] _distPercentage) {
         BigInteger totalPercentage = BigInteger.ZERO;
@@ -187,6 +176,13 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         }
     }
 
+    @External
+    public void configureAssetConfig(AssetConfig _assetConfig) {
+        checkGovernance();
+        BigInteger distributionPerDay = this.tokenDistributionPerDay(this.getDay());
+        this._configureAsset(distributionPerDay, _assetConfig);
+    }
+
 
     @External
     public void removeAssetConfig(Address _asset) {
@@ -237,8 +233,11 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
         BigInteger newIndex = this._updateAssetStateInternal(_asset, _totalBalance);
 
-        if (!userIndex.equals(newIndex) && !BigInteger.ZERO.equals(_userBalance)) {
-            accruedRewards = AbstractRewardDistribution._getRewards(_userBalance, newIndex, userIndex);
+        if (!userIndex.equals(newIndex)) {
+            if (!BigInteger.ZERO.equals(_userBalance)) {
+                accruedRewards = AbstractRewardDistribution._getRewards(_userBalance, newIndex, userIndex);
+            }
+
             this._userIndex.at(_user).set(_asset, newIndex);
             this.UserIndexUpdated(_user, _asset, userIndex, newIndex);
         }
@@ -272,17 +271,17 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     @External(readonly = true)
     public BigInteger tokenDistributionPerDay(BigInteger _day) {
 
-        if (MathUtils.isLesThanEqual(_day, BigInteger.ZERO)) {
+        if (MathUtils.isLessThan(_day, BigInteger.ZERO)) {
             return BigInteger.ZERO;
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(30L))) {
+        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(30L))) {
             return MILLION;
-        } else if (MathUtils.isLesThanEqual(_day, DAYS_PER_YEAR)) {
+        } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR)) {
             return BigInteger.valueOf(4L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
+        } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
             return BigInteger.valueOf(3L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
+        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
             return BigInteger.valueOf(2L).multiply(MILLION).divide(BigInteger.TEN);
-        } else if (MathUtils.isLesThanEqual(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
+        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
             return BigInteger.valueOf(34L).multiply(MILLION).divide(BigInteger.TEN);
         } else {
             BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
@@ -342,7 +341,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         SupplyDetails supplyDetails = SupplyDetails.fromMap(map);
 
         BigInteger _decimals = supplyDetails.decimals;
-        result.userBalance = MathUtils.convertToExa(supplyDetails.principalUserBalance, _decimals);
+        result.userBalance = convertToExa(supplyDetails.principalUserBalance, _decimals);
         result.totalBalance = convertToExa(supplyDetails.principalTotalSupply, _decimals);
 
         return result;
