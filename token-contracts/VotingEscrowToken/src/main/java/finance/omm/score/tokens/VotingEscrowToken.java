@@ -23,7 +23,6 @@ import finance.omm.core.score.interfaces.VeToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
-import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.tokens.exception.BoostedOMMException;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.db.EnumerableSet;
@@ -40,6 +39,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import scorex.util.ArrayList;
+import scorex.util.HashMap;
 
 public class VotingEscrowToken extends AddressProvider implements VeToken {
 
@@ -339,13 +339,13 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         //calling update delegation
         scoreCall(Contracts.DELEGATION, "updateDelegations", null, address);
         // calling handle action for rewards
-        UserDetails _userDetails = new UserDetails();
-        _userDetails._user = address;
-        _userDetails._decimals = BigInteger.valueOf(decimals());
-        _userDetails._userBalance = balanceOf(address, BigInteger.ZERO);
-        _userDetails._totalSupply = totalSupply(BigInteger.ZERO);
+        Map<String, Object> userDetails = new HashMap<>();
+        userDetails.put("_user", address);
+        userDetails.put("_userBalance", balanceOf(address, BigInteger.ZERO));
+        userDetails.put("_totalSupply", totalSupply(BigInteger.ZERO));
+        userDetails.put("_decimals", BigInteger.valueOf(decimals()));
 
-        scoreCall(Contracts.REWARDS, "handleAction", _userDetails);
+        scoreCall(Contracts.REWARDS, "handleAction", userDetails);
     }
 
     @External
