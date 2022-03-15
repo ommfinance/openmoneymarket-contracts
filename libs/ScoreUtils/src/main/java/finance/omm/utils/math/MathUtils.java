@@ -9,7 +9,7 @@ public class MathUtils {
     public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(pow10(18));
 
 
-    public static boolean isLesThan(BigInteger first, BigInteger second) {
+    public static boolean isLessThan(BigInteger first, BigInteger second) {
         return first.compareTo(second) < 0;
     }
 
