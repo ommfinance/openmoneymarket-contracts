@@ -139,19 +139,19 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         return response;
     }
 
-
-    @External
-    public void setUserUnclaimedReward(Address _user, BigInteger _reward) {
-        checkOwner();
-        List<Address> _assets = _rewardConfig.getAssets();
-        for (Address _asset : _assets) {
-            _usersUnclaimedRewards.at(_user).set(_asset, _reward);
-        }
-    }
-
     @External(readonly = true)
-    public BigInteger getUserAssetUnclaimedRewards(Address _user, Address _asset) {
-        return _usersUnclaimedRewards.at(_user).get(_asset);
+    public Map<String, Object> getUserUnclaimedRewards(Address _user) {
+        List<Address> _assets = _rewardConfig.getAssets();
+        BigInteger totalUnclaimedRewards = BigInteger.ZERO;
+        Map<String, Object> unclaimedRewardsMap = new HashMap<>();
+        for (Address asset : _assets) {
+            String _assetName = _rewardConfig.getAssetName(_asset);
+            BigInteger userAssetUnclaimedRewards = _usersUnclaimedRewards.at(_user).get(_asset);
+            totalUnclaimedRewards = totalUnclaimedRewards.add(userAssetUnclaimedRewards);
+            unclaimedRewardsMap.put(_assetName, _userAssetUnclaimedRewards);
+        }
+        unclaimedRewardsMap.put("total", totalUnclaimedRewards);
+        return unclaimedRewardsMap;
     }
 
     @External(readonly = true)
