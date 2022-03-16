@@ -283,7 +283,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
             return BigInteger.valueOf(2L).multiply(MILLION).divide(BigInteger.TEN);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.valueOf(34L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.ONE.multiply(MILLION).divide(BigInteger.TEN);
         } else {
             BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
             return pow(BigInteger.valueOf(103L), (index.intValue()))
