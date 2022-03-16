@@ -204,7 +204,7 @@ public class RewardConfigurationDB {
         } else if ("lendingBorrow".equals(_rewardEntity)) {
             return RESERVE;
         }
-        return null;
+        throw RewardDistributionException.unknown("Unsupported entity "+_rewardEntity+" :: "+asset);
     }
 
 
