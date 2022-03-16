@@ -17,7 +17,7 @@ import scorex.util.HashMap;
 
 public class RewardConfigurationDB {
 
-    public static final String TAG = "Reward Configuration DB";
+    public static final String TAG = "Omm Reward Distribution Storage";
     public static final String EMISSION_PER_SECOND = "EmissionPerSecond";
     public static final String ENTITY_DISTRIBUTION_PERCENTAGE = "EntityDistributionPercentage";
     public static final String SUPPORTED_RECIPIENTS = "SupportedRecipients";
