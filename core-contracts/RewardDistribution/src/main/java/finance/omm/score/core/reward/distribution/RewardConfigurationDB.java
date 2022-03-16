@@ -79,7 +79,7 @@ public class RewardConfigurationDB {
     }
 
     public void setRecipient(String recipient) {
-        if (isRecipient(recipient)) {
+        if (!isRecipient(recipient)) {
             this._supportedRecipients.add(recipient);
         }
     }
