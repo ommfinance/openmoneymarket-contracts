@@ -243,7 +243,7 @@ public class RewardConfigurationDB {
             Address asset = this._assets.get(i);
             Integer poolID = this._poolIDMapping.get(asset);
             if (poolID > 0) {
-                configs.put(asset.toString(), this.getAssetPercentage(asset));
+                configs.put(poolID.toString(), this.getAssetPercentage(asset));
             }
         }
         return Map.of("liquidity", configs);
