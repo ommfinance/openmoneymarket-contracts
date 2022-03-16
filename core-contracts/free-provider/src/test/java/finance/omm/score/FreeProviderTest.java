@@ -14,8 +14,8 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 
-import finance.omm.commons.AddressDetails;
 import finance.omm.commons.Addresses;
+import finance.omm.libs.structs.AddressDetail;
 
 public class FreeProviderTest extends TestBase{
 
@@ -29,8 +29,10 @@ public class FreeProviderTest extends TestBase{
 	private Score ommToken;
 	private Account accountAddressProvider = sm.createAccount();
 	private Account accountGovernance = sm.createAccount();
-	private AddressDetails governanceDetails = new AddressDetails( Addresses.GOVERNANCE, accountGovernance.getAddress());
-	private AddressDetails ommTokenDetails;
+
+	private AddressDetail governanceDetails;
+	private AddressDetail ommTokenDetails;
+
 
 	@BeforeAll
 	public static void init() {
@@ -39,16 +41,24 @@ public class FreeProviderTest extends TestBase{
 
 	@BeforeEach
 	public void setup() throws Exception {
+		governanceDetails = new AddressDetail();
+		governanceDetails.name =  Addresses.GOVERNANCE;
+		governanceDetails.address = accountGovernance.getAddress();
+
 		freeProvider = sm.deploy(owner, FreeProvider.class, accountAddressProvider.getAddress(), false);
 		ommToken = sm.deploy(owner, MockOmmToken.class);
-		ommTokenDetails = new AddressDetails( Addresses.OMM_TOKEN, ommToken.getAddress());
+
+		ommTokenDetails = new AddressDetail(); 
+		ommTokenDetails.name = Addresses.OMM_TOKEN;
+		ommTokenDetails.address = ommToken.getAddress();
+
 		ommToken.getAccount().addBalance(Addresses.OMM_TOKEN, totalSupply);
 	}
 
 	@Test
 	void testTransferFund() {
 
-		AddressDetails[] addressDetails = {governanceDetails, ommTokenDetails};
+		AddressDetail[] addressDetails = {governanceDetails, ommTokenDetails};
 		freeProvider.invoke(accountAddressProvider, "setAddresses", (Object)addressDetails);
 
 		BigInteger amount = TEN.pow(decimals.intValue());

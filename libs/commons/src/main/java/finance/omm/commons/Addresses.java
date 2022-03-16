@@ -2,6 +2,7 @@ package finance.omm.commons;
 
 import java.util.Map;
 
+import finance.omm.libs.structs.AddressDetail;
 import score.Address;
 import score.ArrayDB;
 import score.Context;
@@ -34,14 +35,14 @@ public class Addresses extends BaseScore{
 	}
 
 	@External
-	public void setAddresses(AddressDetails[] _addressDetails) {
+	public void setAddresses(AddressDetail[] _addressDetails) {
 		onlyAddressProvider();
-		for (AddressDetails contract : _addressDetails) {
-			Context.println(getTag() + "| contract : " +contract.getName() + " , address: " + contract.getAddress());
-			if (!containsInArrayDb(contract.getName(), this.contracts)) {
-				this.contracts.add(contract.getName());
+		for (AddressDetail contract : _addressDetails) {
+			Context.println(getTag() + "| contract : " +contract.name + " , address: " + contract.address);
+			if (!containsInArrayDb(contract.name, this.contracts)) {
+				this.contracts.add(contract.name);
 			}
-			this.addresses.set( contract.getName(), contract.getAddress());
+			this.addresses.set( contract.name, contract.address);
 		}
 	}
 

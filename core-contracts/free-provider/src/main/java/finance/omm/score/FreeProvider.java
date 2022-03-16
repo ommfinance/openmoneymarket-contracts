@@ -1,6 +1,6 @@
 package finance.omm.score;
 
-import static finance.omm.score.math.MathUtils.exaMul;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 import java.math.BigInteger;
 
@@ -46,7 +46,7 @@ public class FreeProvider extends Addresses{
 
 	@External(readonly=true)
 	public BigInteger calculateOriginationFee(BigInteger _amount) {
-		return exaMul(_amount, this.getLoanOriginationFeePercentage());
+		return exaMultiply(_amount, this.getLoanOriginationFeePercentage());
 	}
 
 	@External(readonly=true)

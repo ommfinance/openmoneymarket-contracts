@@ -34,6 +34,3 @@ findProject(":free-provider").projectDir = file("core-contracts/free-provider")
 
 include('worker-token')
 findProject(":worker-token").projectDir = file("token-contracts/worker-token")
-
-include('testinteg')
-findProject(":testinteg").projectDir = file("libs/testinteg")

@@ -3,7 +3,8 @@ version = '0.1.0'
 optimizedJar {
     mainClassName = 'finance.omm.score.DaoFund'
     dependsOn(':commons:build')
-
+    dependsOn(':OMMStruct:build')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
@@ -44,6 +45,7 @@ configurations {
 dependencies {
     compileOnly 'foundation.icon:javaee-api:0.9.1'
     implementation project(':commons')
+    implementation project(':OMMStruct')
 
     // test dependencies
     testImplementation 'foundation.icon:javaee-unittest:0.9.1'
@@ -51,25 +53,34 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
     testImplementation 'org.junit.platform:junit-platform-commons:1.7.0'
 
-    // integration test dependencies
-    itestImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    itestImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
-    itestImplementation 'org.junit.platform:junit-platform-commons:1.7.0'
-
-	itestImplementation 'foundation.icon:icon-sdk:2.0.0'
-	itestImplementation project(':testinteg')
+	testImplementation 'foundation.icon:icon-sdk:2.0.0'
+	testImplementation project(':TestUtils')
 }
 
-tasks.register('itest', Test) {
+task integrationTest(type: Test, dependsOn: optimizedJar) {
     useJUnitPlatform()
-    description = 'Runs integration tests.'
-    group = 'verification'
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
 
-    testClassesDirs = sourceSets.itest.output.classesDirs
-    classpath = sourceSets.itest.runtimeClasspath
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
 
-    systemProperty('env.props', new File(project(':testinteg').projectDir, 'conf/env.props'))
+        systemProperty 'keyStore', scoreTest.keystoreName
+        systemProperty 'keyPassword', scoreTest.keystorePass
 
-    def prefix = 'score.path.'
-    systemProperty(prefix + project.name, optimizedJar.outputJarName)
+        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+
+        systemProperty 'address', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
+        systemProperty 'isUpdate', "true"
+        systemProperty 'scoreFilePath',//path to zip project.tasks.optimizedJar.outputJarName
+
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+    }
+
 }

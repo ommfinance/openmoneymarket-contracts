@@ -3,6 +3,8 @@ version = '0.1.0'
 dependencies {
     compileOnly 'foundation.icon:javaee-api:0.9.1'
     implementation project(':commons')
+    implementation project(':ScoreUtils')
+    implementation project(':OMMStruct')
 
     testImplementation 'foundation.icon:javaee-unittest:0.9.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
@@ -10,12 +12,13 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-commons:1.7.0'
     testImplementation 'foundation.icon:icon-sdk:2.0.0'
     testImplementation project(':commons')
-	testImplementation project(':testinteg')
+    testImplementation project(':ScoreUtils')
 }
 
 optimizedJar {
     mainClassName = 'finance.omm.score.FreeProvider'
     dependsOn(':commons:build')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }

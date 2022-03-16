@@ -17,8 +17,8 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 
-import finance.omm.commons.AddressDetails;
 import finance.omm.commons.Addresses;
+import finance.omm.libs.structs.AddressDetail;
 import score.Address;
 
 class DaoFundTest extends TestBase{
@@ -33,8 +33,8 @@ class DaoFundTest extends TestBase{
 	private Score ommToken;
 	private Account accountAddressProvider = sm.createAccount();
 	private Account accountGovernance = sm.createAccount();
-	private AddressDetails governanceDetails = new AddressDetails( Addresses.GOVERNANCE, accountGovernance.getAddress());
-	private AddressDetails ommTokenDetails;
+	private AddressDetail governanceDetails;
+	private AddressDetail ommTokenDetails;
 
 	@BeforeAll
 	public static void init() {
@@ -43,16 +43,23 @@ class DaoFundTest extends TestBase{
 
 	@BeforeEach
 	public void setup() throws Exception {
+		governanceDetails = new AddressDetail();
+		governanceDetails.name =  Addresses.GOVERNANCE;
+		governanceDetails.address = accountGovernance.getAddress();
+
 		daoFund = sm.deploy(owner, DaoFund.class, accountAddressProvider.getAddress(), false);
 		ommToken = sm.deploy(owner, MockOmmToken.class);
-		ommTokenDetails = new AddressDetails( Addresses.OMM_TOKEN, ommToken.getAddress());
+
+		ommTokenDetails = new AddressDetail(); 
+		ommTokenDetails.name = Addresses.OMM_TOKEN;
+		ommTokenDetails.address = ommToken.getAddress();
 		ommToken.getAccount().addBalance(Addresses.OMM_TOKEN, totalSupply);
 	}
 
 	@Test
 	void testSetAddresses() {
 
-		AddressDetails[] addressDetails = {governanceDetails, ommTokenDetails};
+		AddressDetail[] addressDetails = {governanceDetails, ommTokenDetails};
 		daoFund.invoke(accountAddressProvider, "setAddresses", (Object)addressDetails);
 
 		@SuppressWarnings("unchecked")
@@ -60,7 +67,7 @@ class DaoFundTest extends TestBase{
 
 		assertNotNull(addresses);
 		assertFalse(addresses.isEmpty());
-		assertNotNull(addresses.get(governanceDetails.getName()));
+		assertNotNull(addresses.get(governanceDetails.name));
 	}
 
 	@Test
