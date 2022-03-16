@@ -217,9 +217,7 @@ public class RewardConfigurationDB {
             String _name = this._assetName.get(asset);
             BigInteger _percentage = this.getAssetPercentage(asset);
             String _entity = this.getEntity(asset);
-            if (_entity == null) {
-                throw RewardDistributionException.invalidAsset("Unsupported entity :: " + asset);
-            }
+            
             Map<String, BigInteger> _entityMap = (Map<String, BigInteger>) response.get(_entity);
             if (_entityMap == null) {
                 _entityMap = new HashMap<>() {{
