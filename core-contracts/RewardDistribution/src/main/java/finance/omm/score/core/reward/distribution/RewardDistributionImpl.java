@@ -1,6 +1,8 @@
 package finance.omm.score.core.reward.distribution;
 
+import static finance.omm.utils.constants.TimeConstants.SECOND;
 import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 
@@ -13,6 +15,8 @@ import finance.omm.libs.structs.WeightStruct;
 import finance.omm.libs.structs.WorkingBalance;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import finance.omm.score.core.reward.distribution.model.Asset;
+import finance.omm.utils.constants.TimeConstants;
+import finance.omm.utils.constants.TimeConstants.Timestamp;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
 import java.util.List;
@@ -40,9 +44,14 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
 
 
+    public static final String IS_ASSET_INDEX_UPDATED = "is-asset-index-updated";
+    public final DictDB<String, Boolean> migrationStatus = Context.newDictDB("bOMM-migration-status", Boolean.class);
+
+
     public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate) {
         super(addressProvider);
         if (this.bOMMRewardStartDate.get() == null) {
+            TimeConstants.checkIsValidTimestamp(bOMMRewardStartDate, Timestamp.SECONDS);
             this.bOMMRewardStartDate.set(bOMMRewardStartDate);
         }
     }
@@ -287,7 +296,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
         @SuppressWarnings("unchecked")
         Class<Map<String, ?>> clazz = (Class) Map.class;
-        Map<String, ?> distributionDetails = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "distributionDetails",
+        Map<String, ?> distributionDetails = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "getDistributionDetails",
                 day);
         Boolean isValid = (Boolean) distributionDetails.get("isValid");
 
@@ -437,32 +446,82 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
         updateIndexes(assetAddr, userAddr);
 
-        /*
-         * legacy reward update start
-         */
-        BigInteger _decimals = _userDetails._decimals;
-        BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
-        BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
-
         Map<String, BigInteger> boostedBalance = getBoostedBalance(userAddr);
-        WorkingBalance balance = new WorkingBalance();
-        balance.assetAddr = assetAddr;
-        balance.userAddr = userAddr;
-        balance.userBalance = _userBalance;
-        balance.totalSupply = _totalSupply;
-        balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
-        balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
-
-        legacyRewards.accumulateUserRewards(balance, this.bOMMRewardStartDate.get(), false);
-        /*
-         * legacy reward update end
-         */
-
-        balance = getUserBalance(userAddr, assetAddr, asset.lpID);
+        WorkingBalance balance = getUserBalance(userAddr, assetAddr, asset.lpID);
         balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
         balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
         updateWorkingBalance(balance);
     }
+
+    /**
+     * calculate old reward indexes of all asset to bOMM cutOff timestamp
+     */
+    @External
+    public void updateAssetIndexes() {
+        checkOwner();
+        BigInteger bOMMCutOffTimestamp = bOMMRewardStartDate.get();
+        BigInteger currentTimestamp = TimeConstants.getBlockTimestamp().divide(SECOND);
+        if (bOMMCutOffTimestamp.compareTo(currentTimestamp) > 0) {
+            throw RewardDistributionException.unknown(
+                    "bOMMCutOffTimestamp is future timestamp (" + bOMMCutOffTimestamp + ")");
+        }
+        if (migrationStatus.getOrDefault(IS_ASSET_INDEX_UPDATED, false)) {
+            throw RewardDistributionException.unknown(
+                    "Asset index already updated (" + bOMMCutOffTimestamp + ")");
+        }
+        List<Address> assetAddrs = this.legacyRewards.getAssets();
+        for (Address assetAddr : assetAddrs) {
+            Integer poolId = this.legacyRewards.getPoolID(assetAddr);
+            Map<String, BigInteger> map = null;
+            if (poolId > 0) {
+                map = Context.call(Map.class, getAddress(Contracts.STAKING.getKey()),
+                        "getTotalStaked", poolId);
+            } else {
+                map = Context.call(Map.class, assetAddr, "getTotalStaked");
+            }
+            if (map == null) {
+                continue;
+            }
+            BigInteger _decimals = map.get("decimals");
+
+            BigInteger totalSupply = convertToExa(map.get("totalStaked"), _decimals);
+            this.legacyRewards.updateAssetIndex(assetAddr, totalSupply, bOMMCutOffTimestamp);
+        }
+        migrationStatus.set(IS_ASSET_INDEX_UPDATED, Boolean.TRUE);
+    }
+
+    /**
+     * calculate old accrued reward of users to bOMM cutOff timestamp, also update working balance of users
+     */
+    @External
+    public void migrateUserRewards(Address[] userAddresses) {
+        checkOwner();
+        if (!migrationStatus.getOrDefault(IS_ASSET_INDEX_UPDATED, false)) {
+            throw RewardDistributionException.unknown(
+                    "Asset indexes are not migrated, Please migrate asset index first");
+        }
+        List<Address> assetAddrs = this.legacyRewards.getAssets();
+        Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
+        for (Address assetAddr : assetAddrs) {
+            Integer poolId = this.legacyRewards.getPoolID(assetAddr);
+            for (Address userAddr : userAddresses) {
+                WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, BigInteger.valueOf(poolId));
+                workingBalance.bOMMUserBalance = BigInteger.ZERO;
+                workingBalance.bOMMTotalSupply = BigInteger.ZERO;
+
+                BigInteger totalReward = legacyRewards.accumulateUserRewards(workingBalance);
+
+                if (assetAddr.equals(getAddress(Contracts.OMM_TOKEN.getKey()))) {
+                    this.assets.setAccruedRewards(userAddr, bOMMAddress, totalReward);
+                } else {
+                    this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
+                }
+
+                updateWorkingBalance(workingBalance);
+            }
+        }
+    }
+
 
     @EventLog()
     public void OmmTokenMinted(BigInteger _day, BigInteger _value, BigInteger _days) {}

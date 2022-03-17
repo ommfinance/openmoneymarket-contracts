@@ -136,9 +136,9 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
             return BigInteger.valueOf(3L).multiply(MILLION).divide(BigInteger.TEN);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.valueOf(2L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.TWO.multiply(MILLION).divide(BigInteger.TEN);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.valueOf(34L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.ONE.multiply(MILLION).divide(BigInteger.TEN);
         } else {
             BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
             return pow(BigInteger.valueOf(103L), (index.intValue()))
@@ -412,7 +412,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public Map<String, ?> distributionDetails(BigInteger day) {
+    public Map<String, ?> getDistributionDetails(BigInteger day) {
         Map<String, Object> response = new HashMap<>() {{
             put("isValid", true);
         }};

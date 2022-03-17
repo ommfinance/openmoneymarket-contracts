@@ -149,16 +149,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
             }
             WorkingBalance workingBalance = getUserBalance(user, address, asset.lpID);
-            /*
-             * legacy reward calculation start
-             */
-            BigInteger oldReward = legacyRewards.accumulateUserRewards(workingBalance,
-                    this.bOMMRewardStartDate.get(),
-                    true);
-            /*
-             * legacy reward calculation end
-             */
-            BigInteger reward = getUserReward(address, user).add(oldReward);
+
+            BigInteger reward = getUserReward(address, user);
             Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(asset.type);
             if (entityMap == null) {
                 entityMap = new HashMap<>() {{
@@ -171,19 +163,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             response.put(asset.type, entityMap);
             totalRewards = totalRewards.add(reward);
         }
-        /*
-         * legacy reward calculation start
-         */
-        BigInteger ommStakingReward = getOMMStakingReward(user, true);
-        if (ommStakingReward.compareTo(BigInteger.ZERO) > 0) {
-            response.put("staking", new HashMap<>() {{
-                put("OMM", ommStakingReward);
-            }});
-            totalRewards = totalRewards.add(ommStakingReward);
-        }
-        /*
-         * legacy reward calculation end
-         */
+
         response.put("total", totalRewards);
         BigInteger timeInSeconds = TimeConstants.getBlockTimestamp().divide(TimeConstants.SECOND);
         response.put("now", timeInSeconds);
@@ -209,35 +189,15 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             WorkingBalance workingBalance = getUserBalance(user, address, asset.lpID);
             workingBalance.bOMMUserBalance = bOMMUserBalance;
             workingBalance.bOMMTotalSupply = bOMMTotalSupply;
-            /*
-             * legacy reward update start
-             */
-            BigInteger oldReward = legacyRewards.accumulateUserRewards(workingBalance, this.bOMMRewardStartDate.get(),
-                    false);
-
-            legacyRewards.clear(user, asset.address);
-
-            /*
-             * legacy reward update end
-             */
 
             BigInteger newReward = updateIndexes(asset.address, user);
 
-            accruedReward = accruedReward.add(newReward).add(oldReward);
+            accruedReward = accruedReward.add(newReward);
 
             this.assets.clearAccruedReward(user, asset.address);
 
             updateWorkingBalance(workingBalance);
         }
-        /*
-         * legacy reward update start
-         */
-        BigInteger ommReward = getOMMStakingReward(user, false);
-        accruedReward = accruedReward.add(ommReward);
-        legacyRewards.clear(user, getAddress(Contracts.OMM_TOKEN.getKey()));
-        /*
-         * legacy reward update end
-         */
 
         if (BigInteger.ZERO.equals(accruedReward)) {
             return;
@@ -247,24 +207,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
         call(Contracts.OMM_TOKEN, "transfer", user, accruedReward);
         RewardsClaimed(user, accruedReward, "Asset rewards claimed");
-    }
-
-    /**
-     * calculate old OMM staking reward if any
-     *
-     * @param user       Address
-     * @param isReadOnly Boolean
-     * @return accrued reward
-     */
-    @Deprecated
-    private BigInteger getOMMStakingReward(Address user, Boolean isReadOnly) {
-        WorkingBalance workingBalance = getUserBalance(user, getAddress(Contracts.OMM_TOKEN.getKey()), BigInteger.ZERO);
-
-        /*
-         * legacy OMM staking reward update
-         */
-        return legacyRewards.accumulateUserRewards(workingBalance, this.bOMMRewardStartDate.get(),
-                isReadOnly);
     }
 
     @External(readonly = true)

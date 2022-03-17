@@ -5,6 +5,7 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 import finance.omm.libs.structs.WorkingBalance;
 import java.math.BigInteger;
+import java.util.List;
 import score.Address;
 import score.BranchDB;
 import score.Context;
@@ -35,50 +36,42 @@ public class LegacyRewards {
     public final BranchDB<Address, DictDB<Address, BigInteger>> _userIndex = Context.newBranchDB(USER_INDEX,
             BigInteger.class);
 
-    private BigInteger getAssetIndex(Address assetAddress, BigInteger totalBalance, BigInteger cutOffTimestamp) {
 
-        BigInteger lastUpdateTimestamp = this._lastUpdateTimestamp.getOrDefault(assetAddress, cutOffTimestamp);
+    public void updateAssetIndex(Address assetAddr, BigInteger totalBalance, BigInteger cutOffTimestamp) {
+        BigInteger oldIndex = this._assetIndex.getOrDefault(assetAddr, BigInteger.ZERO);
+        BigInteger lastUpdateTimestamp = this._lastUpdateTimestamp.getOrDefault(assetAddr, cutOffTimestamp);
 
         if (totalBalance.equals(BigInteger.ZERO) || cutOffTimestamp.equals(lastUpdateTimestamp)) {
-            return BigInteger.ZERO;
+            return;
         }
-        BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(assetAddress);
+        BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(assetAddr);
         BigInteger timeDelta = cutOffTimestamp.subtract(lastUpdateTimestamp);
 
-        return exaDivide(_emissionPerSecond.multiply(timeDelta), totalBalance);
+        BigInteger newIndex = exaDivide(_emissionPerSecond.multiply(timeDelta), totalBalance).add(oldIndex);
+
+        this._assetIndex.set(assetAddr, newIndex);
+        this.LegacyAssetIndexUpdated(assetAddr, oldIndex, newIndex);
+        this._lastUpdateTimestamp.set(assetAddr, cutOffTimestamp);
     }
 
-    public void clear(Address userAddr, Address assetAddr) {
-        this._usersUnclaimedRewards.at(userAddr).set(assetAddr, null);
-    }
-
-    public BigInteger accumulateUserRewards(WorkingBalance workingBalance, BigInteger cutOffTimestamp,
-            boolean isReadOnly) {
+    public BigInteger accumulateUserRewards(WorkingBalance workingBalance) {
         Address userAddr = workingBalance.userAddr;
         Address assetAddr = workingBalance.assetAddr;
         BigInteger userIndex = this._userIndex.at(userAddr).getOrDefault(assetAddr, BigInteger.ZERO);
         BigInteger userUnclaimedReward = this._usersUnclaimedRewards.at(userAddr)
                 .getOrDefault(assetAddr, BigInteger.ZERO);
 
-        BigInteger oldIndex = this._assetIndex.getOrDefault(assetAddr, BigInteger.ZERO);
-        BigInteger newIndex = getAssetIndex(assetAddr, workingBalance.totalSupply, cutOffTimestamp).add(oldIndex);
-        if (userIndex.equals(newIndex)) {
+        BigInteger assetIndex = this._assetIndex.getOrDefault(assetAddr, BigInteger.ZERO);
+        if (userIndex.equals(assetIndex)) {
             return userUnclaimedReward;
         }
-        BigInteger newUserReward = getRewards(workingBalance.userBalance, newIndex, userIndex).add(
+        BigInteger newUserReward = getRewards(workingBalance.userBalance, assetIndex, userIndex).add(
                 userUnclaimedReward);
-        if (!isReadOnly) {
-            if (!newIndex.equals(oldIndex)) {
-                this._assetIndex.set(assetAddr, newIndex);
-                this.LegacyAssetIndexUpdated(assetAddr, oldIndex, newIndex);
-            }
 
-            this._lastUpdateTimestamp.set(assetAddr, cutOffTimestamp);
+        this._usersUnclaimedRewards.at(userAddr).set(assetAddr, newUserReward);
+        this._userIndex.at(userAddr).set(assetAddr, assetIndex);
+        this.LegacyUserIndexUpdated(userAddr, assetAddr, userIndex, assetIndex);
 
-            this._usersUnclaimedRewards.at(userAddr).set(assetAddr, newUserReward);
-            this._userIndex.at(userAddr).set(assetAddr, newIndex);
-            this.LegacyUserIndexUpdated(userAddr, assetAddr, userIndex, newIndex);
-        }
         return newUserReward;
     }
 
@@ -97,4 +90,11 @@ public class LegacyRewards {
     public void LegacyUserIndexUpdated(Address _user, Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
     }
 
+    public List<Address> getAssets() {
+        return this._rewardConfig.getAssets();
+    }
+
+    public Integer getPoolID(Address assetAddr) {
+        return this._rewardConfig.getPoolID(assetAddr);
+    }
 }
