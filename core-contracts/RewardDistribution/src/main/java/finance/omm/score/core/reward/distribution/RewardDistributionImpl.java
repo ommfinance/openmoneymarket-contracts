@@ -146,7 +146,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         Map<String, Object> unclaimedRewardsMap = new HashMap<>();
         for (Address _asset : _assets) {
             String _assetName = _rewardConfig.getAssetName(_asset);
-            BigInteger userAssetUnclaimedRewards = _usersUnclaimedRewards.at(_user).get(_asset);
+            BigInteger userAssetUnclaimedRewards = _usersUnclaimedRewards.at(_user).getOrDefault(_asset, BigInteger.ZERO);
             totalUnclaimedRewards = totalUnclaimedRewards.add(userAssetUnclaimedRewards);
             unclaimedRewardsMap.put(_assetName, userAssetUnclaimedRewards);
         }
@@ -204,7 +204,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         List<Address> _assets = _rewardConfig.getAssets();
         DictDB<Address, BigInteger> userUnclaimedRewards = _usersUnclaimedRewards.at(_user);
         for (Address _asset : _assets) {
-            unclaimedRewards = userUnclaimedRewards.get(_asset).add(unclaimedRewards);
+            unclaimedRewards = userUnclaimedRewards.getOrDefault(_asset, BigInteger.ZERO).add(unclaimedRewards);
             UserAssetInput userAssetDetails = _getUserAssetDetails(_asset, _user);
             accruedRewards = _updateUserReserveInternal(_user, userAssetDetails.asset, userAssetDetails.userBalance,
                     userAssetDetails.totalBalance).add(accruedRewards);
