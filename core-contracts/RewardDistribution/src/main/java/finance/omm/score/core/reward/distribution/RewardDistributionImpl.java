@@ -146,7 +146,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         Map<String, Object> unclaimedRewardsMap = new HashMap<>();
         for (Address _asset : _assets) {
             String _assetName = _rewardConfig.getAssetName(_asset);
-            BigInteger userAssetUnclaimedRewards = usersUnclaimedRewards.at(_user).get(_asset);
+            BigInteger userAssetUnclaimedRewards = _usersUnclaimedRewards.at(_user).get(_asset);
             totalUnclaimedRewards = totalUnclaimedRewards.add(userAssetUnclaimedRewards);
             unclaimedRewardsMap.put(_assetName, userAssetUnclaimedRewards);
         }
