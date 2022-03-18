@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package finance.omm.score.tokens;
+package finance.omm.score.tokens.model;
 
 
 import finance.omm.utils.math.UnsignedBigInteger;
@@ -23,8 +23,10 @@ import java.math.BigInteger;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
+import score.ObjectWriter;
 
 public class LockedBalance {
+
     public BigInteger amount;
     public UnsignedBigInteger end;
 
@@ -41,27 +43,42 @@ public class LockedBalance {
         this(BigInteger.ZERO, BigInteger.ZERO);
     }
 
-    public byte[] toByteArray() {
-        ByteArrayObjectWriter lockedBalanceInBytes = Context.newByteArrayObjectWriter("RLPn");
-        lockedBalanceInBytes.write(this.amount);
-        lockedBalanceInBytes.write(this.end.toBigInteger());
-        return lockedBalanceInBytes.toByteArray();
-    }
-
     public LockedBalance newLockedBalance() {
         return new LockedBalance(this.amount, this.end);
     }
 
-    public static LockedBalance toLockedBalance(byte[] lockedBalanceBytesArray) {
-        if (lockedBalanceBytesArray == null) {
-            return new LockedBalance();
-        } else {
-            ObjectReader lockedBalance = Context.newByteArrayObjectReader("RLPn", lockedBalanceBytesArray);
-            return new LockedBalance(lockedBalance.readBigInteger(), lockedBalance.readBigInteger());
-        }
-    }
-
     public BigInteger getEnd() {
         return this.end.toBigInteger();
+    }
+
+    public static void writeObject(ObjectWriter writer, LockedBalance obj) {
+        obj.writeObject(writer);
+    }
+
+    public static LockedBalance readObject(ObjectReader reader) {
+        LockedBalance obj = new LockedBalance();
+        reader.beginList();
+        obj.amount = reader.readBigInteger();
+        obj.end = new UnsignedBigInteger(reader.readBigInteger());
+        reader.end();
+        return obj;
+    }
+
+    public void writeObject(ObjectWriter writer) {
+        writer.beginList(2);
+        writer.write(this.amount);
+        writer.write(this.end.toBigInteger());
+        writer.end();
+    }
+
+    public static LockedBalance fromBytes(byte[] bytes) {
+        ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
+        return LockedBalance.readObject(reader);
+    }
+
+    public byte[] toBytes() {
+        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
+        LockedBalance.writeObject(writer, this);
+        return writer.toByteArray();
     }
 }

@@ -19,11 +19,13 @@ import static finance.omm.utils.constants.AddressConstant.ZERO_ADDRESS;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import finance.omm.core.score.interfaces.VeToken;
+import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.score.tokens.exception.BoostedOMMException;
+import finance.omm.score.tokens.model.LockedBalance;
+import finance.omm.score.tokens.model.Point;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.db.EnumerableSet;
 import finance.omm.utils.math.UnsignedBigInteger;
@@ -41,9 +43,9 @@ import score.annotation.Optional;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
-public class VotingEscrowToken extends AddressProvider implements VeToken {
+public class VotingEscrowToken extends AddressProvider implements BoostedToken {
 
-    public static final BigInteger MAXTIME = BigInteger.valueOf(4L).multiply(TimeConstants.YEAR_IN_MICRO_SECONDS);
+    public static final BigInteger MAX_TIME = BigInteger.valueOf(4L).multiply(TimeConstants.YEAR_IN_MICRO_SECONDS);
     private static final UnsignedBigInteger MULTIPLIER = UnsignedBigInteger.pow10(18);
 
     private static final int DEPOSIT_FOR_TYPE = 0;
@@ -60,13 +62,13 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
     private final Address tokenAddress;
     private final VarDB<BigInteger> supply = Context.newVarDB("Boosted_Omm_Supply", BigInteger.class);
 
-    private final DictDB<Address, byte[]> locked = Context.newDictDB("Boosted_Omm_locked", byte[].class);
+    private final DictDB<Address, LockedBalance> locked = Context.newDictDB("Boosted_Omm_locked", LockedBalance.class);
 
     private final VarDB<BigInteger> epoch = Context.newVarDB("Boosted_Omm_epoch", BigInteger.class);
-    private final DictDB<BigInteger, byte[]> pointHistory = Context.newDictDB("Boosted_Omm_point_history",
-            byte[].class);
-    private final BranchDB<Address, DictDB<BigInteger, byte[]>> userPointHistory = Context.newBranchDB(
-            "Boosted_Omm_user_point_history", byte[].class);
+    private final DictDB<BigInteger, Point> pointHistory = Context.newDictDB("Boosted_Omm_point_history",
+            Point.class);
+    private final BranchDB<Address, DictDB<BigInteger, Point>> userPointHistory = Context.newBranchDB(
+            "Boosted_Omm_user_point_history", Point.class);
     private final DictDB<Address, BigInteger> userPointEpoch = Context.newDictDB("Boosted_Omm_user_point_epoch",
             BigInteger.class);
     private final DictDB<BigInteger, BigInteger> slopeChanges = Context.newDictDB("Boosted_Omm_slope_changes",
@@ -105,7 +107,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         Point point = new Point();
         point.block = UnsignedBigInteger.valueOf(Context.getBlockHeight());
         point.timestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
-        this.pointHistory.set(BigInteger.ZERO, point.toByteArray());
+        this.pointHistory.set(BigInteger.ZERO, point);
 
         this.decimals = ((BigInteger) Context.call(tokenAddress, "decimals", new Object[0])).intValue();
         this.name = name;
@@ -141,8 +143,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
 
     @External(readonly = true)
     public Map<String, BigInteger> getLocked(Address _owner) {
-        byte[] bytes = locked.get(_owner);
-        LockedBalance balance = LockedBalance.toLockedBalance(bytes);
+        LockedBalance balance = getLockedBalance(_owner);
         return Map.of("amount", balance.amount, "end", balance.getEnd());
     }
 
@@ -170,17 +171,17 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
     @External(readonly = true)
     public BigInteger getLastUserSlope(Address address) {
         BigInteger userPointEpoch = this.userPointEpoch.get(address);
-        return Point.toPoint((this.userPointHistory.at(address)).get(userPointEpoch)).slope;
+        return getUserPointHistory(address, userPointEpoch).slope;
     }
 
     @External(readonly = true)
     public BigInteger userPointHistoryTimestamp(Address address, BigInteger index) {
-        return Point.toPoint((this.userPointHistory.at(address)).get(index)).getTimestamp();
+        return getUserPointHistory(address, index).getTimestamp();
     }
 
     @External(readonly = true)
     public BigInteger lockedEnd(Address address) {
-        return LockedBalance.toLockedBalance(this.locked.get(address)).getEnd();
+        return getLockedBalance(address).getEnd();
     }
 
     private void checkpoint(Address address, LockedBalance oldLocked, LockedBalance newLocked) {
@@ -197,13 +198,13 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
             //            Calculate slopes and biases
             //            Kept at zero when they have to
             if (oldLocked.end.compareTo(blockTimestamp) > 0 && oldLocked.amount.compareTo(BigInteger.ZERO) > 0) {
-                uOld.slope = oldLocked.amount.divide(MAXTIME);
+                uOld.slope = oldLocked.amount.divide(MAX_TIME);
                 UnsignedBigInteger delta = oldLocked.end.subtract(blockTimestamp);
                 uOld.bias = uOld.slope.multiply(delta.toBigInteger());
             }
 
             if (newLocked.end.compareTo(blockTimestamp) > 0 && newLocked.amount.compareTo(BigInteger.ZERO) > 0) {
-                uNew.slope = newLocked.amount.divide(MAXTIME);
+                uNew.slope = newLocked.amount.divide(MAX_TIME);
                 UnsignedBigInteger delta = newLocked.end.subtract(blockTimestamp);
                 uNew.bias = uNew.slope.multiply(delta.toBigInteger());
             }
@@ -224,7 +225,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         Point lastPoint = new Point(BigInteger.ZERO, BigInteger.ZERO, blockTimestamp.toBigInteger(),
                 blockHeight.toBigInteger());
         if (epoch.compareTo(BigInteger.ZERO) > 0) {
-            lastPoint = Point.toPoint(this.pointHistory.get(epoch));
+            lastPoint = this.pointHistory.getOrDefault(epoch, new Point());
         }
         UnsignedBigInteger lastCheckPoint = lastPoint.timestamp;
 
@@ -275,7 +276,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
                 lastPoint.block = blockHeight;
                 break;
             } else {
-                pointHistory.set(epoch, lastPoint.toByteArray());
+                pointHistory.set(epoch, lastPoint);
             }
         }
 
@@ -292,7 +293,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
             }
         }
 
-        this.pointHistory.set(epoch, lastPoint.toByteArray());
+        this.pointHistory.set(epoch, lastPoint);
 
         if (!address.equals(ZERO_ADDRESS)) {
             if (oldLocked.end.compareTo(blockTimestamp) > 0) {
@@ -312,7 +313,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
             this.userPointEpoch.set(address, userEpoch);
             uNew.timestamp = blockTimestamp;
             uNew.block = blockHeight;
-            this.userPointHistory.at(address).set(userEpoch, uNew.toByteArray());
+            this.userPointHistory.at(address).set(userEpoch, uNew);
         }
     }
 
@@ -330,7 +331,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
             locked.end = new UnsignedBigInteger(unlockTime);
         }
 
-        this.locked.set(address, locked.toByteArray());
+        this.locked.set(address, locked);
         this.checkpoint(address, oldLocked, locked);
 
         Deposit(address, value, locked.getEnd(), type, blockTimestamp);
@@ -356,7 +357,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
     private void depositFor(Address address, BigInteger value) {
         this.nonReentrant.updateLock(true);
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
-        LockedBalance locked = LockedBalance.toLockedBalance(this.locked.get(address));
+        LockedBalance locked = getLockedBalance(address);
 
         Context.require(value.compareTo(BigInteger.ZERO) > 0, "Deposit for: Need non zero value");
         Context.require(locked.amount.compareTo(BigInteger.ZERO) > 0, "Deposit for: No existing lock found");
@@ -378,13 +379,13 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
 
         unlockTime = unlockTime.divide(TimeConstants.WEEK_IN_MICRO_SECONDS)
                 .multiply(TimeConstants.WEEK_IN_MICRO_SECONDS);
-        LockedBalance locked = LockedBalance.toLockedBalance(this.locked.get(sender));
+        LockedBalance locked = getLockedBalance(sender);
 
         Context.require(value.compareTo(BigInteger.ZERO) > 0, "Create Lock: Need non zero value");
         Context.require(locked.amount.equals(BigInteger.ZERO), "Create Lock: Withdraw old tokens first");
         Context.require(unlockTime.compareTo(blockTimestamp) > 0, "Create Lock: Can only lock until time in the " +
                 "future");
-        Context.require(unlockTime.compareTo(blockTimestamp.add(MAXTIME)) <= 0,
+        Context.require(unlockTime.compareTo(blockTimestamp.add(MAX_TIME)) <= 0,
                 "Create Lock: Voting Lock can be 4 years max");
 
         users.add(sender);
@@ -397,7 +398,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
 
         this.assertNotContract(sender);
-        LockedBalance locked = LockedBalance.toLockedBalance(this.locked.get(sender));
+        LockedBalance locked = getLockedBalance(sender);
 
         Context.require(value.compareTo(BigInteger.ZERO) > 0, "Increase amount: Need non zero value");
         Context.require(locked.amount.compareTo(BigInteger.ZERO) > 0, "Increase amount: No existing lock found");
@@ -447,7 +448,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
 
         this.assertNotContract(sender);
-        LockedBalance locked = LockedBalance.toLockedBalance(this.locked.get(sender));
+        LockedBalance locked = getLockedBalance(sender);
         UnsignedBigInteger _unlockTime = new UnsignedBigInteger(unlockTime).divide(
                         TimeConstants.U_WEEK_IN_MICRO_SECONDS)
                 .multiply(TimeConstants.U_WEEK_IN_MICRO_SECONDS);
@@ -455,7 +456,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         Context.require(locked.amount.compareTo(BigInteger.ZERO) > 0, "Increase unlock time: Nothing is locked");
         Context.require(locked.getEnd().compareTo(blockTimestamp) > 0, "Increase unlock time: Lock expired");
         Context.require(_unlockTime.compareTo(locked.end) > 0, "Increase unlock time: Can only increase lock duration");
-        Context.require(_unlockTime.compareTo(blockTimestamp.add(MAXTIME)) <= 0,
+        Context.require(_unlockTime.compareTo(blockTimestamp.add(MAX_TIME)) <= 0,
                 "Increase unlock time: Voting lock " + "can be 4 years max");
 
         this.depositFor(sender, BigInteger.ZERO, unlockTime, locked, INCREASE_UNLOCK_TIME);
@@ -468,14 +469,14 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         Address sender = Context.getCaller();
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
 
-        LockedBalance locked = LockedBalance.toLockedBalance(this.locked.get(sender));
+        LockedBalance locked = getLockedBalance(sender);
         Context.require(blockTimestamp.compareTo(locked.getEnd()) >= 0, "Withdraw: The lock didn't expire");
         BigInteger value = locked.amount;
 
         LockedBalance oldLocked = locked.newLockedBalance();
         locked.end = UnsignedBigInteger.ZERO;
         locked.amount = BigInteger.ZERO;
-        this.locked.set(sender, locked.toByteArray());
+        this.locked.set(sender, locked);
         BigInteger supplyBefore = this.supply.get();
         this.supply.set(supplyBefore.subtract(value));
 
@@ -493,7 +494,8 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
 
         for (int index = 0; index < 256 && min.compareTo(max) < 0; ++index) {
             BigInteger mid = min.add(max).add(BigInteger.ONE).divide(BigInteger.TWO);
-            if (Point.toPoint(this.pointHistory.get(mid)).block.compareTo(block) <= 0) {
+            Point point = this.pointHistory.getOrDefault(mid, new Point());
+            if (point.block.compareTo(block) <= 0) {
                 min = mid;
             } else {
                 max = mid.subtract(BigInteger.ONE);
@@ -509,7 +511,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
 
         for (int index = 0; index < 256 && min.compareTo(max) < 0; ++index) {
             BigInteger mid = min.add(max).add(BigInteger.ONE).divide(BigInteger.TWO);
-            if (Point.toPoint((this.userPointHistory.at(address)).get(mid)).block.compareTo(block) <= 0) {
+            if (getUserPointHistory(address, mid).block.compareTo(block) <= 0) {
                 min = mid;
             } else {
                 max = mid.subtract(BigInteger.ONE);
@@ -531,7 +533,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         if (epoch.equals(BigInteger.ZERO)) {
             return BigInteger.ZERO;
         } else {
-            Point lastPoint = Point.toPoint(this.userPointHistory.at(address).get(epoch));
+            Point lastPoint = getUserPointHistory(address, epoch);
             UnsignedBigInteger _delta = uTimestamp.subtract(lastPoint.timestamp);
             lastPoint.bias = lastPoint.bias.subtract(lastPoint.slope.multiply(_delta.toBigInteger()));
             if (lastPoint.bias.compareTo(BigInteger.ZERO) < 0) {
@@ -549,16 +551,16 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
 
         Context.require(block.compareTo(blockHeight.toBigInteger()) <= 0, "BalanceOfAt: Invalid given block height");
         BigInteger userEpoch = this.findUserPointHistory(address, block);
-        Point uPoint = Point.toPoint(this.userPointHistory.at(address).get(userEpoch));
+        Point uPoint = this.userPointHistory.at(address).getOrDefault(userEpoch, new Point());
 
         BigInteger maxEpoch = this.epoch.get();
         BigInteger epoch = this.findBlockEpoch(block, maxEpoch);
-        Point point0 = Point.toPoint(this.pointHistory.get(epoch));
+        Point point0 = this.pointHistory.getOrDefault(epoch, new Point());
         UnsignedBigInteger dBlock;
         UnsignedBigInteger dTime;
 
         if (epoch.compareTo(maxEpoch) < 0) {
-            Point point1 = Point.toPoint(this.pointHistory.get(epoch.add(BigInteger.ONE)));
+            Point point1 = this.pointHistory.getOrDefault(epoch.add(BigInteger.ONE), new Point());
             dBlock = point1.block.subtract(point0.block);
             dTime = point1.timestamp.subtract(point0.timestamp);
         } else {
@@ -614,7 +616,7 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         }
 
         BigInteger epoch = this.epoch.get();
-        Point lastPoint = Point.toPoint(this.pointHistory.get(epoch));
+        Point lastPoint = this.pointHistory.getOrDefault(epoch, new Point());
         return this.supplyAt(lastPoint, time);
     }
 
@@ -627,10 +629,10 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
         BigInteger epoch = this.epoch.get();
         BigInteger targetEpoch = findBlockEpoch(block, epoch);
 
-        Point point = Point.toPoint(this.pointHistory.get(targetEpoch));
+        Point point = this.pointHistory.getOrDefault(targetEpoch, new Point());
         UnsignedBigInteger dTime = UnsignedBigInteger.ZERO;
         if (targetEpoch.compareTo(epoch) < 0) {
-            Point pointNext = Point.toPoint(this.pointHistory.get(targetEpoch.add(BigInteger.ONE)));
+            Point pointNext = this.pointHistory.getOrDefault(targetEpoch.add(BigInteger.ONE), new Point());
             if (!point.block.equals(pointNext.block)) {
                 dTime = uBlock.subtract(point.block).multiply(pointNext.timestamp.subtract(point.timestamp))
                         .divide(pointNext.block.subtract(point.block));
@@ -691,6 +693,15 @@ public class VotingEscrowToken extends AddressProvider implements VeToken {
             throw BoostedOMMException.notOwner();
         }
     }
+
+    private LockedBalance getLockedBalance(Address user) {
+        return locked.getOrDefault(user, new LockedBalance());
+    }
+
+    private Point getUserPointHistory(Address user, BigInteger epoch) {
+        return this.userPointHistory.at(user).getOrDefault(epoch, new Point());
+    }
+
 
     public void scoreCall(Contracts contract, String method, Object... params) {
         Context.call(getAddress(contract.getKey()), method, params);
