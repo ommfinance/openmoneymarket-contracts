@@ -260,12 +260,13 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     public BigInteger _getUnclaimedRewards(Address _user, UserAssetInput _assetInput) {
-        BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(_assetInput.asset);
-        BigInteger assetIndex = this._getAssetIndex(this._assetIndex.getOrDefault(_assetInput.asset, BigInteger.ZERO),
+        Address asset = _assetInput.asset;
+        BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(asset);
+        BigInteger assetIndex = this._getAssetIndex(this._assetIndex.getOrDefault(asset, BigInteger.ZERO),
                 _emissionPerSecond,
-                this._lastUpdateTimestamp.getOrDefault(_assetInput.asset, BigInteger.ZERO), _assetInput.totalBalance);
+                this._lastUpdateTimestamp.getOrDefault(asset, BigInteger.ZERO), _assetInput.totalBalance);
         return AbstractRewardDistribution._getRewards(_assetInput.userBalance, assetIndex, this._userIndex.at(_user)
-                .getOrDefault(_assetInput.asset, BigInteger.ZERO));
+                .getOrDefault(asset, BigInteger.ZERO));
     }
 
     @External(readonly = true)
@@ -282,7 +283,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
             return BigInteger.valueOf(2L).multiply(MILLION).divide(BigInteger.TEN);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.valueOf(34L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.ONE.multiply(MILLION).divide(BigInteger.TEN);
         } else {
             BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
             return pow(BigInteger.valueOf(103L), (index.intValue()))

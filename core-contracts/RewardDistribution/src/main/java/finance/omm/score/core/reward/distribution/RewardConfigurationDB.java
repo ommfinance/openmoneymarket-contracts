@@ -17,7 +17,7 @@ import scorex.util.HashMap;
 
 public class RewardConfigurationDB {
 
-    public static final String TAG = "Reward Configuration DB";
+    public static final String TAG = "Omm Reward Distribution Storage";
     public static final String EMISSION_PER_SECOND = "EmissionPerSecond";
     public static final String ENTITY_DISTRIBUTION_PERCENTAGE = "EntityDistributionPercentage";
     public static final String SUPPORTED_RECIPIENTS = "SupportedRecipients";
@@ -79,7 +79,7 @@ public class RewardConfigurationDB {
     }
 
     public void setRecipient(String recipient) {
-        if (isRecipient(recipient)) {
+        if (!isRecipient(recipient)) {
             this._supportedRecipients.add(recipient);
         }
     }
@@ -204,7 +204,7 @@ public class RewardConfigurationDB {
         } else if ("lendingBorrow".equals(_rewardEntity)) {
             return RESERVE;
         }
-        return null;
+        throw RewardDistributionException.unknown("Unsupported entity "+_rewardEntity+" :: "+asset);
     }
 
 
@@ -217,9 +217,7 @@ public class RewardConfigurationDB {
             String _name = this._assetName.get(asset);
             BigInteger _percentage = this.getAssetPercentage(asset);
             String _entity = this.getEntity(asset);
-            if (_entity == null) {
-                throw RewardDistributionException.invalidAsset("Unsupported entity :: " + asset);
-            }
+            
             Map<String, BigInteger> _entityMap = (Map<String, BigInteger>) response.get(_entity);
             if (_entityMap == null) {
                 _entityMap = new HashMap<>() {{
@@ -245,7 +243,7 @@ public class RewardConfigurationDB {
             Address asset = this._assets.get(i);
             Integer poolID = this._poolIDMapping.get(asset);
             if (poolID > 0) {
-                configs.put(asset.toString(), this.getAssetPercentage(asset));
+                configs.put(poolID.toString(), this.getAssetPercentage(asset));
             }
         }
         return Map.of("liquidity", configs);
