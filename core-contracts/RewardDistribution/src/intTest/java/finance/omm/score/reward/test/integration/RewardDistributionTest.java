@@ -1,6 +1,7 @@
 package finance.omm.score.reward.test.integration;
 
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
+import static finance.omm.utils.math.MathUtils.ICX;
 
 import finance.omm.core.score.interfaces.RewardDistribution;
 import finance.omm.core.score.interfaces.RewardDistributionScoreClient;
@@ -9,16 +10,16 @@ import finance.omm.score.core.reward.distribution.exception.RewardDistributionEx
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.ScoreClient;
+import java.math.BigInteger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 public class RewardDistributionTest implements ScoreIntegrationTest {
 
     DefaultScoreClient client = DefaultScoreClient.of(System.getProperties());
-
 
     DefaultScoreClient clientWithTester = new DefaultScoreClient(client.endpoint(), client._nid(), tester,
             client._address());
@@ -43,20 +44,20 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
         System.out.println("afterAll end");
     }
 
+    @DisplayName("addType")
+    @Nested
+    class TestAddType {
 
-    @DisplayName("asset not found")
-    @Test
-    void invalidSetAsset() {
-        Address asset = Faker.address(Address.Type.CONTRACT);
-        assertUserRevert(RewardDistributionException.invalidAsset("Asset not found"),
-                () -> scoreClient.setAssetName(asset, "_temp"), null);
-    }
+        @DisplayName("should throw unauthorized")
+        @Test
+        void should_throw_unauthorized() {
+            client._transfer(Address.of(tester), BigInteger.valueOf(100).multiply(ICX), "transfer");
 
-    @Disabled("unauthorized set asset")
-    @Test
-    void unauthorizedSetAsset() {
-        assertUserRevert(RewardDistributionException.notOwner(),
-                () -> scoreClient.setAssetName(Faker.address(Address.Type.CONTRACT), "_temp"), null);
+            assertUserRevert(RewardDistributionException.notOwner(),
+                    () -> scoreClientWithTester.addType("key", false), null);
+
+        }
+
     }
 
 }
