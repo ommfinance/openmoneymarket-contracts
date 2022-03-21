@@ -14,7 +14,7 @@ import score.Address;
 
 public class DaoFundIT implements ScoreIntegrationTest {
 
-    Address addressProvider = Faker.address(foundation.icon.jsonrpc.Address.Type.CONTRACT);
+    Address addressProvider = Address.fromString("cxa755b2ef6eb46c1e817c636be3c21d26c81fe6cc");
 
     DefaultScoreClient client = DefaultScoreClient.of(System.getProperties());
 

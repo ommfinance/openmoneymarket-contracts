@@ -1,19 +1,20 @@
 package finance.omm.score;
 
 import finance.omm.core.score.interfaces.DaoFund;
+import finance.omm.libs.address.AddressProvider;
+import finance.omm.libs.address.Contracts;
+
 import java.math.BigInteger;
 
-import finance.omm.commons.Addresses;
 import score.Address;
 import score.Context;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public class DaoFundImpl extends Addresses implements DaoFund {
+public class DaoFundImpl extends AddressProvider implements DaoFund {
 
 	public static final String TAG = "Dao Fund Manager";
-
 	/**
 	 * _addressProvider: contract address of the provider 
 	 * _update: allow to mimic on update event call, default to false
@@ -39,7 +40,7 @@ public class DaoFundImpl extends Addresses implements DaoFund {
 	@External
 	public void transferOmm(BigInteger _value, Address _address) {
 		onlyGovernance();
-		Address ommAddress = getAddress(OMM_TOKEN);
+		Address ommAddress = getAddress(Contracts.OMM_TOKEN.getKey());
 		if(ommAddress == null) {
 			Context.revert(TAG + "| omm address was not set");
 		}
@@ -51,8 +52,4 @@ public class DaoFundImpl extends Addresses implements DaoFund {
 		this.FundReceived(_value, Context.getCaller());
 	}
 
-	@Override
-	public String getTag() {
-		return TAG;
-	}
 }

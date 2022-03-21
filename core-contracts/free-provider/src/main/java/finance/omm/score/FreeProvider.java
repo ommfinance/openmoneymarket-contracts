@@ -4,7 +4,7 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 import java.math.BigInteger;
 
-import finance.omm.commons.Addresses;
+import finance.omm.libs.address.AddressProvider;
 import score.Address;
 import score.Context;
 import score.VarDB;
@@ -12,7 +12,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public class FreeProvider extends Addresses{
+public class FreeProvider extends AddressProvider{
 
 	private static final String TAG = "Fee Provider";
 
@@ -65,8 +65,4 @@ public class FreeProvider extends Addresses{
 		Context.call(_token , "transfer", _to, _value);
 	}
 
-	@Override
-	public String getTag() {
-		return TAG;
-	}
 }

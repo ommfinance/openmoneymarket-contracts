@@ -1,8 +1,8 @@
 version = '0.1.0'
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.DaoFund'
-    dependsOn(':commons:build')
+    mainClassName = 'finance.omm.score.DaoFundImpl'
+    dependsOn(':AddressProvider:build')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -34,7 +34,7 @@ configurations {
 }
 
 dependencies {
-    implementation project(':commons')
+    implementation project(':AddressProvider')
     implementation project(':OMMStruct')
     implementation project(':Score')
 

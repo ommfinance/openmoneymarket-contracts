@@ -9,9 +9,11 @@ import score.Context;
 import score.DictDB;
 import score.VarDB;
 import score.annotation.External;
+import score.annotation.Optional;
 
 public class AddressProvider {
 
+	public static final String TAG = "AddressProvider";
     public static final String _ADDRESSES = "addresses";
     public static final String _CONTRACTS = "contracts";
     public static final String _ADDRESS_PROVIDER = "addressProvider";
@@ -21,10 +23,17 @@ public class AddressProvider {
     protected final ArrayDB<String> _contracts = Context.newArrayDB(_CONTRACTS, String.class);
 
 
-    public AddressProvider(Address addressProvider) {
+    public AddressProvider(Address addressProvider, @Optional boolean _update) {
+    	if(_update) {
+    		return;
+    	}
         if (_addressProvider.getOrDefault(null) == null) {
             _addressProvider.set(addressProvider);
         }
+    }
+
+    public void onUpdate() {
+    	Context.println("on update");
     }
 
     @External
@@ -65,5 +74,30 @@ public class AddressProvider {
         Context.require(Context.getCaller().equals(_addressProvider.get()), "require Address provider contract access");
     }
 
+	public void onlyOwner() {
+		Address sender = Context.getCaller();
+		Address owner = Context.getOwner();
+		if (!sender.equals(owner)){
+			Context.revert(TAG + ": SenderNotScoreOwnerError:  (sender)"+ sender + " (owner)"+owner);
+		}
+	}
+
+	public void onlyAddressProvider() {
+		Address addressProvider = getAddressProvider();
+		Address sender = Context.getCaller();
+		if (!sender.equals(addressProvider)){
+			Context.revert(
+					TAG + ": SenderNotAddressProviderError:  (sender)"+ sender + " (address provider)"+addressProvider);
+		}
+	}
+
+	public void onlyGovernance() {
+		Address sender = Context.getCaller();
+		Address governance = getAddress("governance");
+		if (!sender.equals(governance)) {
+			Context.revert(
+					TAG + ": SenderNotGovernanceError: (sender)"+sender+" (governance)"+governance);
+		}
+	}
 
 }

@@ -17,7 +17,7 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 
-import finance.omm.commons.Addresses;
+import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetail;
 import score.Address;
 
@@ -38,22 +38,22 @@ class DaoFundTest extends TestBase{
 
 	@BeforeAll
 	public static void init() {
-		owner.addBalance(Addresses.OMM_TOKEN, totalSupply);
+		owner.addBalance(Contracts.OMM_TOKEN.getKey(), totalSupply);
 	}
 
 	@BeforeEach
 	public void setup() throws Exception {
 		governanceDetails = new AddressDetail();
-		governanceDetails.name =  Addresses.GOVERNANCE;
+		governanceDetails.name =  Contracts.GOVERNANCE.getKey();
 		governanceDetails.address = accountGovernance.getAddress();
 
 		daoFund = sm.deploy(owner, DaoFundImpl.class, accountAddressProvider.getAddress(), false);
 		ommToken = sm.deploy(owner, MockOmmToken.class);
 
 		ommTokenDetails = new AddressDetail(); 
-		ommTokenDetails.name = Addresses.OMM_TOKEN;
+		ommTokenDetails.name = Contracts.OMM_TOKEN.getKey();
 		ommTokenDetails.address = ommToken.getAddress();
-		ommToken.getAccount().addBalance(Addresses.OMM_TOKEN, totalSupply);
+		ommToken.getAccount().addBalance(Contracts.OMM_TOKEN.getKey(), totalSupply);
 	}
 
 	@Test
@@ -82,8 +82,8 @@ class DaoFundTest extends TestBase{
 		ommToken.invoke(owner, "addTo", receiver);
 		daoFund.invoke(accountGovernance, "transferOmm", amount, receiver.getAddress());
 
-		assertEquals(amount, receiver.getBalance(Addresses.OMM_TOKEN));
-		assertEquals(totalSupply.subtract(amount), ommToken.getAccount().getBalance(Addresses.OMM_TOKEN));
+		assertEquals(amount, receiver.getBalance(Contracts.OMM_TOKEN.getKey()));
+		assertEquals(totalSupply.subtract(amount), ommToken.getAccount().getBalance(Contracts.OMM_TOKEN.getKey()));
 
 	}
 }
