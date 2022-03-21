@@ -138,7 +138,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     @External(readonly = true)
-    public Map<String, ?> getRewards(Address user) {
+    public Map<String, ?> getRewards(Address _user) {
         Map<String, Object> response = new HashMap<>();
         BigInteger totalRewards = BigInteger.ZERO;
 
@@ -148,9 +148,9 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             if (asset == null) {
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
             }
-            WorkingBalance workingBalance = getUserBalance(user, address, asset.lpID);
+            WorkingBalance workingBalance = getUserBalance(_user, address, asset.lpID);
 
-            BigInteger reward = getUserReward(address, user);
+            BigInteger reward = getUserReward(address, _user);
             Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(asset.type);
             if (entityMap == null) {
                 entityMap = new HashMap<>() {{
