@@ -75,9 +75,9 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
         systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
         systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
 
-        systemProperty 'address', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
-        systemProperty 'isUpdate', "true"
-        systemProperty 'scoreFilePath',//path to zip project.tasks.optimizedJar.outputJarName
+        systemProperty '_addressProvider', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
+        systemProperty '_update', "true"
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
 
         project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
 
