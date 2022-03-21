@@ -15,7 +15,7 @@ import score.VarDB;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
-public class TypeWeightDB {
+public class TypeWeightDB implements Searchable {
 
     private final static String TAG = "Type Weight DB";
     private final TypeDB types;
@@ -94,29 +94,10 @@ public class TypeWeightDB {
 
     private int searchCheckpoint(BigInteger timestamp) {
         Integer checkpointCount = checkpointCounter.getOrDefault(1);
-        BigInteger latestTimestamp = this.tCheckpoint.getOrDefault(checkpointCount, BigInteger.ZERO);
-        if (latestTimestamp.compareTo(timestamp) <= 0) {
-            return checkpointCount;
-        }
-        return searchCheckpoint(checkpointCount, timestamp);
+        DictDB<Integer, BigInteger> timeCheckpoints = this.tCheckpoint;
+        return searchCheckpoint(timestamp, checkpointCount, timeCheckpoints);
     }
 
-    private int searchCheckpoint(int checkpoint, BigInteger timestamp) {
-        int lower = 1, upper = checkpoint;
-        while (upper > lower) {
-            int mid = (upper + lower + 1) / 2;
-            BigInteger midTimestamp = this.tCheckpoint.getOrDefault(mid, BigInteger.ZERO);
-            int value = midTimestamp.compareTo(timestamp);
-            if (value < 0) {
-                lower = mid;
-            } else if (value > 0) {
-                upper = mid - 1;
-            } else {
-                return mid;
-            }
-        }
-        return lower;
-    }
 
 
     public BigInteger getTotal(BigInteger timestamp) {

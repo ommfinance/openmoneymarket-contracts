@@ -16,7 +16,7 @@ import score.Context;
 import score.DictDB;
 import scorex.util.HashMap;
 
-public class AssetWeightDB {
+public class AssetWeightDB implements Searchable {
 
     private final static String TAG = "Asset Weight DB";
 
@@ -107,29 +107,7 @@ public class AssetWeightDB {
     private int searchCheckpoint(String type, BigInteger timestamp) {
         Integer checkpointCount = checkpointCounter.getOrDefault(type, 1);
         DictDB<Integer, BigInteger> timeCheckpoints = this.tCheckpoint.at(type);
-        BigInteger latestTimestamp = timeCheckpoints.getOrDefault(checkpointCount, BigInteger.ZERO);
-        if (latestTimestamp.compareTo(timestamp) <= 0) {
-            return checkpointCount;
-        }
-        return searchCheckpoint(timeCheckpoints, checkpointCount, timestamp);
-    }
-
-
-    private int searchCheckpoint(DictDB<Integer, BigInteger> timeCheckpoints, int checkpoint, BigInteger timestamp) {
-        int lower = 1, upper = checkpoint;
-        while (upper > lower) {
-            int mid = (upper + lower + 1) / 2;
-            BigInteger midTimestamp = timeCheckpoints.getOrDefault(mid, BigInteger.ZERO);
-            int value = midTimestamp.compareTo(timestamp);
-            if (value < 0) {
-                lower = mid;
-            } else if (value > 0) {
-                upper = mid - 1;
-            } else {
-                return mid;
-            }
-        }
-        return lower;
+        return searchCheckpoint(timestamp, checkpointCount, timeCheckpoints);
     }
 
 

@@ -9,10 +9,12 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 import finance.omm.core.score.interfaces.RewardDistribution;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.WorkingBalance;
 import finance.omm.score.core.reward.distribution.db.Assets;
 import finance.omm.score.core.reward.distribution.db.UserClaimedRewards;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
+import finance.omm.score.core.reward.distribution.legacy.LegacyRewards;
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.db.EnumerableDictDB;
@@ -32,6 +34,9 @@ import scorex.util.HashMap;
 
 public abstract class AbstractRewardDistribution extends AddressProvider implements RewardDistribution {
 
+    public static final String B_OMM_REWARD_START_DATE = "bOMMRewardStartDate";
+    private static final BigInteger WEIGHT = BigInteger.valueOf(40).multiply(ICX).divide(BigInteger.valueOf(100L));
+
     public final Assets assets;
 
     public final UserClaimedRewards userClaimedRewards = new UserClaimedRewards("user-claimed-reward");
@@ -40,23 +45,22 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     public final DictDB<Address, BigInteger> workingTotal;
     //user address = > asset address => total
     public final BranchDB<Address, DictDB<Address, BigInteger>> workingBalance;
-    public final VarDB<BigInteger> weight;
+    //    public final VarDB<BigInteger> weight;
     protected final EnumerableDictDB<Address, String> transferToContractMap = new EnumerableDictDB<>(
             "transferToContract",
             Address.class, String.class);
 
+    public final VarDB<BigInteger> bOMMRewardStartDate = Context.newVarDB(B_OMM_REWARD_START_DATE, BigInteger.class);
 
-    public AbstractRewardDistribution(Address addressProvider, BigInteger _weight) {
+    public final LegacyRewards legacyRewards = new LegacyRewards();
+
+
+    public AbstractRewardDistribution(Address addressProvider) {
         super(addressProvider);
         //TODO pass empty key for c-testnet
         assets = new Assets("assets-temp");
         workingBalance = Context.newBranchDB("workingBalance", BigInteger.class);
         workingTotal = Context.newDictDB("workingTotal", BigInteger.class);
-        weight = Context.newVarDB("weight", BigInteger.class);
-        if (_weight.compareTo(ICX) > 0) {
-            throw RewardDistributionException.unknown("invalid weight percentage");
-        }
-        weight.set(_weight);
     }
 
     @External(readonly = true)
@@ -85,15 +89,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
 
     @External
-    public void setWeight(BigInteger _weight) {
-        checkOwner();
-        if (_weight.compareTo(ICX) > 0) {
-            throw RewardDistributionException.unknown("invalid weight percentage");
-        }
-        weight.set(_weight);
-    }
-
-    @External
     public void addType(String key, boolean transferToContract) {
         checkOwner();
         Object[] params = new Object[]{
@@ -112,7 +107,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             asset.name = key;
             asset.lpID = null;
             assets.put(address, asset);
-            this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
+//            this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
             transferToContractMap.put(address, key);
             AssetAdded(key, key, address, BigInteger.ZERO);
         }
@@ -138,21 +133,32 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         asset.name = name;
         asset.lpID = poolID;
         assets.put(address, asset);
-        this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
+//        this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
         AssetAdded(type, name, address, poolID);
     }
 
     @External(readonly = true)
     public Map<String, ?> getRewards(Address user) {
-        BigInteger totalRewards = BigInteger.ZERO;
         Map<String, Object> response = new HashMap<>();
+        BigInteger totalRewards = BigInteger.ZERO;
+
         List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
         for (Address address : assets) {
             Asset asset = this.assets.get(address);
             if (asset == null) {
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
             }
-            BigInteger reward = getUserReward(address, user, true);
+            WorkingBalance workingBalance = getUserBalance(user, address, asset.lpID);
+            /*
+             * legacy reward calculation start
+             */
+            BigInteger oldReward = legacyRewards.accumulateUserRewards(workingBalance,
+                    this.bOMMRewardStartDate.get(),
+                    true);
+            /*
+             * legacy reward calculation end
+             */
+            BigInteger reward = getUserReward(address, user).add(oldReward);
             Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(asset.type);
             if (entityMap == null) {
                 entityMap = new HashMap<>() {{
@@ -165,10 +171,23 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             response.put(asset.type, entityMap);
             totalRewards = totalRewards.add(reward);
         }
-
+        /*
+         * legacy reward calculation start
+         */
+        BigInteger ommStakingReward = getOMMStakingReward(user, true);
+        if (ommStakingReward.compareTo(BigInteger.ZERO) > 0) {
+            response.put("staking", new HashMap<>() {{
+                put("OMM", ommStakingReward);
+            }});
+            totalRewards = totalRewards.add(ommStakingReward);
+        }
+        /*
+         * legacy reward calculation end
+         */
         response.put("total", totalRewards);
         BigInteger timeInSeconds = TimeConstants.getBlockTimestamp().divide(TimeConstants.SECOND);
         response.put("now", timeInSeconds);
+
         return response;
 
     }
@@ -181,25 +200,44 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
         BigInteger accruedReward = BigInteger.ZERO;
         List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+
         for (Address address : assets) {
             Asset asset = this.assets.get(address);
             if (asset == null) {
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
             }
-            BigInteger reward = getUserReward(asset.address, user, false);
-            accruedReward = accruedReward.add(reward);
-            Map<String, BigInteger> balances = getUserBalance(user, asset);
-
-            WorkingBalance workingBalance = new WorkingBalance();
-            workingBalance.assetAddr = asset.address;
-            workingBalance.user = user;
-            workingBalance.tokenBalance = balances.get("userBalance");
-            workingBalance.tokenTotalSupply = balances.get("totalSupply");
+            WorkingBalance workingBalance = getUserBalance(user, address, asset.lpID);
             workingBalance.bOMMUserBalance = bOMMUserBalance;
             workingBalance.bOMMTotalSupply = bOMMTotalSupply;
+            /*
+             * legacy reward update start
+             */
+            BigInteger oldReward = legacyRewards.accumulateUserRewards(workingBalance, this.bOMMRewardStartDate.get(),
+                    false);
+
+            legacyRewards.clear(user, asset.address);
+
+            /*
+             * legacy reward update end
+             */
+
+            BigInteger newReward = updateIndexes(asset.address, user);
+
+            accruedReward = accruedReward.add(newReward).add(oldReward);
+
+            this.assets.clearAccruedReward(user, asset.address);
 
             updateWorkingBalance(workingBalance);
         }
+        /*
+         * legacy reward update start
+         */
+        BigInteger ommReward = getOMMStakingReward(user, false);
+        accruedReward = accruedReward.add(ommReward);
+        legacyRewards.clear(user, getAddress(Contracts.OMM_TOKEN.getKey()));
+        /*
+         * legacy reward update end
+         */
 
         if (BigInteger.ZERO.equals(accruedReward)) {
             return;
@@ -211,35 +249,73 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         RewardsClaimed(user, accruedReward, "Asset rewards claimed");
     }
 
+    /**
+     * calculate old OMM staking reward if any
+     *
+     * @param user       Address
+     * @param isReadOnly Boolean
+     * @return accrued reward
+     */
+    @Deprecated
+    private BigInteger getOMMStakingReward(Address user, Boolean isReadOnly) {
+        WorkingBalance workingBalance = getUserBalance(user, getAddress(Contracts.OMM_TOKEN.getKey()), BigInteger.ZERO);
+
+        /*
+         * legacy OMM staking reward update
+         */
+        return legacyRewards.accumulateUserRewards(workingBalance, this.bOMMRewardStartDate.get(),
+                isReadOnly);
+    }
+
     @External(readonly = true)
     public BigInteger getClaimedReward(Address user) {
         return userClaimedRewards.getOrDefault(user, BigInteger.ZERO);
     }
 
-
-    protected BigInteger getUserReward(Address assetAddr, Address user, Boolean readonly) {
+    protected BigInteger updateIndexes(Address assetAddr, Address user) {
         BigInteger userBalance = this.workingBalance.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
-        BigInteger totalSupply = this.workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
+
         BigInteger userIndex = this.assets.getUserIndex(assetAddr, user);
 
-        BigInteger accruedRewards = BigInteger.ZERO;
+        BigInteger newIndex = this.getAssetIndex(assetAddr, false);
 
-        BigInteger newIndex = this.getAssetIndex(assetAddr, totalSupply, readonly);
-
-        if (!userIndex.equals(newIndex) && !BigInteger.ZERO.equals(userBalance)) {
-            accruedRewards = calculateReward(userBalance, newIndex, userIndex);
-            if (!readonly) {
-                this.assets.setUserIndex(assetAddr, user, newIndex);
-                this.UserIndexUpdated(user, assetAddr, userIndex, newIndex);
-            }
+        BigInteger accruedRewards = this.assets.getAccruedRewards(assetAddr, user);
+        if (newIndex.equals(userIndex)) {
+            return accruedRewards;
         }
-        return accruedRewards;
+
+        BigInteger totalReward = calculateReward(userBalance, newIndex, userIndex).add(accruedRewards);
+
+        this.assets.setAccruedRewards(user, assetAddr, totalReward);
+        this.assets.setUserIndex(assetAddr, user, newIndex);
+        this.UserIndexUpdated(user, assetAddr, userIndex, newIndex);
+
+        return totalReward;
     }
 
 
+    protected BigInteger getUserReward(Address assetAddr, Address user) {
+        BigInteger userBalance = this.workingBalance.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
+
+        BigInteger userIndex = this.assets.getUserIndex(assetAddr, user);
+
+        BigInteger accruedRewards = this.assets.getAccruedRewards(assetAddr, user);
+
+        BigInteger newIndex = this.getAssetIndex(assetAddr, true);
+
+        return calculateReward(userBalance, newIndex, userIndex).add(accruedRewards);
+    }
+
+    protected BigInteger getAssetIndex(Address assetAddr, Boolean readonly) {
+        BigInteger totalSupply = this.workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
+
+        return getAssetIndex(assetAddr, totalSupply, readonly);
+    }
+
     protected BigInteger getAssetIndex(Address assetAddr, BigInteger totalSupply, Boolean readonly) {
+
         BigInteger oldIndex = this.assets.getAssetIndex(assetAddr);
-        BigInteger lastUpdateTimestamp = this.assets.getLastUpdateTimestamp(assetAddr);
+        BigInteger lastUpdateTimestamp = getIndexUpdateTimestamp(assetAddr);
         BigInteger currentTime = TimeConstants.getBlockTimestamp().divide(SECOND);
 
         if (currentTime.equals(lastUpdateTimestamp)) {
@@ -262,48 +338,47 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         return newIndex;
     }
 
-    protected Map<String, BigInteger> getUserBalance(Address user, Asset asset) {
-        BigInteger poolId = asset.lpID;
-        Map<String, BigInteger> result = new HashMap<>();
-        Map<String, ?> response = fetchUserBalance(user, asset.address, poolId);
-        BigInteger decimals = (BigInteger) response.get("decimals");
-        BigInteger principalUserBalance = (BigInteger) response.get("principalUserBalance");
-        BigInteger principalTotalSupply = (BigInteger) response.get("principalTotalSupply");
-        result.put("userBalance", convertToExa(principalUserBalance, decimals));
-        result.put("totalSupply", convertToExa(principalTotalSupply, decimals));
-        result.put("decimals", decimals);
-        return result;
+    protected BigInteger getIndexUpdateTimestamp(Address assetAddr) {
+        BigInteger lastUpdateTimestamp = this.assets.getIndexUpdateTimestamp(assetAddr);
+        if (lastUpdateTimestamp == null) {
+            lastUpdateTimestamp = bOMMRewardStartDate.get();
+        }
+        return lastUpdateTimestamp;
     }
 
-    public Map<String, ?> fetchUserBalance(Address user, Address asset, BigInteger poolId) {
-        Map<String, ?> response;
+    protected WorkingBalance getUserBalance(Address userAddr, Address assetAddr, BigInteger poolId) {
+        WorkingBalance workingBalance = new WorkingBalance();
+
+        SupplyDetails response = fetchUserBalance(userAddr, assetAddr, poolId);
+        BigInteger decimals = response.decimals;
+        BigInteger principalUserBalance = response.principalUserBalance;
+        BigInteger principalTotalSupply = response.principalTotalSupply;
+        workingBalance.userBalance = convertToExa(principalUserBalance, decimals);
+        workingBalance.totalSupply = convertToExa(principalTotalSupply, decimals);
+        workingBalance.userAddr = userAddr;
+        workingBalance.assetAddr = assetAddr;
+
+        return workingBalance;
+    }
+
+    public SupplyDetails fetchUserBalance(Address user, Address asset, BigInteger poolId) {
+
+        Map<String, BigInteger> response = null;
+
         if (poolId == null || poolId.equals(BigInteger.ZERO)) {
-            response = (Map<String, ?>) Context.call(asset, "getPrincipalSupply", user);
+            response = Context.call(Map.class, asset, "getPrincipalSupply", user);
         } else {
-            response = (Map<String, ?>) Context.call(getAddress(Contracts.STAKED_LP.getKey()),
+            response = Context.call(Map.class, getAddress(Contracts.STAKED_LP.getKey()),
                     "getLPStakedSupply", poolId, user);
         }
+
         if (response == null) {
             throw RewardDistributionException.unknown("invalid response from token (" + asset + ")");
         }
-        return response;
+
+        return SupplyDetails.fromMap(response);
     }
 
-
-    protected void updateWorkingBalance(Address assetAddr, Address user, BigInteger tokenBalance,
-            BigInteger tokenTotalSupply) {
-        Map<String, BigInteger> boostedBalance = getBoostedBalance(user);
-        WorkingBalance balance = new WorkingBalance();
-        balance.assetAddr = assetAddr;
-        balance.user = user;
-        balance.tokenBalance = tokenBalance;
-        balance.tokenTotalSupply = tokenTotalSupply;
-        balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
-        balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
-
-        updateWorkingBalance(balance);
-
-    }
 
     protected Map<String, BigInteger> getBoostedBalance(Address user) {
         BigInteger bOMMUserBalance = call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user);
@@ -311,39 +386,37 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         return Map.of("bOMMUserBalance", bOMMUserBalance, "bOMMTotalSupply", bOMMTotalSupply);
     }
 
-    private void updateWorkingBalance(WorkingBalance balance) {
+    protected void updateWorkingBalance(WorkingBalance balance) {
         Address assetAddr = balance.assetAddr;
-        Address user = balance.user;
-        BigInteger currentWorkingBalance = this.workingBalance.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
+        Address userAddr = balance.userAddr;
 
-        BigInteger weight = this.weight.getOrDefault(BigInteger.ZERO);
-        BigInteger userBalance = balance.tokenBalance;
-        BigInteger totalSupply = balance.tokenTotalSupply;
+        BigInteger currentWorkingBalance = this.workingBalance.at(userAddr).getOrDefault(assetAddr, BigInteger.ZERO);
+
+        BigInteger userBalance = balance.userBalance;
+        BigInteger totalSupply = balance.totalSupply;
 
         BigInteger bOMMUserBalance = balance.bOMMUserBalance;
         BigInteger bOMMTotalSupply = balance.bOMMTotalSupply;
 
-        BigInteger newWorkingBalance = exaMultiply(userBalance, weight);
+        BigInteger newWorkingBalance = exaMultiply(userBalance, WEIGHT);
+
         if (BigInteger.ZERO.compareTo(bOMMTotalSupply) < 0) {
-            newWorkingBalance = newWorkingBalance.add(
-                    exaMultiply(
-                            exaDivide(
-                                    exaMultiply(totalSupply, bOMMUserBalance)
-                                    , bOMMTotalSupply
-                            ),
-                            ICX.subtract(weight)
-                    )
-            );
+//            supply*0.4+totalSupply*bOMMUserBalance/bOMMTotalSupply*0.6
+            BigInteger numerator = exaMultiply(totalSupply, bOMMUserBalance);
+            BigInteger total = exaDivide(numerator, bOMMTotalSupply);
+            newWorkingBalance = exaMultiply(total, ICX.subtract(WEIGHT)).add(newWorkingBalance);
         }
 
         newWorkingBalance = userBalance.min(newWorkingBalance);
-        this.workingBalance.at(user).set(assetAddr, newWorkingBalance);
+
+        this.workingBalance.at(userAddr).set(assetAddr, newWorkingBalance);
+
         BigInteger workingTotal = this.workingTotal.getOrDefault(assetAddr, BigInteger.ZERO)
                 .add(newWorkingBalance)
                 .subtract(currentWorkingBalance);
         this.workingTotal.set(assetAddr, workingTotal);
 
-        this.WorkingBalanceUpdated(user, assetAddr, newWorkingBalance, workingTotal);
+        this.WorkingBalanceUpdated(userAddr, assetAddr, newWorkingBalance, workingTotal);
     }
 
 

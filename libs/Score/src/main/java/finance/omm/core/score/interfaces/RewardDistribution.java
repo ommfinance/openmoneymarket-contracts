@@ -133,9 +133,6 @@ public interface RewardDistribution {
     void handleLPAction(Address _asset, UserDetails _userDetails);
 
     @External
-    void setWeight(BigInteger _weight);
-
-    @External
     void addType(String key, boolean transferToContract);
 
 

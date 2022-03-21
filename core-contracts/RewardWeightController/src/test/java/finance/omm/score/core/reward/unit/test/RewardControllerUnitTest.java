@@ -59,11 +59,13 @@ public class RewardControllerUnitTest extends TestBase {
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
         put(Contracts.REWARDS, Account.newScoreAccount(102));
     }};
-    private final BigInteger startTimestamp = getTimestamp();
+    private BigInteger startTimestamp;
 
 
     @BeforeEach
     void setup() throws Exception {
+        sm.getBlock().increase(1_000_000);
+        startTimestamp = getTimestamp();
         owner = sm.createAccount(100);
         score = sm.deploy(owner, RewardWeightControllerImpl.class,
                 mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(),
@@ -195,21 +197,17 @@ public class RewardControllerUnitTest extends TestBase {
             BigInteger timestamp = snapshots.get(i);
             Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getTypeWeightByTimestamp",
                     timestamp.add(BigInteger.ONE));
-            Map<String, BigInteger> exactTime = (Map<String, BigInteger>) score.call("getTypeWeightByTimestamp",
-                    timestamp);
             Map<String, BigInteger> prevTime = (Map<String, BigInteger>) score.call("getTypeWeightByTimestamp",
-                    timestamp.subtract(BigInteger.ONE));
+                    timestamp);
 
             Map<Integer, Long> value = values.get(i);
             for (Map.Entry<Integer, Long> entry : value.entrySet()) {
                 String id = "Key-" + entry.getKey();
                 BigInteger next = nextTime.get(id);
-                BigInteger exact = exactTime.get(id);
                 BigInteger expected = BigInteger.valueOf(entry.getValue())
                         .multiply(ICX)
                         .divide(BigInteger.valueOf(100));
                 assertEquals(expected, next, "next data not match at " + id);
-                assertEquals(expected, exact, "exact data not match at " + id);
             }
 
             value = values.get(i - 1);
@@ -324,16 +322,16 @@ public class RewardControllerUnitTest extends TestBase {
         snapshots.put(2, getTimestamp());
         values.put(2, addressMap2);
         Random r = new Random();
-
-        for (int i = 3; i <= 20; i++) {
+        String type_id = type;
+        int startIndex = 0;
+        Long typeW = typeWeight;
+        for (int i = 1; i <= 10; i++) {
             sm.getBlock().increase(r.nextInt(1000) + 1);
             long a = r.nextInt(25) + 1;
             long b = r.nextInt(25) + 1;
             long c = r.nextInt(25) + 1;
             long d = 100 - a - b - c;
 
-            String type_id = i % 2 == 0 ? type_2 : type;
-            int startIndex = i % 2 == 0 ? 4 : 0;
             Map<Address, Long> map = new HashMap<>() {{
                 put(addresses[startIndex + 0], a);
                 put(addresses[startIndex + 1], b);
@@ -345,19 +343,15 @@ public class RewardControllerUnitTest extends TestBase {
             values.put(i, map);
         }
 
-        for (int i = 20; i > 2; i--) {
+        for (int i = 10; i > 1; i--) {
             BigInteger timestamp = snapshots.get(i);
-            String type_id = i % 2 == 0 ? type_2 : type;
-            Long typeW = i % 2 == 0 ? typeWeight_2 : typeWeight;
+
             Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
                     timestamp.add(BigInteger.ONE));
-            Map<String, BigInteger> exactTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
-                    type_id,
-                    timestamp);
             Map<String, BigInteger> prevTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
                     type_id,
-                    timestamp.subtract(BigInteger.ONE));
+                    timestamp);
 
             Map<Address, Long> value = values.get(i);
 
@@ -365,15 +359,13 @@ public class RewardControllerUnitTest extends TestBase {
 
                 String id = entry.getKey().toString();
                 BigInteger next = nextTime.get(id);
-                BigInteger exact = exactTime.get(id);
                 BigInteger expected = BigInteger.valueOf(entry.getValue() * typeW)
                         .multiply(ICX)
                         .divide(BigInteger.valueOf(10_000));
                 assertEquals(expected, next, "next data not match at " + id);
-                assertEquals(expected, exact, "exact data not match at " + id);
             }
 
-            value = values.get(i - 2);
+            value = values.get(i - 1);
             for (Map.Entry<Address, Long> entry : value.entrySet()) {
                 String id = entry.getKey().toString();
                 BigInteger prev = prevTime.get(id);
@@ -391,6 +383,7 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     public void testIntegrateIndex() {
         sm.getBlock().increase(30 * 86400 / 2 - 3008);
+
         initTypeWeight(BigInteger.ZERO, 25L, 75L); //3 calls
 
         String type = TYPE_ID_PREFIX + 1;
@@ -418,7 +411,7 @@ public class RewardControllerUnitTest extends TestBase {
           asset percentage 10%
           daily token distribution 1_000_000
          */
-        float emissionPerSecond = 0.10f * 0.25f * 1_000_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
+        float emissionPerSecond = 0.10f * 0.25f * 1_000_000 / TimeConstants.DAY_IN_SECONDS.floatValue();
         float expectedIndex = emissionPerSecond * time_delta.floatValue() / 100;
 
         assertEquals(expectedIndex, index.floatValue() / ICX.floatValue());
@@ -455,7 +448,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         index = (BigInteger) score.call("getIntegrateIndex", params);
         time_delta = getTimestamp().subtract(currentTimestamp).divide(TimeConstants.SECOND);
-        emissionPerSecond = 0.10f * 0.40f * 1_000_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
+        emissionPerSecond = 0.10f * 0.40f * 1_000_000 / TimeConstants.DAY_IN_SECONDS.floatValue();
         expectedIndex = expectedIndex + emissionPerSecond * time_delta.floatValue()
                 / 100; //integrateIndex -> {BigInteger@3661} "555092592592592592637" //integrateIndex -> {BigInteger@3694} "925636574074074074548"
         currentTimestamp = getTimestamp();
@@ -474,10 +467,10 @@ public class RewardControllerUnitTest extends TestBase {
          */
 
         time_delta = getTimestamp()
-                .subtract(currentTimestamp).divide(TimeConstants.SECOND).subtract(BigInteger.valueOf(402));
+                .subtract(currentTimestamp).divide(TimeConstants.SECOND).subtract(BigInteger.valueOf(404));
         System.out.println("time_delta = "
                 + time_delta);
-        emissionPerSecond = 0.40f * 0.50f * 1_000_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
+        emissionPerSecond = 0.40f * 0.50f * 1_000_000 / TimeConstants.DAY_IN_SECONDS.floatValue();
         expectedIndex = expectedIndex + emissionPerSecond * time_delta.floatValue() / 100;
 
         index = (BigInteger) score.call("getIntegrateIndex", params);
@@ -487,21 +480,23 @@ public class RewardControllerUnitTest extends TestBase {
           asset percentage 50%
           daily token distribution 400_000 after 1 month
          */
-        time_delta = BigInteger.valueOf(402);
-        emissionPerSecond = 0.40f * 0.50f * 400_000 / TimeConstants.DAY_IN_MICRO_SECONDS.floatValue();
+        System.out.println("startTimestamp.subtract(getTimestamp()) = " + getTimestamp().subtract(currentTimestamp));
+        time_delta = BigInteger.valueOf(404);
+        emissionPerSecond = 0.40f * 0.50f * 400_000 / TimeConstants.DAY_IN_SECONDS.floatValue();
         expectedIndex = expectedIndex + emissionPerSecond * time_delta.floatValue() / 100;
-        assertEquals(expectedIndex, index.floatValue() / ICX.floatValue(), 0.00001);
+
+        assertEquals(expectedIndex, index.floatValue() / ICX.floatValue(), 0.03);
     }
 
     @DisplayName("test distribution info")
     @Test
     public void testDistributionInfo() {
 
-        Map<String, ?> result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(1L));
+        Map<String, ?> result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(1L));
 
         assertFalse((boolean) result.get("isValid"));
 
-        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(0L));
+        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(0L));
 
         assertTrue((boolean) result.get("isValid"));
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));
@@ -509,21 +504,21 @@ public class RewardControllerUnitTest extends TestBase {
 
         sm.getBlock().increase(86400 / 2);//1
 
-        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(1L));
+        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(1L));
 
         assertTrue((boolean) result.get("isValid"));
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));//2-1
         assertEquals(BigInteger.valueOf(2L), result.get("day"));//1+1
 
         sm.getBlock().increase(86400 * 4 / 2);//1+4 = 5
-        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(2L));
+        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(2L));
         assertTrue((boolean) result.get("isValid"));
         assertEquals(BigInteger.valueOf(6L), result.get("day")); //5+1
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)).multiply(BigInteger.valueOf(4L)),
                 result.get("distribution"));//6-2
 
         sm.getBlock().increase(86400 * 25 / 2);//5+25=30
-        result = (Map<String, ?>) score.call("distributionInfo", BigInteger.valueOf(25L));
+        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(25L));
         assertTrue((boolean) result.get("isValid"));
         assertEquals(BigInteger.valueOf(31L), result.get("day")); //30+1=31
         //31-25 => 25+26+27+28+29+30
