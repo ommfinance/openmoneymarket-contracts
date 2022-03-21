@@ -3,7 +3,6 @@ version = '0.1.0'
 optimizedJar {
     mainClassName = 'finance.omm.score.DaoFund'
     dependsOn(':commons:build')
-    dependsOn(':OMMStruct:build')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -29,31 +28,17 @@ test {
 }
 
 
-sourceSets {
-	itest {
-	    compileClasspath += sourceSets.main.output + configurations.compileClasspath
-	    runtimeClasspath += sourceSets.main.output + compileClasspath
-
-	}
-}
-
 configurations {
     itestImplementation.extendsFrom implementation
     itestRuntimeOnly.extendsFrom runtimeOnly
 }
 
 dependencies {
-    compileOnly 'foundation.icon:javaee-api:0.9.1'
     implementation project(':commons')
     implementation project(':OMMStruct')
+    implementation project(':Score')
 
     // test dependencies
-    testImplementation 'foundation.icon:javaee-unittest:0.9.1'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
-    testImplementation 'org.junit.platform:junit-platform-commons:1.7.0'
-
-	testImplementation 'foundation.icon:icon-sdk:2.0.0'
 	testImplementation project(':TestUtils')
 }
 

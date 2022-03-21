@@ -1,5 +1,6 @@
 package finance.omm.score;
 
+import finance.omm.core.score.interfaces.DaoFund;
 import java.math.BigInteger;
 
 import finance.omm.commons.Addresses;
@@ -9,7 +10,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public class DaoFund extends Addresses {
+public class DaoFundImpl extends Addresses implements DaoFund {
 
 	public static final String TAG = "Dao Fund Manager";
 
@@ -17,7 +18,7 @@ public class DaoFund extends Addresses {
 	 * _addressProvider: contract address of the provider 
 	 * _update: allow to mimic on update event call, default to false
 	 * */
-	public DaoFund(Address _addressProvider, @Optional boolean _update) {
+	public DaoFundImpl(Address _addressProvider, @Optional boolean _update) {
 		super(_addressProvider, _update);
 		if(_update) {
 			Context.println(TAG + "| on update event:" + Context.getAddress());

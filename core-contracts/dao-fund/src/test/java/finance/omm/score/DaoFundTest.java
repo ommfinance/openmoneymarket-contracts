@@ -47,7 +47,7 @@ class DaoFundTest extends TestBase{
 		governanceDetails.name =  Addresses.GOVERNANCE;
 		governanceDetails.address = accountGovernance.getAddress();
 
-		daoFund = sm.deploy(owner, DaoFund.class, accountAddressProvider.getAddress(), false);
+		daoFund = sm.deploy(owner, DaoFundImpl.class, accountAddressProvider.getAddress(), false);
 		ommToken = sm.deploy(owner, MockOmmToken.class);
 
 		ommTokenDetails = new AddressDetail(); 

@@ -3,22 +3,11 @@ package finance.omm.score;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Map;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import finance.omm.core.score.interfaces.DaoFund;
+import finance.omm.core.score.interfaces.DaoFundScoreClient;
 import org.junit.jupiter.api.Test;
 
 import finance.omm.libs.test.ScoreIntegrationTest;
-import finance.omm.libs.test.ScoreIntegrationTest.Faker;
-import foundation.icon.icx.IconService;
-import foundation.icon.icx.KeyWallet;
-import foundation.icon.icx.transport.http.HttpProvider;
-import foundation.icon.icx.transport.jsonrpc.RpcItem;
-import foundation.icon.icx.transport.jsonrpc.RpcObject;
-import foundation.icon.icx.transport.jsonrpc.RpcValue;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.ScoreClient;
 import score.Address;
