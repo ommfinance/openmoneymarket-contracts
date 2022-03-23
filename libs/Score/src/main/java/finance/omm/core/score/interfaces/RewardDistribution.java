@@ -155,4 +155,10 @@ public interface RewardDistribution {
     @External(readonly = true)
     Map<String, BigInteger> getWorkingTotal();
 
+    void disableHandleActions();
+
+    void enableHandleActions();
+
+    boolean isHandleActionDisabled();
+
 }

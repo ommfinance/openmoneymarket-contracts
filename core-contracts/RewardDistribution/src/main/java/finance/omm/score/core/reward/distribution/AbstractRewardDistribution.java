@@ -34,6 +34,9 @@ import scorex.util.HashMap;
 
 public abstract class AbstractRewardDistribution extends AddressProvider implements RewardDistribution {
 
+    public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
+    public static final String DISABLE_HANDLE_ACTIONS = "disable-handle-actions";
+
     public static final String B_OMM_REWARD_START_DATE = "bOMMRewardStartDate";
     private static final BigInteger WEIGHT = BigInteger.valueOf(40).multiply(ICX).divide(BigInteger.valueOf(100L));
 
@@ -52,6 +55,10 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public final VarDB<BigInteger> bOMMRewardStartDate = Context.newVarDB(B_OMM_REWARD_START_DATE, BigInteger.class);
 
+    public final VarDB<Boolean> isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
+
+    public final VarDB<Boolean> isHandleActionDisabled = Context.newVarDB(DISABLE_HANDLE_ACTIONS, Boolean.class);
+
     public final LegacyRewards legacyRewards = new LegacyRewards();
 
 
@@ -61,6 +68,12 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         assets = new Assets("assets-temp");
         workingBalance = Context.newBranchDB("workingBalance", BigInteger.class);
         workingTotal = Context.newDictDB("workingTotal", BigInteger.class);
+    }
+
+
+    @External(readonly = true)
+    public boolean isHandleActionDisabled() {
+        return isHandleActionDisabled.get();
     }
 
     @External(readonly = true)
@@ -174,6 +187,9 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     @External
     public void claimRewards(Address user) {
+        if (!isRewardClaimEnabled.getOrDefault(Boolean.FALSE)) {
+            throw RewardDistributionException.rewardClaimDisabled();
+        }
         Map<String, BigInteger> boostedBalance = getBoostedBalance(user);
         BigInteger bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
         BigInteger bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
