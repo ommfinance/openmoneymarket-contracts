@@ -36,16 +36,14 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public static final String DAY = "day";
 
     public static final String IS_INITIALIZED = "isInitialized";
-    public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
 
 
     public final VarDB<BigInteger> distributedDay = Context.newVarDB(DAY, BigInteger.class);
     public final VarDB<Boolean> _isInitialized = Context.newVarDB(IS_INITIALIZED, Boolean.class);
-    public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
 
 
-    public static final String IS_ASSET_INDEX_UPDATED = "is-asset-index-updated";
-    public final DictDB<String, Boolean> migrationStatus = Context.newDictDB("bOMM-migration-status", Boolean.class);
+    public final VarDB<Boolean> IS_ASSET_INDEX_UPDATED = Context.newVarDB("bOMM-migration-is-asset-index-updated",
+            Boolean.class);
 
 
     public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate) {
@@ -53,6 +51,9 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         if (this.bOMMRewardStartDate.get() == null) {
             TimeConstants.checkIsValidTimestamp(bOMMRewardStartDate, Timestamp.SECONDS);
             this.bOMMRewardStartDate.set(bOMMRewardStartDate);
+        }
+        if (this.isHandleActionDisabled.get() == null) {
+            isHandleActionDisabled.set(Boolean.FALSE);
         }
     }
 
@@ -254,19 +255,31 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External()
     public void disableRewardClaim() {
         checkGovernance();
-        _isRewardClaimEnabled.set(Boolean.FALSE);
+        isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
     @External()
     public void enableRewardClaim() {
         checkGovernance();
-        _isRewardClaimEnabled.set(Boolean.FALSE);
+        isRewardClaimEnabled.set(Boolean.TRUE);
+    }
+
+    @External()
+    public void disableHandleActions() {
+        checkGovernance();
+        isHandleActionDisabled.set(Boolean.TRUE);
+    }
+
+    @External()
+    public void enableHandleActions() {
+        checkGovernance();
+        isHandleActionDisabled.set(Boolean.FALSE);
     }
 
     //    @Override
     @External(readonly = true)
     public boolean isRewardClaimEnabled() {
-        return _isRewardClaimEnabled.get();
+        return isRewardClaimEnabled.get();
     }
 
     /**
@@ -437,6 +450,9 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     private void _handleAction(Address assetAddr, UserDetails _userDetails) {
+        if (isHandleActionDisabled.getOrDefault(Boolean.TRUE)) {
+            throw RewardDistributionException.handleActionDisabled();
+        }
         Asset asset = this.assets.get(assetAddr);
         if (asset == null) {
             throw RewardDistributionException.invalidAsset("Asset is null (" + assetAddr + ")");
@@ -465,7 +481,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             throw RewardDistributionException.unknown(
                     "bOMMCutOffTimestamp is future timestamp (" + bOMMCutOffTimestamp + ")");
         }
-        if (migrationStatus.getOrDefault(IS_ASSET_INDEX_UPDATED, false)) {
+        if (IS_ASSET_INDEX_UPDATED.getOrDefault(false)) {
             throw RewardDistributionException.unknown(
                     "Asset index already updated (" + bOMMCutOffTimestamp + ")");
         }
@@ -487,7 +503,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             BigInteger totalSupply = convertToExa(map.get("totalStaked"), _decimals);
             this.legacyRewards.updateAssetIndex(assetAddr, totalSupply, bOMMCutOffTimestamp);
         }
-        migrationStatus.set(IS_ASSET_INDEX_UPDATED, Boolean.TRUE);
+        IS_ASSET_INDEX_UPDATED.set(Boolean.TRUE);
     }
 
     /**
@@ -496,7 +512,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External
     public void migrateUserRewards(Address[] userAddresses) {
         checkOwner();
-        if (!migrationStatus.getOrDefault(IS_ASSET_INDEX_UPDATED, false)) {
+        if (!IS_ASSET_INDEX_UPDATED.getOrDefault(false)) {
             throw RewardDistributionException.unknown(
                     "Asset indexes are not migrated, Please migrate asset index first");
         }
