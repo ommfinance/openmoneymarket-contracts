@@ -59,16 +59,16 @@ public class RewardConfigurationDB {
         _indexes = Context.newDictDB(key + ASSET_INDEXES, Integer.class);
     }
 
-    private int get_index(Address asset) {
-        return this._indexes.getOrDefault(asset, 0);
-    }
-
     private int size() {
         return this._assets.size();
     }
 
+    private int get_index(Address asset) {
+        return this._indexes.getOrDefault(asset, 0);
+    }
+
     public boolean is_valid_asset(Address asset) {
-        return get_index(asset) != 0;
+        return get_index(asset) > 0;
     }
 
     private void add_asset(Address asset) {
@@ -85,7 +85,8 @@ public class RewardConfigurationDB {
     }
 
     private boolean isRecipient(String recipient) {
-        for (int i = 0; i < this._supportedRecipients.size(); i++) {
+        int size = this._supportedRecipients.size();
+        for (int i = 0; i < size; i++) {
             if (recipient.equals(this._supportedRecipients.get(i))) {
                 return true;
             }
@@ -116,11 +117,11 @@ public class RewardConfigurationDB {
         return Map.ofEntries(entries);
     }
 
-    public String[] getRecipients() {
+    public List<String> getRecipients() {
         int size = this._supportedRecipients.size();
-        String[] list = new String[size];
+        List<String> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            list[i] = this._supportedRecipients.get(i);
+            list.add(this._supportedRecipients.get(i));
         }
         return list;
     }
@@ -161,7 +162,8 @@ public class RewardConfigurationDB {
 
     private void validateTotalPercentage(String rewardEntity) {
         BigInteger total_percentage = BigInteger.ZERO;
-        for (int i = 0; i < this._assets.size(); i++) {
+        int size = this._assets.size();
+        for (int i = 0; i < size; i++) {
             Address asset = this._assets.get(i);
             if (rewardEntity.equals(this._rewardEntityMapping.get(asset))) {
                 total_percentage = total_percentage.add(this._assetLevelPercentage.getOrDefault(asset,
@@ -194,19 +196,6 @@ public class RewardConfigurationDB {
         return MathUtils.exaMultiply(_entityDistPercentage, _assetPercentage);
     }
 
-    public String getEntity(Address asset) {
-        Integer _poolID = this._poolIDMapping.get(asset);
-        String _rewardEntity = this._rewardEntityMapping.get(asset);
-        if (_poolID > 0 && "liquidityProvider".equals(_rewardEntity)) {
-            return LIQUIDITY;
-        } else if ("liquidityProvider".equals(_rewardEntity)) {
-            return STAKING;
-        } else if ("lendingBorrow".equals(_rewardEntity)) {
-            return RESERVE;
-        }
-        throw RewardDistributionException.unknown("Unsupported entity "+_rewardEntity+" :: "+asset);
-    }
-
 
     public Map<String, ?> getAssetConfigs() {
         BigInteger _total_percentage = BigInteger.ZERO;
@@ -217,7 +206,7 @@ public class RewardConfigurationDB {
             String _name = this._assetName.get(asset);
             BigInteger _percentage = this.getAssetPercentage(asset);
             String _entity = this.getEntity(asset);
-            
+
             Map<String, BigInteger> _entityMap = (Map<String, BigInteger>) response.get(_entity);
             if (_entityMap == null) {
                 _entityMap = new HashMap<>() {{
@@ -235,6 +224,7 @@ public class RewardConfigurationDB {
 
         return response;
     }
+
 
     public Map<String, Map<String, BigInteger>> assetConfigOfLiquidityProvider() {
         Map<String, BigInteger> configs = new HashMap<>();
@@ -258,6 +248,19 @@ public class RewardConfigurationDB {
             list.add(this._assets.get(i));
         }
         return list;
+    }
+
+    public String getEntity(Address asset) {
+        Integer _poolID = this._poolIDMapping.get(asset);
+        String _rewardEntity = this._rewardEntityMapping.get(asset);
+        if (_poolID > 0 && "liquidityProvider".equals(_rewardEntity)) {
+            return LIQUIDITY;
+        } else if ("liquidityProvider".equals(_rewardEntity)) {
+            return STAKING;
+        } else if ("lendingBorrow".equals(_rewardEntity)) {
+            return RESERVE;
+        }
+        throw RewardDistributionException.unknown("Unsupported entity " + _rewardEntity + " :: " + asset);
     }
 
     public BigInteger getEmissionPerSecond(Address asset) {

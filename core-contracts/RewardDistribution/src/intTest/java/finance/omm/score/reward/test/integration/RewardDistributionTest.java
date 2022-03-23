@@ -1,15 +1,19 @@
 package finance.omm.score.reward.test.integration;
 
+import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
+
 import finance.omm.core.score.interfaces.RewardDistribution;
 import finance.omm.core.score.interfaces.RewardDistributionScoreClient;
 import finance.omm.libs.test.ScoreIntegrationTest;
-import finance.omm.score.core.reward.distribution.utils.RewardDistributionException;
+import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.ScoreClient;
-import org.junit.jupiter.api.*;
-
-import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 public class RewardDistributionTest implements ScoreIntegrationTest {
 

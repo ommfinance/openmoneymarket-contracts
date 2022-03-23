@@ -70,7 +70,7 @@ public interface RewardDistribution {
 
 
     @External(readonly = true)
-    public String[] getRecipients();
+    public List<String> getRecipients();
 
     @External()
     public void handleAction(UserDetails _userAssetDetails);

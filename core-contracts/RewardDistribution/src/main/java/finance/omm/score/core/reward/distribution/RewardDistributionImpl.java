@@ -2,6 +2,7 @@ package finance.omm.score.core.reward.distribution;
 
 
 import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.DistPercentage;
 import finance.omm.libs.structs.UserAssetInput;
 import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
@@ -36,8 +37,23 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             USERS_UNCLAIMED_REWARDS, BigInteger.class);
     public final DictDB<String, BigInteger> _tokenDistTracker = Context.newDictDB(TOKEN_DIST_TRACKER, BigInteger.class);
 
-    public RewardDistributionImpl(Address _addressProvider) {
+    public RewardDistributionImpl(Address _addressProvider, BigInteger _startTimestamp) {
         super(_addressProvider);
+        if (this._timestampAtStart.get() == null) {
+            DistPercentage[] _distPercentage = new DistPercentage[]{
+                    new DistPercentage("worker", new BigInteger("300000000000000000")),
+                    new DistPercentage("daoFund", new BigInteger("400000000000000000")),
+                    new DistPercentage("lendingBorrow", new BigInteger("100000000000000000")),
+                    new DistPercentage("liquidityProvider", new BigInteger("200000000000000000")),
+            };
+            this._rewardConfig.setRecipient("worker");
+            this._rewardConfig.setRecipient("daoFund");
+            this._rewardConfig.setRecipient("lendingBorrow");
+            this._rewardConfig.setRecipient("liquidityProvider");
+            this._updateDistPercentage(_distPercentage);
+            this._isRewardClaimEnabled.set(Boolean.FALSE);
+            this._timestampAtStart.set(_startTimestamp);
+        }
     }
 
     @EventLog(indexed = 2)
@@ -58,7 +74,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     @External(readonly = true)
-    public String[] getRecipients() {
+    public List<String> getRecipients() {
         return _rewardConfig.getRecipients();
     }
 
@@ -146,7 +162,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         Map<String, Object> unclaimedRewardsMap = new HashMap<>();
         for (Address _asset : _assets) {
             String _assetName = _rewardConfig.getAssetName(_asset);
-            BigInteger userAssetUnclaimedRewards = _usersUnclaimedRewards.at(_user).getOrDefault(_asset, BigInteger.ZERO);
+            BigInteger userAssetUnclaimedRewards = _usersUnclaimedRewards.at(_user)
+                    .getOrDefault(_asset, BigInteger.ZERO);
             totalUnclaimedRewards = totalUnclaimedRewards.add(userAssetUnclaimedRewards);
             unclaimedRewardsMap.put(_assetName, userAssetUnclaimedRewards);
         }

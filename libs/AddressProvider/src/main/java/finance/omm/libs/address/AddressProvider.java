@@ -23,7 +23,7 @@ public class AddressProvider {
 
 
     public AddressProvider(Address addressProvider) {
-        if (_addressProvider.getOrDefault(null) == null) {
+        if (_addressProvider.get() == null) {
             _addressProvider.set(addressProvider);
         }
     }
