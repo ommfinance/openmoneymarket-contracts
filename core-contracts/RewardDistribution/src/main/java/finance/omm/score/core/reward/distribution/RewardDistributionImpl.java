@@ -5,7 +5,6 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.DistPercentage;
 import finance.omm.libs.structs.UserAssetInput;
 import finance.omm.libs.structs.UserDetails;
-import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
@@ -303,19 +302,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     }
 
-    private void checkStakeLp() {
-        if (!Context.getCaller()
-                .equals(this.getAddress(Contracts.STAKED_LP.getKey()))) {
-            throw RewardDistributionException.notStakedLp();
-        }
-    }
 
-    private void checkLendingPool() {
-        if (!Context.getCaller()
-                .equals(this.getAddress(Contracts.LENDING_POOL.getKey()))) {
-            throw RewardDistributionException.notLendingPool();
-        }
-    }
 
 }
 

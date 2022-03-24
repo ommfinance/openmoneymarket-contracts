@@ -66,7 +66,7 @@ public interface RewardDistribution {
 
 
     @External(readonly = true)
-    public BigInteger getPoolIDByAsset(Address _asset);
+    public int getPoolIDByAsset(Address _asset);
 
 
     @External(readonly = true)

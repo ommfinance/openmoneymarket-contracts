@@ -3,6 +3,7 @@ package finance.omm.score.core.reward.distribution;
 
 import static finance.omm.utils.constants.TimeConstants.DAYS_PER_YEAR;
 import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
+import static finance.omm.utils.math.MathUtils.HUNDRED_THOUSAND;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.MILLION;
 import static finance.omm.utils.math.MathUtils.convertToExa;
@@ -32,13 +33,11 @@ import score.annotation.External;
 
 public abstract class AbstractRewardDistribution extends AddressProvider implements RewardDistribution {
 
-    public static final String TAG = "Omm Reward Distribution Manager";
     public static final String REWARD_CONFIG = "rewardConfig";
     public static final String LAST_UPDATE_TIMESTAMP = "lastUpdateTimestamp";
     public static final String TIMESTAMP_AT_START = "timestampAtStart";
     public static final String ASSET_INDEX = "assetIndex";
     public static final String USER_INDEX = "userIndex";
-//    public static final String RESERVE_ASSETS = "reserveAssets";
 
     public final RewardConfigurationDB _rewardConfig = new RewardConfigurationDB(REWARD_CONFIG);
 
@@ -48,7 +47,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     public final BranchDB<Address, DictDB<Address, BigInteger>> _userIndex = Context.newBranchDB(USER_INDEX,
             BigInteger.class);
 
-    //    public final ArrayDB<Address> _reserveAssets = Context.newArrayDB(RESERVE_ASSETS, Address.class);
     public final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
 
 
@@ -97,17 +95,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     public void setAssetName(Address _asset, String _name) {
         checkOwner();
         this._rewardConfig.setAssetName(_asset, _name);
-    }
-
-
-    @External
-    public void setTimeStamp(BigInteger _timestamp) {
-        checkOwner();
-        List<Address> _assets = _rewardConfig.getAssets();
-        for (Address _asset : _assets) {
-            _lastUpdateTimestamp.set(_asset, _timestamp);
-        }
-
     }
 
 
@@ -193,9 +180,14 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         this._rewardConfig.removeAssetConfig(_asset);
     }
 
+    @External(readonly = true)
+    public int getPoolIDByAsset(Address _asset) {
+        return this._rewardConfig.getPoolID(_asset);
+    }
 
     @External
     public void updateEmissionPerSecond() {
+        checkOwner();
         BigInteger distributionPerDay = this.tokenDistributionPerDay(this.getDay());
         List<Address> _assets = this._rewardConfig.getAssets();
         for (Address asset : _assets) {
@@ -234,7 +226,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         BigInteger newIndex = this._updateAssetStateInternal(_asset, _totalBalance);
 
         if (!userIndex.equals(newIndex)) {
-            if (!BigInteger.ZERO.equals(_userBalance)) {
+            if (!_userBalance.equals(BigInteger.ZERO)) {
                 accruedRewards = AbstractRewardDistribution._getRewards(_userBalance, newIndex, userIndex);
             }
 
@@ -242,10 +234,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             this.UserIndexUpdated(_user, _asset, userIndex, newIndex);
         }
         return accruedRewards;
-    }
-
-    private static BigInteger _getRewards(BigInteger _userBalance, BigInteger _assetIndex, BigInteger _userIndex) {
-        return MathUtils.exaMultiply(_userBalance, _assetIndex.subtract(_userIndex));
     }
 
     public BigInteger _getAssetIndex(BigInteger _currentIndex, BigInteger _emissionPerSecond,
@@ -261,12 +249,18 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public BigInteger _getUnclaimedRewards(Address _user, UserAssetInput _assetInput) {
         Address asset = _assetInput.asset;
+        BigInteger userBalance = _assetInput.userBalance;
+        BigInteger totalBalance = _assetInput.totalBalance;
         BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(asset);
         BigInteger assetIndex = this._getAssetIndex(this._assetIndex.getOrDefault(asset, BigInteger.ZERO),
                 _emissionPerSecond,
-                this._lastUpdateTimestamp.getOrDefault(asset, BigInteger.ZERO), _assetInput.totalBalance);
-        return AbstractRewardDistribution._getRewards(_assetInput.userBalance, assetIndex, this._userIndex.at(_user)
+                this._lastUpdateTimestamp.getOrDefault(asset, BigInteger.ZERO), totalBalance);
+        return AbstractRewardDistribution._getRewards(userBalance, assetIndex, this._userIndex.at(_user)
                 .getOrDefault(asset, BigInteger.ZERO));
+    }
+
+    private static BigInteger _getRewards(BigInteger _userBalance, BigInteger _assetIndex, BigInteger _userIndex) {
+        return MathUtils.exaMultiply(_userBalance, _assetIndex.subtract(_userIndex));
     }
 
     @External(readonly = true)
@@ -277,13 +271,13 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(30L))) {
             return MILLION;
         } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR)) {
-            return BigInteger.valueOf(4L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(4L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
-            return BigInteger.valueOf(3L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.valueOf(2L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.ONE.multiply(MILLION).divide(BigInteger.TEN);
+            return HUNDRED_THOUSAND;
         } else {
             BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
             return pow(BigInteger.valueOf(103L), (index.intValue()))
@@ -325,7 +319,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public UserAssetInput _getUserAssetDetails(Address asset, Address user) {
         Integer poolId = this._rewardConfig.getPoolID(asset);
-        UserAssetInput result = new UserAssetInput();
 
         Map<String, ?> map = null;
         if (poolId > 0) {
@@ -334,7 +327,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         } else {
             map = (Map<String, ?>) Context.call(asset, "getPrincipalSupply", user);
         }
-
+        UserAssetInput result = new UserAssetInput();
         result.asset = asset;
         if (map == null) {
             throw RewardDistributionException.unknown("supply is null");
@@ -350,11 +343,19 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     }
 
-    @External(readonly = true)
-    public BigInteger getPoolIDByAsset(Address _asset) {
-        return BigInteger.valueOf(this._rewardConfig.getPoolID(_asset));
+    protected void checkStakeLp() {
+        if (!Context.getCaller()
+                .equals(this.getAddress(Contracts.STAKED_LP.getKey()))) {
+            throw RewardDistributionException.notStakedLp();
+        }
     }
 
+    protected void checkLendingPool() {
+        if (!Context.getCaller()
+                .equals(this.getAddress(Contracts.LENDING_POOL.getKey()))) {
+            throw RewardDistributionException.notLendingPool();
+        }
+    }
 
     protected void checkOwner() {
         if (!Context.getOwner()
