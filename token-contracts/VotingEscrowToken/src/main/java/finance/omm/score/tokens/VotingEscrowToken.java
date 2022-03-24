@@ -19,6 +19,7 @@ import static finance.omm.utils.constants.AddressConstant.ZERO_ADDRESS;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
@@ -421,18 +422,18 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         JsonObject json = Json.parse(unpackedData).asObject();
 
         String method = json.get("method").asString();
-        JsonObject params = json.get("params").asObject();
+        JsonValue params = json.get("params");
 
         switch (method) {
             case "increaseAmount":
                 this.increaseAmount(_from, _value);
                 break;
             case "createLock":
-                BigInteger unlockTime = BigInteger.valueOf(params.get("unlockTime").asLong());
+                BigInteger unlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
                 this.createLock(_from, _value, unlockTime);
                 break;
             case "depositFor":
-                Address sender = Address.fromString(params.get("address").asString());
+                Address sender = Address.fromString(params.asObject().get("address").asString());
                 this.depositFor(sender, _value);
                 break;
             default:
