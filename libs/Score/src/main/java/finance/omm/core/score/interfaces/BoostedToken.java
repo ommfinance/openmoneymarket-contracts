@@ -8,6 +8,10 @@ import score.annotation.Optional;
 
 public interface BoostedToken {
 
+    void setMinimumLockingAmount(BigInteger value);
+
+    BigInteger getMinimumLockingAmount();
+
     void commitTransferOwnership(Address address);
 
     void applyTransferOwnership();

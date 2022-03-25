@@ -16,6 +16,7 @@ package finance.omm.score.tokens;
  */
 
 import static finance.omm.utils.constants.AddressConstant.ZERO_ADDRESS;
+import static finance.omm.utils.math.MathUtils.ICX;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
@@ -79,6 +80,9 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     private final VarDB<Address> futureAdmin = Context.newVarDB("Boosted_Omm_future_admin", Address.class);
     private final EnumerableSet<Address> users = new EnumerableSet<>("users_list", Address.class);
 
+    private final VarDB<BigInteger> minimumLockingAmount = Context.newVarDB(KeyConstants.bOMM_MINIMUM_LOCKING_AMOUNT,
+            BigInteger.class);
+
 
     @EventLog
     public void CommitOwnership(Address admin) {
@@ -122,6 +126,25 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         if (this.epoch.get() == null) {
             this.epoch.set(BigInteger.ZERO);
         }
+
+        if (this.minimumLockingAmount.get() == null) {
+            this.minimumLockingAmount.set(ICX);
+        }
+    }
+
+    @External
+    public void setMinimumLockingAmount(BigInteger value) {
+        ownerRequired();
+        if (value.signum() < 0) {
+            throw BoostedOMMException.unknown("invalid value for minimum locking amount");
+        }
+
+        this.minimumLockingAmount.set(value);
+    }
+
+    @External(readonly = true)
+    public BigInteger getMinimumLockingAmount() {
+        return this.minimumLockingAmount.get();
     }
 
 
@@ -429,6 +452,10 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
                 this.increaseAmount(_from, _value);
                 break;
             case "createLock":
+                BigInteger minimumLockingAmount = this.minimumLockingAmount.get();
+                if (minimumLockingAmount.compareTo(_value) > 0) {
+                    throw BoostedOMMException.invalidMinimumLockingAmount(minimumLockingAmount);
+                }
                 BigInteger unlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
                 this.createLock(_from, _value, unlockTime);
                 break;
