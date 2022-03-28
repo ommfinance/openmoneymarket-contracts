@@ -5,7 +5,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(':libs:OMMStruct')
+    implementation project(':OMMStruct')
 }
 
 test {

@@ -9,12 +9,12 @@ optimizedJar {
 }
 
 dependencies {
-    implementation project(':libs:AddressProvider')
-    implementation project(':libs:OMMStruct')
-    implementation project(':libs:ScoreUtils')
-    implementation project(':libs:Score')
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
 
-    testImplementation project(':libs:TestUtils')
+    testImplementation project(':TestUtils')
 }
 
 deployJar {

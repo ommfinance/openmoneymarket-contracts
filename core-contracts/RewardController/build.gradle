@@ -1,10 +1,10 @@
 version = '0.0.1'
 
 dependencies {
-    implementation project(':libs:Score')
-    implementation project(':libs:AddressProvider')
-    implementation project(':libs:ScoreUtils')
-    implementation project(':libs:OMMStruct')
+    implementation project(':Score')
+    implementation project(':AddressProvider')
+    implementation project(':ScoreUtils')
+    implementation project(':OMMStruct')
 }
 
 optimizedJar {
