@@ -21,7 +21,7 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-//            to = 'cxe22d0a74c23fb482b6e44408c152530b76fd42bc'
+            to = 'cx9ace534ff39b7de456329ab3b6ad1cf007e8f330'
             nid = 0x53
         }
         mainnet {

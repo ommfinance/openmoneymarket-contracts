@@ -111,9 +111,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         Address _user = _userDetails._user;
         BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
         BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
+
         Context.require(_rewardConfig.is_valid_asset(_asset), TAG + " Asset not authorized " + _asset);
         BigInteger accruedRewards = _updateUserReserveInternal(_user, _asset, _userBalance, _totalSupply);
-        if (!BigInteger.ZERO.equals(accruedRewards)) {
+        if (!accruedRewards.equals(BigInteger.ZERO)) {
             DictDB<Address, BigInteger> usersUnclaimedRewards = _usersUnclaimedRewards.at(_user);
             BigInteger currentUnclaimedRewards = usersUnclaimedRewards.getOrDefault(_asset, BigInteger.ZERO)
                     .add(accruedRewards);
@@ -130,8 +131,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         }
         BigInteger _distribution = tokenDistributionPerDay(_day);
         BigInteger _totalRewards = BigInteger.ZERO;
-        List<Address> _assets = _rewardConfig.getAssets();
         Map<String, Object> response = new HashMap<>();
+        List<Address> _assets = _rewardConfig.getAssets();
         for (Address _asset : _assets) {
             String _assetName = _rewardConfig.getAssetName(_asset);
             String _entity = _rewardConfig.getEntity(_asset);
@@ -175,6 +176,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         BigInteger totalRewards = BigInteger.ZERO;
         Map<String, Object> response = new HashMap<>();
         List<Address> _assets = _rewardConfig.getAssets();
+        DictDB<Address, BigInteger> userUnClaimedReward = _usersUnclaimedRewards.at(_user);
         for (Address _asset : _assets) {
             String _assetName = _rewardConfig.getAssetName(_asset);
             String _entity = _rewardConfig.getEntity(_asset);
@@ -186,7 +188,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             }
             BigInteger total = entityMap.get("total");
             UserAssetInput userAssetDetails = _getUserAssetDetails(_asset, _user);
-            BigInteger unclaimedRewards = _usersUnclaimedRewards.at(_user).getOrDefault(_asset, BigInteger.ZERO);
+
+            BigInteger unclaimedRewards = userUnClaimedReward.getOrDefault(_asset, BigInteger.ZERO);
             unclaimedRewards = unclaimedRewards.add(_getUnclaimedRewards(_user, userAssetDetails));
             entityMap.put(_assetName, unclaimedRewards);
             entityMap.put("total", total.add(unclaimedRewards));
@@ -204,7 +207,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public void startDistribution() {
         checkOwner();
         Boolean isInitialized = _isInitialized.getOrDefault(false);
-        if (BigInteger.ZERO.equals(getDay()) && !isInitialized) {
+        if (getDay().equals(BigInteger.ZERO) && !isInitialized) {
             _mintDailyOmm();
             updateEmissionPerSecond();
             _isInitialized.set(Boolean.TRUE);
@@ -218,19 +221,21 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         BigInteger unclaimedRewards = BigInteger.ZERO;
         BigInteger accruedRewards = BigInteger.ZERO;
         List<Address> _assets = _rewardConfig.getAssets();
+
         DictDB<Address, BigInteger> userUnclaimedRewards = _usersUnclaimedRewards.at(_user);
         for (Address _asset : _assets) {
-            unclaimedRewards = userUnclaimedRewards.getOrDefault(_asset, BigInteger.ZERO).add(unclaimedRewards);
+            unclaimedRewards = userUnclaimedRewards.getOrDefault(_asset, BigInteger.ZERO)
+                    .add(unclaimedRewards);
             UserAssetInput userAssetDetails = _getUserAssetDetails(_asset, _user);
             accruedRewards = _updateUserReserveInternal(_user, userAssetDetails.asset, userAssetDetails.userBalance,
                     userAssetDetails.totalBalance).add(accruedRewards);
             userUnclaimedRewards.set(_asset, BigInteger.ZERO);
         }
-        if (!BigInteger.ZERO.equals(accruedRewards)) {
+        if (!accruedRewards.equals(BigInteger.ZERO)) {
             unclaimedRewards = unclaimedRewards.add(accruedRewards);
             RewardsAccrued(_user, Context.getAddress(), accruedRewards);
         }
-        if (BigInteger.ZERO.equals(unclaimedRewards)) {
+        if (unclaimedRewards.equals(BigInteger.ZERO)) {
             return;
         }
         Context.call(this.getAddress(Contracts.OMM_TOKEN.getKey()), "transfer", _user, unclaimedRewards);
@@ -243,11 +248,15 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         if (day.compareTo(getDay()) >= 0) {
             return;
         }
+        _day.set(day.add(BigInteger.ONE));
+
         Address workerTokenAddress = this.getAddress(Contracts.WORKER_TOKEN.getKey());
         Address ommTokenAddress = this.getAddress(Contracts.OMM_TOKEN.getKey());
+
         BigInteger totalSupply = Context.call(BigInteger.class, workerTokenAddress, "totalSupply");
         BigInteger tokenDistTracker = _tokenDistTracker.get("worker");
         List<Address> walletHolders = (List<Address>) Context.call(workerTokenAddress, "getWallets");
+
         for (Address user : walletHolders) {
             if (tokenDistTracker.compareTo(BigInteger.ZERO) <= 0) {
                 break;
@@ -265,7 +274,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         BigInteger tokenDistTrackerDaoFund = _tokenDistTracker.get("daoFund");
         Context.call(ommTokenAddress, "transfer", daoFundAddress, tokenDistTrackerDaoFund);
         Distribution("daoFund", daoFundAddress, tokenDistTrackerDaoFund);
-        _day.set(day.add(BigInteger.ONE));
+
         _mintDailyOmm();
     }
 

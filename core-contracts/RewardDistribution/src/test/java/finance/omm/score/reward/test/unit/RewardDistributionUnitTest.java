@@ -8,6 +8,7 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.score.core.reward.distribution.RewardDistributionImpl;
+import java.math.BigInteger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,16 +17,20 @@ import org.junit.jupiter.api.function.Executable;
 import score.Address;
 
 public class RewardDistributionUnitTest extends TestBase {
+
     private static final ServiceManager sm = getServiceManager();
     private Account owner;
     private Score score;
     private RewardDistributionImpl scoreSpy;
 
+    BigInteger startTimestamp = BigInteger.valueOf(1629954000000000L);
+
     @BeforeEach
     void setup() throws Exception {
         owner = sm.createAccount(100);
 
-        score = sm.deploy(owner, RewardDistributionImpl.class);
+        score = sm.deploy(owner, RewardDistributionImpl.class, Account.newScoreAccount(1).getAddress(),
+                startTimestamp);
 
         scoreSpy = (RewardDistributionImpl) spy(score.getInstance());
         score.setInstance(scoreSpy);
