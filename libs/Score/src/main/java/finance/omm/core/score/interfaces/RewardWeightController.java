@@ -20,7 +20,7 @@ public interface RewardWeightController {
     public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp);
 
 
-    public BigInteger getTypeWeight(String typeId, @Optional BigInteger timestamp);
+    public BigInteger getTypeWeight(String type, @Optional BigInteger timestamp);
 
 
     public Map<String, BigInteger> getALlTypeWeight(@Optional BigInteger timestamp);

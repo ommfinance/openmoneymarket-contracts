@@ -48,6 +48,7 @@ import score.UserRevertedException;
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 public interface ScoreIntegrationTest {
 
+
     static <T> int indexOf(T[] array, T value) {
         return indexOf(array, value::equals);
     }

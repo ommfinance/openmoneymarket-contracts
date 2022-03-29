@@ -1,7 +1,7 @@
 package finance.omm.libs.address;
 
 
-import finance.omm.libs.structs.AddressDetail;
+import finance.omm.libs.structs.AddressDetails;
 import java.util.Map;
 import score.Address;
 import score.ArrayDB;
@@ -28,9 +28,9 @@ public class AddressProvider {
     }
 
     @External
-    public void setAddresses(AddressDetail[] _addressDetails) {
+    public void setAddresses(AddressDetails[] _addressDetails) {
         checkAddressProvider();
-        for (AddressDetail addressDetail : _addressDetails) {
+        for (AddressDetails addressDetail : _addressDetails) {
             if (this._addresses.get(addressDetail.name) == null && addressDetail.address != null) {
                 this._contracts.add(addressDetail.name);
             }
