@@ -26,6 +26,7 @@ deployJar {
         }
         mainnet {
             uri = 'https://ctz.solidwallet.io/api/v3'
+            to = 'cx4f2d730ad969f5c839229de42184c5e47aefef6f'
             nid = 0x1
         }
     }
@@ -33,7 +34,7 @@ deployJar {
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
         arg('_startTimestamp', '1629954000000000')
-        arg('_addressProvider', 'cx1e6fcc68f8007b88fdde5503229d421de3b62c3a')
+        arg('_addressProvider', 'cx6a66130200b4f08c65ef394469404378ab52e5b6')// mainnet
     }
 }
 
