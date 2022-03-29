@@ -12,7 +12,7 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
-import finance.omm.libs.structs.AddressDetail;
+import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.RewardWeightControllerImpl;
@@ -70,12 +70,12 @@ public class RewardControllerUnitTest extends TestBase {
         score = sm.deploy(owner, RewardWeightControllerImpl.class,
                 mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(),
                 startTimestamp);
-        AddressDetail[] addressDetails = mockAddress.entrySet().stream().map(e -> {
-            AddressDetail ad = new AddressDetail();
+        AddressDetails[] addressDetails = mockAddress.entrySet().stream().map(e -> {
+            AddressDetails ad = new AddressDetails();
             ad.address = e.getValue().getAddress();
             ad.name = e.getKey().toString();
             return ad;
-        }).toArray(AddressDetail[]::new);
+        }).toArray(AddressDetails[]::new);
 
         Object[] params = new Object[]{
                 addressDetails
