@@ -436,6 +436,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
         Address token = Context.getCaller();
+        System.out.println(token + ";" + this.tokenAddress);
         Context.require(token.equals(this.tokenAddress), "Token Fallback: Only Omm deposits are allowed");
 
         Context.require(_value.signum() > 0, "Token Fallback: Token value should be a positive number");
@@ -477,14 +478,14 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
 
         this.assertNotContract(sender);
         LockedBalance locked = getLockedBalance(sender);
-        UnsignedBigInteger _unlockTime = new UnsignedBigInteger(unlockTime).divide(
-                        TimeConstants.U_WEEK_IN_MICRO_SECONDS)
-                .multiply(TimeConstants.U_WEEK_IN_MICRO_SECONDS);
+        unlockTime = unlockTime.divide(TimeConstants.WEEK_IN_MICRO_SECONDS)
+                .multiply(TimeConstants.WEEK_IN_MICRO_SECONDS);
 
         Context.require(locked.amount.compareTo(BigInteger.ZERO) > 0, "Increase unlock time: Nothing is locked");
         Context.require(locked.getEnd().compareTo(blockTimestamp) > 0, "Increase unlock time: Lock expired");
-        Context.require(_unlockTime.compareTo(locked.end) > 0, "Increase unlock time: Can only increase lock duration");
-        Context.require(_unlockTime.compareTo(blockTimestamp.add(MAX_TIME)) <= 0,
+        Context.require(unlockTime.compareTo(locked.end.toBigInteger()) > 0,
+                "Increase unlock time: Can only increase lock duration");
+        Context.require(unlockTime.compareTo(blockTimestamp.add(MAX_TIME)) <= 0,
                 "Increase unlock time: Voting lock " + "can be 4 years max");
 
         this.depositFor(sender, BigInteger.ZERO, unlockTime, locked, INCREASE_UNLOCK_TIME);
