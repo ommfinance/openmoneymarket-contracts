@@ -11,6 +11,7 @@ import finance.omm.core.score.interfaces.RewardWeightControllerScoreClient;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.TypeWeightStruct;
+import finance.omm.libs.structs.WeightStruct;
 import finance.omm.libs.test.ScoreIntegrationTest;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import finance.omm.score.core.reward.exception.RewardWeightException;
@@ -279,7 +280,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                 @BeforeEach
                 void before() {
                     should_add_type_transfer_to_contract_true();
-                    should_able_to_set_weight_by_owner();
+                    should_able_to_set_weight();
                 }
 
                 @DisplayName("addAsset - should throw unauthorized")
@@ -299,6 +300,9 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                 @Test
                 @Order(70)
                 void should_able_to_add_asset() {
+                    if (STATES.getOrDefault("should_able_to_add_asset", false)) {
+                        return;
+                    }
                     List<score.Address> addresses = scoreClient.getAssets();
                     assertEquals(1, addresses.size());
                     scoreClient.addAsset("type-a", "asset-1", assets.get("asset-1"), BigInteger.ZERO);
@@ -307,6 +311,102 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
 
                     addresses = scoreClient.getAssets();
                     assertEquals(4, addresses.size());
+
+                    STATES.put("should_able_to_add_asset", true);
+                }
+
+                @DisplayName("setAssetWeight")
+                @Nested
+                class TestSetAssetWeight {
+
+                    @BeforeEach
+                    void before() {
+                        should_add_type_transfer_to_contract_true();
+                        should_able_to_set_weight_by_owner();
+                        should_able_to_add_asset();
+                    }
+
+                    @DisplayName("setAssetWeight - should throw unauthorized")
+                    @Test
+                    @Order(80)
+                    void should_throw_unauthorized() {
+                        client._transfer(Address.of(tester), BigInteger.valueOf(100).multiply(ICX), "transfer");
+
+                        assertUserRevert(RewardWeightException.notOwner(),
+                                () -> weightControllerWithTester.setAssetWeight("type-a", new WeightStruct[]{
+                                        new WeightStruct(assets.get("asset-1"), ICX.divide(BigInteger.TWO)),
+                                        new WeightStruct(assets.get("asset-2"), ICX.divide(BigInteger.valueOf(4L))),
+                                        new WeightStruct(assets.get("asset-3"), ICX.divide(BigInteger.valueOf(4L))),
+                                }, BigInteger.valueOf(1000L)), null);
+
+                    }
+
+                    @DisplayName("verify weight of transferred to contract type")
+                    @Test
+                    @Order(90)
+                    void verifyWeightOfTransferredToContract() {
+
+                        Map<String, BigInteger> type_B_Weights = weightController.getAssetWeightByTimestamp("type-b",
+                                BigInteger.valueOf(System.currentTimeMillis() * 1000));
+
+                        long type_B_Weight = 75 * 100; //type weight * asset weight
+                        System.out.println("type_B_Weights = " + type_B_Weights);
+                        assertEquals(
+                                ICX.multiply(BigInteger.valueOf(type_B_Weight)).divide(BigInteger.valueOf(10000L)),
+                                type_B_Weights.get(assets.get("type-b").toString()));
+
+                    }
+
+                    @DisplayName("should able to set asset weight by owner")
+                    @Test
+                    @Order(100)
+                    void should_able_to_set_asset_weight_by_owner() {
+                        if (STATES.getOrDefault("should_able_to_set_asset_weight_by_owner", false)) {
+                            return;
+                        }
+                        weightController.setAssetWeight("type-a", new WeightStruct[]{
+                                new WeightStruct(assets.get("asset-1"), ICX.divide(BigInteger.TWO)),
+                                new WeightStruct(assets.get("asset-2"), ICX.divide(BigInteger.valueOf(4L))),
+                                new WeightStruct(assets.get("asset-3"), ICX.divide(BigInteger.valueOf(4L))),
+                        }, BigInteger.valueOf(1000L));
+
+                        BigInteger assetWeight = weightController.getAssetWeight(assets.get("asset-1"),
+                                BigInteger.valueOf(999L));
+                        assertEquals(BigInteger.ZERO, assetWeight);
+
+                        assetWeight = weightController.getAssetWeight(assets.get("asset-1"),
+                                BigInteger.valueOf(1001L));//todo 1000L or 1001L
+
+                        long assetAWeight = 25 * 50; //type weight * asset weight
+
+                        assertEquals(ICX.multiply(BigInteger.valueOf(assetAWeight)).divide(BigInteger.valueOf(10000L)),
+                                assetWeight);
+                        assetWeight = weightController.getAssetWeight(assets.get("asset-1"),
+                                null);
+
+                        assertEquals(ICX.multiply(BigInteger.valueOf(assetAWeight)).divide(BigInteger.valueOf(10000L)),
+                                assetWeight);
+
+                        Map<String, BigInteger> type_A_Weights = weightController.getAssetWeightByTimestamp("type-a",
+                                BigInteger.valueOf(1001L));
+
+                        long asset_1_Weight = 25 * 50; //type weight * asset weight
+                        assertEquals(
+                                ICX.multiply(BigInteger.valueOf(asset_1_Weight)).divide(BigInteger.valueOf(10000L)),
+                                type_A_Weights.get(assets.get("asset-1").toString()));
+
+                        long asset_2_Weight = 25 * 25; //type weight * asset weight
+                        assertEquals(
+                                ICX.multiply(BigInteger.valueOf(asset_2_Weight)).divide(BigInteger.valueOf(10000L)),
+                                type_A_Weights.get(assets.get("asset-2").toString()));
+
+                        long asset_3_Weight = 25 * 25; //type weight * asset weight
+                        assertEquals(
+                                ICX.multiply(BigInteger.valueOf(asset_3_Weight)).divide(BigInteger.valueOf(10000L)),
+                                type_A_Weights.get(assets.get("asset-3").toString()));
+
+                        STATES.put("should_able_to_set_asset_weight_by_owner", true);
+                    }
                 }
 
             }
