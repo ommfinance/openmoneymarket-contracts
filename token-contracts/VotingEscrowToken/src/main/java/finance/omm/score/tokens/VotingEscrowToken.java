@@ -436,7 +436,6 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
         Address token = Context.getCaller();
-        System.out.println(token + ";" + this.tokenAddress);
         Context.require(token.equals(this.tokenAddress), "Token Fallback: Only Omm deposits are allowed");
 
         Context.require(_value.signum() > 0, "Token Fallback: Token value should be a positive number");
