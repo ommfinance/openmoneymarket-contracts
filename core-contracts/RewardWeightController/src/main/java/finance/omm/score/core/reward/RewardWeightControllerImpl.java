@@ -290,7 +290,10 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public Map<String, BigInteger> getAssetWeightByTimestamp(String type, BigInteger timestamp) {
+    public Map<String, BigInteger> getAssetWeightByTimestamp(String type, @Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
         BigInteger typeWeight = getTypeWeight(type, timestamp);
         return this.assetWeightDB.getWeightByTimestamp(type, typeWeight, timestamp);
     }

@@ -17,7 +17,7 @@ public interface Searchable {
             return checkpointCount - 1;
         }
         if (checkpointCount == 1 && latestTimestamp.compareTo(timestamp) >= 0) {
-            return checkpointCount;
+            return 0;
         }
 
         if (checkpointCount != 1) {
