@@ -420,7 +420,6 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     private void increaseAmount(Address sender, BigInteger value) {
         this.nonReentrant.updateLock(true);
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
-
         this.assertNotContract(sender);
         LockedBalance locked = getLockedBalance(sender);
 
@@ -450,6 +449,10 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         switch (method) {
             case "increaseAmount":
                 this.increaseAmount(_from, _value);
+                BigInteger newUnlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
+                if (BigInteger.ZERO.compareTo(newUnlockTime) > 0) {
+                    this.increaseUnlockTime(newUnlockTime, _from);
+                }
                 break;
             case "createLock":
                 BigInteger minimumLockingAmount = this.minimumLockingAmount.get();
@@ -470,9 +473,12 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     }
 
     @External
-    public void increaseUnlockTime(BigInteger unlockTime) {
+    public void increaseUnlockTime(BigInteger unlockTime, @Optional Address user) {
         this.nonReentrant.updateLock(true);
         Address sender = Context.getCaller();
+        if (sender == tokenAddress) {
+            sender = user;
+        }
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
 
         this.assertNotContract(sender);
