@@ -1,0 +1,176 @@
+[
+  {
+    "name": "addressProvider",
+    "path": "../omm-scores/mainnet/address-provider.zip",
+    "params": {
+    },
+    "order": 1.0
+  },
+  {
+    "name": "dUSDC",
+    "path": "../omm-scores/mainnet/d-token.zip",
+    "params": {
+      "_name": "USDC Debt Token",
+      "_symbol": "dUSDC",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 2.0
+  },
+  {
+    "name": "oUSDC",
+    "path": "../omm-scores/mainnet/o-token.zip",
+    "params": {
+      "_name": "USDC Interest Token",
+      "_symbol": "oUSDC",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 3.0
+  },
+  {
+    "name": "dUSDS",
+    "path": "../omm-scores/mainnet/d-token.zip",
+    "params": {
+      "_name": "USDS Debt Token",
+      "_symbol": "dUSDS",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 2.0
+  },
+  {
+    "name": "oUSDS",
+    "path": "../omm-scores/mainnet/o-token.zip",
+    "params": {
+      "_name": "USDS Interest Token",
+      "_symbol": "oUSDS",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 3.0
+  },
+  {
+    "name": "rewardDistribution",
+    "params": {
+      "bOMMRewardStartDate": 1646438400
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 4.0
+  },
+  {
+    "name": "rewardWeightController",
+    "params": {
+      "startTimestamp": 1581724800000000
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 5.0
+  },
+  {
+    "name": "ommToken",
+    "path": "../omm-scores/mainnet/ommToken.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 6.0
+  },
+  {
+    "name": "bOMM",
+    "params": {
+      "name": "Boosted OMM token",
+      "symbol": "bOMM"
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider",
+      "tokenAddress": "ommToken"
+    },
+    "order": 7.0
+  },
+  {
+    "name": "daoFund",
+    "path": "../omm-scores/mainnet/daoFund.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 8.0
+  },
+  {
+    "name": "feeProvider",
+    "path": "../omm-scores/mainnet/feeProvider.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 9.0
+  },
+  {
+    "name": "lendingPool",
+    "path": "../omm-scores/mainnet/lendingPool.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 10.0
+  },
+  {
+    "name": "lendingPoolCore",
+    "path": "../omm-scores/mainnet/lendingPoolCore.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 11.0
+  },
+  {
+    "name": "USDS",
+    "path": "../omm-scores/dummy/stable-coin.zip",
+    "params": {
+      "_name": "USDS",
+      "_symbol": "USDS",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_admin": "owner"
+    },
+    "order": 12.0
+  },
+  {
+    "name": "iUSDC",
+    "path": "../omm-scores/dummy/stable-coin.zip",
+    "params": {
+      "_name": "iUSDC",
+      "_symbol": "iUSDC",
+      "_decimals": 6
+    },
+    "addressParams": {
+      "_admin": "owner"
+    },
+    "order": 13.0
+  },
+  {
+    "name": "bandOracle",
+    "path": "../omm-scores/dummy/proxy-band-oracle.zip",
+    "params": {
+    },
+    "order": 14.0
+  }
+]
