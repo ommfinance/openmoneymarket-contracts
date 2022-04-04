@@ -7,6 +7,18 @@ buildscript {
     }
 }
 
+
+apply plugin: 'deploy-contracts'
+
+
+deployOMMContracts {
+    envs {
+        local {
+            env = "sejong"
+        }
+    }
+}
+
 subprojects {
     repositories {
         mavenCentral()
@@ -31,15 +43,17 @@ subprojects {
         intTestRuntimeOnly.extendsFrom testRuntimeOnly
     }
 
-    ext {
 
-        env = has("env") ? getProperty("env") : 'dev'
-        javaeeVersion = getProperty("javaee.version")
-        scorexVersion = getProperty("scorex.version")
-        javaeeUnittestVersion = getProperty("javaee-unittest.version")
-        scoreClientVersion = getProperty("score-client.version")
-        iconsdkVersion = getProperty("iconsdk.version")
-        jacksonVersion = getProperty("jackson.version")
+    ext {
+        env = has("network") ? getProperty("network") : 'dev'
+        javaeeVersion = findProperty("javaee.version") ?: 0.9 .0
+        scorexVersion = findProperty("scorex.version") ?: 0.5 .2
+        javaeeUnittestVersion = findProperty("javaee-unittest.version") ?: 0.9 .1
+        scoreClientVersion = findProperty("score-client.version") ?: 0.9 .0
+        iconsdkVersion = findProperty("iconsdk.version") ?: 2.0 .0
+        jacksonVersion = findProperty("jackson.version") ?: 2.9 .6
+        mockitoVersion = findProperty("mockito.version") ?: 4.3 .1
+        junitVersion = findProperty("junit.version") ?: 5.8 .1
 
     }
 
@@ -53,9 +67,9 @@ subprojects {
         testImplementation "foundation.icon:javaee-score-client:$scoreClientVersion"
         testAnnotationProcessor "foundation.icon:javaee-score-client:$scoreClientVersion"
         testImplementation "foundation.icon:javaee-unittest:$javaeeUnittestVersion"
-        testImplementation "org.junit.jupiter:junit-jupiter:5.8.1"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.8.1"
-        testImplementation "org.mockito:mockito-core:4.3.1"
+        testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+        testImplementation "org.mockito:mockito-core:$mockitoVersion"
         testImplementation "foundation.icon:icon-sdk:$iconsdkVersion"
         testImplementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
         testImplementation group: "org.json", name: "json", version: "20211205"
