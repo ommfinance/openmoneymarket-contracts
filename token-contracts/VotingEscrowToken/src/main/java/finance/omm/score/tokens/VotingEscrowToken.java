@@ -417,18 +417,27 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         this.nonReentrant.updateLock(false);
     }
 
-    private void increaseAmount(Address sender, BigInteger value) {
+    private void increaseAmount(Address sender, BigInteger value, BigInteger unlockTime) {
         this.nonReentrant.updateLock(true);
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
         this.assertNotContract(sender);
         LockedBalance locked = getLockedBalance(sender);
+
+        if (!unlockTime.equals(BigInteger.ZERO)) {
+            unlockTime = unlockTime.divide(TimeConstants.WEEK_IN_MICRO_SECONDS)
+                    .multiply(TimeConstants.WEEK_IN_MICRO_SECONDS);
+            Context.require(unlockTime.compareTo(locked.end.toBigInteger()) > 0,
+                    "Increase unlock time: Can only increase lock duration");
+            Context.require(unlockTime.compareTo(blockTimestamp.add(MAX_TIME)) <= 0,
+                    "Increase unlock time: Voting lock can be 4 years max");
+        }
 
         Context.require(value.compareTo(BigInteger.ZERO) > 0, "Increase amount: Need non zero value");
         Context.require(locked.amount.compareTo(BigInteger.ZERO) > 0, "Increase amount: No existing lock found");
         Context.require(locked.getEnd()
                 .compareTo(blockTimestamp) > 0, "Increase amount: Cannot add to expired lock.");
 
-        this.depositFor(sender, value, BigInteger.ZERO, locked, INCREASE_LOCK_AMOUNT);
+        this.depositFor(sender, value, unlockTime, locked, INCREASE_LOCK_AMOUNT);
         this.nonReentrant.updateLock(false);
     }
 
@@ -445,21 +454,23 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
 
         String method = json.get("method").asString();
         JsonValue params = json.get("params");
+        BigInteger unlockTime = BigInteger.ZERO;
 
         switch (method) {
             case "increaseAmount":
-                this.increaseAmount(_from, _value);
-                BigInteger newUnlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
-                if (BigInteger.ZERO.compareTo(newUnlockTime) > 0) {
-                    this.increaseUnlockTime(newUnlockTime, _from);
+                try {
+                    unlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
+                } catch (NullPointerException ignored) {
+
                 }
+                this.increaseAmount(_from, _value, unlockTime);
                 break;
             case "createLock":
                 BigInteger minimumLockingAmount = this.minimumLockingAmount.get();
                 if (minimumLockingAmount.compareTo(_value) > 0) {
                     throw BoostedOMMException.invalidMinimumLockingAmount(minimumLockingAmount);
                 }
-                BigInteger unlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
+                unlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
                 this.createLock(_from, _value, unlockTime);
                 break;
             case "depositFor":
@@ -473,12 +484,9 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     }
 
     @External
-    public void increaseUnlockTime(BigInteger unlockTime, @Optional Address user) {
+    public void increaseUnlockTime(BigInteger unlockTime) {
         this.nonReentrant.updateLock(true);
         Address sender = Context.getCaller();
-        if (sender == tokenAddress) {
-            sender = user;
-        }
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
 
         this.assertNotContract(sender);
