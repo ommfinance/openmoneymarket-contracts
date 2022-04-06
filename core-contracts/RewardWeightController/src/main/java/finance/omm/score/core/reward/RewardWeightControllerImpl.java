@@ -207,7 +207,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (totalSupply.compareTo(BigInteger.ZERO) <= 0) {
             return BigInteger.ZERO;
         }
-        BigInteger timestamp = TimeConstants.getBlockTimestamp();
+        BigInteger timestamp = TimeConstants.getBlockTimestamp().subtract(BigInteger.ONE);
 
         BigInteger integrateIndex = BigInteger.ZERO;
         Asset asset = assetWeightDB.getAsset(assetAddr);
@@ -222,7 +222,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             prevTimestamp = timestamp;
             Map<String, BigInteger> result = calculateRewardDistribution(asset, lastUpdatedTimestamp, timestamp);
             integrateIndex = integrateIndex.add(exaDivide(result.get("totalRewards"), totalSupply));
-            timestamp = result.get("timestamp");
+            timestamp = result.get("timestamp").subtract(BigInteger.ONE);
         }
 
         return integrateIndex;
@@ -246,7 +246,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             return Map.of("totalRewards", BigInteger.ZERO, "timestamp", timestamp);
         }
         BigInteger rate = exaMultiply(exaMultiply(inflationRate.get("rate"), tWeight), aWeight);
-        BigInteger timeDeltaInSeconds = timestamp.subtract(maximum).divide(TimeConstants.SECOND);
+        BigInteger timeDeltaInSeconds = timestamp.add(BigInteger.ONE).subtract(maximum).divide(TimeConstants.SECOND);
         BigInteger totalReward = rate.multiply(timeDeltaInSeconds);
         return Map.of("totalRewards", totalReward, "timestamp", maximum);
     }
