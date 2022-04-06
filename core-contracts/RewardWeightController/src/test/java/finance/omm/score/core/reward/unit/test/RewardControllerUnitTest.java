@@ -492,11 +492,11 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     public void testDistributionInfo() {
 
-        Map<String, ?> result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(1L));
+        Map<String, ?> result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(1L));
 
         assertFalse((boolean) result.get("isValid"));
 
-        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(0L));
+        result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(0L));
 
         assertTrue((boolean) result.get("isValid"));
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));
@@ -504,21 +504,21 @@ public class RewardControllerUnitTest extends TestBase {
 
         sm.getBlock().increase(86400 / 2);//1
 
-        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(1L));
+        result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(1L));
 
         assertTrue((boolean) result.get("isValid"));
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));//2-1
         assertEquals(BigInteger.valueOf(2L), result.get("day"));//1+1
 
         sm.getBlock().increase(86400 * 4 / 2);//1+4 = 5
-        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(2L));
+        result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(2L));
         assertTrue((boolean) result.get("isValid"));
         assertEquals(BigInteger.valueOf(6L), result.get("day")); //5+1
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)).multiply(BigInteger.valueOf(4L)),
                 result.get("distribution"));//6-2
 
         sm.getBlock().increase(86400 * 25 / 2);//5+25=30
-        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(25L));
+        result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(25L));
         assertTrue((boolean) result.get("isValid"));
         assertEquals(BigInteger.valueOf(31L), result.get("day")); //30+1=31
         //31-25 => 25+26+27+28+29+30
