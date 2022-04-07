@@ -538,17 +538,17 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         }
     }
 
-    @External
+    @External(readonly = true)
     public Map<String, BigInteger> getAllAssetLegacyIndexes() {
         return this.legacyRewards.getAllAssetIndexes();
     }
 
-    @External
+    @External(readonly = true)
     public Map<String, BigInteger> getAllAssetLegacyLastUpdateTimestamp() {
         return this.legacyRewards.getAllAssetLastUpdateTimestamp();
     }
 
-    @External
+    @External(readonly = true)
     public Map<String, BigInteger> getUserAllLegacyIndexes(Address _user) {
         return this.legacyRewards.getUserAllIndexes(_user);
     }
