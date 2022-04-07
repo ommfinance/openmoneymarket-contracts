@@ -161,4 +161,10 @@ public interface RewardDistribution extends AddressProvider {
 
     boolean isHandleActionDisabled();
 
+    Map<String, BigInteger> getAllAssetLegacyIndexes();
+
+    Map<String, BigInteger> getAllAssetLegacyLastUpdateTimestamp();
+
+    Map<String, BigInteger> getUserAllLegacyIndexes(Address _user);
+
 }

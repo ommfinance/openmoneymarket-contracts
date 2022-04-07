@@ -6,11 +6,13 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 import finance.omm.libs.structs.WorkingBalance;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import score.Address;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
 import score.annotation.EventLog;
+import scorex.util.HashMap;
 
 
 @Deprecated
@@ -80,6 +82,32 @@ public class LegacyRewards {
         return exaMultiply(_userBalance, _assetIndex.subtract(_userIndex));
     }
 
+    public Map<String, BigInteger> getAllAssetIndexes() {
+        List<Address> assets = this._rewardConfig.getAssets();
+        Map<String, BigInteger> assetIndexes = new HashMap<>();
+        for (Address asset : assets) {
+            assetIndexes.put(asset.toString(), this._assetIndex.getOrDefault(asset, BigInteger.ZERO));
+        }
+        return assetIndexes;
+    }
+
+    public Map<String, BigInteger> getAllAssetLastUpdateTimestamp() {
+        List<Address> assets = this._rewardConfig.getAssets();
+        Map<String, BigInteger> assetUpdateTime = new HashMap<>();
+        for (Address asset : assets) {
+            assetUpdateTime.put(asset.toString(), this._lastUpdateTimestamp.getOrDefault(asset, BigInteger.ZERO));
+        }
+        return assetUpdateTime;
+    }
+
+    public Map<String, BigInteger> getUserAllIndexes(Address _user) {
+        List<Address> assets = this._rewardConfig.getAssets();
+        Map<String, BigInteger> assetIndexes = new HashMap<>();
+        for (Address asset : assets) {
+            assetIndexes.put(asset.toString(), this._userIndex.at(_user).getOrDefault(asset, BigInteger.ZERO));
+        }
+        return assetIndexes;
+    }
 
     @EventLog(indexed = 1)
     public void LegacyAssetIndexUpdated(Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
