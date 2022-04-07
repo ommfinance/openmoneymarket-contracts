@@ -538,6 +538,20 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         }
     }
 
+    @External
+    public Map<String, BigInteger> getAllAssetLegacyIndexes() {
+        return this.legacyRewards.getAllAssetIndexes();
+    }
+
+    @External
+    public Map<String, BigInteger> getAllAssetLegacyLastUpdateTimestamp() {
+        return this.legacyRewards.getAllAssetLastUpdateTimestamp();
+    }
+
+    @External
+    public Map<String, BigInteger> getUserAllLegacyIndexes(Address _user) {
+        return this.legacyRewards.getUserAllIndexes(_user);
+    }
 
     @EventLog()
     public void OmmTokenMinted(BigInteger _day, BigInteger _value, BigInteger _days) {}
