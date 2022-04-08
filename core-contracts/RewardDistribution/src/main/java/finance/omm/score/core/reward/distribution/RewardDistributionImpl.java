@@ -276,11 +276,6 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         isHandleActionDisabled.set(Boolean.FALSE);
     }
 
-    //    @Override
-    @External(readonly = true)
-    public boolean isRewardClaimEnabled() {
-        return isRewardClaimEnabled.get();
-    }
 
     /**
      * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getDailyRewards(BigInteger)}
@@ -551,6 +546,11 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External(readonly = true)
     public Map<String, BigInteger> getUserAllLegacyIndexes(Address _user) {
         return this.legacyRewards.getUserAllIndexes(_user);
+    }
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getLegacyUnclaimedRewards(Address _user) {
+        return this.legacyRewards.getLegacyUnclaimedRewards(_user);
     }
 
     @EventLog()

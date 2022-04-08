@@ -185,9 +185,16 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     }
 
+    //    @Override
+    @External(readonly = true)
+    public boolean isRewardClaimEnabled() {
+        return isRewardClaimEnabled.getOrDefault(Boolean.FALSE);
+    }
+
+
     @External
     public void claimRewards(Address user) {
-        if (!isRewardClaimEnabled.getOrDefault(Boolean.FALSE)) {
+        if (!isRewardClaimEnabled()) {
             throw RewardDistributionException.rewardClaimDisabled();
         }
         Map<String, BigInteger> boostedBalance = getBoostedBalance(user);

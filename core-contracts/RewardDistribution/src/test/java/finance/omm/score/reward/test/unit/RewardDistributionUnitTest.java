@@ -272,6 +272,7 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
                     long workingBalance, long workingTotal) {
                 clearInvocations(scoreSpy);
                 Account user = users.get(userIndex);
+                doReturn(Boolean.TRUE).when(scoreSpy).isRewardClaimEnabled();
 
                 doReturn(BigInteger.valueOf(bBalance).multiply(ICX)).when(scoreSpy)
                         .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user.getAddress());
@@ -394,7 +395,7 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
             put("day", BigInteger.ZERO);
         }};
         doReturn(result).when(scoreSpy)
-                .call(eq(clazz), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("distributionDetails"),
+                .call(eq(clazz), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getDistributionDetails"),
                         any(BigInteger.class));
         score.invoke(owner, "distribute");
 
@@ -416,7 +417,7 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
         Class<Map<String, ?>> clazz = (Class) Map.class;
         BigInteger distribution = (BigInteger) response.get("distribution");
         doReturn(response).when(scoreSpy)
-                .call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "distributionDetails",
+                .call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "getDistributionDetails",
                         BigInteger.ZERO);
         doNothing().when(scoreSpy).call(Contracts.OMM_TOKEN, "mint", distribution);
         mockTokenDistribution();
