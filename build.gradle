@@ -4,12 +4,12 @@ buildscript {
     }
     dependencies {
         classpath 'foundation.icon:gradle-javaee-plugin:0.8.0'
+//        classpath files('.deployment/')
     }
 }
 
 
 apply plugin: 'deploy-contracts'
-
 
 deployOMMContracts {
     envs {
@@ -18,11 +18,19 @@ deployOMMContracts {
         }
         berlin {
             env = "berlin"
-            configFile = "contracts-config.json"
-            keystore = "dev-wallet.json"
-            password = "--password--"
+            configFile = "contracts-sample.json"
+            keystore = rootProject.findProperty('keystoreName') ?: ''
+            password = rootProject.findProperty('keystorePass') ?: ''
         }
     }
+}
+
+executeOMMActions {
+    contractAddressFile = "addresses.json"
+    propertiesFile = 'sample.properties'
+    actionsFile = 'actions-one.json'
+    keystore = rootProject.findProperty('keystoreName') ?: ''
+    password = rootProject.findProperty('keystorePass') ?: ''
 }
 
 subprojects {
@@ -30,7 +38,7 @@ subprojects {
         mavenCentral()
     }
 
-    apply plugin: 'java'
+
     apply plugin: 'foundation.icon.javaee'
 
     sourceSets {

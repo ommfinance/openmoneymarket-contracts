@@ -3,6 +3,7 @@ package finance.omm.gradle.plugin
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import finance.omm.gradle.plugin.utils.AddressUtils
 import finance.omm.gradle.plugin.utils.NameMapping
 import finance.omm.gradle.plugin.utils.Network
 import finance.omm.gradle.plugin.utils.Score
@@ -91,7 +92,23 @@ class DeployOMMContracts extends DefaultTask {
             Address address = deploy(score);
             addresses.put(score.getName(), address);
         }
-        writeFile("addresses-" + network.name() + "-" + System.currentTimeMillis() + ".json", addresses);
+        setAddresses(addresses)
+        writeFile(".deployment/addresses-" + network.name() + "-" + System.currentTimeMillis() + ".json", addresses);
+    }
+
+
+    private void setAddresses(Map<String, Address> addresses) {
+
+        Map<String, Object> params = AddressUtils.getParamsForSetAddresses(addresses);
+
+        send(addresses.get("addressProvider"), "setAddresses", params);
+    }
+
+    private void send(Address address, String method, Map<String, Object> params) {
+        DefaultScoreClient.send(client, network.getNid(), wallet,
+                DefaultScoreClient.DEFAULT_STEP_LIMIT,
+                address, BigInteger.ZERO, method, params,
+                DefaultScoreClient.DEFAULT_RESULT_TIMEOUT);
     }
 
 
@@ -116,7 +133,7 @@ class DeployOMMContracts extends DefaultTask {
         ObjectMapper objectMapper = new ObjectMapper();
         InputStream is = this.getClass()
                 .getClassLoader()
-                .getResourceAsStream("contracts-sample.json");
+                .getResourceAsStream(configFile.get());
 
         List<Score> list = objectMapper.readValue(is, new TypeReference<List<Score>>() {
         });

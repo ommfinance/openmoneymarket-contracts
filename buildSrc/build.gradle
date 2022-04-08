@@ -1,4 +1,5 @@
 apply plugin: 'groovy'
+apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 
@@ -12,6 +13,7 @@ repositories {
 }
 
 dependencies {
+    runtimeClasspath files('../_deployment')
     implementation "foundation.icon:javaee-api:0.9.0"
     annotationProcessor "foundation.icon:javaee-score-client:0.9.0"
     implementation "foundation.icon:javaee-score-client:0.9.0"

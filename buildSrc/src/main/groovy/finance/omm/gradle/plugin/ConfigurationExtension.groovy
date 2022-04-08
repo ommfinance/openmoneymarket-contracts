@@ -31,7 +31,7 @@ public class ConfigurationExtension {
                 task.getConfigFile().set(container.getConfigFile());
             });
             var deployTask = project.getTasks().getByName(taskName);
-            deployTask.setGroup("Deployment");
+            deployTask.setGroup("Configuration");
             deployTask.setDescription("Deploy OMM Contracts to " + capitalizedTarget + ".");
         });
     }

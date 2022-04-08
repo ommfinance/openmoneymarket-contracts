@@ -11,9 +11,11 @@ public class AddressUtils {
     public static Map<String, Object> getParamsForSetAddresses(Map<String, Address> addresses) {
         List<Map<String, Object>> details = new ArrayList<>();
         for (Map.Entry<String, Address> entry : addresses.entrySet()) {
-            details.add(Map.of(
-                    "name", entry.getKey(), "address", entry.getValue()
-            ));
+            if (!entry.getKey().equals("addressProvider") && !entry.getKey().equals("owner")) {
+                details.add(Map.of(
+                        "name", entry.getKey(), "address", entry.getValue()
+                ));
+            }
         }
         return Map.of("_addressDetails", details);
     }

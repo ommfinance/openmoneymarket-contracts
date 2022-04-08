@@ -46,6 +46,7 @@ public class LegacyRewards {
         if (totalBalance.equals(BigInteger.ZERO) || cutOffTimestamp.equals(lastUpdateTimestamp)) {
             return;
         }
+
         BigInteger _emissionPerSecond = this._rewardConfig.getEmissionPerSecond(assetAddr);
         BigInteger timeDelta = cutOffTimestamp.subtract(lastUpdateTimestamp);
 

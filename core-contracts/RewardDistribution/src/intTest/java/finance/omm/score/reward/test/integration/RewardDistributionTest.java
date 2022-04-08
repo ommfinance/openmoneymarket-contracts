@@ -150,7 +150,6 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
             Assertions.assertTrue(allWeightType.isEmpty());
 
             scoreClient.addType("type-a", false);
-
             allWeightType = weightController.getALlTypeWeight(null);
             Assertions.assertFalse(allWeightType.isEmpty());
             Assertions.assertEquals(1, allWeightType.size());
