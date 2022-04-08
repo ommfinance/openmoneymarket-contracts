@@ -167,4 +167,5 @@ public interface RewardDistribution extends AddressProvider {
 
     Map<String, BigInteger> getUserAllLegacyIndexes(Address _user);
 
+    Map<String, BigInteger> getLegacyUnclaimedRewards(Address _user);
 }

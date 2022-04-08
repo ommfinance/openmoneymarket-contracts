@@ -110,6 +110,23 @@ public class LegacyRewards {
         return assetIndexes;
     }
 
+    public Map<String, BigInteger> getLegacyUnclaimedRewards(Address _user) {
+        Map<String, BigInteger> rewards = new HashMap<>();
+        List<Address> assets = this._rewardConfig.getAssets();
+        DictDB<Address, BigInteger> userUnclaimedRewards = _usersUnclaimedRewards.at(_user);
+        BigInteger totalRewards = BigInteger.ZERO;
+        for (Address asset : assets) {
+            BigInteger reward = userUnclaimedRewards.getOrDefault(asset, BigInteger.ZERO);
+            rewards.put(this._rewardConfig.getAssetName(asset), reward);
+            totalRewards = totalRewards.add(reward);
+        }
+
+        rewards.put("total", totalRewards);
+
+        return rewards;
+
+    }
+
     @EventLog(indexed = 1)
     public void LegacyAssetIndexUpdated(Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
     }
