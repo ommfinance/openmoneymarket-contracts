@@ -1,0 +1,20 @@
+[
+  {
+    "contract": "governance",
+    "method": "setReserveConstants",
+    "__args__": {
+      "_constants": [
+        {
+          "__address_args__": {
+            "reserve": "usds"
+          },
+          "optimalUtilizationRate": "0xb1a2bc2ec500000",
+          "baseBorrowRate": "0x470de4df820000",
+          "slopeRate1": "0xd529ae9e860000",
+          "slopeRate2": "0x1bc16d674ec80000"
+        }
+      ]
+    },
+    "order": 1.0
+  }
+]

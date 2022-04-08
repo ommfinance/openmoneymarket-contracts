@@ -16,8 +16,8 @@ public class ConfigContainer {
     public ConfigContainer(String name, ObjectFactory objectFactory) {
         this.name = name;
         this.configuration = objectFactory.property(String.class).convention("plugin-dev.properties");
-        this.keystore = objectFactory.property(String.class).convention("godWallet.json");
-        this.password = objectFactory.property(String.class).convention("gochain");
+        this.keystore = objectFactory.property(String.class);
+        this.password = objectFactory.property(String.class);
         this.env = objectFactory.property(String.class).convention("local");
         this.configFile = objectFactory.property(String.class).convention("contracts-sample.json");
     }
