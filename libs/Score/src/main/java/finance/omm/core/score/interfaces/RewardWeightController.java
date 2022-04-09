@@ -55,4 +55,6 @@ public interface RewardWeightController {
     Map<String, ?> getDistributionDetails(BigInteger day);
 
 
+    Map<String, BigInteger> getEmissionRate(@Optional BigInteger timestamp);
+
 }

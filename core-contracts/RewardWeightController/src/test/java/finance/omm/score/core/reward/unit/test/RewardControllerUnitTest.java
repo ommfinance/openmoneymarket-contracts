@@ -4,6 +4,8 @@ package finance.omm.score.core.reward.unit.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -378,6 +380,104 @@ public class RewardControllerUnitTest extends TestBase {
         }
 
     }
+
+
+    @DisplayName("asset emission rate")
+    @Test
+    public void testAssetEmissionRate() {
+
+        Long typeWeight = 25L;
+        Long typeWeight_2 = 75L;
+        initTypeWeight(BigInteger.ZERO, typeWeight, typeWeight_2);
+
+        String type = TYPE_ID_PREFIX + 1;
+
+        Map<Address, Long> addressMap = new HashMap<>() {{
+            put(addresses[0], 10L);
+            put(addresses[1], 20L);
+            put(addresses[2], 30L);
+            put(addresses[3], 40L);
+        }};
+        initAssetWeight(BigInteger.ZERO, 1, addressMap);
+        Map<Integer, BigInteger> snapshots = new HashMap<>();
+        Map<Integer, Map<Address, Long>> values = new HashMap<>();
+        snapshots.put(1, getTimestamp());
+        values.put(1, addressMap);
+
+        Map<Address, Long> addressMap2 = new HashMap<>() {{
+            put(addresses[4], 25L);
+            put(addresses[5], 25L);
+            put(addresses[6], 25L);
+            put(addresses[7], 25L);
+        }};
+
+        initAssetWeight(BigInteger.ZERO, 2, addressMap2);
+        snapshots.put(2, getTimestamp());
+        values.put(2, addressMap2);
+        Random r = new Random();
+        String type_id = type;
+        int startIndex = 0;
+        Long typeW = typeWeight;
+        for (int i = 1; i <= 10; i++) {
+            sm.getBlock().increase(r.nextInt(1000) + 1);
+            long a = r.nextInt(25) + 1;
+            long b = r.nextInt(25) + 1;
+            long c = r.nextInt(25) + 1;
+            long d = 100 - a - b - c;
+
+            Map<Address, Long> map = new HashMap<>() {{
+                put(addresses[startIndex + 0], a);
+                put(addresses[startIndex + 1], b);
+                put(addresses[startIndex + 2], c);
+                put(addresses[startIndex + 3], d);
+            }};
+            setAssetWeight(BigInteger.ZERO, type_id, map);
+            snapshots.put(i, getTimestamp());
+            values.put(i, map);
+        }
+
+        BigInteger mockRate = BigInteger.valueOf(1000_000_000);
+
+        doReturn(Map.of(
+                "rateChangedOn", BigInteger.ZERO,
+                "rate", mockRate.multiply(ICX)
+        )).when(scoreSpy).getInflationRateByTimestamp(any());
+
+        for (int i = 10; i > 1; i--) {
+
+            BigInteger timestamp = snapshots.get(i);
+
+            Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getEmissionRate",
+                    timestamp.add(BigInteger.ONE));
+            Map<String, BigInteger> prevTime = (Map<String, BigInteger>) score.call("getEmissionRate",
+                    timestamp);
+
+            Map<Address, Long> value = values.get(i);
+
+            for (Map.Entry<Address, Long> entry : value.entrySet()) {
+
+                String id = entry.getKey().toString();
+                BigInteger next = nextTime.get(id);
+                BigInteger expected = BigInteger.valueOf(entry.getValue() * typeW).multiply(mockRate)
+                        .multiply(ICX)
+                        .divide(BigInteger.valueOf(10_000));
+                assertEquals(expected, next, "next data not match at " + id);
+            }
+
+            value = values.get(i - 1);
+            for (Map.Entry<Address, Long> entry : value.entrySet()) {
+                String id = entry.getKey().toString();
+                BigInteger prev = prevTime.get(id);
+                BigInteger expected = BigInteger.valueOf(entry.getValue() * typeW).multiply(mockRate)
+                        .multiply(ICX)
+                        .divide(BigInteger.valueOf(10_000));
+
+                assertEquals(expected, prev, "previous data not match at " + id);
+            }
+        }
+
+    }
+
 
     @DisplayName("Integrate index test")
     @Test

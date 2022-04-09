@@ -25,6 +25,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import score.Address;
+import score.ArrayDB;
 import score.Context;
 import score.VarDB;
 import score.annotation.EventLog;
@@ -167,7 +168,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     if tInMicroSeconds=1000 then;
     rateChangeOn=100;
      */
-    private Map<String, BigInteger> getInflationRateByTimestamp(BigInteger tInMicroSeconds) {
+    public Map<String, BigInteger> getInflationRateByTimestamp(BigInteger tInMicroSeconds) {
         BigInteger rateChangedOn = _timestampAtStart.get();
 
         if (tInMicroSeconds.compareTo(rateChangedOn) <= 0) {
@@ -176,10 +177,8 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
                     "rate", getInflationRate(BigInteger.ZERO)
             );
         }
-        /*
-         *convert tInMicroSeconds=1000 to 999ms
-         */
-        BigInteger timeDelta = tInMicroSeconds.subtract(BigInteger.ONE).subtract(rateChangedOn);
+
+        BigInteger timeDelta = tInMicroSeconds.subtract(rateChangedOn);
 
         BigInteger numberOfYears = timeDelta.divide(YEAR_IN_MICRO_SECONDS);
 
@@ -199,6 +198,33 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     private BigInteger getInflationRate(BigInteger _day) {
         return tokenDistributionPerDay(_day).divide(DAY_IN_SECONDS);
+    }
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getEmissionRate(@Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
+        List<String> types = this.typeWeightDB.getTypes();
+        Map<String, BigInteger> response = new HashMap<>();
+        BigInteger inflationRate = getInflationRateByTimestamp(timestamp).get("rate");
+        for (String type : types) {
+            Map<String, BigInteger> typeWeight = typeWeightDB.searchTypeWeight(type, timestamp);
+            BigInteger tWeight = typeWeight.get("value");
+
+            ArrayDB<Address> addresses = this.assetWeightDB.getAssets(type);
+            for (int i = 0; i < addresses.size(); i++) {
+                Address address = addresses.get(i);
+                Asset asset = this.assetWeightDB.getAsset(address);
+                Map<String, BigInteger> assetWeightMap = this.assetWeightDB.searchAssetWeight(asset, timestamp);
+                BigInteger aWeight = assetWeightMap.get("value");
+
+                BigInteger aggregateWeight = exaMultiply(tWeight, aWeight);
+                BigInteger rate = exaMultiply(inflationRate, aggregateWeight);
+                response.put(address.toString(), rate);
+            }
+        }
+        return response;
     }
 
 
