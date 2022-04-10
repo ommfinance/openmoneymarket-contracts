@@ -129,7 +129,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     /**
-     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getALlTypeWeight(BigInteger)}
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getAllTypeWeight(BigInteger)}
      */
     @Override
     @External(readonly = true)

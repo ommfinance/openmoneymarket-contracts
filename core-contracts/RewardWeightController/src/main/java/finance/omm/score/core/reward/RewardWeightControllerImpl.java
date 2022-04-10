@@ -4,6 +4,7 @@ import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.DAY_IN_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.MONTH_IN_MICRO_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.YEAR_IN_MICRO_SECONDS;
+import static finance.omm.utils.math.MathUtils.HUNDRED_THOUSAND;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.MILLION;
 import static finance.omm.utils.math.MathUtils.exaDivide;
@@ -94,7 +95,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     @External(readonly = true)
-    public Map<String, BigInteger> getALlTypeWeight(@Optional BigInteger timestamp) {
+    public Map<String, BigInteger> getAllTypeWeight(@Optional BigInteger timestamp) {
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
@@ -133,13 +134,13 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(30L))) {
             return MILLION;
         } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR)) {
-            return BigInteger.valueOf(4L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(4L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
-            return BigInteger.valueOf(3L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.TWO.multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.ONE.multiply(MILLION).divide(BigInteger.TEN);
+            return HUNDRED_THOUSAND;
         } else {
             BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
             return pow(BigInteger.valueOf(103L), (index.intValue()))
@@ -411,7 +412,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
-        Map<String, BigInteger> lpAssetIds = (Map<String, BigInteger>) Context.call(
+        Map<String, BigInteger> lpAssetIds = Context.call(Map.class,
                 getAddress(Contracts.REWARDS.toString()), "getLiquidityProviders");
         Map<String, BigInteger> response = new HashMap<>();
         BigInteger typeWeight = this.getTypeWeight("liquidity", timestamp);
