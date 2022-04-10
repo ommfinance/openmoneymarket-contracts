@@ -1,6 +1,6 @@
 package finance.omm.gradle.plugin
 
-import com.fasterxml.jackson.annotation.JsonInclude
+
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -8,8 +8,6 @@ import finance.omm.gradle.plugin.utils.Action
 import finance.omm.gradle.plugin.utils.Network
 import foundation.icon.icx.Wallet
 import foundation.icon.jsonrpc.Address
-import foundation.icon.jsonrpc.IconJsonModule
-import foundation.icon.jsonrpc.JsonrpcClient
 import foundation.icon.score.client.DefaultScoreClient
 import org.gradle.api.DefaultTask
 import org.gradle.api.model.ObjectFactory
@@ -32,7 +30,7 @@ class ConfigureOMMEnv extends DefaultTask {
     private final Property<String> addressesFilePath;
     private final Property<String> propertiesFile;
 
-    private JsonrpcClient client;
+    private DefaultICONClient client;
     private Wallet wallet;
     private Network network;
 
@@ -97,11 +95,7 @@ class ConfigureOMMEnv extends DefaultTask {
         List<Action> actions = loadActions();
 
         init()
-
-        client = new JsonrpcClient(network.getUrl());
-        client.mapper().registerModule(new IconJsonModule());
-        client.mapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
+        client = new DefaultICONClient(this.network)
 
         this.wallet = DefaultScoreClient.wallet(this.keystore.get(), this.password.get());
 
@@ -183,8 +177,7 @@ class ConfigureOMMEnv extends DefaultTask {
     }
 
     private void execute(Action action) {
-        DefaultScoreClient.send(client, network.getNid(), wallet,
-                DefaultScoreClient.DEFAULT_STEP_LIMIT,
+        client.send(wallet,
                 getAddress(action.contract), BigInteger.ZERO, action.method, action.params,
                 DefaultScoreClient.DEFAULT_RESULT_TIMEOUT);
     }

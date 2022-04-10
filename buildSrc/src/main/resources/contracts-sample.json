@@ -1,14 +1,14 @@
 [
   {
     "name": "addressProvider",
-    "path": "../omm-scores/mainnet/address-provider.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/address-provider.zip",
     "params": {
     },
     "order": 1.0
   },
   {
     "name": "dUSDC",
-    "path": "../omm-scores/mainnet/d-token.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/d-token.zip",
     "params": {
       "_name": "USDC Debt Token",
       "_symbol": "dUSDC",
@@ -21,7 +21,7 @@
   },
   {
     "name": "oUSDC",
-    "path": "../omm-scores/mainnet/o-token.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/o-token.zip",
     "params": {
       "_name": "USDC Interest Token",
       "_symbol": "oUSDC",
@@ -34,7 +34,7 @@
   },
   {
     "name": "dUSDS",
-    "path": "../omm-scores/mainnet/d-token.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/d-token.zip",
     "params": {
       "_name": "USDS Debt Token",
       "_symbol": "dUSDS",
@@ -47,7 +47,7 @@
   },
   {
     "name": "oUSDS",
-    "path": "../omm-scores/mainnet/o-token.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/o-token.zip",
     "params": {
       "_name": "USDS Interest Token",
       "_symbol": "oUSDS",
@@ -80,7 +80,7 @@
   },
   {
     "name": "ommToken",
-    "path": "../omm-scores/mainnet/ommToken.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/ommToken.zip",
     "params": {
     },
     "addressParams": {
@@ -102,7 +102,7 @@
   },
   {
     "name": "daoFund",
-    "path": "../omm-scores/mainnet/daoFund.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/daoFund.zip",
     "params": {
     },
     "addressParams": {
@@ -112,7 +112,7 @@
   },
   {
     "name": "feeProvider",
-    "path": "../omm-scores/mainnet/feeProvider.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/feeProvider.zip",
     "params": {
     },
     "addressParams": {
@@ -122,7 +122,7 @@
   },
   {
     "name": "lendingPool",
-    "path": "../omm-scores/mainnet/lendingPool.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPool.zip",
     "params": {
     },
     "addressParams": {
@@ -132,7 +132,7 @@
   },
   {
     "name": "lendingPoolCore",
-    "path": "../omm-scores/mainnet/lendingPoolCore.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPoolCore.zip",
     "params": {
     },
     "addressParams": {
@@ -142,7 +142,7 @@
   },
   {
     "name": "USDS",
-    "path": "../omm-scores/dummy/stable-coin.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip",
     "params": {
       "_name": "USDS",
       "_symbol": "USDS",
@@ -155,7 +155,7 @@
   },
   {
     "name": "iUSDC",
-    "path": "../omm-scores/dummy/stable-coin.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip",
     "params": {
       "_name": "iUSDC",
       "_symbol": "iUSDC",
@@ -168,9 +168,68 @@
   },
   {
     "name": "bandOracle",
-    "path": "../omm-scores/dummy/proxy-band-oracle.zip",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/proxy-band-oracle.zip",
     "params": {
     },
     "order": 14.0
+  },
+  {
+    "name": "delegation",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/delegation.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 15.0
+  },
+  {
+    "name": "governance",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/governance.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 16.0
+  },
+  {
+    "name": "lendingPoolDataProvider",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lending-pool-data-provider.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 17.0
+  },
+  {
+    "name": "liquidationManager",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/liquidation-manager.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 18.0
+  },
+  {
+    "name": "stakedLP",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/stakedLP.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 19.0
+  },
+  {
+    "name": "workerToken",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/workerToken.zip",
+    "params": {
+      "_initialSupply": "0x56bc75e2d63100000",
+      "_decimals": 18
+    },
+    "order": 20.0
   }
 ]

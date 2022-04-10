@@ -146,11 +146,11 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
             if (STATES.getOrDefault("should_add_type_contract_false", false)) {
                 return;
             }
-            Map<String, BigInteger> allWeightType = weightController.getALlTypeWeight(null);
+            Map<String, BigInteger> allWeightType = weightController.getAllTypeWeight(null);
             Assertions.assertTrue(allWeightType.isEmpty());
 
             scoreClient.addType("type-a", false);
-            allWeightType = weightController.getALlTypeWeight(null);
+            allWeightType = weightController.getAllTypeWeight(null);
             Assertions.assertFalse(allWeightType.isEmpty());
             Assertions.assertEquals(1, allWeightType.size());
 
@@ -171,7 +171,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
 
             scoreClient.addType("type-b", true);
 
-            Map<String, BigInteger> allWeightType = weightController.getALlTypeWeight(null);
+            Map<String, BigInteger> allWeightType = weightController.getAllTypeWeight(null);
             Assertions.assertEquals(2, allWeightType.size());
 
             assertEquals(allWeightType.get("type-a"), BigInteger.ZERO);
@@ -215,7 +215,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                         new TypeWeightStruct("type-b", ICX.divide(BigInteger.TWO)),
                 }, BigInteger.TEN);
 
-                Map<String, BigInteger> allWeightType = weightController.getALlTypeWeight(null);
+                Map<String, BigInteger> allWeightType = weightController.getAllTypeWeight(null);
                 Assertions.assertFalse(allWeightType.isEmpty());
 
                 assertEquals(allWeightType.get("type-a"), ICX.divide(BigInteger.TWO));

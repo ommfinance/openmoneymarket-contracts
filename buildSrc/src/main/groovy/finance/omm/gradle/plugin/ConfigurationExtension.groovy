@@ -1,6 +1,6 @@
 package finance.omm.gradle.plugin
 
-import finance.omm.gradle.plugin.utils.ConfigContainer
+import finance.omm.gradle.plugin.ConfigContainer
 import org.gradle.api.Action
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project

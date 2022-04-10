@@ -6,7 +6,8 @@ public class MathUtils {
 
     public static BigInteger ICX = pow10(18);
     public static BigInteger HALF_ICX = ICX.divide(BigInteger.TWO);
-    public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(pow10(18));
+    public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(ICX);
+    public static BigInteger HUNDRED_THOUSAND = BigInteger.valueOf(100_000L).multiply(ICX);
 
 
     public static boolean isLessThan(BigInteger first, BigInteger second) {

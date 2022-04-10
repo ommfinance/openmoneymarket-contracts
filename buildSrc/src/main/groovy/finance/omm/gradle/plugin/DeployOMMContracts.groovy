@@ -1,6 +1,5 @@
 package finance.omm.gradle.plugin
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import finance.omm.gradle.plugin.utils.AddressUtils
@@ -9,8 +8,6 @@ import finance.omm.gradle.plugin.utils.Network
 import finance.omm.gradle.plugin.utils.Score
 import foundation.icon.icx.Wallet
 import foundation.icon.jsonrpc.Address
-import foundation.icon.jsonrpc.IconJsonModule
-import foundation.icon.jsonrpc.JsonrpcClient
 import foundation.icon.score.client.DefaultScoreClient
 import org.gradle.api.DefaultTask
 import org.gradle.api.model.ObjectFactory
@@ -29,10 +26,9 @@ class DeployOMMContracts extends DefaultTask {
     private final Property<String> password;
     private final Property<String> configFile;
 
-    private JsonrpcClient client;
     private Wallet wallet;
     private Network network;
-
+    private DefaultICONClient client;
 
     DeployOMMContracts() {
         super();
@@ -66,12 +62,13 @@ class DeployOMMContracts extends DefaultTask {
 
     @TaskAction
     void deployContracts() throws Exception {
+
         List<Score> scores = readSCOREs();
 
         this.network = Network.getNetwork(this.env.get());
-        client = new JsonrpcClient(network.getUrl());
-        client.mapper().registerModule(new IconJsonModule());
-        client.mapper().setSerializationInclusion(Include.NON_NULL);
+
+        client = new DefaultICONClient(this.network)
+
         this.wallet = DefaultScoreClient.wallet(this.keystore.get(), this.password.get());
         Map<String, Address> addresses = ["owner": new Address(wallet.getAddress().toString())];
         logger.lifecycle('deploying contracts...')
@@ -93,7 +90,9 @@ class DeployOMMContracts extends DefaultTask {
             addresses.put(score.getName(), address);
         }
         setAddresses(addresses)
-        writeFile(".deployment/addresses-" + network.name() + "-" + System.currentTimeMillis() + ".json", addresses);
+        String fileName = ".deployment/addresses-" + network.name() + "-" + System.currentTimeMillis() + ".json"
+        writeFile(fileName, addresses);
+        logger.lifecycle("contract addresses :: {}", fileName)
     }
 
 
@@ -105,23 +104,17 @@ class DeployOMMContracts extends DefaultTask {
     }
 
     private void send(Address address, String method, Map<String, Object> params) {
-        DefaultScoreClient.send(client, network.getNid(), wallet,
-                DefaultScoreClient.DEFAULT_STEP_LIMIT,
-                address, BigInteger.ZERO, method, params,
-                DefaultScoreClient.DEFAULT_RESULT_TIMEOUT);
+        client.send(wallet, address, BigInteger.ZERO, method, params, DefaultICONClient.DEFAULT_RESULT_TIMEOUT);
     }
 
 
     private Address deploy(Score score) throws URISyntaxException {
-        return _deploy(score, DefaultScoreClient.ZERO_ADDRESS);
+        return _deploy(score, DefaultICONClient.ZERO_ADDRESS);
     }
 
     private Address _deploy(Score score, Address zeroAddress) {
         Map<String, Object> params = score.getParams();
-        return DefaultScoreClient.deploy(client, network.getNid(), wallet,
-                DefaultScoreClient.DEFAULT_STEP_LIMIT,
-                zeroAddress, score.getPath(), params,
-                DefaultScoreClient.DEFAULT_RESULT_TIMEOUT);
+        return client.deploy(wallet, zeroAddress, score.getPath(), params);
     }
 
 
@@ -149,6 +142,7 @@ class DeployOMMContracts extends DefaultTask {
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(data);
             Files.write(outFile, json.getBytes());
+
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
         }

@@ -19,7 +19,7 @@ public interface RewardWeightController {
 
     BigInteger getTypeWeight(String type, @Optional BigInteger timestamp);
 
-    Map<String, BigInteger> getALlTypeWeight(@Optional BigInteger timestamp);
+    Map<String, BigInteger> getAllTypeWeight(@Optional BigInteger timestamp);
 
     void addAsset(String type, Address address, String name);
 

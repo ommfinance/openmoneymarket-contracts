@@ -1,4 +1,4 @@
-package finance.omm.gradle.plugin.utils;
+package finance.omm.gradle.plugin;
 
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
@@ -6,7 +6,6 @@ import org.gradle.api.provider.Property;
 public class ConfigContainer {
 
     private final String name;
-    private final Property<String> configuration;
     private final Property<String> keystore;
     private final Property<String> password;
     private final Property<String> env;
@@ -15,7 +14,6 @@ public class ConfigContainer {
 
     public ConfigContainer(String name, ObjectFactory objectFactory) {
         this.name = name;
-        this.configuration = objectFactory.property(String.class).convention("plugin-dev.properties");
         this.keystore = objectFactory.property(String.class);
         this.password = objectFactory.property(String.class);
         this.env = objectFactory.property(String.class).convention("local");
@@ -26,9 +24,6 @@ public class ConfigContainer {
         return name;
     }
 
-    public Property<String> getConfiguration() {
-        return configuration;
-    }
 
     public Property<String> getKeystore() {
         return keystore;
@@ -44,10 +39,6 @@ public class ConfigContainer {
 
     public void setKeystore(String keystore) {
         this.keystore.set(keystore);
-    }
-
-    public void setConfiguration(String configuration) {
-        this.configuration.set(configuration);
     }
 
     public Property<String> getEnv() {
