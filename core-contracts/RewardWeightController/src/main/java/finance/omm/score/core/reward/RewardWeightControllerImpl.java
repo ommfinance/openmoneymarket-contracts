@@ -77,7 +77,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External
     public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp) {
-        checkGovernance();
+        checkOwner();
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
@@ -113,7 +113,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External
     public void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp) {
-        checkGovernance();
+        checkOwner();
         _setAssetWeight(type, weights, timestamp);
     }
 
@@ -283,13 +283,6 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             throw RewardWeightException.notAuthorized("require reward distribution contract access");
         }
     }
-
-    private void checkGovernance() {
-        if (!Context.getCaller().equals(getAddress(Contracts.GOVERNANCE.getKey()))) {
-            throw RewardWeightException.notAuthorized("only governance contract allowed");
-        }
-    }
-
 
     private void checkOwner() {
         if (!Context.getOwner().equals(Context.getCaller())) {
