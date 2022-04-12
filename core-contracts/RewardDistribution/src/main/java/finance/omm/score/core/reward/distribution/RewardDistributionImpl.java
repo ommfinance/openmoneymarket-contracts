@@ -485,7 +485,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             Integer poolId = this.legacyRewards.getPoolID(assetAddr);
             Map<String, BigInteger> map = null;
             if (poolId > 0) {
-                map = Context.call(Map.class, getAddress(Contracts.STAKING.getKey()),
+                map = Context.call(Map.class, getAddress(Contracts.STAKED_LP.getKey()),
                         "getTotalStaked", poolId);
             } else {
                 map = Context.call(Map.class, assetAddr, "getTotalStaked");
