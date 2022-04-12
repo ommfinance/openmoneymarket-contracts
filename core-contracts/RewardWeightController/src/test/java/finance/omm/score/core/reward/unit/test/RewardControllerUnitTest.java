@@ -59,8 +59,7 @@ public class RewardControllerUnitTest extends TestBase {
 
     private Map<Contracts, Account> mockAddress = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
-        put(Contracts.GOVERNANCE, Account.newScoreAccount(102));
-        put(Contracts.REWARDS, Account.newScoreAccount(103));
+        put(Contracts.REWARDS, Account.newScoreAccount(102));
     }};
     private BigInteger startTimestamp;
 
@@ -129,7 +128,7 @@ public class RewardControllerUnitTest extends TestBase {
         weights[0] = struct;
 
         Object[] params = new Object[]{weights, BigInteger.ZERO};
-        Executable call = () -> score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setTypeWeight", params);
+        Executable call = () -> score.invoke(owner, "setTypeWeight", params);
         expectErrorMessage(call, "Total percentage is not equals to 100%");
     }
 
@@ -648,7 +647,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         Object[] params = new Object[]{type, weights, timestamp};
 
-        score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setAssetWeight", params);
+        score.invoke(owner, "setAssetWeight", params);
     }
 
     private void initAssetWeight(BigInteger timestamp, Integer typeId, Map<Address, Long> values) {
@@ -665,7 +664,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         Object[] params = new Object[]{type, weights, timestamp};
 
-        score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setAssetWeight", params);
+        score.invoke(owner, "setAssetWeight", params);
     }
 
 
@@ -679,7 +678,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         Object[] params = new Object[]{weights, timestamp};
 
-        score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setTypeWeight", params);
+        score.invoke(owner, "setTypeWeight", params);
     }
 
     private void initTypeWeight(BigInteger timestamp, Long... values) {
@@ -695,7 +694,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         Object[] params = new Object[]{weights, timestamp};
 
-        score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setTypeWeight", params);
+        score.invoke(owner, "setTypeWeight", params);
     }
 
 
