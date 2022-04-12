@@ -330,7 +330,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
         Map<String, BigInteger> response = null;
 
-        if (poolId == null || poolId.equals(BigInteger.ZERO)) {
+        if (poolId == null || poolId.compareTo(BigInteger.ZERO) <= 0) {
             response = Context.call(Map.class, asset, "getPrincipalSupply", user);
         } else {
             response = Context.call(Map.class, getAddress(Contracts.STAKED_LP.getKey()),
