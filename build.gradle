@@ -26,9 +26,9 @@ deployOMMContracts {
 }
 
 executeOMMActions {
-    contractAddressFile = "addresses.json"
+    contractAddressFile = "addresses-BERLIN-1649835786824.json"
     propertiesFile = 'sample.properties'
-    actionsFile = 'actions-one.json'
+    actionsFile = 'actions-sample.json'
     keystore = rootProject.findProperty('keystoreName') ?: ''
     password = rootProject.findProperty('keystorePass') ?: ''
 }

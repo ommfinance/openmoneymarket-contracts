@@ -66,8 +66,6 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
         systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
         systemProperty 'params.bOMMRewardStartDate', "1646438400"
 
-        println(project(":RewardWeightController").getObjects())
-        println(project.tasks.optimizedJar.outputJarName)
 
         dependsOn(":RewardWeightController:optimizedJar")
         systemProperty 'rewardWeight.keyStore', scoreTest.keystoreName

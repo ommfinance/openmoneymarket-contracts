@@ -59,7 +59,7 @@
     "order": 3.0
   },
   {
-    "name": "rewardDistribution",
+    "name": "rewards",
     "params": {
       "bOMMRewardStartDate": 1646438400
     },
@@ -231,5 +231,15 @@
       "_decimals": 18
     },
     "order": 20.0
+  },
+  {
+    "name": "priceOracle",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/priceOracle.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 21.0
   }
 ]

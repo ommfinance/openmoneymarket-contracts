@@ -161,7 +161,6 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             if (asset == null) {
                 throw RewardDistributionException.invalidAsset("Asset is null (" + address + ")");
             }
-            WorkingBalance workingBalance = getUserBalance(_user, address, asset.lpID);
 
             BigInteger reward = getUserReward(address, _user);
             Map<String, BigInteger> entityMap = (Map<String, BigInteger>) response.get(asset.type);
