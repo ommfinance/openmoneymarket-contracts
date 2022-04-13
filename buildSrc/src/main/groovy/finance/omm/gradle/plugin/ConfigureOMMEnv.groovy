@@ -126,7 +126,7 @@ class ConfigureOMMEnv extends DefaultTask {
                     JsonNode addressNodes = entry.getValue();
                     Iterator<Map.Entry<String, JsonNode>> addressIter = addressNodes.fields();
                     while (addressIter.hasNext()) {
-                        Map.Entry<String, JsonNode> nodeEntry = iter.next();
+                        Map.Entry<String, JsonNode> nodeEntry = addressIter.next();
                         params.put(nodeEntry.getKey(), getAddress(nodeEntry.getValue().textValue()));
                     }
                     break;
@@ -134,7 +134,7 @@ class ConfigureOMMEnv extends DefaultTask {
                     JsonNode propertyNode = entry.getValue();
                     Iterator<Map.Entry<String, JsonNode>> propertyIter = propertyNode.fields();
                     while (propertyIter.hasNext()) {
-                        Map.Entry<String, JsonNode> nodeEntry = iter.next();
+                        Map.Entry<String, JsonNode> nodeEntry = propertyIter.next();
                         params.put(nodeEntry.getKey(), getMapProperty(nodeEntry.getValue().textValue()));
                     }
                     break;
@@ -161,7 +161,7 @@ class ConfigureOMMEnv extends DefaultTask {
                 if (value.isValueNode()) {
                     params.put(entry.getKey(), value.textValue());
                 } else {
-                    buildParams(entry.getValue(), params);
+                    buildParams(jsonNode, params);
                 }
             }
             return params;

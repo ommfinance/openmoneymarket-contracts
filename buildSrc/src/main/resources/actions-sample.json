@@ -1,12 +1,380 @@
 [
   {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "lendingPool",
+      "_names": [
+        "liquidationManager",
+        "lendingPoolDataProvider",
+        "lendingPoolCore",
+        "feeProvider",
+        "rewards",
+        "ommToken"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddress",
+    "__args__": {
+      "_to": "lendingPool",
+      "_key": "bridgeOToken",
+      "__address_args__": {
+        "_value": "USDS"
+      }
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "lendingPoolCore",
+      "_names": [
+        "lendingPool",
+        "liquidationManager",
+        "feeProvider",
+        "delegation",
+        "governance",
+        "ommToken"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "lendingPoolDataProvider",
+      "_names": [
+        "lendingPool",
+        "lendingPoolCore",
+        "liquidationManager",
+        "feeProvider",
+        "priceOracle",
+        "rewards"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "liquidationManager",
+      "_names": [
+        "lendingPoolDataProvider",
+        "lendingPoolCore",
+        "lendingPool",
+        "feeProvider",
+        "priceOracle"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "ommToken",
+      "_names": [
+        "lendingPool",
+        "delegation",
+        "rewards"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddress",
+    "__args__": {
+      "_to": "oUSDS",
+      "__address_args__": {
+        "_value": "USDS"
+      },
+      "_key": "reserve"
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "oUSDS",
+      "_names": [
+        "lendingPoolCore",
+        "lendingPool",
+        "lendingPoolDataProvider",
+        "rewards",
+        "liquidationManager"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddress",
+    "__args__": {
+      "_to": "dUSDS",
+      "__address_args__": {
+        "_value": "USDS"
+      },
+      "_key": "reserve"
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "dUSDS",
+      "_names": [
+        "lendingPoolCore",
+        "rewards"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddress",
+    "__args__": {
+      "_to": "oUSDC",
+      "__address_args__": {
+        "_value": "iUSDC"
+      },
+      "_key": "reserve"
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "oUSDC",
+      "_names": [
+        "lendingPoolCore",
+        "lendingPool",
+        "lendingPoolDataProvider",
+        "rewards",
+        "liquidationManager"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddress",
+    "__args__": {
+      "_to": "dUSDC",
+      "__address_args__": {
+        "_value": "iUSDC"
+      },
+      "_key": "reserve"
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "dUSDC",
+      "_names": [
+        "lendingPoolCore",
+        "rewards"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "delegation",
+      "_names": [
+        "lendingPoolCore",
+        "ommToken"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "rewards",
+      "_names": [
+        "lendingPoolDataProvider",
+        "ommToken",
+        "workerToken",
+        "daoFund",
+        "lendingPool",
+        "governance",
+        "stakedLP"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "governance",
+      "_names": [
+        "rewards",
+        "stakedLP",
+        "lendingPoolCore",
+        "daoFund",
+        "feeProvider"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "daoFund",
+      "_names": [
+        "governance",
+        "ommToken"
+      ]
+    }
+  },
+  {
+    "contract": "addressProvider",
+    "method": "addAddressToScore",
+    "__args__": {
+      "_to": "feeProvider",
+      "_names": [
+        "governance"
+      ]
+    }
+  },
+  {
+    "contract": "lendingPool",
+    "method": "setFeeSharingTxnLimit",
+    "__args__": {
+      "__property_args__": {
+        "_limit": "FEE_SHARING_TX_LIMIT"
+      }
+    },
+    "order": 1.0
+  },
+  {
+    "contract": "feeProvider",
+    "method": "setLoanOriginationFeePercentage",
+    "__args__": {
+      "__property_args__": {
+        "_percentage": "LOAN_ORIGINATION_PERCENTAGE"
+      }
+    },
+    "order": 1.0
+  },
+  {
+    "contract": "lendingPoolDataProvider",
+    "method": "setSymbol",
+    "__args__": {
+      "__address_args__": {
+        "_reserve": "USDS"
+      },
+      "_sym": "USDS"
+    },
+    "order": 1.0
+  },
+  {
+    "contract": "lendingPoolDataProvider",
+    "method": "setSymbol",
+    "__args__": {
+      "__address_args__": {
+        "_reserve": "iUSDC"
+      },
+      "_sym": "USDC"
+    },
+    "order": 1.0
+  },
+  {
+    "contract": "delegation",
+    "method": "addAllContributors",
+    "__args__": {
+      "_preps": []
+    },
+    "order": 1.0
+  },
+  {
+    "contract": "governance",
+    "method": "initializeReserve",
+    "__args__": {
+      "_reserve": {
+        "__address_args__": {
+          "reserveAddress": "USDS",
+          "oTokenAddress": "oUSDS",
+          "dTokenAddress": "dUSDS"
+        },
+        "lastUpdateTimestamp": "0",
+        "liquidityRate": "0",
+        "borrowRate": "0",
+        "liquidityCumulativeIndex": "1000000000000000000",
+        "borrowCumulativeIndex": "1000000000000000000",
+        "baseLTVasCollateral": "500000000000000000",
+        "liquidationThreshold": "650000000000000000",
+        "liquidationBonus": "100000000000000000",
+        "decimals": "18",
+        "borrowingEnabled": "1",
+        "usageAsCollateralEnabled": "1",
+        "isFreezed": "0",
+        "isActive": "1"
+      }
+    },
+    "order": 1.0
+  },
+  {
+    "contract": "governance",
+    "method": "initializeReserve",
+    "__args__": {
+      "_reserve": {
+        "__address_args__": {
+          "reserveAddress": "iUSDC",
+          "oTokenAddress": "oUSDC",
+          "dTokenAddress": "dUSDC"
+        },
+        "lastUpdateTimestamp": "0",
+        "liquidityRate": "0",
+        "borrowRate": "0",
+        "liquidityCumulativeIndex": "1000000000000000000",
+        "borrowCumulativeIndex": "1000000000000000000",
+        "baseLTVasCollateral": "500000000000000000",
+        "liquidationThreshold": "650000000000000000",
+        "liquidationBonus": "100000000000000000",
+        "decimals": "18",
+        "borrowingEnabled": "1",
+        "usageAsCollateralEnabled": "1",
+        "isFreezed": "0",
+        "isActive": "1"
+      }
+    },
+    "order": 1.0
+  },
+  {
+    "contract": "governance",
+    "method": "updateBorrowThreshold",
+    "__args__": {
+      "__address_args__": {
+        "_reserve": "USDS"
+      },
+      "__property_args__": {
+        "_borrowThreshold": "BORROW_THRESHOLD"
+      }
+    },
+    "order": 1.0
+  },
+  {
+    "contract": "governance",
+    "method": "updateBorrowThreshold",
+    "__args__": {
+      "__address_args__": {
+        "_reserve": "iUSDC"
+      },
+      "__property_args__": {
+        "_borrowThreshold": "BORROW_THRESHOLD"
+      }
+    },
+    "order": 1.0
+  },
+  {
     "contract": "governance",
     "method": "setReserveConstants",
     "__args__": {
       "_constants": [
         {
           "__address_args__": {
-            "reserve": "usds"
+            "reserve": "USDS"
           },
           "optimalUtilizationRate": "0xb1a2bc2ec500000",
           "baseBorrowRate": "0x470de4df820000",
@@ -15,6 +383,24 @@
         }
       ]
     },
-    "order": 1.0
+    "order": 2.0
+  },
+  {
+    "contract": "governance",
+    "method": "setReserveConstants",
+    "__args__": {
+      "_constants": [
+        {
+          "__address_args__": {
+            "reserve": "iUSDC"
+          },
+          "optimalUtilizationRate": "0xb1a2bc2ec500000",
+          "baseBorrowRate": "0x470de4df820000",
+          "slopeRate1": "0xd529ae9e860000",
+          "slopeRate2": "0x1bc16d674ec80000"
+        }
+      ]
+    },
+    "order": 2.0
   }
 ]

@@ -1,7 +1,7 @@
 package finance.omm.gradle.plugin.utils;
 
 public enum NameMapping {
-    rewardDistribution("RewardDistribution"),
+    rewards("RewardDistribution"),
     rewardWeightController("RewardWeightController"),
     bOMM("VotingEscrowToken");
 
