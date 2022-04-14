@@ -135,7 +135,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External(readonly = true)
     @Deprecated
     public Map<String, BigInteger> getAllDistributionPercentage() {
-        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getALlTypeWeight");
+        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getAllTypeWeight");
     }
 
     /**
