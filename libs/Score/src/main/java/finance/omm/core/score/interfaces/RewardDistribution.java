@@ -159,7 +159,7 @@ public interface RewardDistribution extends AddressProvider {
 
     void enableHandleActions();
 
-    boolean isHandleActionDisabled();
+    boolean isHandleActionEnabled();
 
     Map<String, BigInteger> getAllAssetLegacyIndexes();
 

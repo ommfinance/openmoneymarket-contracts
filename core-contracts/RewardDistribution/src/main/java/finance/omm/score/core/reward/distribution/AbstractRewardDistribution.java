@@ -35,7 +35,7 @@ import scorex.util.HashMap;
 public abstract class AbstractRewardDistribution extends AddressProvider implements RewardDistribution {
 
     public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
-    public static final String DISABLE_HANDLE_ACTIONS = "disable-handle-actions";
+    public static final String IS_HANDLE_ACTIONS_ENABLED = "is-handle-actions-enabled";
 
     public static final String B_OMM_REWARD_START_DATE = "bOMMRewardStartDate";
     private static final BigInteger WEIGHT = BigInteger.valueOf(40).multiply(ICX).divide(BigInteger.valueOf(100L));
@@ -57,7 +57,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     public final VarDB<Boolean> isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
 
-    public final VarDB<Boolean> isHandleActionDisabled = Context.newVarDB(DISABLE_HANDLE_ACTIONS, Boolean.class);
+    public final VarDB<Boolean> isHandleActionEnabled = Context.newVarDB(IS_HANDLE_ACTIONS_ENABLED, Boolean.class);
 
     public final LegacyRewards legacyRewards = new LegacyRewards();
 
@@ -72,8 +72,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
 
     @External(readonly = true)
-    public boolean isHandleActionDisabled() {
-        return isHandleActionDisabled.get();
+    public boolean isHandleActionEnabled() {
+        return isHandleActionEnabled.getOrDefault(Boolean.FALSE);
     }
 
     @External(readonly = true)
