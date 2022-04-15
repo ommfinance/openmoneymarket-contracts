@@ -52,9 +52,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             TimeConstants.checkIsValidTimestamp(bOMMRewardStartDate, Timestamp.SECONDS);
             this.bOMMRewardStartDate.set(bOMMRewardStartDate);
         }
-        if (this.isHandleActionDisabled.get() == null) {
-            isHandleActionDisabled.set(Boolean.FALSE);
-        }
+        isHandleActionEnabled.set(Boolean.FALSE);
+        isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
     @External(readonly = true)
@@ -267,13 +266,13 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External()
     public void disableHandleActions() {
         checkGovernance();
-        isHandleActionDisabled.set(Boolean.TRUE);
+        isHandleActionEnabled.set(Boolean.FALSE);
     }
 
     @External()
     public void enableHandleActions() {
         checkGovernance();
-        isHandleActionDisabled.set(Boolean.FALSE);
+        isHandleActionEnabled.set(Boolean.TRUE);
     }
 
 
@@ -445,9 +444,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     private void _handleAction(Address assetAddr, UserDetails _userDetails) {
-        if (isHandleActionDisabled.getOrDefault(Boolean.TRUE)) {
+        if (!isHandleActionEnabled()) {
             throw RewardDistributionException.handleActionDisabled();
         }
+
         Asset asset = this.assets.get(assetAddr);
         if (asset == null) {
             throw RewardDistributionException.invalidAsset("Asset is null (" + assetAddr + ")");
