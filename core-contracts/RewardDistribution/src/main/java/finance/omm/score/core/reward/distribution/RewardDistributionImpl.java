@@ -526,9 +526,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
                     this.assets.setAccruedRewards(userAddr, bOMMAddress, totalReward);
                 } else {
                     this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
+                    updateWorkingBalance(workingBalance);
                 }
-
-                updateWorkingBalance(workingBalance);
             }
         }
     }
