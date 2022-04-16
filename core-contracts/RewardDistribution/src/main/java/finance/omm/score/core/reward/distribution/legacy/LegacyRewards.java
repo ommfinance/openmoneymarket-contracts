@@ -83,29 +83,30 @@ public class LegacyRewards {
         return exaMultiply(_userBalance, _assetIndex.subtract(_userIndex));
     }
 
-    public Map<String, BigInteger> getAllAssetIndexes() {
+    public Map<String, Map<String, BigInteger>> getAllAssetIndexes() {
         List<Address> assets = this._rewardConfig.getAssets();
-        Map<String, BigInteger> assetIndexes = new HashMap<>();
+        Map<String, Map<String, BigInteger>> assetIndexes = new HashMap<>();
         for (Address asset : assets) {
-            assetIndexes.put(asset.toString(), this._assetIndex.getOrDefault(asset, BigInteger.ZERO));
+            BigInteger index = this._assetIndex.getOrDefault(asset, BigInteger.ZERO);
+            BigInteger lastUpdatedTimestamp = this._lastUpdateTimestamp.getOrDefault(asset, BigInteger.ZERO);
+
+            Map<String, BigInteger> value = Map.of("index", index, "lastUpdateTimestamp", lastUpdatedTimestamp);
+            assetIndexes.put(this._rewardConfig.getAssetName(asset), value);
         }
         return assetIndexes;
     }
 
-    public Map<String, BigInteger> getAllAssetLastUpdateTimestamp() {
+    public Map<String, Map<String, BigInteger>> getUserAllIndexes(Address _user) {
         List<Address> assets = this._rewardConfig.getAssets();
-        Map<String, BigInteger> assetUpdateTime = new HashMap<>();
-        for (Address asset : assets) {
-            assetUpdateTime.put(asset.toString(), this._lastUpdateTimestamp.getOrDefault(asset, BigInteger.ZERO));
-        }
-        return assetUpdateTime;
-    }
+        Map<String, Map<String, BigInteger>> assetIndexes = new HashMap<>();
+        DictDB<Address, BigInteger> userUnclaimedRewards = _usersUnclaimedRewards.at(_user);
 
-    public Map<String, BigInteger> getUserAllIndexes(Address _user) {
-        List<Address> assets = this._rewardConfig.getAssets();
-        Map<String, BigInteger> assetIndexes = new HashMap<>();
         for (Address asset : assets) {
-            assetIndexes.put(asset.toString(), this._userIndex.at(_user).getOrDefault(asset, BigInteger.ZERO));
+            BigInteger index = this._userIndex.at(_user).getOrDefault(asset, BigInteger.ZERO);
+            BigInteger reward = userUnclaimedRewards.getOrDefault(asset, BigInteger.ZERO);
+
+            Map<String, BigInteger> value = Map.of("index", index, "reward", reward);
+            assetIndexes.put(this._rewardConfig.getAssetName(asset), value);
         }
         return assetIndexes;
     }
