@@ -8,6 +8,7 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -102,6 +103,7 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
             users.add(sm.createAccount(10));
             users.add(sm.createAccount(10));
 
+            doReturn(Boolean.TRUE).when(scoreSpy).isHandleActionEnabled();
         }
 
         @DisplayName("should fail for invalid asset")
@@ -199,6 +201,9 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
 
             @BeforeEach
             void setup() {
+
+                doReturn(Boolean.TRUE).when(scoreSpy).isHandleActionEnabled();
+
                 UserDetails details_1 = createUserDetail(0, 100);
                 details_1._totalSupply = details_1._userBalance;
 
@@ -246,6 +251,12 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
 
                 verify(scoreSpy, never()).AssetIndexUpdated(any(), any(), any());
                 verify(scoreSpy, never()).UserIndexUpdated(any(), any(), any(), any());
+
+                verifyGetRewards(result, weight);
+            }
+
+            private void verifyGetRewards(Map<String, ?> result, long weight) {
+
 //                user1 working balance min(100*0.4+200*200/400*0.6,100)=100
 
                 Map<String, BigInteger> type1 = (Map<String, BigInteger>) result.get("type-1");
@@ -303,6 +314,32 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
                 verifyWorkingBalanceUpdate(tokenBalance, bBalance, workingTotal - workingBalance);
 
 
+            }
+
+            @ParameterizedTest
+            @MethodSource("finance.omm.score.reward.test.unit.RewardDistributionUnitTest#userRewards")
+            void kick_user(int userIndex, long weight) {
+                reset(scoreSpy);
+                reset(scoreSpy.assets);
+                Address user = users.get(userIndex).getAddress();
+                doReturn(BigInteger.ZERO).when(scoreSpy)
+                        .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user);
+
+                doReturn(BigInteger.ONE).when(scoreSpy)
+                        .call(BigInteger.class, Contracts.BOOSTED_OMM, "totalSupply");
+
+                doReturn(ICX).when(scoreSpy)
+                        .call(eq(BigInteger.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getIntegrateIndex"),
+                                ArgumentMatchers.<Object>argThat(matcher));
+
+                SupplyDetails details = createSupplyDetails(200);
+
+                doReturn(details).when(scoreSpy).fetchUserBalance(any(), any(), any());
+
+                score.invoke(owner, "kick", user);
+                Map<String, ?> result = (Map<String, ?>) score.call("getRewards", user);
+
+                verifyGetRewards(result, weight);
             }
 
             private void verifyWorkingBalanceUpdate(Long tokenBalance, Long balance, Long workingTotalBalance) {

@@ -243,7 +243,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
         BigInteger newIndex = this.getAssetIndex(assetAddr, false);
 
-        BigInteger accruedRewards = this.assets.getAccruedRewards(assetAddr, user);
+        BigInteger accruedRewards = this.assets.getAccruedRewards(user, assetAddr);
         if (newIndex.equals(userIndex)) {
             return accruedRewards;
         }
@@ -263,7 +263,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
         BigInteger userIndex = this.assets.getUserIndex(assetAddr, user);
 
-        BigInteger accruedRewards = this.assets.getAccruedRewards(assetAddr, user);
+        BigInteger accruedRewards = this.assets.getAccruedRewards(user, assetAddr);
 
         BigInteger newIndex = this.getAssetIndex(assetAddr, true);
 
