@@ -484,18 +484,20 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         for (Address assetAddr : assetAddrs) {
             Integer poolId = this.legacyRewards.getPoolID(assetAddr);
             Map<String, BigInteger> map = null;
+            BigInteger decimals = null;
+            BigInteger totalSupply = null;
+
             if (poolId > 0) {
                 map = Context.call(Map.class, getAddress(Contracts.STAKED_LP.getKey()),
                         "getTotalStaked", poolId);
+                decimals = map.get("decimals");
+                totalSupply = convertToExa(map.get("totalStaked"), decimals);
             } else {
-                map = Context.call(Map.class, assetAddr, "getTotalStaked");
+                map = Context.call(Map.class, assetAddr, "getPrincipalSupply", Context.getCaller());
+                decimals = map.get("decimals");
+                totalSupply = convertToExa(map.get("principalTotalSupply"), decimals);
             }
-            if (map == null) {
-                continue;
-            }
-            BigInteger _decimals = map.get("decimals");
 
-            BigInteger totalSupply = convertToExa(map.get("totalStaked"), _decimals);
             this.legacyRewards.updateAssetIndex(assetAddr, totalSupply, bOMMCutOffTimestamp);
             LegacyAssetIndexUpdated(assetAddr);
         }
