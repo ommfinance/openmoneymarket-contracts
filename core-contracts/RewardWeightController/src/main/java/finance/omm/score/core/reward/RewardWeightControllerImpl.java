@@ -54,7 +54,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External(readonly = true)
     public String name() {
-        return TAG;
+        return "OMM " + TAG;
     }
 
     @External

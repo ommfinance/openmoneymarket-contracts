@@ -497,6 +497,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
             BigInteger totalSupply = convertToExa(map.get("totalStaked"), _decimals);
             this.legacyRewards.updateAssetIndex(assetAddr, totalSupply, bOMMCutOffTimestamp);
+            LegacyAssetIndexUpdated(assetAddr);
         }
         IS_ASSET_INDEX_UPDATED.set(Boolean.TRUE);
     }
@@ -528,6 +529,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
                     this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
                     updateWorkingBalance(workingBalance);
                 }
+                LegacyUserIndexUpdated(userAddr, assetAddr);
             }
         }
     }
@@ -543,6 +545,14 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         return this.legacyRewards.getUserAllIndexes(_user);
     }
 
+    @EventLog(indexed = 1)
+    public void LegacyAssetIndexUpdated(Address _asset) {
+    }
+
+
+    @EventLog(indexed = 2)
+    public void LegacyUserIndexUpdated(Address _user, Address _asset) {
+    }
 
     @EventLog()
     public void OmmTokenMinted(BigInteger _day, BigInteger _value, BigInteger _days) {}

@@ -11,7 +11,6 @@ import score.Address;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
-import score.annotation.EventLog;
 import scorex.util.HashMap;
 
 
@@ -53,7 +52,7 @@ public class LegacyRewards {
         BigInteger newIndex = exaDivide(_emissionPerSecond.multiply(timeDelta), totalBalance).add(oldIndex);
 
         this._assetIndex.set(assetAddr, newIndex);
-        this.LegacyAssetIndexUpdated(assetAddr, oldIndex, newIndex);
+        Context.println("Asset::" + assetAddr + ", oldIndex::" + oldIndex + ", newIndex::" + newIndex);
         this._lastUpdateTimestamp.set(assetAddr, cutOffTimestamp);
     }
 
@@ -73,7 +72,7 @@ public class LegacyRewards {
 
         this._usersUnclaimedRewards.at(userAddr).set(assetAddr, newUserReward);
         this._userIndex.at(userAddr).set(assetAddr, assetIndex);
-        this.LegacyUserIndexUpdated(userAddr, assetAddr, userIndex, assetIndex);
+        Context.println("User::" + userAddr + "Asset::" + assetAddr + ", userIndex::" + userIndex);
 
         return newUserReward;
     }
@@ -128,14 +127,6 @@ public class LegacyRewards {
 
     }
 
-    @EventLog(indexed = 1)
-    public void LegacyAssetIndexUpdated(Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
-    }
-
-
-    @EventLog(indexed = 2)
-    public void LegacyUserIndexUpdated(Address _user, Address _asset, BigInteger _oldIndex, BigInteger _newIndex) {
-    }
 
     public List<Address> getAssets() {
         return this._rewardConfig.getAssets();
