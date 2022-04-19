@@ -182,7 +182,10 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     @External(readonly = true)
     public List<Address> getUsers(int start, int end) {
         Context.require(end - start <= 100, "Get users :Fetch only 100 users at a time");
-        Context.require(end <= users.length(), "Get users : end cannot be greater than list size");
+        int userCount = users.length();
+        if (userCount <= end) {
+            end = userCount - 1;
+        }
         List<Address> userList = new ArrayList<>();
         for (int index = start; index <= end; ++index) {
             userList.add(users.at(index));
