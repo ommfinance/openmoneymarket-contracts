@@ -429,7 +429,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         if (!unlockTime.equals(BigInteger.ZERO)) {
             unlockTime = unlockTime.divide(TimeConstants.WEEK_IN_MICRO_SECONDS)
                     .multiply(TimeConstants.WEEK_IN_MICRO_SECONDS);
-            Context.require(unlockTime.compareTo(locked.end.toBigInteger()) > 0,
+            Context.require(unlockTime.compareTo(locked.end.toBigInteger()) >= 0,
                     "Increase unlock time: Can only increase lock duration");
             Context.require(unlockTime.compareTo(blockTimestamp.add(MAX_TIME)) <= 0,
                     "Increase unlock time: Voting lock can be 4 years max");
