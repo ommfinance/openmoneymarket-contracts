@@ -9,7 +9,7 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
-import finance.omm.libs.structs.AddressDetail;
+import finance.omm.libs.structs.AddressDetails;
 import finance.omm.score.core.reward.distribution.RewardDistributionImpl;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -87,12 +87,12 @@ public abstract class RewardDistributionAbstractTest extends TestBase {
 
 
     private void setAddresses() {
-        AddressDetail[] addressDetails = MOCK_CONTRACT_ADDRESS.entrySet().stream().map(e -> {
-            AddressDetail ad = new AddressDetail();
+        AddressDetails[] addressDetails = MOCK_CONTRACT_ADDRESS.entrySet().stream().map(e -> {
+            AddressDetails ad = new AddressDetails();
             ad.address = e.getValue().getAddress();
             ad.name = e.getKey().toString();
             return ad;
-        }).toArray(AddressDetail[]::new);
+        }).toArray(AddressDetails[]::new);
 
         Object[] params = new Object[]{
                 addressDetails

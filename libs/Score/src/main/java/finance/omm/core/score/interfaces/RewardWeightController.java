@@ -11,53 +11,50 @@ import score.annotation.Optional;
 public interface RewardWeightController {
 
 
-    public String name();
+    String name();
+
+    void addType(String key, boolean transferToContract, @Optional Address address);
+
+    void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp);
+
+    BigInteger getTypeWeight(String type, @Optional BigInteger timestamp);
+
+    Map<String, BigInteger> getAllTypeWeight(@Optional BigInteger timestamp);
+
+    void addAsset(String type, Address address, String name);
 
 
-    public void addType(String key, boolean transferToContract, @Optional Address address);
+    void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp);
+
+    BigInteger tokenDistributionPerDay(BigInteger _day);
+
+    BigInteger getDay();
+
+    BigInteger getIntegrateIndex(Address assetAddr, BigInteger totalSupply, BigInteger lastUpdatedTimestamp);
+
+    BigInteger getTypeCheckpointCount();
+
+    BigInteger getAssetCheckpointCount(String type);
+
+    Map<String, BigInteger> getTypeWeightByTimestamp(BigInteger timestamp);
+
+    Map<String, BigInteger> getAssetWeightByTimestamp(String type, @Optional BigInteger timestamp);
+
+    BigInteger getAssetWeight(Address assetAddr, @Optional BigInteger timestamp);
+
+    Map<String, ?> getAllAssetDistributionPercentage(@Optional BigInteger timestamp);
+
+    Map<String, ?> getDailyRewards(@Optional BigInteger _day);
+
+    Map<String, ?> getDistPercentageOfLP(@Optional BigInteger timestamp);
+
+    List<String> getTypes();
+
+    BigInteger getStartTimestamp();
+
+    Map<String, ?> getDistributionDetails(BigInteger day);
 
 
-    public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp);
-
-
-    public BigInteger getTypeWeight(String typeId, @Optional BigInteger timestamp);
-
-
-    public Map<String, BigInteger> getALlTypeWeight(@Optional BigInteger timestamp);
-
-
-    public void addAsset(String type, Address address, String name);
-
-
-    public void setAssetWeight(String typeId, WeightStruct[] weights, @Optional BigInteger timestamp);
-
-    public BigInteger tokenDistributionPerDay(BigInteger _day);
-
-    public BigInteger getDay();
-
-    public BigInteger getIntegrateIndex(Address address, BigInteger totalSupply, BigInteger lastUpdatedTimestamp);
-
-    public BigInteger getTypeCheckpointCount();
-
-    public BigInteger getAssetCheckpointCount(String typeId);
-
-    public Map<String, BigInteger> getTypeWeightByTimestamp(BigInteger timestamp);
-
-    public Map<String, BigInteger> getAssetWeightByTimestamp(String type, BigInteger timestamp);
-
-    public BigInteger getAssetWeight(Address asset, @Optional BigInteger timestamp);
-
-    public Map<String, ?> getAllAssetDistributionPercentage(@Optional BigInteger timestamp);
-
-    public Map<String, ?> getDailyRewards(@Optional BigInteger _day);
-
-    public Map<String, ?> getDistPercentageOfLP(@Optional BigInteger timestamp);
-
-    public List<String> getTypes();
-
-    public BigInteger getStartTimestamp();
-
-    public Map<String, ?> getDistributionDetails(BigInteger day);
-
+    Map<String, BigInteger> getEmissionRate(@Optional BigInteger timestamp);
 
 }

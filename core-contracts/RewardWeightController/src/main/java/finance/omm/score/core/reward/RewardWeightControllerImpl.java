@@ -4,6 +4,7 @@ import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.DAY_IN_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.MONTH_IN_MICRO_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.YEAR_IN_MICRO_SECONDS;
+import static finance.omm.utils.math.MathUtils.HUNDRED_THOUSAND;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.MILLION;
 import static finance.omm.utils.math.MathUtils.exaDivide;
@@ -25,6 +26,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import score.Address;
+import score.ArrayDB;
 import score.Context;
 import score.VarDB;
 import score.annotation.EventLog;
@@ -52,7 +54,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External(readonly = true)
     public String name() {
-        return TAG;
+        return "OMM " + TAG;
     }
 
     @External
@@ -93,7 +95,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     @External(readonly = true)
-    public Map<String, BigInteger> getALlTypeWeight(@Optional BigInteger timestamp) {
+    public Map<String, BigInteger> getAllTypeWeight(@Optional BigInteger timestamp) {
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
@@ -132,13 +134,13 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(30L))) {
             return MILLION;
         } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR)) {
-            return BigInteger.valueOf(4L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(4L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
-            return BigInteger.valueOf(3L).multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.TWO.multiply(MILLION).divide(BigInteger.TEN);
+            return BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND);
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.ONE.multiply(MILLION).divide(BigInteger.TEN);
+            return HUNDRED_THOUSAND;
         } else {
             BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
             return pow(BigInteger.valueOf(103L), (index.intValue()))
@@ -167,7 +169,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     if tInMicroSeconds=1000 then;
     rateChangeOn=100;
      */
-    private Map<String, BigInteger> getInflationRateByTimestamp(BigInteger tInMicroSeconds) {
+    public Map<String, BigInteger> getInflationRateByTimestamp(BigInteger tInMicroSeconds) {
         BigInteger rateChangedOn = _timestampAtStart.get();
 
         if (tInMicroSeconds.compareTo(rateChangedOn) <= 0) {
@@ -176,10 +178,8 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
                     "rate", getInflationRate(BigInteger.ZERO)
             );
         }
-        /*
-         *convert tInMicroSeconds=1000 to 999ms
-         */
-        BigInteger timeDelta = tInMicroSeconds.subtract(BigInteger.ONE).subtract(rateChangedOn);
+
+        BigInteger timeDelta = tInMicroSeconds.subtract(rateChangedOn);
 
         BigInteger numberOfYears = timeDelta.divide(YEAR_IN_MICRO_SECONDS);
 
@@ -201,13 +201,40 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         return tokenDistributionPerDay(_day).divide(DAY_IN_SECONDS);
     }
 
+    @External(readonly = true)
+    public Map<String, BigInteger> getEmissionRate(@Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
+        List<String> types = this.typeWeightDB.getTypes();
+        Map<String, BigInteger> response = new HashMap<>();
+        BigInteger inflationRate = getInflationRateByTimestamp(timestamp).get("rate");
+        for (String type : types) {
+            Map<String, BigInteger> typeWeight = typeWeightDB.searchTypeWeight(type, timestamp);
+            BigInteger tWeight = typeWeight.get("value");
+
+            ArrayDB<Address> addresses = this.assetWeightDB.getAssets(type);
+            for (int i = 0; i < addresses.size(); i++) {
+                Address address = addresses.get(i);
+                Asset asset = this.assetWeightDB.getAsset(address);
+                Map<String, BigInteger> assetWeightMap = this.assetWeightDB.searchAssetWeight(asset, timestamp);
+                BigInteger aWeight = assetWeightMap.get("value");
+
+                BigInteger aggregateWeight = exaMultiply(tWeight, aWeight);
+                BigInteger rate = exaMultiply(inflationRate, aggregateWeight);
+                response.put(address.toString(), rate);
+            }
+        }
+        return response;
+    }
+
 
     @External(readonly = true)
     public BigInteger getIntegrateIndex(Address assetAddr, BigInteger totalSupply, BigInteger lastUpdatedTimestamp) {
         if (totalSupply.compareTo(BigInteger.ZERO) <= 0) {
             return BigInteger.ZERO;
         }
-        BigInteger timestamp = TimeConstants.getBlockTimestamp();
+        BigInteger timestamp = TimeConstants.getBlockTimestamp().subtract(BigInteger.ONE);
 
         BigInteger integrateIndex = BigInteger.ZERO;
         Asset asset = assetWeightDB.getAsset(assetAddr);
@@ -222,7 +249,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             prevTimestamp = timestamp;
             Map<String, BigInteger> result = calculateRewardDistribution(asset, lastUpdatedTimestamp, timestamp);
             integrateIndex = integrateIndex.add(exaDivide(result.get("totalRewards"), totalSupply));
-            timestamp = result.get("timestamp");
+            timestamp = result.get("timestamp").subtract(BigInteger.ONE);
         }
 
         return integrateIndex;
@@ -246,7 +273,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             return Map.of("totalRewards", BigInteger.ZERO, "timestamp", timestamp);
         }
         BigInteger rate = exaMultiply(exaMultiply(inflationRate.get("rate"), tWeight), aWeight);
-        BigInteger timeDeltaInSeconds = timestamp.subtract(maximum).divide(TimeConstants.SECOND);
+        BigInteger timeDeltaInSeconds = timestamp.add(BigInteger.ONE).subtract(maximum).divide(TimeConstants.SECOND);
         BigInteger totalReward = rate.multiply(timeDeltaInSeconds);
         return Map.of("totalRewards", totalReward, "timestamp", maximum);
     }
@@ -290,7 +317,10 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     @External(readonly = true)
-    public Map<String, BigInteger> getAssetWeightByTimestamp(String type, BigInteger timestamp) {
+    public Map<String, BigInteger> getAssetWeightByTimestamp(String type, @Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = TimeConstants.getBlockTimestamp();
+        }
         BigInteger typeWeight = getTypeWeight(type, timestamp);
         return this.assetWeightDB.getWeightByTimestamp(type, typeWeight, timestamp);
     }
@@ -382,7 +412,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = TimeConstants.getBlockTimestamp();
         }
-        Map<String, BigInteger> lpAssetIds = (Map<String, BigInteger>) Context.call(
+        Map<String, BigInteger> lpAssetIds = Context.call(Map.class,
                 getAddress(Contracts.REWARDS.toString()), "getLiquidityProviders");
         Map<String, BigInteger> response = new HashMap<>();
         BigInteger typeWeight = this.getTypeWeight("liquidity", timestamp);

@@ -1,0 +1,245 @@
+[
+  {
+    "name": "addressProvider",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/address-provider.zip",
+    "params": {
+    },
+    "order": 1.0
+  },
+  {
+    "name": "dUSDC",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/d-token.zip",
+    "params": {
+      "_name": "USDC Debt Token",
+      "_symbol": "dUSDC",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 2.0
+  },
+  {
+    "name": "oUSDC",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/o-token.zip",
+    "params": {
+      "_name": "USDC Interest Token",
+      "_symbol": "oUSDC",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 3.0
+  },
+  {
+    "name": "dUSDS",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/d-token.zip",
+    "params": {
+      "_name": "USDS Debt Token",
+      "_symbol": "dUSDS",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 2.0
+  },
+  {
+    "name": "oUSDS",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/o-token.zip",
+    "params": {
+      "_name": "USDS Interest Token",
+      "_symbol": "oUSDS",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 3.0
+  },
+  {
+    "name": "rewards",
+    "params": {
+      "bOMMRewardStartDate": 1646438400
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 4.0
+  },
+  {
+    "name": "rewardWeightController",
+    "params": {
+      "startTimestamp": 1581724800000000
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 5.0
+  },
+  {
+    "name": "ommToken",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/ommToken.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 6.0
+  },
+  {
+    "name": "bOMM",
+    "params": {
+      "name": "Boosted OMM token",
+      "symbol": "bOMM"
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider",
+      "tokenAddress": "ommToken"
+    },
+    "order": 7.0
+  },
+  {
+    "name": "daoFund",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/daoFund.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 8.0
+  },
+  {
+    "name": "feeProvider",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/feeProvider.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 9.0
+  },
+  {
+    "name": "lendingPool",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPool.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 10.0
+  },
+  {
+    "name": "lendingPoolCore",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPoolCore.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 11.0
+  },
+  {
+    "name": "USDS",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip",
+    "params": {
+      "_name": "USDS",
+      "_symbol": "USDS",
+      "_decimals": 18
+    },
+    "addressParams": {
+      "_admin": "owner"
+    },
+    "order": 12.0
+  },
+  {
+    "name": "iUSDC",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip",
+    "params": {
+      "_name": "iUSDC",
+      "_symbol": "iUSDC",
+      "_decimals": 6
+    },
+    "addressParams": {
+      "_admin": "owner"
+    },
+    "order": 13.0
+  },
+  {
+    "name": "bandOracle",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/proxy-band-oracle.zip",
+    "params": {
+    },
+    "order": 14.0
+  },
+  {
+    "name": "delegation",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/delegation.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 15.0
+  },
+  {
+    "name": "governance",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/governance.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 16.0
+  },
+  {
+    "name": "lendingPoolDataProvider",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lending-pool-data-provider.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 17.0
+  },
+  {
+    "name": "liquidationManager",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/liquidation-manager.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 18.0
+  },
+  {
+    "name": "stakedLP",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/stakedLP.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 19.0
+  },
+  {
+    "name": "workerToken",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/workerToken.zip",
+    "params": {
+      "_initialSupply": "0x56bc75e2d63100000",
+      "_decimals": 18
+    },
+    "order": 20.0
+  },
+  {
+    "name": "priceOracle",
+    "path": "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/priceOracle.zip",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 21.0
+  }
+]

@@ -52,9 +52,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             TimeConstants.checkIsValidTimestamp(bOMMRewardStartDate, Timestamp.SECONDS);
             this.bOMMRewardStartDate.set(bOMMRewardStartDate);
         }
-        if (this.isHandleActionDisabled.get() == null) {
-            isHandleActionDisabled.set(Boolean.FALSE);
-        }
+        isHandleActionEnabled.set(Boolean.FALSE);
+        isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
     @External(readonly = true)
@@ -129,13 +128,13 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     /**
-     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getALlTypeWeight(BigInteger)}
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getAllTypeWeight(BigInteger)}
      */
     @Override
     @External(readonly = true)
     @Deprecated
     public Map<String, BigInteger> getAllDistributionPercentage() {
-        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getALlTypeWeight");
+        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getAllTypeWeight");
     }
 
     /**
@@ -267,20 +266,15 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External()
     public void disableHandleActions() {
         checkGovernance();
-        isHandleActionDisabled.set(Boolean.TRUE);
+        isHandleActionEnabled.set(Boolean.FALSE);
     }
 
     @External()
     public void enableHandleActions() {
         checkGovernance();
-        isHandleActionDisabled.set(Boolean.FALSE);
+        isHandleActionEnabled.set(Boolean.TRUE);
     }
 
-    //    @Override
-    @External(readonly = true)
-    public boolean isRewardClaimEnabled() {
-        return isRewardClaimEnabled.get();
-    }
 
     /**
      * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getDailyRewards(BigInteger)}
@@ -450,9 +444,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     private void _handleAction(Address assetAddr, UserDetails _userDetails) {
-        if (isHandleActionDisabled.getOrDefault(Boolean.TRUE)) {
+        if (!isHandleActionEnabled()) {
             throw RewardDistributionException.handleActionDisabled();
         }
+
         Asset asset = this.assets.get(assetAddr);
         if (asset == null) {
             throw RewardDistributionException.invalidAsset("Asset is null (" + assetAddr + ")");
@@ -489,19 +484,22 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         for (Address assetAddr : assetAddrs) {
             Integer poolId = this.legacyRewards.getPoolID(assetAddr);
             Map<String, BigInteger> map = null;
-            if (poolId > 0) {
-                map = Context.call(Map.class, getAddress(Contracts.STAKING.getKey()),
-                        "getTotalStaked", poolId);
-            } else {
-                map = Context.call(Map.class, assetAddr, "getTotalStaked");
-            }
-            if (map == null) {
-                continue;
-            }
-            BigInteger _decimals = map.get("decimals");
+            BigInteger decimals = null;
+            BigInteger totalSupply = null;
 
-            BigInteger totalSupply = convertToExa(map.get("totalStaked"), _decimals);
+            if (poolId > 0) {
+                map = Context.call(Map.class, getAddress(Contracts.STAKED_LP.getKey()),
+                        "getTotalStaked", poolId);
+                decimals = map.get("decimals");
+                totalSupply = convertToExa(map.get("totalStaked"), decimals);
+            } else {
+                map = Context.call(Map.class, assetAddr, "getPrincipalSupply", Context.getCaller());
+                decimals = map.get("decimals");
+                totalSupply = convertToExa(map.get("principalTotalSupply"), decimals);
+            }
+
             this.legacyRewards.updateAssetIndex(assetAddr, totalSupply, bOMMCutOffTimestamp);
+            LegacyAssetIndexUpdated(assetAddr);
         }
         IS_ASSET_INDEX_UPDATED.set(Boolean.TRUE);
     }
@@ -531,13 +529,32 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
                     this.assets.setAccruedRewards(userAddr, bOMMAddress, totalReward);
                 } else {
                     this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
+                    updateWorkingBalance(workingBalance);
                 }
-
-                updateWorkingBalance(workingBalance);
+                LegacyUserIndexUpdated(userAddr, assetAddr);
             }
         }
     }
 
+    @External(readonly = true)
+    public Map<String, ?> getAllAssetLegacyIndexes() {
+        return this.legacyRewards.getAllAssetIndexes();
+    }
+
+
+    @External(readonly = true)
+    public Map<String, Map<String, BigInteger>> getUserAllLegacyIndexes(Address _user) {
+        return this.legacyRewards.getUserAllIndexes(_user);
+    }
+
+    @EventLog(indexed = 1)
+    public void LegacyAssetIndexUpdated(Address _asset) {
+    }
+
+
+    @EventLog(indexed = 2)
+    public void LegacyUserIndexUpdated(Address _user, Address _asset) {
+    }
 
     @EventLog()
     public void OmmTokenMinted(BigInteger _day, BigInteger _value, BigInteger _days) {}

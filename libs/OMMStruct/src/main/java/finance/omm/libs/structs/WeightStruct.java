@@ -8,4 +8,11 @@ public class WeightStruct {
     public Address address;
     public BigInteger weight;
 
+    public WeightStruct() {
+    }
+
+    public WeightStruct(Address address, BigInteger weight) {
+        this.address = address;
+        this.weight = weight;
+    }
 }

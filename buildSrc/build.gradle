@@ -1,0 +1,28 @@
+apply plugin: 'groovy'
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    runtimeClasspath files('../.deployment')
+    implementation "foundation.icon:javaee-api:0.9.0"
+    annotationProcessor "foundation.icon:javaee-score-client:0.9.0"
+    implementation "foundation.icon:javaee-score-client:0.9.0"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.13.2.1"
+
+    implementation("foundation.icon:icon-sdk:2.0.0")
+    implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+    implementation("org.bouncycastle:bcprov-jdk15on:1.60")
+}
+
+
+

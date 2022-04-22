@@ -171,7 +171,7 @@ public class AssetWeightDB implements Searchable {
         return this.wCheckpoint.at(type).at(index);
     }
 
-    public Map<String, BigInteger> getAggregatedWeight(BigInteger weight, String type, BigInteger timestamp) {
+    public Map<String, BigInteger> getAggregatedWeight(BigInteger typeWeight, String type, BigInteger timestamp) {
         DictDB<Address, BigInteger> dictDB = getCheckpoint(type, timestamp);
         BigInteger total = BigInteger.ZERO;
         Map<String, BigInteger> result = new HashMap<>();
@@ -183,13 +183,17 @@ public class AssetWeightDB implements Searchable {
             Asset asset = this.assets.get(address);
             if (asset != null) {
                 String name = asset.name;
-                BigInteger value = exaMultiply(dictDB.getOrDefault(address, BigInteger.ZERO), weight);
+                BigInteger value = exaMultiply(dictDB.getOrDefault(address, BigInteger.ZERO), typeWeight);
                 result.put(name, value);
                 total = total.add(value);
             }
         }
         result.put("total", total);
         return result;
+    }
+
+    public ArrayDB<Address> getAssets(String type) {
+        return this.assetMap.at(type);
     }
 
 }

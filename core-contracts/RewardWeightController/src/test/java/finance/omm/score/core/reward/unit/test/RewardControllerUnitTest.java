@@ -4,6 +4,8 @@ package finance.omm.score.core.reward.unit.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -12,7 +14,7 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
-import finance.omm.libs.structs.AddressDetail;
+import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.RewardWeightControllerImpl;
@@ -70,12 +72,12 @@ public class RewardControllerUnitTest extends TestBase {
         score = sm.deploy(owner, RewardWeightControllerImpl.class,
                 mockAddress.get(Contracts.ADDRESS_PROVIDER).getAddress(),
                 startTimestamp);
-        AddressDetail[] addressDetails = mockAddress.entrySet().stream().map(e -> {
-            AddressDetail ad = new AddressDetail();
+        AddressDetails[] addressDetails = mockAddress.entrySet().stream().map(e -> {
+            AddressDetails ad = new AddressDetails();
             ad.address = e.getValue().getAddress();
             ad.name = e.getKey().toString();
             return ad;
-        }).toArray(AddressDetail[]::new);
+        }).toArray(AddressDetails[]::new);
 
         Object[] params = new Object[]{
                 addressDetails
@@ -379,6 +381,104 @@ public class RewardControllerUnitTest extends TestBase {
 
     }
 
+
+    @DisplayName("asset emission rate")
+    @Test
+    public void testAssetEmissionRate() {
+
+        Long typeWeight = 25L;
+        Long typeWeight_2 = 75L;
+        initTypeWeight(BigInteger.ZERO, typeWeight, typeWeight_2);
+
+        String type = TYPE_ID_PREFIX + 1;
+
+        Map<Address, Long> addressMap = new HashMap<>() {{
+            put(addresses[0], 10L);
+            put(addresses[1], 20L);
+            put(addresses[2], 30L);
+            put(addresses[3], 40L);
+        }};
+        initAssetWeight(BigInteger.ZERO, 1, addressMap);
+        Map<Integer, BigInteger> snapshots = new HashMap<>();
+        Map<Integer, Map<Address, Long>> values = new HashMap<>();
+        snapshots.put(1, getTimestamp());
+        values.put(1, addressMap);
+
+        Map<Address, Long> addressMap2 = new HashMap<>() {{
+            put(addresses[4], 25L);
+            put(addresses[5], 25L);
+            put(addresses[6], 25L);
+            put(addresses[7], 25L);
+        }};
+
+        initAssetWeight(BigInteger.ZERO, 2, addressMap2);
+        snapshots.put(2, getTimestamp());
+        values.put(2, addressMap2);
+        Random r = new Random();
+        String type_id = type;
+        int startIndex = 0;
+        Long typeW = typeWeight;
+        for (int i = 1; i <= 10; i++) {
+            sm.getBlock().increase(r.nextInt(1000) + 1);
+            long a = r.nextInt(25) + 1;
+            long b = r.nextInt(25) + 1;
+            long c = r.nextInt(25) + 1;
+            long d = 100 - a - b - c;
+
+            Map<Address, Long> map = new HashMap<>() {{
+                put(addresses[startIndex + 0], a);
+                put(addresses[startIndex + 1], b);
+                put(addresses[startIndex + 2], c);
+                put(addresses[startIndex + 3], d);
+            }};
+            setAssetWeight(BigInteger.ZERO, type_id, map);
+            snapshots.put(i, getTimestamp());
+            values.put(i, map);
+        }
+
+        BigInteger mockRate = BigInteger.valueOf(1000_000_000);
+
+        doReturn(Map.of(
+                "rateChangedOn", BigInteger.ZERO,
+                "rate", mockRate.multiply(ICX)
+        )).when(scoreSpy).getInflationRateByTimestamp(any());
+
+        for (int i = 10; i > 1; i--) {
+
+            BigInteger timestamp = snapshots.get(i);
+
+            Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getEmissionRate",
+                    timestamp.add(BigInteger.ONE));
+            Map<String, BigInteger> prevTime = (Map<String, BigInteger>) score.call("getEmissionRate",
+                    timestamp);
+
+            Map<Address, Long> value = values.get(i);
+
+            for (Map.Entry<Address, Long> entry : value.entrySet()) {
+
+                String id = entry.getKey().toString();
+                BigInteger next = nextTime.get(id);
+                BigInteger expected = BigInteger.valueOf(entry.getValue() * typeW).multiply(mockRate)
+                        .multiply(ICX)
+                        .divide(BigInteger.valueOf(10_000));
+                assertEquals(expected, next, "next data not match at " + id);
+            }
+
+            value = values.get(i - 1);
+            for (Map.Entry<Address, Long> entry : value.entrySet()) {
+                String id = entry.getKey().toString();
+                BigInteger prev = prevTime.get(id);
+                BigInteger expected = BigInteger.valueOf(entry.getValue() * typeW).multiply(mockRate)
+                        .multiply(ICX)
+                        .divide(BigInteger.valueOf(10_000));
+
+                assertEquals(expected, prev, "previous data not match at " + id);
+            }
+        }
+
+    }
+
+
     @DisplayName("Integrate index test")
     @Test
     public void testIntegrateIndex() {
@@ -492,11 +592,11 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     public void testDistributionInfo() {
 
-        Map<String, ?> result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(1L));
+        Map<String, ?> result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(1L));
 
         assertFalse((boolean) result.get("isValid"));
 
-        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(0L));
+        result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(0L));
 
         assertTrue((boolean) result.get("isValid"));
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));
@@ -504,21 +604,21 @@ public class RewardControllerUnitTest extends TestBase {
 
         sm.getBlock().increase(86400 / 2);//1
 
-        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(1L));
+        result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(1L));
 
         assertTrue((boolean) result.get("isValid"));
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("distribution"));//2-1
         assertEquals(BigInteger.valueOf(2L), result.get("day"));//1+1
 
         sm.getBlock().increase(86400 * 4 / 2);//1+4 = 5
-        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(2L));
+        result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(2L));
         assertTrue((boolean) result.get("isValid"));
         assertEquals(BigInteger.valueOf(6L), result.get("day")); //5+1
         assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)).multiply(BigInteger.valueOf(4L)),
                 result.get("distribution"));//6-2
 
         sm.getBlock().increase(86400 * 25 / 2);//5+25=30
-        result = (Map<String, ?>) score.call("distributionDetails", BigInteger.valueOf(25L));
+        result = (Map<String, ?>) score.call("getDistributionDetails", BigInteger.valueOf(25L));
         assertTrue((boolean) result.get("isValid"));
         assertEquals(BigInteger.valueOf(31L), result.get("day")); //30+1=31
         //31-25 => 25+26+27+28+29+30

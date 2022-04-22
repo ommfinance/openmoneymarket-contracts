@@ -10,7 +10,7 @@ import score.Address;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public interface RewardDistribution {
+public interface RewardDistribution extends AddressProvider {
 
     @External(readonly = true)
     String name();
@@ -159,6 +159,9 @@ public interface RewardDistribution {
 
     void enableHandleActions();
 
-    boolean isHandleActionDisabled();
+    boolean isHandleActionEnabled();
 
+    Map<String, ?> getAllAssetLegacyIndexes();
+
+    Map<String, Map<String, BigInteger>> getUserAllLegacyIndexes(Address _user);
 }
