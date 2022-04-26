@@ -45,10 +45,18 @@ public class RewardDistributionException extends OMMException.RewardDistribution
 
     }
 
+    public static RewardDistributionException handleActionDisabled() {
+        return new RewardDistributionException(Code.HandleActionDisabled, "handle action disabled");
+    }
+
+    public static RewardDistributionException rewardClaimDisabled() {
+        return new RewardDistributionException(Code.RewardClaimDisabled, "reward claim disabled");
+    }
+
     //OMMException.RewardDistribution => 10 ~
     public enum Code implements OMMException.Coded {
         Unknown(0), NotOwner(1), InvalidRecipient(2), InvalidAsset(3), InvalidTotalPercentage(4),
-        NotGovernanceContract(5), NotStakedLp(6), NotLendingPool(7);
+        NotGovernanceContract(5), NotStakedLp(6), NotLendingPool(7), HandleActionDisabled(8), RewardClaimDisabled(9);
 
         final int code;
 

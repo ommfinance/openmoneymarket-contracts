@@ -8,22 +8,15 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
-import com.iconloop.score.test.Score;
-import com.iconloop.score.test.ServiceManager;
-import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
-import finance.omm.libs.structs.AddressDetail;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.UserDetails;
 import finance.omm.libs.test.VarargAnyMatcher;
-import finance.omm.score.core.reward.distribution.RewardDistributionImpl;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -46,77 +38,7 @@ import org.mockito.Mockito;
 import score.Address;
 
 
-public class RewardDistributionUnitTest extends TestBase {
-
-    private static final ServiceManager sm = getServiceManager();
-    private Account owner;
-    private Score score;
-    private RewardDistributionImpl scoreSpy;
-    private float floatWeight = 0.4f;
-
-
-    private BigInteger TWO = BigInteger.TWO;
-    private BigInteger THREE = BigInteger.valueOf(3);
-    private BigInteger FOUR = BigInteger.valueOf(4);
-    private BigInteger HUNDRED = BigInteger.valueOf(100);
-    private BigInteger FORTY = BigInteger.valueOf(40L);
-    private BigInteger SIXTY = BigInteger.valueOf(60L);
-
-    Address[] addresses = new Address[]{
-            Account.newScoreAccount(1001).getAddress(),
-            Account.newScoreAccount(1002).getAddress(),
-            Account.newScoreAccount(1003).getAddress(),
-            Account.newScoreAccount(1004).getAddress(),
-            Account.newScoreAccount(1005).getAddress(),
-            Account.newScoreAccount(1006).getAddress(),
-            Account.newScoreAccount(1007).getAddress(),
-            Account.newScoreAccount(1008).getAddress(),
-            Account.newScoreAccount(1009).getAddress(),
-            Account.newScoreAccount(1010).getAddress(),
-            Account.newScoreAccount(1011).getAddress(),
-    };
-
-
-    private final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new HashMap<>() {{
-        put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
-        put(Contracts.REWARD_WEIGHT_CONTROLLER, Account.newScoreAccount(102));
-        put(Contracts.DAO_FUND, Account.newScoreAccount(103));
-        put(Contracts.WORKER_TOKEN, Account.newScoreAccount(104));
-        put(Contracts.OMM_TOKEN, Account.newScoreAccount(105));
-        put(Contracts.BOOSTED_OMM, Account.newScoreAccount(106));
-    }};
-
-    @BeforeEach
-    void setup() throws Exception {
-
-        owner = sm.createAccount(100);
-
-        BigInteger bOMMCutOff = BigInteger.valueOf(sm.getBlock().getTimestamp());
-
-        score = sm.deploy(owner, RewardDistributionImpl.class,
-                MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), bOMMCutOff);
-        setAddresses();
-        RewardDistributionImpl t = (RewardDistributionImpl) score.getInstance();
-        scoreSpy = spy(t);
-        mockAssets(scoreSpy, Mockito.spy(scoreSpy.assets));
-//        mockAssets(scoreSpy, Mockito.spy(scoreSpy.legacyRewards));
-        score.setInstance(scoreSpy);
-        sm.getBlock().increase(1_000_000);
-    }
-
-    private void setAddresses() {
-        AddressDetail[] addressDetails = MOCK_CONTRACT_ADDRESS.entrySet().stream().map(e -> {
-            AddressDetail ad = new AddressDetail();
-            ad.address = e.getValue().getAddress();
-            ad.name = e.getKey().toString();
-            return ad;
-        }).toArray(AddressDetail[]::new);
-
-        Object[] params = new Object[]{
-                addressDetails
-        };
-        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER), "setAddresses", params);
-    }
+public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
 
     @DisplayName("Add type")
     @Test
@@ -181,6 +103,7 @@ public class RewardDistributionUnitTest extends TestBase {
             users.add(sm.createAccount(10));
             users.add(sm.createAccount(10));
 
+            doReturn(Boolean.TRUE).when(scoreSpy).isHandleActionEnabled();
         }
 
         @DisplayName("should fail for invalid asset")
@@ -278,6 +201,9 @@ public class RewardDistributionUnitTest extends TestBase {
 
             @BeforeEach
             void setup() {
+
+                doReturn(Boolean.TRUE).when(scoreSpy).isHandleActionEnabled();
+
                 UserDetails details_1 = createUserDetail(0, 100);
                 details_1._totalSupply = details_1._userBalance;
 
@@ -325,6 +251,12 @@ public class RewardDistributionUnitTest extends TestBase {
 
                 verify(scoreSpy, never()).AssetIndexUpdated(any(), any(), any());
                 verify(scoreSpy, never()).UserIndexUpdated(any(), any(), any(), any());
+
+                verifyGetRewards(result, weight);
+            }
+
+            private void verifyGetRewards(Map<String, ?> result, long weight) {
+
 //                user1 working balance min(100*0.4+200*200/400*0.6,100)=100
 
                 Map<String, BigInteger> type1 = (Map<String, BigInteger>) result.get("type-1");
@@ -351,6 +283,7 @@ public class RewardDistributionUnitTest extends TestBase {
                     long workingBalance, long workingTotal) {
                 clearInvocations(scoreSpy);
                 Account user = users.get(userIndex);
+                doReturn(Boolean.TRUE).when(scoreSpy).isRewardClaimEnabled();
 
                 doReturn(BigInteger.valueOf(bBalance).multiply(ICX)).when(scoreSpy)
                         .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user.getAddress());
@@ -381,6 +314,32 @@ public class RewardDistributionUnitTest extends TestBase {
                 verifyWorkingBalanceUpdate(tokenBalance, bBalance, workingTotal - workingBalance);
 
 
+            }
+
+            @ParameterizedTest
+            @MethodSource("finance.omm.score.reward.test.unit.RewardDistributionUnitTest#userRewards")
+            void kick_user(int userIndex, long weight) {
+                reset(scoreSpy);
+                reset(scoreSpy.assets);
+                Address user = users.get(userIndex).getAddress();
+                doReturn(BigInteger.ZERO).when(scoreSpy)
+                        .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user);
+
+                doReturn(BigInteger.ONE).when(scoreSpy)
+                        .call(BigInteger.class, Contracts.BOOSTED_OMM, "totalSupply");
+
+                doReturn(ICX).when(scoreSpy)
+                        .call(eq(BigInteger.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getIntegrateIndex"),
+                                ArgumentMatchers.<Object>argThat(matcher));
+
+                SupplyDetails details = createSupplyDetails(200);
+
+                doReturn(details).when(scoreSpy).fetchUserBalance(any(), any(), any());
+
+                score.invoke(owner, "kick", user);
+                Map<String, ?> result = (Map<String, ?>) score.call("getRewards", user);
+
+                verifyGetRewards(result, weight);
             }
 
             private void verifyWorkingBalanceUpdate(Long tokenBalance, Long balance, Long workingTotalBalance) {
@@ -473,7 +432,7 @@ public class RewardDistributionUnitTest extends TestBase {
             put("day", BigInteger.ZERO);
         }};
         doReturn(result).when(scoreSpy)
-                .call(eq(clazz), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("distributionDetails"),
+                .call(eq(clazz), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("getDistributionDetails"),
                         any(BigInteger.class));
         score.invoke(owner, "distribute");
 
@@ -495,7 +454,7 @@ public class RewardDistributionUnitTest extends TestBase {
         Class<Map<String, ?>> clazz = (Class) Map.class;
         BigInteger distribution = (BigInteger) response.get("distribution");
         doReturn(response).when(scoreSpy)
-                .call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "distributionDetails",
+                .call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "getDistributionDetails",
                         BigInteger.ZERO);
         doNothing().when(scoreSpy).call(Contracts.OMM_TOKEN, "mint", distribution);
         mockTokenDistribution();
@@ -596,22 +555,6 @@ public class RewardDistributionUnitTest extends TestBase {
 
         Map result = (Map) score.call("getLiquidityProviders");
         System.out.println("result = " + result);
-    }
-
-
-    public void expectErrorMessage(Executable contractCall, String errorMessage) {
-        AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
-        assertEquals(errorMessage, e.getMessage());
-    }
-
-
-    static void mockAssets(RewardDistributionImpl obj, Object value) throws Exception {
-        Field field = obj.getClass().getField("assets");
-        field.setAccessible(true);
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-        field.set(obj, value);
     }
 
 }

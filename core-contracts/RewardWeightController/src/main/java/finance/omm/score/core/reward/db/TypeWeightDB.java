@@ -99,7 +99,6 @@ public class TypeWeightDB implements Searchable {
     }
 
 
-
     public BigInteger getTotal(BigInteger timestamp) {
         int index = searchCheckpoint(timestamp);
         return this.totalCheckpoint.get(index);
@@ -144,7 +143,7 @@ public class TypeWeightDB implements Searchable {
         return Map.of("index", BigInteger.valueOf(index), "value", this.wCheckpoint.at(index)
                         .getOrDefault(type,
                                 BigInteger.ZERO),
-                "timestamp", this.tCheckpoint.get(index));
+                "timestamp", this.tCheckpoint.getOrDefault(index, BigInteger.ZERO));
     }
 
 

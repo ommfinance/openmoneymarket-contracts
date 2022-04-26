@@ -1,6 +1,8 @@
 package finance.omm.score.core.reward.distribution;
 
+import static finance.omm.utils.constants.TimeConstants.SECOND;
 import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 
@@ -13,6 +15,8 @@ import finance.omm.libs.structs.WeightStruct;
 import finance.omm.libs.structs.WorkingBalance;
 import finance.omm.score.core.reward.distribution.exception.RewardDistributionException;
 import finance.omm.score.core.reward.distribution.model.Asset;
+import finance.omm.utils.constants.TimeConstants;
+import finance.omm.utils.constants.TimeConstants.Timestamp;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
 import java.util.List;
@@ -32,19 +36,24 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public static final String DAY = "day";
 
     public static final String IS_INITIALIZED = "isInitialized";
-    public static final String IS_REWARD_CLAIM_ENABLED = "isRewardClaimEnabled";
 
 
     public final VarDB<BigInteger> distributedDay = Context.newVarDB(DAY, BigInteger.class);
     public final VarDB<Boolean> _isInitialized = Context.newVarDB(IS_INITIALIZED, Boolean.class);
-    public final VarDB<Boolean> _isRewardClaimEnabled = Context.newVarDB(IS_REWARD_CLAIM_ENABLED, Boolean.class);
+
+
+    public final VarDB<Boolean> IS_ASSET_INDEX_UPDATED = Context.newVarDB("bOMM-migration-is-asset-index-updated",
+            Boolean.class);
 
 
     public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate) {
         super(addressProvider);
         if (this.bOMMRewardStartDate.get() == null) {
+            TimeConstants.checkIsValidTimestamp(bOMMRewardStartDate, Timestamp.SECONDS);
             this.bOMMRewardStartDate.set(bOMMRewardStartDate);
         }
+        isHandleActionEnabled.set(Boolean.FALSE);
+        isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
     @External(readonly = true)
@@ -119,13 +128,13 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     /**
-     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getALlTypeWeight(BigInteger)}
+     * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getAllTypeWeight(BigInteger)}
      */
     @Override
     @External(readonly = true)
     @Deprecated
     public Map<String, BigInteger> getAllDistributionPercentage() {
-        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getALlTypeWeight");
+        return call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getAllTypeWeight");
     }
 
     /**
@@ -245,20 +254,27 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External()
     public void disableRewardClaim() {
         checkGovernance();
-        _isRewardClaimEnabled.set(Boolean.FALSE);
+        isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
     @External()
     public void enableRewardClaim() {
         checkGovernance();
-        _isRewardClaimEnabled.set(Boolean.FALSE);
+        isRewardClaimEnabled.set(Boolean.TRUE);
     }
 
-    //    @Override
-    @External(readonly = true)
-    public boolean isRewardClaimEnabled() {
-        return _isRewardClaimEnabled.get();
+    @External()
+    public void disableHandleActions() {
+        checkGovernance();
+        isHandleActionEnabled.set(Boolean.FALSE);
     }
+
+    @External()
+    public void enableHandleActions() {
+        checkGovernance();
+        isHandleActionEnabled.set(Boolean.TRUE);
+    }
+
 
     /**
      * @deprecated use {@link finance.omm.score.core.reward.RewardWeightControllerImpl#getDailyRewards(BigInteger)}
@@ -287,7 +303,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
         @SuppressWarnings("unchecked")
         Class<Map<String, ?>> clazz = (Class) Map.class;
-        Map<String, ?> distributionDetails = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "distributionDetails",
+        Map<String, ?> distributionDetails = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "getDistributionDetails",
                 day);
         Boolean isValid = (Boolean) distributionDetails.get("isValid");
 
@@ -428,6 +444,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
     private void _handleAction(Address assetAddr, UserDetails _userDetails) {
+        if (!isHandleActionEnabled()) {
+            throw RewardDistributionException.handleActionDisabled();
+        }
+
         Asset asset = this.assets.get(assetAddr);
         if (asset == null) {
             throw RewardDistributionException.invalidAsset("Asset is null (" + assetAddr + ")");
@@ -437,31 +457,103 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
         updateIndexes(assetAddr, userAddr);
 
-        /*
-         * legacy reward update start
-         */
-        BigInteger _decimals = _userDetails._decimals;
-        BigInteger _userBalance = MathUtils.convertToExa(_userDetails._userBalance, _decimals);
-        BigInteger _totalSupply = MathUtils.convertToExa(_userDetails._totalSupply, _decimals);
-
         Map<String, BigInteger> boostedBalance = getBoostedBalance(userAddr);
-        WorkingBalance balance = new WorkingBalance();
-        balance.assetAddr = assetAddr;
-        balance.userAddr = userAddr;
-        balance.userBalance = _userBalance;
-        balance.totalSupply = _totalSupply;
-        balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
-        balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
-
-        legacyRewards.accumulateUserRewards(balance, this.bOMMRewardStartDate.get(), false);
-        /*
-         * legacy reward update end
-         */
-
-        balance = getUserBalance(userAddr, assetAddr, asset.lpID);
+        WorkingBalance balance = getUserBalance(userAddr, assetAddr, asset.lpID);
         balance.bOMMUserBalance = boostedBalance.get("bOMMUserBalance");
         balance.bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
         updateWorkingBalance(balance);
+    }
+
+    /**
+     * calculate old reward indexes of all asset to bOMM cutOff timestamp
+     */
+    @External
+    public void updateAssetIndexes() {
+        checkOwner();
+        BigInteger bOMMCutOffTimestamp = bOMMRewardStartDate.get();
+        BigInteger currentTimestamp = TimeConstants.getBlockTimestamp().divide(SECOND);
+        if (bOMMCutOffTimestamp.compareTo(currentTimestamp) > 0) {
+            throw RewardDistributionException.unknown(
+                    "bOMMCutOffTimestamp is future timestamp (" + bOMMCutOffTimestamp + ")");
+        }
+        if (IS_ASSET_INDEX_UPDATED.getOrDefault(false)) {
+            throw RewardDistributionException.unknown(
+                    "Asset index already updated (" + bOMMCutOffTimestamp + ")");
+        }
+        List<Address> assetAddrs = this.legacyRewards.getAssets();
+        for (Address assetAddr : assetAddrs) {
+            Integer poolId = this.legacyRewards.getPoolID(assetAddr);
+            Map<String, BigInteger> map = null;
+            BigInteger decimals = null;
+            BigInteger totalSupply = null;
+
+            if (poolId > 0) {
+                map = Context.call(Map.class, getAddress(Contracts.STAKED_LP.getKey()),
+                        "getTotalStaked", poolId);
+                decimals = map.get("decimals");
+                totalSupply = convertToExa(map.get("totalStaked"), decimals);
+            } else {
+                map = Context.call(Map.class, assetAddr, "getPrincipalSupply", Context.getCaller());
+                decimals = map.get("decimals");
+                totalSupply = convertToExa(map.get("principalTotalSupply"), decimals);
+            }
+
+            this.legacyRewards.updateAssetIndex(assetAddr, totalSupply, bOMMCutOffTimestamp);
+            LegacyAssetIndexUpdated(assetAddr);
+        }
+        IS_ASSET_INDEX_UPDATED.set(Boolean.TRUE);
+    }
+
+    /**
+     * calculate old accrued reward of users to bOMM cutOff timestamp, also update working balance of users
+     */
+    @External
+    public void migrateUserRewards(Address[] userAddresses) {
+        checkOwner();
+        if (!IS_ASSET_INDEX_UPDATED.getOrDefault(false)) {
+            throw RewardDistributionException.unknown(
+                    "Asset indexes are not migrated, Please migrate asset index first");
+        }
+        List<Address> assetAddrs = this.legacyRewards.getAssets();
+        Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
+        for (Address assetAddr : assetAddrs) {
+            Integer poolId = this.legacyRewards.getPoolID(assetAddr);
+            for (Address userAddr : userAddresses) {
+                WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, BigInteger.valueOf(poolId));
+                workingBalance.bOMMUserBalance = BigInteger.ZERO;
+                workingBalance.bOMMTotalSupply = BigInteger.ZERO;
+
+                BigInteger totalReward = legacyRewards.accumulateUserRewards(workingBalance);
+
+                if (assetAddr.equals(getAddress(Contracts.OMM_TOKEN.getKey()))) {
+                    this.assets.setAccruedRewards(userAddr, bOMMAddress, totalReward);
+                } else {
+                    this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
+                    updateWorkingBalance(workingBalance);
+                }
+                LegacyUserIndexUpdated(userAddr, assetAddr);
+            }
+        }
+    }
+
+    @External(readonly = true)
+    public Map<String, ?> getAllAssetLegacyIndexes() {
+        return this.legacyRewards.getAllAssetIndexes();
+    }
+
+
+    @External(readonly = true)
+    public Map<String, Map<String, BigInteger>> getUserAllLegacyIndexes(Address _user) {
+        return this.legacyRewards.getUserAllIndexes(_user);
+    }
+
+    @EventLog(indexed = 1)
+    public void LegacyAssetIndexUpdated(Address _asset) {
+    }
+
+
+    @EventLog(indexed = 2)
+    public void LegacyUserIndexUpdated(Address _user, Address _asset) {
     }
 
     @EventLog()

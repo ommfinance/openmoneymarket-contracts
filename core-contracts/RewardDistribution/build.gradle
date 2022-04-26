@@ -1,4 +1,4 @@
-version '0.1'
+version = '0.0.1'
 
 optimizedJar {
     mainClassName = 'finance.omm.score.core.reward.distribution.RewardDistributionImpl'
@@ -14,6 +14,7 @@ dependencies {
     implementation project(':ScoreUtils')
     implementation project(':Score')
     compileOnly project(':RewardWeightController')
+    intTestImplementation project(':RewardWeightController')
 
     testImplementation project(':TestUtils')
 }
@@ -63,8 +64,25 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
 //        systemProperty 'address', "cxecae13f554df1495b9104b44a43613df009fb4f0"
 //        systemProperty 'isUpdate', "false"
         systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
-        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value
-        }
+        systemProperty 'params.bOMMRewardStartDate', "1646438400"
+
+
+        dependsOn(":RewardWeightController:optimizedJar")
+        systemProperty 'rewardWeight.keyStore', scoreTest.keystoreName
+        systemProperty 'rewardWeight.keyPassword', scoreTest.keystorePass
+        systemProperty 'rewardWeight.url', scoreTest.url
+        systemProperty 'rewardWeight.nid', scoreTest.nid
+        systemProperty 'rewardWeight.scoreFilePath', project.tasks.getByPath(":RewardWeightController:optimizedJar").outputJarName
+//        systemProperty 'rewardWeight.scoreFilePath', project(":RewardWeightController").tasks.optimizedJar.outputJarName.replace("-optimized.jar", "-${project(":RewardWeightController").version}-optimized.jar")
+        systemProperty 'rewardWeight.params.startTimestamp', "1581724800000000"
+
+
+        systemProperty 'addressProvider.keyStore', scoreTest.keystoreName
+        systemProperty 'addressProvider.keyPassword', scoreTest.keystorePass
+        systemProperty 'addressProvider.url', scoreTest.url
+        systemProperty 'addressProvider.nid', scoreTest.nid
+        systemProperty 'addressProvider.scoreFilePath', "$rootDir/scores/address-provider.zip"
+
 
     }
 
