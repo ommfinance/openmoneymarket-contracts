@@ -106,6 +106,8 @@ public class StateMachineTest extends TestBase {
                 "Boosted Omm", "bOMM");
         scoreSpy = (VotingEscrowToken) spy(bOmmScore.getInstance());
         bOmmScore.setInstance(scoreSpy);
+
+        bOmmScore.invoke(owner, "setMinimumLockingAmount", ICX);
         setupAccounts();
     }
 
@@ -252,8 +254,12 @@ public class StateMachineTest extends TestBase {
             //Minimum amount to lock is MAX_TIME. If less than minimum amount is provided, balance is zero but the
             // transaction is not reverted.
             Account account = accounts.get(1);
-            BigInteger valueLessThanMinimum = BigInteger.valueOf(MAX_TIME - 1);
-            createLock(account, valueLessThanMinimum, unlockTime);
+            BigInteger valueLessThanMinimum = ICX.subtract(BigInteger.ONE);
+
+            Executable increaseAmount = () -> createLock(account, valueLessThanMinimum, unlockTime);
+
+            String expectedErrorMessage = "required minimum 1 OMM for locking";
+            expectErrorMessage(increaseAmount, expectedErrorMessage);
 
             BigInteger balance = (BigInteger) bOmmScore.call("balanceOf", account.getAddress(), BigInteger.ZERO);
             assertEquals(BigInteger.ZERO, balance);
@@ -263,10 +269,11 @@ public class StateMachineTest extends TestBase {
         @Test
         void minimumAmount() {
             Account account = accounts.get(2);
-            BigInteger valueMinimum = BigInteger.valueOf(MAX_TIME);
+            BigInteger valueMinimum = ICX;
             createLock(account, valueMinimum, unlockTime);
 
-            assert (((BigInteger) bOmmScore.call("balanceOf", account.getAddress(), BigInteger.ZERO)).compareTo(BigInteger.ZERO) > 0);
+            assert (((BigInteger) bOmmScore.call("balanceOf", account.getAddress(), BigInteger.ZERO)).compareTo(
+                    BigInteger.ZERO) > 0);
         }
 
         @DisplayName("Locked balance deducted from user's account")
@@ -494,8 +501,10 @@ public class StateMachineTest extends TestBase {
             if (vote.unlockTime.compareTo(currentTime) > 0 && vote.value.divide(BigInteger.valueOf(MAX_TIME))
                     .compareTo(BigInteger.ZERO) > 0) {
                 assert (balance.compareTo(BigInteger.ZERO) > 0);
-            } else
-                assert vote.value.compareTo(BigInteger.ZERO) <= 0 && vote.unlockTime.compareTo(currentTime) > 0 || (balance.compareTo(BigInteger.ZERO) == 0);
+            } else {
+                assert vote.value.compareTo(BigInteger.ZERO) <= 0 && vote.unlockTime.compareTo(currentTime) > 0 || (
+                        balance.compareTo(BigInteger.ZERO) == 0);
+            }
         }
 
         assertEquals(bOmmScore.call("totalSupply", BigInteger.ZERO), totalSupply);

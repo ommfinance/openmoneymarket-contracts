@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package finance.omm.score.tokens;
+package finance.omm.score.tokens.model;
 
 import finance.omm.utils.math.UnsignedBigInteger;
 import java.math.BigInteger;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
+import score.ObjectWriter;
 
 public class Point {
 
@@ -42,27 +43,8 @@ public class Point {
         this(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
     }
 
-    public byte[] toByteArray() {
-        ByteArrayObjectWriter pointInBytes = Context.newByteArrayObjectWriter("RLPn");
-        pointInBytes.write(this.bias);
-        pointInBytes.write(this.slope);
-        pointInBytes.write(this.timestamp.toBigInteger());
-        pointInBytes.write(this.block.toBigInteger());
-        return pointInBytes.toByteArray();
-    }
-
     public Point newPoint() {
         return new Point(this.bias, this.slope, this.timestamp.toBigInteger(), this.block.toBigInteger());
-    }
-
-    public static Point toPoint(byte[] pointBytesArray) {
-        if (pointBytesArray == null) {
-            return new Point();
-        } else {
-            ObjectReader point = Context.newByteArrayObjectReader("RLPn", pointBytesArray);
-            return new Point(point.readBigInteger(), point.readBigInteger(), point.readBigInteger(),
-                    point.readBigInteger());
-        }
     }
 
     public BigInteger getTimestamp() {
@@ -71,5 +53,41 @@ public class Point {
 
     public BigInteger getBlock() {
         return block.toBigInteger();
+    }
+
+
+    public static void writeObject(ObjectWriter writer, Point obj) {
+        obj.writeObject(writer);
+    }
+
+    public static Point readObject(ObjectReader reader) {
+        Point obj = new Point();
+        reader.beginList();
+        obj.bias = reader.readBigInteger();
+        obj.slope = reader.readBigInteger();
+        obj.timestamp = new UnsignedBigInteger(reader.readBigInteger());
+        obj.block = new UnsignedBigInteger(reader.readBigInteger());
+        reader.end();
+        return obj;
+    }
+
+    public void writeObject(ObjectWriter writer) {
+        writer.beginList(4);
+        writer.write(this.bias);
+        writer.write(this.slope);
+        writer.write(this.timestamp.toBigInteger());
+        writer.write(this.block.toBigInteger());
+        writer.end();
+    }
+
+    public static Point fromBytes(byte[] bytes) {
+        ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
+        return Point.readObject(reader);
+    }
+
+    public byte[] toBytes() {
+        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
+        Point.writeObject(writer, this);
+        return writer.toByteArray();
     }
 }

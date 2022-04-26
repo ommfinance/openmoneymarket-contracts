@@ -1,6 +1,9 @@
 package finance.omm.score.tokens.exception;
 
+import static finance.omm.utils.math.MathUtils.ICX;
+
 import finance.omm.utils.exceptions.OMMException;
+import java.math.BigInteger;
 
 public class BoostedOMMException extends OMMException.BOMMException {
 
@@ -28,9 +31,14 @@ public class BoostedOMMException extends OMMException.BOMMException {
         return new BoostedOMMException(Code.RE_ENTRANCY, message);
     }
 
+    public static BoostedOMMException invalidMinimumLockingAmount(BigInteger value) {
+        return new BoostedOMMException(Code.MINIMUM_LOCKING_AMOUNT,
+                "required minimum " + value.divide(ICX) + " OMM for locking");
+    }
+
     //OMMException.BOMMException => 20~
     public enum Code implements Coded {
-        Unknown(0), NotOwner(1), NotGovernanceContract(2), RE_ENTRANCY(3);
+        Unknown(0), NotOwner(1), NotGovernanceContract(2), RE_ENTRANCY(3), MINIMUM_LOCKING_AMOUNT(3);
 
         final int code;
 
