@@ -28,8 +28,8 @@ public class RewardWeightException extends OMMException.RewardWeightError {
         return new RewardWeightException(Code.NotGovernanceContract, "require Governance contract access");
     }
 
-    public static RewardWeightException notValidType(String typeId) {
-        return new RewardWeightException(Code.NotGovernanceContract, "type id is not valid :: " + typeId);
+    public static RewardWeightException typeNotExist(String type) {
+        return new RewardWeightException(Code.NotValidType, "type is not valid :: " + type);
     }
 
     public static RewardWeightException invalidTotalPercentage() {
@@ -42,7 +42,7 @@ public class RewardWeightException extends OMMException.RewardWeightError {
 
     //OMMException.RewardWeightController =>10 ~
     public enum Code implements OMMException.Coded {
-        Unknown(0), NotOwner(1), NotGovernanceContract(2), NotValidTypeID(3), NotValidTotalPercentage(4),
+        Unknown(0), NotOwner(1), NotGovernanceContract(2), NotValidType(3), NotValidTotalPercentage(4),
         NotValidAsset(5), UnAuthorized(6);
 
         final int code;

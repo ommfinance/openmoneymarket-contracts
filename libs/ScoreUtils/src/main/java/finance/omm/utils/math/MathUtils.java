@@ -5,6 +5,7 @@ import java.math.BigInteger;
 public class MathUtils {
 
     public static BigInteger ICX = pow10(18);
+    public static BigInteger HUNDRED_PERCENT = ICX;
     public static BigInteger HALF_ICX = ICX.divide(BigInteger.TWO);
     public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(ICX);
     public static BigInteger HUNDRED_THOUSAND = BigInteger.valueOf(100_000L).multiply(ICX);
@@ -14,7 +15,7 @@ public class MathUtils {
         return first.compareTo(second) < 0;
     }
 
-    public static boolean isLesThanEqual(BigInteger first, BigInteger second) {
+    public static boolean isLessThanEqual(BigInteger first, BigInteger second) {
         return first.compareTo(second) <= 0;
     }
 
