@@ -47,7 +47,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     public RewardWeightControllerImpl(Address addressProvider, BigInteger startTimestamp) {
         super(addressProvider, false);
-        if (this._timestampAtStart.getOrDefault(null) == null) {
+        if (this._timestampAtStart.get() == null) {
             this._timestampAtStart.set(startTimestamp);
         }
     }
@@ -291,8 +291,8 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     private void checkType(String type) {
-        if (!typeWeightDB.isValidId(type)) {
-            throw RewardWeightException.notValidType(type);
+        if (!typeWeightDB.isTypeExists(type)) {
+            throw RewardWeightException.typeNotExist(type);
         }
 
         if (typeWeightDB.isContractType(type)) {
