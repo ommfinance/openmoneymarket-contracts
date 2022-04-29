@@ -17,6 +17,7 @@ import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.PrepDelegations;
+import finance.omm.libs.structs.PrepICXDelegations;
 import finance.omm.score.core.delegation.DelegationImpl;
 import finance.omm.utils.constants.AddressConstant;
 import java.math.BigInteger;
@@ -57,6 +58,8 @@ public class DelegationTest extends TestBase {
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
         put(Contracts.OMM_TOKEN, Account.newScoreAccount(102));
         put(Contracts.LENDING_POOL_CORE, Account.newScoreAccount(103));
+        put(Contracts.STAKING, Account.newScoreAccount(104));
+        put(Contracts.sICX, Account.newScoreAccount(105));
     }};
 
     private static void setAddresses() {
@@ -965,6 +968,150 @@ public class DelegationTest extends TestBase {
 
         BigInteger newTotal = (BigInteger) delegationScore.call("getTotalVotes");
         assertEquals(BigInteger.TEN.pow(18), newTotal);
+    }
+
+    @DisplayName("Test user delegations details in ICX")
+    @Test
+    public void userICXDelegationDetails() {
+
+        Account user1 = sm.createAccount();
+
+        initialize();
+        List<Address> preps = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++) {
+            preps.add(sm.createAccount().getAddress());
+        }
+        PrepDelegations[] delegations1 = new PrepDelegations[3];
+
+        // delegation for user 1
+        delegations1[0] = new PrepDelegations(preps.get(0), exaHelper(10));
+        delegations1[1] = new PrepDelegations(preps.get(1), exaHelper(40));
+        delegations1[2] = new PrepDelegations(preps.get(2), exaHelper(50));
+
+        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18)));
+        Map <String, BigInteger> totalStaked = Map.of("totalStaked", BigInteger.valueOf(200).multiply(BigInteger.TEN.pow(18)));
+
+        doReturn(detailsBalanceOf).when(scoreSpy)
+                .call(eq(Map.class) ,eq(Contracts.OMM_TOKEN),eq("details_balanceOf"), any());
+        doReturn(totalStaked).when(scoreSpy).call(Map.class ,Contracts.OMM_TOKEN,"getTotalStaked");
+
+        // 2 * 10 ** 18
+        BigInteger twoExa = BigInteger.TWO.multiply(BigInteger.TEN.pow(18));
+        doReturn(twoExa).when(scoreSpy).
+                call(BigInteger.class ,Contracts.STAKING,"getTodayRate");
+
+        doReturn(BigInteger.valueOf(1000L).multiply(BigInteger.TEN.pow(18))).when(scoreSpy).
+                call(eq(BigInteger.class) ,eq(Contracts.sICX),eq("balanceOf"), any());
+
+        Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
+        doReturn(prepDetails).when(scoreSpy)
+                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any());
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
+
+        delegationScore.invoke(user1, "updateDelegations", delegations1, user1.getAddress());
+
+        List<PrepICXDelegations> user1IcxDelegations = (List<PrepICXDelegations>)
+                delegationScore.call("getUserICXDelegation", user1.getAddress());
+
+        /*
+         * total sicx balance :> 1000
+         * total icx balance :> 2000
+         * user1 staked :> 100
+         * total staked :> 100
+         * delegations :>
+         *          | 0  | 1  | 2  | 3  |
+         * User 1   | 10 | 40 | 50 | -  |
+         */
+        for (int i = 0; i < delegations1.length; i++) {
+            BigInteger voteInPer = delegations1[i]._votes_in_per;
+            BigInteger voteInIcx = exaMultiply(BigInteger.valueOf(1000).multiply(BigInteger.TEN.pow(18)), voteInPer);
+            assertEquals(voteInIcx,user1IcxDelegations.get(i)._votes_in_icx);
+        }
+    }
+
+    @DisplayName("Test multiple user delegations details in ICX")
+    @Test
+    public void multipleUserICXDelegationDetails() {
+
+        Account user1 = sm.createAccount();
+        Account user2 = sm.createAccount();
+        Account user3 = sm.createAccount();
+
+        initialize();
+        List<Address> preps = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++) {
+            preps.add(sm.createAccount().getAddress());
+        }
+        PrepDelegations[] delegations1 = new PrepDelegations[3];
+        PrepDelegations[] delegations2 = new PrepDelegations[2];
+
+        // delegation for user 1
+        delegations1[0] = new PrepDelegations(preps.get(0), exaHelper(10));
+        delegations1[1] = new PrepDelegations(preps.get(1), exaHelper(40));
+        delegations1[2] = new PrepDelegations(preps.get(2), exaHelper(50));
+
+        // delegation for user 2
+        delegations2[0] = new PrepDelegations(preps.get(0), exaHelper(60));
+        delegations2[1] = new PrepDelegations(preps.get(3), exaHelper(40));
+
+        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18)));
+        Map <String, BigInteger> totalStaked = Map.of("totalStaked", BigInteger.valueOf(2000L).multiply(BigInteger.TEN.pow(18)));
+
+        doReturn(detailsBalanceOf).when(scoreSpy)
+                .call(eq(Map.class) ,eq(Contracts.OMM_TOKEN),eq("details_balanceOf"), any());
+        doReturn(totalStaked).when(scoreSpy).call(Map.class ,Contracts.OMM_TOKEN,"getTotalStaked");
+
+        // 2 * 10 ** 18
+        BigInteger twoExa = BigInteger.TWO.multiply(BigInteger.TEN.pow(18));
+        doReturn(twoExa).when(scoreSpy).
+                call(BigInteger.class ,Contracts.STAKING,"getTodayRate");
+
+        doReturn(BigInteger.valueOf(1000L).multiply(BigInteger.TEN.pow(18))).when(scoreSpy).
+                call(eq(BigInteger.class) ,eq(Contracts.sICX),eq("balanceOf"), any());
+
+        Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
+        doReturn(prepDetails).when(scoreSpy)
+                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any());
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
+
+        delegationScore.invoke(user1, "updateDelegations", delegations1, user1.getAddress());
+        delegationScore.invoke(user2, "updateDelegations", delegations2, user2.getAddress());
+        delegationScore.invoke(user3, "updateDelegations", new PrepDelegations[0], user3.getAddress());
+
+        List<PrepICXDelegations> user1IcxDelegations = (List<PrepICXDelegations>)
+                delegationScore.call("getUserICXDelegation", user1.getAddress());
+        List<PrepICXDelegations> user2IcxDelegations = (List<PrepICXDelegations>)
+                delegationScore.call("getUserICXDelegation", user2.getAddress());
+        List<PrepICXDelegations> user3IcxDelegations = (List<PrepICXDelegations>)
+                delegationScore.call("getUserICXDelegation", user3.getAddress());
+        /*
+         * User1 staked: 100 OMM
+         * User2 staked: 100 OMM
+         * User3 staked: 100 OMM
+         * Total staked: 2000 OMM
+         * ICX balance: 2000
+         */
+
+        for (int i = 0; i < delegations1.length; i++) {
+            BigInteger voteInPer = delegations1[i]._votes_in_per;
+            BigInteger voteInIcx = exaMultiply(BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18)), voteInPer);
+            assertEquals(voteInIcx,user1IcxDelegations.get(i)._votes_in_icx);
+        }
+
+        for (int i = 0; i < delegations2.length; i++) {
+            BigInteger voteInPer = delegations2[i]._votes_in_per;
+            BigInteger voteInIcx = exaMultiply(BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18)), voteInPer);
+            assertEquals(voteInIcx,user2IcxDelegations.get(i)._votes_in_icx);
+        }
+
+        // for user 3
+        BigInteger expected = exaMultiply(BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18)), exaHelper(50));
+        assertEquals(expected,user3IcxDelegations.get(0)._votes_in_icx);
+        assertEquals(expected,user3IcxDelegations.get(1)._votes_in_icx);
     }
 
 
