@@ -8,13 +8,29 @@ public class PrepICXDelegations {
     public Address _address;
     public BigInteger _votes_in_per;
     public BigInteger _votes_in_icx;
+    public  PrepICXDelegations() {}
 
-    public static PrepICXDelegations fromMap(Map<String, ?> map) {
-        PrepICXDelegations prepDelegations = new PrepICXDelegations();
-        prepDelegations._address = (Address) map.get("_address");
-        prepDelegations._votes_in_per = (BigInteger) map.get("_votes_in_per");
-        prepDelegations._votes_in_icx = (BigInteger) map.get("_votes_in_icx");
-        return prepDelegations;
+    public PrepICXDelegations(Address address, BigInteger votes_in_per, BigInteger votes_in_icx) {
+        _address = address;
+        _votes_in_per = votes_in_per;
+        _votes_in_icx = votes_in_icx;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        PrepDelegations that = (PrepDelegations) o;
+
+        if (_address != null ? !_address.equals(that._address) : that._address != null) {
+            return false;
+        }
+        return _votes_in_per != null ? _votes_in_per.equals(that._votes_in_per) : that._votes_in_per == null;
     }
 }
 
