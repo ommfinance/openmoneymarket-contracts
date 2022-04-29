@@ -291,18 +291,18 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External(readonly = true)
-    public BigInteger prepVotes(Address prep) {
-        return _prepVotes.getOrDefault(prep, BigInteger.ZERO);
+    public BigInteger prepVotes(Address _prep) {
+        return _prepVotes.getOrDefault(_prep, BigInteger.ZERO);
     }
 
     @External(readonly = true)
-    public Map<String,BigInteger> userPrepVotes(Address user) {
+    public Map<String,BigInteger> userPrepVotes(Address _user) {
         Map<String, BigInteger> userDetailsBalance = call(Map.class,
-                Contracts.OMM_TOKEN, "details_balanceOf", user);
+                Contracts.OMM_TOKEN, "details_balanceOf", _user);
         BigInteger userStakedToken = userDetailsBalance.get("stakedBalance");
 
-        DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(user);
-        DictDB<Integer, Address> userPreps = _userPreps.at(user);
+        DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
+        DictDB<Integer, Address> userPreps = _userPreps.at(_user);
 
         Map<String, BigInteger> response = new HashMap<>();
 
@@ -319,11 +319,11 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External(readonly = true)
-    public PrepDelegations[] getUserDelegationDetails(Address user) {
+    public PrepDelegations[] getUserDelegationDetails(Address _user) {
 
         List<PrepDelegations> userDetails = new ArrayList<>();
-        DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(user);
-        DictDB<Integer, Address> userPreps = _userPreps.at(user);
+        DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
+        DictDB<Integer, Address> userPreps = _userPreps.at(_user);
 
         for (int i = 0; i < 5; i++) {
             Address prep = userPreps.getOrDefault(i, ZERO_SCORE_ADDRESS);
@@ -347,25 +347,24 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External(readonly = true)
-    public List<PrepICXDelegations> getUserICXDelegation(Address user) {
+    public List<PrepICXDelegations> getUserICXDelegation(Address _user) {
         List<PrepICXDelegations> userDetails = new ArrayList<>();
 
         Map<String, BigInteger> userDetailsBalance = call(Map.class,
-                Contracts.OMM_TOKEN, "details_balanceOf", user);
+                Contracts.OMM_TOKEN, "details_balanceOf", _user);
         BigInteger userStakedToken = userDetailsBalance.get("stakedBalance");
         Map<String, BigInteger> totalStaked = call(Map.class,
                 Contracts.OMM_TOKEN, "getTotalStaked");
         BigInteger totalStakedToken = totalStaked.get("totalStaked");
 
-        Address lendingPoolCore = Address.fromString(Contracts.LENDING_POOL_CORE.getKey());
+        Address lendingPoolCore = getAddress(Contracts.LENDING_POOL_CORE.getKey());
 
         BigInteger sicxIcxRate = call(BigInteger.class, Contracts.STAKING, "getTodayRate");
         BigInteger coresICXBalance = call(BigInteger.class, Contracts.sICX, "balanceOf", lendingPoolCore);
         BigInteger ommICXPower = exaMultiply(sicxIcxRate, exaDivide(coresICXBalance, totalStakedToken));
 
-
-        DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(user);
-        DictDB<Integer, Address> userPreps = _userPreps.at(user);
+        DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
+        DictDB<Integer, Address> userPreps = _userPreps.at(_user);
 
         for (int i = 0; i < 5; i++) {
             Address prep = userPreps.getOrDefault(i, ZERO_SCORE_ADDRESS);
