@@ -13,6 +13,8 @@ dependencies {
     implementation project(':OMMStruct')
     implementation project(':ScoreUtils')
     implementation project(':Score')
+
+    testImplementation project(':TestUtils')
 }
 
 deployJar {
