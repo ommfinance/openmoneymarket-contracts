@@ -9,6 +9,9 @@ findProject(":RewardWeightController").projectDir = file("core-contracts/RewardW
 include(":RewardDistribution")
 findProject(":RewardDistribution").projectDir = file("core-contracts/RewardDistribution")
 
+include(":AddressManager")
+findProject(":AddressManager").projectDir = file("core-contracts/AddressManager")
+
 include(':AddressProvider')
 findProject(":AddressProvider").projectDir = file("libs/AddressProvider")
 include(':OMMStruct')
