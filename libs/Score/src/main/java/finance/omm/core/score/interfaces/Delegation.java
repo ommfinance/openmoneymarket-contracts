@@ -12,33 +12,35 @@ public interface Delegation {
 
     String name();
 
-    void setVoteThreshold(BigInteger vote);
+    BigInteger getTotalVotes();
+
+    void setVoteThreshold(BigInteger _vote);
 
     BigInteger getVoteThreshold();
 
-    void addContributor(Address prep);
+    void addContributor(Address _prep);
 
-    void removeContributor(Address prep);
+    void removeContributor(Address _prep);
 
     List<Address> getContributors();
 
-    void addAllContributors(Address[] preps);
+    void addAllContributors(Address[] _preps);
 
-    void clearPrevious(Address user);
+    void clearPrevious(Address _user);
 
-    boolean userDefaultDelegation(Address user);
+    boolean userDefaultDelegation(Address _user);
 
     List<Address> getPrepList();
 
-    void updateDelegations(@Optional PrepDelegations[] delegations, @Optional Address user);
+    void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user);
 
-    BigInteger prepVotes(Address prep);
+    BigInteger prepVotes(Address _prep);
 
-    Map<String,BigInteger> userPrepVotes(Address user);
+    Map<String,BigInteger> userPrepVotes(Address _user);
 
-    PrepDelegations[] getUserDelegationDetails(Address user);
+    PrepDelegations[] getUserDelegationDetails(Address _user);
 
-    List<PrepICXDelegations> getUserICXDelegation(Address user);
+    List<PrepICXDelegations> getUserICXDelegation(Address _user);
 
     PrepDelegations[] computeDelegationPercentages();
 }
