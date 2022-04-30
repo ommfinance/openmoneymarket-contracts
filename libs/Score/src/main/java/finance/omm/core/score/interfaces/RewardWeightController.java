@@ -25,7 +25,6 @@ public interface RewardWeightController {
 
     void addAsset(String type, Address address, String name);
 
-
     void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp);
 
     BigInteger tokenDistributionPerDay(BigInteger _day);
@@ -46,6 +45,8 @@ public interface RewardWeightController {
 
     Map<String, ?> getAllAssetDistributionPercentage(@Optional BigInteger timestamp);
 
+    Map<String, BigInteger> getAssetDailyRewards(@Optional BigInteger _day);
+
     Map<String, ?> getDailyRewards(@Optional BigInteger _day);
 
     Map<String, ?> getDistPercentageOfLP(@Optional BigInteger timestamp);
@@ -55,7 +56,6 @@ public interface RewardWeightController {
     BigInteger getStartTimestamp();
 
     Map<String, ?> getDistributionDetails(BigInteger day);
-
 
     Map<String, BigInteger> getEmissionRate(@Optional BigInteger timestamp);
 
