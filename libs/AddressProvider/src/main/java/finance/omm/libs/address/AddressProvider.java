@@ -24,10 +24,10 @@ public class AddressProvider {
 
 
     public AddressProvider(Address addressProvider, @Optional boolean _update) {
-		if (_update) {
-			onUpdate();
-			return;
-		}
+        if (_update) {
+            onUpdate();
+            return;
+        }
 
         if (_addressProvider.getOrDefault(null) == null) {
             _addressProvider.set(addressProvider);
@@ -76,31 +76,31 @@ public class AddressProvider {
         Context.require(Context.getCaller().equals(_addressProvider.get()), "require Address provider contract access");
     }
 
-	public void onlyOwner() {
-		Address sender = Context.getCaller();
-		Address owner = Context.getOwner();
-		if (!sender.equals(owner)) {
-			Context.revert(TAG + ": SenderNotScoreOwnerError:  (sender)"
-					+ sender + " (owner)" + owner);
-		}
-	}
+    public void onlyOwner() {
+        Address sender = Context.getCaller();
+        Address owner = Context.getOwner();
+        if (!sender.equals(owner)) {
+            Context.revert(TAG + ": SenderNotScoreOwnerError:  (sender)"
+                    + sender + " (owner)" + owner);
+        }
+    }
 
-	public void onlyAddressProvider() {
-		Address addressProvider = getAddressProvider();
-		Address sender = Context.getCaller();
-		if (!sender.equals(addressProvider)) {
-			Context.revert(TAG + ": SenderNotAddressProviderError:  (sender)"
-					+ sender + " (address provider)" + addressProvider);
-		}
-	}
+    public void onlyAddressProvider() {
+        Address addressProvider = getAddressProvider();
+        Address sender = Context.getCaller();
+        if (!sender.equals(addressProvider)) {
+            Context.revert(TAG + ": SenderNotAddressProviderError:  (sender)"
+                    + sender + " (address provider)" + addressProvider);
+        }
+    }
 
-	public void onlyGovernance() {
-		Address sender = Context.getCaller();
-		Address governance = getAddress("governance");
-		if (!sender.equals(governance)) {
-			Context.revert(TAG + ": SenderNotGovernanceError: (sender)" + sender
-					+ " (governance)" + governance);
-		}
-	}
+    public void onlyGovernance() {
+        Address sender = Context.getCaller();
+        Address governance = getAddress("governance");
+        if (!sender.equals(governance)) {
+            Context.revert(TAG + ": SenderNotGovernanceError: (sender)" + sender
+                    + " (governance)" + governance);
+        }
+    }
 
 }
