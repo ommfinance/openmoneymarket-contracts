@@ -1,10 +1,38 @@
+import groovy.swing.SwingBuilder
+
 buildscript {
     repositories {
         mavenCentral()
     }
     dependencies {
         classpath 'foundation.icon:gradle-javaee-plugin:0.8.0'
+//        classpath files('.deployment/')
     }
+}
+
+
+apply plugin: 'deploy-contracts'
+
+deployOMMContracts {
+    envs {
+        local {
+            env = "local"
+        }
+        berlin {
+            env = "berlin"
+            configFile = "contracts-sample.json"
+            keystore = rootProject.findProperty('keystoreName') ?: ''
+            password = rootProject.findProperty('keystorePass') ?: ''
+        }
+    }
+}
+
+executeOMMActions {
+    contractAddressFile = "addresses-BERLIN-1649835786824.json"
+    propertiesFile = 'sample.properties'
+    actionsFile = 'actions-sample.json'
+    keystore = rootProject.findProperty('keystoreName') ?: ''
+    password = rootProject.findProperty('keystorePass') ?: ''
 }
 
 subprojects {
@@ -12,7 +40,7 @@ subprojects {
         mavenCentral()
     }
 
-    apply plugin: 'java'
+
     apply plugin: 'foundation.icon.javaee'
 
     sourceSets {
@@ -32,22 +60,35 @@ subprojects {
     }
 
 
+    ext {
+        env = has("network") ? getProperty("network") : 'dev'
+        javaeeVersion = findProperty("javaee.version") ?: '0.9.0'
+        scorexVersion = findProperty("scorex.version") ?: '0.5.2'
+        javaeeUnittestVersion = findProperty("javaee-unittest.version") ?: '0.9.2'
+        scoreClientVersion = findProperty("score-client.version") ?: '0.9.0'
+        iconsdkVersion = findProperty("iconsdk.version") ?: '2.0.0'
+        jacksonVersion = findProperty("jackson.version") ?: '2.9.6'
+        mockitoVersion = findProperty("mockito.version") ?: '4.3.1'
+        junitVersion = findProperty("junit.version") ?: '5.8.1'
+
+    }
+
     dependencies {
-        compileOnly 'foundation.icon:javaee-api:0.9.0'
-        implementation 'foundation.icon:javaee-scorex:0.5.2'
-        implementation 'com.github.sink772:minimal-json:0.9.6'
-        annotationProcessor "foundation.icon:javaee-score-client:0.9.0"
+        compileOnly "foundation.icon:javaee-api:$javaeeVersion"
+        implementation "foundation.icon:javaee-scorex:$scorexVersion"
+        implementation "com.github.sink772:minimal-json:0.9.6"
+        annotationProcessor "foundation.icon:javaee-score-client:$scoreClientVersion"
 
         // Use JUnit Jupiter for testing.
-        testImplementation "foundation.icon:javaee-score-client:0.9.0"
-        testAnnotationProcessor "foundation.icon:javaee-score-client:0.9.0"
-        testImplementation 'foundation.icon:javaee-unittest:0.9.2'
-        testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-        testImplementation 'org.mockito:mockito-core:4.3.1'
-        testImplementation 'foundation.icon:icon-sdk:2.0.0'
-        testImplementation("com.fasterxml.jackson.core:jackson-databind:2.9.6")
-        testImplementation group: 'org.json', name: 'json', version: '20211205'
+        testImplementation "foundation.icon:javaee-score-client:$scoreClientVersion"
+        testAnnotationProcessor "foundation.icon:javaee-score-client:$scoreClientVersion"
+        testImplementation "foundation.icon:javaee-unittest:$javaeeUnittestVersion"
+        testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+        testImplementation "org.mockito:mockito-core:$mockitoVersion"
+        testImplementation "foundation.icon:icon-sdk:$iconsdkVersion"
+        testImplementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+        testImplementation group: "org.json", name: "json", version: "20211205"
 
 
     }
@@ -76,4 +117,53 @@ subprojects {
         ext['scoreTest'] = scoreTest
     }
     loadProperties()
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (rootProject.hasProperty('keystorePass')) {
+        return;
+    }
+    def hasDeployTask = taskGraph.getAllTasks().any { it ->
+        return it.name == "deployToMainnet"
+    }
+
+    if (hasDeployTask) {
+        def pass = ''
+        if (System.console() == null) {
+            new SwingBuilder().edt {
+                dialog(modal: true,
+                        title: 'Keystore password',
+                        alwaysOnTop: true,
+                        resizable: false,
+                        locationRelativeTo: null,
+                        pack: true,
+                        show: true
+                ) {
+                    vbox {
+                        hbox {
+                            label(text: 'Please enter key passphrase: ')
+                        }
+                        hbox {
+                            input = passwordField(columns: 20, id: 'password')
+                        }
+                        hbox {
+                            button(defaultButton: true, text: 'OK', actionPerformed: {
+                                pass = input.password;
+                                dispose();
+                            })
+                        }
+                    }
+                }
+            }
+        } else {
+            pass = System.console().readPassword("\nPlease enter key passphrase: ")
+            pass = new String(pass)
+        }
+
+        if (pass.size() <= 0) {
+            throw new InvalidUserDataException("You must enter a password to proceed.")
+        }
+        rootProject.setProperty('keystorePass', pass)
+
+    }
 }
