@@ -31,3 +31,8 @@ gradle.properties
 *.json
 
 .deployment
+
+.project
+.classpath
+.settings
+**/bin/

@@ -46,7 +46,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     private final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
 
     public RewardWeightControllerImpl(Address addressProvider, BigInteger startTimestamp) {
-        super(addressProvider);
+        super(addressProvider, false);
         if (this._timestampAtStart.getOrDefault(null) == null) {
             this._timestampAtStart.set(startTimestamp);
         }
