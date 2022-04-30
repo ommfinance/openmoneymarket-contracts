@@ -56,7 +56,6 @@ public class TypeWeightDB implements Searchable {
             throw RewardWeightException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
         }
 
-        Context.println(TimeConstants.getBlockTimestamp().toString());
         if (TimeConstants.getBlockTimestamp().compareTo(timestamp) > 0) {
             throw RewardWeightException.unknown("can't set weight value for old timestamp " + timestamp);
         }
