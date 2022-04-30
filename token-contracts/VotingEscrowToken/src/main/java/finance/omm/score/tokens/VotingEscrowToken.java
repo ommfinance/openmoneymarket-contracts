@@ -105,7 +105,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     }
 
     public VotingEscrowToken(Address addressProvider, Address tokenAddress, String name, String symbol) {
-        super(addressProvider);
+        super(addressProvider, false);
         this.admin.set(Context.getCaller());
         this.tokenAddress = tokenAddress;
 
