@@ -2,6 +2,8 @@ package finance.omm.libs.address;
 
 
 import finance.omm.libs.structs.AddressDetails;
+import finance.omm.utils.exceptions.OMMException;
+
 import java.util.Map;
 import score.Address;
 import score.ArrayDB;
@@ -9,9 +11,11 @@ import score.Context;
 import score.DictDB;
 import score.VarDB;
 import score.annotation.External;
+import score.annotation.Optional;
 
 public class AddressProvider {
 
+    public static final String TAG = "AddressProvider";
     public static final String _ADDRESSES = "addresses";
     public static final String _CONTRACTS = "contracts";
     public static final String _ADDRESS_PROVIDER = "addressProvider";
@@ -21,11 +25,20 @@ public class AddressProvider {
     protected final ArrayDB<String> _contracts = Context.newArrayDB(_CONTRACTS, String.class);
 
 
-    public AddressProvider(Address addressProvider) {
+    public AddressProvider(Address addressProvider, @Optional boolean _update) {
+        if (_update) {
+            onUpdate();
+            return;
+        }
+
         if (_addressProvider.getOrDefault(null) == null) {
             _addressProvider.set(addressProvider);
         }
     }
+
+	public void onUpdate() {
+		Context.println(TAG + " | on update");
+	}
 
     @External
     public void setAddresses(AddressDetails[] _addressDetails) {
@@ -65,5 +78,11 @@ public class AddressProvider {
         Context.require(Context.getCaller().equals(_addressProvider.get()), "require Address provider contract access");
     }
 
+    public void onlyOrElseThrow(Contracts contract, OMMException ommException) {
+        if (!Context.getCaller()
+                .equals(this.getAddress(contract.getKey()))) {
+            throw ommException;
+        }
+    }
 
 }

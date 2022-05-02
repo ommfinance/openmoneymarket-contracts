@@ -63,7 +63,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
 
     public AbstractRewardDistribution(Address addressProvider) {
-        super(addressProvider);
+        super(addressProvider, false);
         //TODO pass empty key for c-testnet
         assets = new Assets("assets-temp");
         workingBalance = Context.newBranchDB("workingBalance", BigInteger.class);
