@@ -2,6 +2,8 @@ package finance.omm.libs.address;
 
 
 import finance.omm.libs.structs.AddressDetails;
+import finance.omm.utils.exceptions.OMMException;
+
 import java.util.Map;
 import score.Address;
 import score.ArrayDB;
@@ -76,30 +78,10 @@ public class AddressProvider {
         Context.require(Context.getCaller().equals(_addressProvider.get()), "require Address provider contract access");
     }
 
-    public void onlyOwner() {
-        Address sender = Context.getCaller();
-        Address owner = Context.getOwner();
-        if (!sender.equals(owner)) {
-            Context.revert(TAG + ": SenderNotScoreOwnerError:  (sender)"
-                    + sender + " (owner)" + owner);
-        }
-    }
-
-    public void onlyAddressProvider() {
-        Address addressProvider = getAddressProvider();
-        Address sender = Context.getCaller();
-        if (!sender.equals(addressProvider)) {
-            Context.revert(TAG + ": SenderNotAddressProviderError:  (sender)"
-                    + sender + " (address provider)" + addressProvider);
-        }
-    }
-
-    public void onlyGovernance() {
-        Address sender = Context.getCaller();
-        Address governance = getAddress("governance");
-        if (!sender.equals(governance)) {
-            Context.revert(TAG + ": SenderNotGovernanceError: (sender)" + sender
-                    + " (governance)" + governance);
+    public void onlyOrElseThrow(Contracts contract, OMMException ommException) {
+        if (!Context.getCaller()
+                .equals(this.getAddress(contract.getKey()))) {
+            throw ommException;
         }
     }
 
