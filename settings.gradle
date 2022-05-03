@@ -23,4 +23,6 @@ findProject(":TestUtils").projectDir = file("libs/TestUtils")
 include(':Score')
 findProject(":Score").projectDir = file("libs/Score")
 
+include(":Governance")
+findProject(":Governance").projectDir = file("core-contracts/Governance")
 

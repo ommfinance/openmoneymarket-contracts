@@ -77,6 +77,7 @@ subprojects {
         compileOnly "foundation.icon:javaee-api:$javaeeVersion"
         implementation "foundation.icon:javaee-scorex:$scorexVersion"
         implementation "com.github.sink772:minimal-json:0.9.6"
+        compileOnly "foundation.icon:javaee-score-client:$scoreClientVersion"
         annotationProcessor "foundation.icon:javaee-score-client:$scoreClientVersion"
 
         // Use JUnit Jupiter for testing.

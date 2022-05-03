@@ -1,11 +1,13 @@
 package finance.omm.core.score.interfaces;
 
+import foundation.icon.score.client.ScoreInterface;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.annotation.Optional;
 
+@ScoreInterface(suffix = "Client")
 public interface BoostedToken {
 
     void setMinimumLockingAmount(BigInteger value);
