@@ -23,4 +23,5 @@ findProject(":TestUtils").projectDir = file("libs/TestUtils")
 include(':Score')
 findProject(":Score").projectDir = file("libs/Score")
 
-
+include('DaoFund')
+findProject(":DaoFund").projectDir = file("core-contracts/DaoFund")
