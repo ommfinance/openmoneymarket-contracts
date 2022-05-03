@@ -43,8 +43,8 @@ public class DaoFundImpl extends AddressProvider implements DaoFund{
     @External
     public void transferOmm(BigInteger _value, Address _address) {
         onlyOrElseThrow(Contracts.GOVERNANCE,
-                OMMException.of(new UserRevertedException(
-                        TAG + " | SenderNotGovernanceError: sender is not equals to governance")));
+                OMMException.unknown(
+                        TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
         Address ommAddress = getAddress(Contracts.OMM_TOKEN.getKey());
 
         if (ommAddress == null) {
