@@ -1,5 +1,6 @@
 package finance.omm.score;
 
+import finance.omm.core.score.interfaces.DaoFund;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.utils.exceptions.OMMException;
@@ -13,7 +14,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public class DaoFundImpl extends AddressProvider {
+public class DaoFundImpl extends AddressProvider implements DaoFund{
 
     public static final String TAG = "Dao Fund Manager";
     /**

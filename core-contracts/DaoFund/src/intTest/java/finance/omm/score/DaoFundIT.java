@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 
+import finance.omm.core.score.interfaces.DaoFund;
+import finance.omm.core.score.interfaces.DaoFundScoreClient;
 import finance.omm.libs.test.ScoreIntegrationTest;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.ScoreClient;
@@ -28,9 +30,4 @@ public class DaoFundIT implements ScoreIntegrationTest {
         assertEquals(addressProvider, address);
 
     }
-}
-
-interface DaoFund {
-    @External(readonly = true)
-    Address getAddressProvider();
 }
