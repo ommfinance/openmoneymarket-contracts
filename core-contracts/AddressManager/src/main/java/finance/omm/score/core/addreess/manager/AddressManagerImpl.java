@@ -19,12 +19,11 @@ public class AddressManagerImpl  implements AddressManager {
 
     public static final String TAG = "Address Provider"; // TAG NAME SAME AS PYTHON
 
-    private static final String RESERVES = "reserves";
-    private static final String O_TOKENS = "o_tokens";
-    private static final String D_TOKENS = "d_tokens";
+    private static final String RESERVES = "reserves_es_entries";
+    private static final String O_TOKENS = "o_tokens_es_entries";
+    private static final String D_TOKENS = "d_tokens_es_entries";
 
     private final DictDB<String,Address> addresses = Context.newDictDB("address",Address.class);
-
     private final EnumerableSet<String> _reserves = new EnumerableSet<>(RESERVES,String.class);
     private final EnumerableSet<String> _dTokens = new EnumerableSet<>(D_TOKENS,String.class);
     private final EnumerableSet<String> _oTokens = new EnumerableSet<>(O_TOKENS,String.class);
@@ -94,18 +93,18 @@ public class AddressManagerImpl  implements AddressManager {
         return dTokens;
     }
 
-    @External(readonly = true)
-    public Map<String,String > getAllReserveAddresses1(){
-        Map<String, String> reserves = new HashMap<>();
-        for (int i = 0; i < _reserves.length(); i++) {
-            String key = _reserves.at(i); // reserve name
-            Address address = addresses.get(key); // chekced name in address db
-            if (address !=null){
-                reserves.put(key,address.toString());
-            }
-        }
-        return reserves;
-    }
+//    @External(readonly = true)
+//    public Map<String,String > getAllReserveAddresses1(){
+//        Map<String, String> reserves = new HashMap<>();
+//        for (int i = 0; i < _reserves.length(); i++) {
+//            String key = _reserves.at(i); // reserve name
+//            Address address = addresses.get(key); // chekced name in address db
+//            if (address !=null){
+//                reserves.put(key,address.toString());
+//            }
+//        }
+//        return reserves;
+//    }
 
 //    private Map<String, Address> getAllReserveAddresses(){
 //        return getAllAddressMap(_reserves);
@@ -157,7 +156,7 @@ public class AddressManagerImpl  implements AddressManager {
                 "collateral",getAllReserveAddresses(),
                 "oTokens", getAllOTokenAddresses(),
                 "dTokens", getAllDTokenAddresses(),
-                "system", system
+                "systemContract", system
                 );
 
     }
