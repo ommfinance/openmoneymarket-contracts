@@ -30,7 +30,7 @@ import score.VarDB;
 public abstract class AbstractGovernance extends AddressProvider implements Governance, GovernanceEventLogs,
         Authorization<GovernanceException> {
 
-    public static final String TAG = "Governance";
+    public static final String TAG = "Governance Manager";
 
     public static final BigInteger MAJORITY = BigInteger.valueOf(666666666666666667L);
     public static final BigInteger MAX_ACTIONS = BigInteger.valueOf(5L);
@@ -51,22 +51,12 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     public AbstractGovernance(Address addressProvider, boolean _update) {
         super(addressProvider, _update);
 
-        lendingPoolCore = new LendingPoolCoreClient(
-                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
-        rewardDistribution = new RewardDistributionImplClient(
-                this.getAddress(Contracts.REWARDS.getKey()));
-
-        stakedLP = new StakedLPClient(
-                this.getAddress(Contracts.STAKED_LP.getKey()));
-
-        daoFund = new DAOFundClient(
-                this.getAddress(Contracts.DAO_FUND.getKey()));
-        feeProvider = new FeeProviderClient(
-                this.getAddress(Contracts.FEE_PROVIDER.getKey()));
-
-        ommToken = new OMMTokenClient(
-                this.getAddress(Contracts.OMM_TOKEN.getKey()));
+        lendingPoolCore = instanceFactory(LendingPoolCoreClient.class, Contracts.LENDING_POOL_CORE);
+        rewardDistribution = instanceFactory(RewardDistributionImplClient.class, Contracts.REWARDS);
+        stakedLP = instanceFactory(StakedLPClient.class, Contracts.STAKED_LP);
+        daoFund = instanceFactory(DAOFundClient.class, Contracts.DAO_FUND);
+        feeProvider = instanceFactory(FeeProviderClient.class, Contracts.FEE_PROVIDER);
+        ommToken = instanceFactory(OMMTokenClient.class, Contracts.OMM_TOKEN);
     }
 
     protected void refundVoteDefinitionFee(ProposalDB proposal) {

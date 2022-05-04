@@ -37,109 +37,72 @@ public class GovernanceImpl extends AbstractGovernance {
     @External
     public void setReserveActiveStatus(Address _reserve, boolean _status) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-//        LendingPoolCoreImplClient lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
         lendingPoolCore.updateIsActive(_reserve, _status);
     }
 
     @External
     public void setReserveFreezeStatus(Address _reserve, boolean _status) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-//        LendingPoolCoreImplClient lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
         lendingPoolCore.updateIsFreezed(_reserve, _status);
     }
 
     @External
     public void setReserveConstants(ReserveConstant[] _constants) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-//        LendingPoolCoreImplClient lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
         lendingPoolCore.setReserveConstants(_constants);
     }
 
     @External
     public void initializeReserve(ReserveAttributes _reserve) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
-//        LendingPoolCoreImplClient lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
         lendingPoolCore.addReserveData(_reserve);
     }
 
     @External
     public void updateBaseLTVasCollateral(Address _reserve, BigInteger _baseLtv) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
-//        LendingPoolCoreImplClient lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
         lendingPoolCore.updateBaseLTVasCollateral(_reserve, _baseLtv);
     }
 
     @External
     public void updateLiquidationThreshold(Address _reserve, BigInteger _liquidationThreshold) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
-//        LendingPoolCoreImplClient lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
         lendingPoolCore.updateLiquidationThreshold(_reserve, _liquidationThreshold);
     }
 
     @External
     public void updateBorrowThreshold(Address _reserve, BigInteger _borrowThreshold) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
-//        LendingPoolCoreImplClient lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
         lendingPoolCore.updateBorrowThreshold(_reserve, _borrowThreshold);
     }
 
     @External
     public void updateLiquidationBonus(Address _reserve, BigInteger _liquidationBonus) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
-//        LendingPoolCoreImplClient lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
         lendingPoolCore.updateLiquidationBonus(_reserve, _liquidationBonus);
     }
 
     @External
     public void updateBorrowingEnabled(Address _reserve, boolean _borrowingEnabled) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
-//        LendingPoolCoreImpl lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
         lendingPoolCore.updateBorrowingEnabled(_reserve, _borrowingEnabled);
     }
 
     @External
     public void updateUsageAsCollateralEnabled(Address _reserve, boolean _usageAsCollateralEnabled) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
-//        LendingPoolCoreImpl lendingPoolCore = new LendingPoolCoreImplClient(
-//                this.getAddress(Contracts.LENDING_POOL.getKey()));
-
         lendingPoolCore.updateUsageAsCollateralEnabled(_reserve, _usageAsCollateralEnabled);
     }
 
     @External
     public void enableRewardClaim() {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-//        RewardDistributionImpl rewardDistribution=new RewardDistributionImplClient(this.getAddress(Contracts.REWARDS.getKey()));
         rewardDistribution.enableRewardClaim();
     }
 
     @External
     public void disableRewardClaim() {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-//        RewardDistributionImpl rewardDistribution=new RewardDistributionImplClient(this.getAddress(Contracts.REWARDS.getKey()));
         rewardDistribution.disableRewardClaim();
     }
 
@@ -178,14 +141,12 @@ public class GovernanceImpl extends AbstractGovernance {
     @External
     public void transferOmmToDaoFund(BigInteger _value) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
         rewardDistribution.transferOmmToDaoFund(_value);
     }
 
     @External
     public void transferOmmFromDaoFund(BigInteger _value, Address _address) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-
         daoFund.transferOmm(_value, _address);
     }
 
