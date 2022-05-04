@@ -5,6 +5,8 @@ dependencies {
     implementation project(':Score')
     implementation project(':ScoreUtils')
     implementation project(':OMMStruct')
+
+    testImplementation project(':TestUtils')
 }
 
 optimizedJar {
