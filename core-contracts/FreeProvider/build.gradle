@@ -1,22 +1,17 @@
 version = '0.1.0'
 
 dependencies {
-    compileOnly 'foundation.icon:javaee-api:0.9.1'
     implementation project(':AddressProvider')
     implementation project(':Score')
     implementation project(':ScoreUtils')
     implementation project(':OMMStruct')
 
-    testImplementation 'foundation.icon:javaee-unittest:0.9.1'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
-    testImplementation 'org.junit.platform:junit-platform-commons:1.7.0'
-    testImplementation 'foundation.icon:icon-sdk:2.0.0'
-    testImplementation project(':ScoreUtils')
+    // test dependencies
+    testImplementation project(':TestUtils')
 }
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.FreeProvider'
+    mainClassName = 'finance.omm.score.FreeProviderImpl'
     dependsOn(':AddressProvider:build')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
@@ -40,4 +35,47 @@ deployJar {
 
 test {
     useJUnitPlatform()
+}
+
+configurations {
+    itestImplementation.extendsFrom implementation
+    itestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':Score')
+    implementation project(':ScoreUtils')
+
+    // test dependencies
+    testImplementation project(':TestUtils')
+}
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        systemProperty 'keyStore', scoreTest.keystoreName
+        systemProperty 'keyPassword', scoreTest.keystorePass
+
+        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+
+        systemProperty '_addressProvider', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
+        systemProperty '_update', "false"
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+    }
+
 }
