@@ -30,6 +30,9 @@ findProject(":ScoreUtils").projectDir = file("libs/ScoreUtils")
 include(':TestUtils')
 findProject(":TestUtils").projectDir = file("libs/TestUtils")
 
+include('WorkerToken')
+findProject(":WorkerToken").projectDir = file("token-contracts/WorkerToken")
+
 include(':Score')
 findProject(":Score").projectDir = file("libs/Score")
 
