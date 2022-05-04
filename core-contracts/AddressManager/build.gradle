@@ -1,7 +1,7 @@
 version = '0.0.1'
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.core.adreess.manager.AddressManagerImpl'
+    mainClassName = 'finance.omm.score.core.addreess.manager.AddressManagerImpl'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -23,7 +23,7 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-            to = 'cxc5ceb52f91e5862f347d72673142ff6fb06250f2'
+//            to = 'cxc5ceb52f91e5862f347d72673142ff6fb06250f2'
             nid = 0x53
         }
         mainnet {

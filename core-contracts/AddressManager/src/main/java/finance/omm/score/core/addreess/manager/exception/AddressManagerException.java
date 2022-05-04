@@ -1,4 +1,4 @@
-package finance.omm.score.core.adreess.manager.exception;
+package finance.omm.score.core.addreess.manager.exception;
 
 import finance.omm.utils.exceptions.OMMException;
 
