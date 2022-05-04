@@ -1,10 +1,10 @@
-package finance.omm.score.core.adreess.manager;
+package finance.omm.score.core.addreess.manager;
 
 import finance.omm.core.score.interfaces.AddressManager;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.ReserveAddressDetails;
-import finance.omm.score.core.adreess.manager.exception.AddressManagerException;
+import finance.omm.score.core.addreess.manager.exception.AddressManagerException;
 import finance.omm.utils.db.EnumerableSet;
 import score.Address;
 import score.Context;
@@ -46,10 +46,22 @@ public class AddressManagerImpl  implements AddressManager {
     }
 
     // duplicate code extracted
-    private Map<String, Address> getAllAddressMap(EnumerableSet<String> token) {
+//    private Map<String, Address> getAllAddressMap(EnumerableSet<String> token) {
+//        Map<String, Address> reserves = new HashMap<>();
+//        for (int i = 0; i < token.length(); i++) {
+//            String key = token.at(i); // reserve name
+//            Address address = addresses.get(key); // chekced name in address db
+//            if (address !=null){
+//                reserves.put(key,address);
+//            }
+//        }
+//        return reserves;
+//    }
+
+    private Map<String,Address> getAllReserveAddresses(){
         Map<String, Address> reserves = new HashMap<>();
-        for (int i = 0; i < token.length(); i++) {
-            String key = token.at(i); // reserve name
+        for (int i = 0; i < _reserves.length(); i++) {
+            String key = _reserves.at(i); // reserve name
             Address address = addresses.get(key); // chekced name in address db
             if (address !=null){
                 reserves.put(key,address);
@@ -58,21 +70,59 @@ public class AddressManagerImpl  implements AddressManager {
         return reserves;
     }
 
-    private Map<String, Address> getAllReserveAddresses(){
-        return getAllAddressMap(_reserves);
-    }
-
     private Map<String,Address> getAllOTokenAddresses(){
-        return getAllAddressMap(_oTokens);
+        Map<String, Address> oTokens = new HashMap<>();
+        for (int i = 0; i < _oTokens.length(); i++) {
+            String key = _oTokens.at(i); // reserve name
+            Address address = addresses.get(key); // chekced name in address db
+            if (address !=null){
+                oTokens.put(key,address);
+            }
+        }
+        return oTokens;
     }
 
     private Map<String,Address> getAllDTokenAddresses(){
-        return getAllAddressMap(_dTokens);
+        Map<String, Address> dTokens = new HashMap<>();
+        for (int i = 0; i < _dTokens.length(); i++) {
+            String key = _dTokens.at(i); // reserve name
+            Address address = addresses.get(key); // chekced name in address db
+            if (address !=null){
+                dTokens.put(key,address);
+            }
+        }
+        return dTokens;
     }
+
+    @External(readonly = true)
+    public Map<String,String > getAllReserveAddresses1(){
+        Map<String, String> reserves = new HashMap<>();
+        for (int i = 0; i < _reserves.length(); i++) {
+            String key = _reserves.at(i); // reserve name
+            Address address = addresses.get(key); // chekced name in address db
+            if (address !=null){
+                reserves.put(key,address.toString());
+            }
+        }
+        return reserves;
+    }
+
+//    private Map<String, Address> getAllReserveAddresses(){
+//        return getAllAddressMap(_reserves);
+//    }
+//
+//    private Map<String,Address> getAllOTokenAddresses(){
+//        return getAllAddressMap(_oTokens);
+//    }
+//
+//    private Map<String,Address> getAllDTokenAddresses(){
+//        return getAllAddressMap(_dTokens);
+//    }
 
 
     @External
     public void setAddresses(AddressDetails[] _addressDetails) {
+        checkOwner();
         for (AddressDetails addressDetails :_addressDetails ){
             addresses.set(addressDetails.name,addressDetails.address);
         }
@@ -155,7 +205,7 @@ public class AddressManagerImpl  implements AddressManager {
         checkOwner();
         Address score = addresses.get(_to);
         if (score == null){
-            Context.revert(TAG + " : score name " + _to + " not matched.");
+            Context.revert(TAG + ": score name " + _to + " not matched.");
         }
         int size = _names.length;
         AddressDetails[] addressDetails = new AddressDetails[size];
@@ -164,7 +214,7 @@ public class AddressManagerImpl  implements AddressManager {
             String name = _names[i];
             Address address = addresses.get(name);
             if (address ==null){
-                Context.revert(TAG + " : wrong score name in the list.");
+                Context.revert(TAG + ": wrong score name in the list.");
             }
             addressDetails[i] = new AddressDetails(name,address);
         }
@@ -217,7 +267,6 @@ public class AddressManagerImpl  implements AddressManager {
     @External
     public void setLendingPoolDataProviderAddresses() {
         checkOwner();
-        // name change
         AddressDetails[] lendingPoolDataProviderAddressDetails = new AddressDetails[8];
         lendingPoolDataProviderAddressDetails[0] = new AddressDetails(Contracts.LENDING_POOL.getKey(), addresses.get(Contracts.LENDING_POOL.getKey()));
         lendingPoolDataProviderAddressDetails[1] = new AddressDetails(Contracts.LENDING_POOL_CORE.getKey(), addresses.get(Contracts.LENDING_POOL_CORE.getKey()));
@@ -237,6 +286,7 @@ public class AddressManagerImpl  implements AddressManager {
     }
 
 
+    @External
     public void setLiquidationManagerAddresses() {
         checkOwner();
         AddressDetails[] liquidationManagerAddressDetails = new AddressDetails[7];
@@ -259,8 +309,6 @@ public class AddressManagerImpl  implements AddressManager {
     public void setOmmTokenAddresses() {
         checkOwner();
         AddressDetails[] ommTokenAddressDetails = new AddressDetails[4];
-        // Contracts.LENDING_POOL.getKey() = string
-        // addresses.() : gets the address from db associated with above string
         ommTokenAddressDetails[0] = new AddressDetails(Contracts.LENDING_POOL.getKey(),addresses.get(Contracts.LENDING_POOL.getKey()));
         ommTokenAddressDetails[1] = new AddressDetails(Contracts.DELEGATION.getKey(),addresses.get(Contracts.DELEGATION.getKey()));
         ommTokenAddressDetails[2] = new AddressDetails(Contracts.REWARDS.getKey(),addresses.get(Contracts.REWARDS.getKey()));
@@ -385,9 +433,8 @@ public class AddressManagerImpl  implements AddressManager {
 
     @External
     public void setRewardAddresses() {
-        // omm token called twice ???????????
         checkOwner();
-        AddressDetails[] rewardAddressDetails = new AddressDetails[9];
+        AddressDetails[] rewardAddressDetails = new AddressDetails[8];
         rewardAddressDetails[0] = new AddressDetails(Contracts.LENDING_POOL_DATA_PROVIDER.getKey(), addresses.get(Contracts.LENDING_POOL_DATA_PROVIDER.getKey()));
         rewardAddressDetails[1] = new AddressDetails(Contracts.OMM_TOKEN.getKey(), addresses.get(Contracts.OMM_TOKEN.getKey()));
         rewardAddressDetails[2] = new AddressDetails(Contracts.WORKER_TOKEN.getKey(), addresses.get(Contracts.WORKER_TOKEN.getKey()));
@@ -395,8 +442,7 @@ public class AddressManagerImpl  implements AddressManager {
         rewardAddressDetails[4] = new AddressDetails(Contracts.LENDING_POOL.getKey(), addresses.get(Contracts.LENDING_POOL.getKey()));
         rewardAddressDetails[5] = new AddressDetails(Contracts.GOVERNANCE.getKey(), addresses.get(Contracts.GOVERNANCE.getKey()));
         rewardAddressDetails[6] = new AddressDetails(Contracts.STAKED_LP.getKey(), addresses.get(Contracts.STAKED_LP.getKey()));
-        rewardAddressDetails[7] = new AddressDetails(Contracts.OMM_TOKEN.getKey(), addresses.get(Contracts.OMM_TOKEN.getKey()));
-        rewardAddressDetails[8] = new AddressDetails(Contracts.ADDRESS_PROVIDER.getKey(), Context.getAddress());
+        rewardAddressDetails[7] = new AddressDetails(Contracts.ADDRESS_PROVIDER.getKey(), Context.getAddress());
         Object[] params = new Object[]{
                 rewardAddressDetails
         };
@@ -499,6 +545,9 @@ public class AddressManagerImpl  implements AddressManager {
         if (isoTokenExists && !overwrite){
             Context.revert("oToken name "+ oTokenDetails.oTokenName + " already exists.");
         }
+
+        addresses.set(oTokenDetails.oTokenName,oTokenDetails.oTokenAddress);
+        _oTokens.add(oTokenDetails.oTokenName);
     }
 
     private void addDToken(ReserveAddressDetails dTokenDetails, Boolean overwrite){
@@ -511,6 +560,8 @@ public class AddressManagerImpl  implements AddressManager {
         if (isdTokenExists && !overwrite){
             Context.revert("dToken name "+ dTokenDetails.dTokenName + " already exists.");
         }
+        addresses.set(dTokenDetails.dTokenName,dTokenDetails.dTokenAddress);
+        _dTokens.add(dTokenDetails.dTokenName);
     }
 
     protected void checkOwner() {
