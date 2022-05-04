@@ -64,4 +64,8 @@ public class EnumerableSet<V> {
             }
         }
     }
+
+    public ArrayDB<V> getEntries() {
+        return this.entries;
+    }
 }
