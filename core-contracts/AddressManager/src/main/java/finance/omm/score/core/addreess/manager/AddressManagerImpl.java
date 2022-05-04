@@ -10,6 +10,7 @@ import score.Address;
 import score.Context;
 import score.DictDB;
 import score.annotation.External;
+import score.annotation.Optional;
 import scorex.util.HashMap;
 
 import java.util.Map;
@@ -36,7 +37,11 @@ public class AddressManagerImpl  implements AddressManager {
     }
 
     @External
-    public void addReserveAddress(ReserveAddressDetails _reserveAddressDetails, boolean _overwrite) {
+    public void addReserveAddress(ReserveAddressDetails _reserveAddressDetails, @Optional boolean _overwrite) {
+        Boolean overwrite = _overwrite;
+        if (overwrite == null){
+            _overwrite = false;
+        }
         checkOwner();
 
         addReserve(_reserveAddressDetails,_overwrite);
