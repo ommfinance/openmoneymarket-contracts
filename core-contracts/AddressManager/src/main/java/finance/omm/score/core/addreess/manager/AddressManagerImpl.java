@@ -93,19 +93,6 @@ public class AddressManagerImpl  implements AddressManager {
         return dTokens;
     }
 
-//    @External(readonly = true)
-//    public Map<String,String > getAllReserveAddresses1(){
-//        Map<String, String> reserves = new HashMap<>();
-//        for (int i = 0; i < _reserves.length(); i++) {
-//            String key = _reserves.at(i); // reserve name
-//            Address address = addresses.get(key); // chekced name in address db
-//            if (address !=null){
-//                reserves.put(key,address.toString());
-//            }
-//        }
-//        return reserves;
-//    }
-
 //    private Map<String, Address> getAllReserveAddresses(){
 //        return getAllAddressMap(_reserves);
 //    }
