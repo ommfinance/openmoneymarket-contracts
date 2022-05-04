@@ -135,4 +135,16 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     }
 
 
+    protected <T> T instanceFactory(Class<T> clazz, Contracts contract) {
+        switch (contract) {
+            case LENDING_POOL_CORE:
+                return clazz.cast(new LendingPoolCoreClient(
+                        this.getAddress(Contracts.LENDING_POOL_CORE.getKey())));
+            case REWARDS:
+                return clazz.cast(new RewardDistributionImplClient(
+                        this.getAddress(Contracts.REWARDS.getKey())));
+        }
+        return null;
+    }
+
 }
