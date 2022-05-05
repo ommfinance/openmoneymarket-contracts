@@ -284,7 +284,7 @@ public class GovernanceImpl extends AbstractGovernance {
     public List<Map<String, ?>> getProposals(int batch_size, int offset) {
         List<Map<String, ?>> proposals = new ArrayList<>();
         int start = Math.max(1, offset);
-        int end = Math.min(batch_size + start - 1, getProposalCount());
+        int end = Math.min(batch_size + start, getProposalCount());
         for (int i = start; i <= end; i++) {
             proposals.add(checkVote(i));
         }
