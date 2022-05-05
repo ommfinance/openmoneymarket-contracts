@@ -79,7 +79,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Object[] params = new Object[]{constants};
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).setReserveConstants(any());
+        doNothing().when(scoreSpy.lendingPoolCore).setReserveConstants(constants);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "setReserveConstants", params);
