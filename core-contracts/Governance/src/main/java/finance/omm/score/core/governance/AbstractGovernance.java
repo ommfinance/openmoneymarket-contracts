@@ -135,6 +135,18 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             case REWARDS:
                 return clazz.cast(new RewardDistributionImplClient(
                         this.getAddress(Contracts.REWARDS.getKey())));
+            case OMM_TOKEN:
+                return clazz.cast(new OMMTokenClient(
+                        this.getAddress(Contracts.OMM_TOKEN.getKey())));
+            case FEE_PROVIDER:
+                return clazz.cast(new FeeProviderClient(
+                        this.getAddress(Contracts.REWARDS.getKey())));
+            case STAKED_LP:
+                return clazz.cast(new StakedLPClient(
+                        this.getAddress(Contracts.STAKED_LP.getKey())));
+            case DAO_FUND:
+                return clazz.cast(new DAOFundClient(
+                        this.getAddress(Contracts.DAO_FUND.getKey())));
         }
         return null;
     }
