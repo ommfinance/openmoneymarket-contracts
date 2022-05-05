@@ -29,7 +29,7 @@ public class GovernanceImpl extends AbstractGovernance {
         super(addressProvider, false);
     }
 
-    @External
+    @External(readonly = true)
     public String name() {
         return "Omm " + TAG;
     }
@@ -436,7 +436,7 @@ public class GovernanceImpl extends AbstractGovernance {
         proposal.status.set(status.getStatus());
     }
 
-    @External
+    @External(readonly = true)
     public int getVoteIndex(String _name) {
         return ProposalDB.getProposalId(_name);
     }
