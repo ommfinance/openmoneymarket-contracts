@@ -72,6 +72,12 @@ public class AbstractGovernanceTest extends TestBase {
         sm.getBlock().increase(CURRENT_TIMESTAMP / 2);
     }
 
+    public void increaseTimeBy(BigInteger increaseBy) {
+        // increaseBy is in microseconds
+        long blocks = increaseBy.divide(BigInteger.valueOf(1_000_000L)).intValue()/2;
+        sm.getBlock().increase(blocks);
+    }
+
     @BeforeEach
     void setup() throws Exception {
 
@@ -126,6 +132,11 @@ public class AbstractGovernanceTest extends TestBase {
         assertEquals(errorMessage, e.getMessage());
     }
 
+    public void expectErrorMessageIn(Executable contractCall, String errorMessage) {
+        AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
+        boolean isInString = e.getMessage().contains(errorMessage);
+        assertEquals(true, isInString);
+    }
 
     @Test
     public void testTransfer() {
