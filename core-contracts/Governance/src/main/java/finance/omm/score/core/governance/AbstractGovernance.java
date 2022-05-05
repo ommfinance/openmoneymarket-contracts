@@ -60,7 +60,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     }
 
     protected void refundVoteDefinitionFee(ProposalDB proposal) {
-        if (proposal.feeRefunded.get() == null) {
+        // is null check required ?
+        if (proposal.feeRefunded.get() == false) {
             proposal.feeRefunded.set(Boolean.TRUE);
             daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get());
         }
