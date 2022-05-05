@@ -196,7 +196,7 @@ public class GovernanceImpl extends AbstractGovernance {
         this.quorum.set(quorum);
     }
 
-    @External
+    @External(readonly = true)
     public BigInteger getQuorum() {
         return this.quorum.getOrDefault(BigInteger.ZERO);
     }
@@ -212,7 +212,7 @@ public class GovernanceImpl extends AbstractGovernance {
         this.voteDefinitionFee.set(fee);
     }
 
-    @External
+    @External(readonly = true)
     public BigInteger getVoteDefinitionFee() {
         return this.voteDefinitionFee.getOrDefault(BigInteger.ZERO);
     }
@@ -231,7 +231,7 @@ public class GovernanceImpl extends AbstractGovernance {
         this.ommVoteDefinitionCriterion.set(percentage);
     }
 
-    @External
+    @External(readonly = true)
     public BigInteger getOmmVoteDefinitionCriterion() {
         return this.ommVoteDefinitionCriterion.getOrDefault(BigInteger.ZERO);
     }
