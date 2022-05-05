@@ -312,7 +312,6 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         expectErrorMessage(randomUserError, "Only owner or proposer may call this method.");
 
         // check status for cancelled proposal
-        doNothing().when(scoreSpy.daoFund).transferOmm(THOUSAND.multiply(ICX), from);
         score.invoke(owner, "cancelVote",1);
         Map<String, ?> proposal = (Map<String, ?>) score.call("checkVote", 1);
         assertEquals(proposal.get("status"), "Cancelled");
@@ -439,5 +438,89 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         score.invoke(owner, "setProposalStatus", 1, "Failed Execution");
         proposal = (Map<String, ?>) score.call("checkVote", 1);
         assertEquals(proposal.get("status"), "Failed Execution");
+
+        // try to execute proposal which is not active
+        Executable notActiveProposal = () -> score.invoke(owner, "execute_proposal", 1);
+        expectErrorMessage(notActiveProposal, "This proposal is not active.");
+    }
+
+    @Test
+    public void differentProposalsStatus() {
+        initialize();
+
+        Account user1 = sm.createAccount(1);
+        Account user2 = sm.createAccount(1);
+        Account user3 = sm.createAccount(1);
+        Account user4 = sm.createAccount(1);
+        Account user5 = sm.createAccount(1);
+
+        Address from = user3.getAddress();
+        /*
+         * ommToken total supply 15000
+         * ommToken total staked 2000
+         * considered 5 users
+         * ommToken user staked 50, 100, 200, 300, 150
+         * considered users total staked 800
+         */
+        BigInteger FIFTY = BigInteger.valueOf(50).multiply(ICX);
+        BigInteger HUNDRED = FIFTY.multiply(TWO);
+        BigInteger TWO_HUNDRED = HUNDRED.multiply(TWO);
+        BigInteger THREE_HUNDRED = HUNDRED.add(TWO_HUNDRED);
+        BigInteger HUNDRED_FIFTY = FIFTY.add(HUNDRED);
+        BigInteger TWO_THOUSAND = BigInteger.valueOf(2000L).multiply(ICX);
+
+        doReturn(BigInteger.valueOf(15_000L).multiply(ICX)).when(scoreSpy.ommToken).totalSupply();
+        doReturn(TWO_THOUSAND).when(scoreSpy.ommToken).totalStakedBalanceOfAt(any());
+
+        doReturn(FIFTY).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user1.getAddress()), any());
+        doReturn(HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user2.getAddress()), any());
+        doReturn(TWO_HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user3.getAddress()), any());
+        doReturn(THREE_HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user4.getAddress()), any());
+        doReturn(HUNDRED_FIFTY).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user5.getAddress()), any());
+
+        // user3 will create a proposal
+        byte[] data = createByteArray(name, forum, description, voteStart, snapshot, methodName);
+        score.invoke(ommToken, "tokenFallback", from, value, data);
+        verify(scoreSpy).ProposalCreated(ONE, name, from);
+
+        BigInteger ONE_HOUR = FIVE_MINUTES.multiply(BigInteger.valueOf(12));
+        increaseTimeBy(ONE_HOUR);
+
+        score.invoke(user1, "castVote", 1, true);
+        verify(scoreSpy).VoteCast(name, true, user1.getAddress(), FIFTY, FIFTY, ZERO);
+
+        // check proposal
+        Map<String, ?> proposal = (Map<String, ?>) score.call("checkVote", 1);
+
+        assertEquals(proposal.get("id"), 1);
+        assertEquals(proposal.get("for"), exaDivide(FIFTY, TWO_THOUSAND));
+        assertEquals(proposal.get("against"), ZERO);
+        assertEquals(proposal.get("for_voter_count"), ONE);
+        assertEquals(proposal.get("against_voter_count"), ZERO);
+        assertEquals(proposal.get("status"), "Active");
+
+        // let the proposal voting end
+        BigInteger TWO_DAYS = BigInteger.valueOf(86400L).multiply(BigInteger.valueOf(1000000L))
+                .multiply(BigInteger.valueOf(2L));
+        increaseTimeBy(TWO_DAYS);
+
+        // check proposal status
+        Map<String, ?> proposalAfter = (Map<String, ?>) score.call("checkVote", 1);
+
+        assertEquals(proposalAfter.get("id"), 1);
+        assertEquals(proposalAfter.get("for"), exaDivide(FIFTY, TWO_THOUSAND));
+        assertEquals(proposalAfter.get("against"), ZERO);
+        assertEquals(proposalAfter.get("for_voter_count"), ONE);
+        assertEquals(proposalAfter.get("against_voter_count"), ZERO);
+        assertEquals(proposalAfter.get("status"), "No Quorum");
+
+        // Set status of proposal to succeeded, lol though it didn't pass quorum
+        score.invoke(owner, "setProposalStatus", 1, "Succeeded");
+        proposal = (Map<String, ?>) score.call("checkVote", 1);
+        assertEquals(proposal.get("status"), "Succeeded");
+
+        // try to execute that proposal now
+        score.invoke(owner,"execute_proposal", 1);
+        verify(scoreSpy).ActionExecuted(ONE, "Executed");
     }
 }
