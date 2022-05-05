@@ -84,7 +84,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
         }
         BigInteger currentTimestamp = TimeConstants.getBlockTimestamp();
 
-        TimeConstants.checkIsValidTimestamp(voteStart, Timestamp.MICRO_SECONDS);
+        TimeConstants.checkIsValidTimestamp(voteStart, Timestamp.MICRO_SECONDS,
+                GovernanceException.invalidVoteParams("vote_start timestamp should be in microseconds"));
         TimeConstants.checkIsValidTimestamp(snapshot, Timestamp.MICRO_SECONDS,
                 GovernanceException.invalidVoteParams("snapshot start timestamp should be in microseconds"));
 
