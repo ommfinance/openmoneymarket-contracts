@@ -155,7 +155,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                         .getOrDefault(i, BigInteger.ZERO), userVote);
 
                 if (prepVote.compareTo(BigInteger.ZERO) > 0) {
-                    Address currentPrep = userPrep.getOrDefault(i, ZERO_SCORE_ADDRESS);
+                    Address currentPrep = userPrep.get(i);
 
                     BigInteger currentPrepVote = _prepVotes.getOrDefault(currentPrep, BigInteger.ZERO);
                     BigInteger newPrepVote = currentPrepVote.subtract(prepVote);
@@ -195,7 +195,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user) {
         Address ommToken = getAddress(Contracts.OMM_TOKEN.getKey());
         Address currentUser;
-        if (!(_user == null) && (Context.getCaller().equals(ommToken))) {
+        if ((_user != null) && (Context.getCaller().equals(ommToken))) {
             currentUser = _user;
         } else {
             currentUser = Context.getCaller();
@@ -290,11 +290,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         }
 
         BigInteger dustVotes = ICX.subtract(totalPercentage);
-        if (dustVotes.compareTo(BigInteger.ZERO) > 0) {
-            PrepDelegations firstPrep = userDetails[0];
-            BigInteger currentVotes = firstPrep._votes_in_per;
-            firstPrep._votes_in_per = dustVotes.add(currentVotes);
-            userDetails[0] = firstPrep;
+        if (dustVotes.compareTo(BigInteger.ZERO) > 0 && userDetails.length > 0) {
+            BigInteger currentVotes = userDetails[0]._votes_in_per;
+            userDetails[0]._votes_in_per = dustVotes.add(currentVotes);
         }
 
         return userDetails;
@@ -321,7 +319,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             if (!prep.equals(ZERO_SCORE_ADDRESS)) {
                 BigInteger vote = exaMultiply(percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO),
                         userStakedToken);
-                response.put(String.valueOf(prep), vote);
+                response.put(prep.toString(), vote);
             }
         }
 
@@ -370,9 +368,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         for (int i = 0; i < 5; i++) {
             Address prep = userPreps.getOrDefault(i, ZERO_SCORE_ADDRESS);
             if (!prep.equals(ZERO_SCORE_ADDRESS)) {
-                BigInteger votes_in_per = percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO);
-                BigInteger voteInICX = exaMultiply(ommICXPower, exaMultiply(votes_in_per, userStakedToken));
-                PrepICXDelegations prepICXDelegation = new PrepICXDelegations(prep, votes_in_per, voteInICX);
+                BigInteger votesInPer = percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO);
+                BigInteger voteInICX = exaMultiply(ommICXPower, exaMultiply(votesInPer, userStakedToken));
+                PrepICXDelegations prepICXDelegation = new PrepICXDelegations(prep, votesInPer, voteInICX);
                 userDetails.add(prepICXDelegation);
             }
         }
@@ -384,9 +382,8 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         BigInteger totalVotes = _totalVotes.getOrDefault(BigInteger.ZERO);
         if (totalVotes.equals(BigInteger.ZERO)) {
             PrepDelegations[] defaultPreference = distributeVoteToContributors();
-            for (PrepDelegations prepDelegations : defaultPreference) {
-                BigInteger votes = prepDelegations._votes_in_per;
-                prepDelegations._votes_in_per = votes.multiply(BigInteger.valueOf(100));
+            for (int i = 0; i < defaultPreference.length; i++) {
+                defaultPreference[i]._votes_in_per = defaultPreference[i]._votes_in_per.multiply(BigInteger.valueOf(100L));
             }
             return defaultPreference;
         }
@@ -420,9 +417,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         return  new PrepDelegations[0];
     }
 
-    public boolean contains(Address target, List<Address> addresses) {
-        for(Address address : addresses) {
-            if (address.equals(target)){
     private PrepDelegations[] getPrepDelegations(List<PrepDelegations> userDetails) {
         int size = userDetails.size();
         PrepDelegations[] prepDelegations = new PrepDelegations[size];
