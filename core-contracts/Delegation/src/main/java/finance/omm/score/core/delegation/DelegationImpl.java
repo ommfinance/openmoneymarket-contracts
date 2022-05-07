@@ -95,9 +95,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             throw DelegationException.unknown(TAG + ": " + _prep + " is not in contributor list");
         }
 
+        int size = _contributors.size();
         Address topPrep = _contributors.pop();
         if (! topPrep.equals(_prep)) {
-            for (int i = 0; i < _contributors.size(); i++) {
+            for (int i = 0; i < size; i++) {
                 if (_contributors.get(i).equals(_prep)) {
                     _contributors.set(i, topPrep);
                 }
@@ -108,7 +109,8 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     @External(readonly = true)
     public List<Address> getContributors() {
         List<Address> contributorList = new ArrayList<>();
-        for (int i = 0; i < _contributors.size(); i++) {
+        int size = _contributors.size();
+        for (int i = 0; i < size; i++) {
             contributorList.add(_contributors.get(i));
         }
         return contributorList;
@@ -181,7 +183,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     @External(readonly = true)
     public List<Address> getPrepList() {
         List<Address> prepList = new ArrayList<>();
-        for (int i = 0; i < _preps.length(); i++) {
+
+        int size = _preps.length();
+        for (int i = 0; i < size; i++) {
             prepList.add(_preps.at(i));
         }
         return prepList;
@@ -278,7 +282,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         BigInteger prepPercentage = ICX.divide(totalContributors);
         BigInteger totalPercentage = BigInteger.ZERO;
 
-        for (int i = 0; i < _contributors.size(); i++) {
+        for (int i = 0; i < contributorSize; i++) {
             Address prep = _contributors.get(i);
             PrepDelegations prepDelegation = new PrepDelegations(prep, prepPercentage);
             userDetails[i] = prepDelegation;
@@ -436,6 +440,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public boolean contains(Address target, List<Address> addresses) {
         for(Address address : addresses) {
             if (address.equals(target)){
+    private boolean isContributor(Address prep) {
+        int size = _contributors.size();
+        for (int i = 0; i < size; i++) {
+            if (_contributors.get(i).equals(prep)) {
                 return true;
             }
         }
