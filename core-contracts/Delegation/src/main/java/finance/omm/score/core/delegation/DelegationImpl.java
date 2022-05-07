@@ -138,7 +138,21 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public boolean userDefaultDelegation(Address _user) {
         PrepDelegations[] userDetails = getUserDelegationDetails(_user);
         PrepDelegations[] contributors = distributeVoteToContributors();
-        return contributors==userDetails;
+
+        if (userDetails.length != contributors.length) {
+            return false;
+        }
+
+        for (int i = 0; i < userDetails.length; i++) {
+            PrepDelegations contributor = contributors[i];
+            PrepDelegations userDetail = userDetails[i];
+            if (! contributor._address.equals(userDetail._address) &&
+                ! contributor._votes_in_per.equals(userDetail._votes_in_per)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     private void resetUser(Address _user) {
