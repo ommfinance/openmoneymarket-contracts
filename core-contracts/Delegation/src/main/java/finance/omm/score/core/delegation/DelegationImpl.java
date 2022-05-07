@@ -90,9 +90,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     @External
     public void removeContributor(Address _prep) {
-        List<Address> contributors = getContributors();
-        boolean isContributor = contains(_prep, contributors);
-        Context.require(isContributor,TAG + ": " + _prep + " is not in contributor list");
+        boolean isContributor = isContributor(_prep);
+        if (!isContributor) {
+            throw DelegationException.unknown(TAG + ": " + _prep + " is not in contributor list");
+        }
 
         Address topPrep = _contributors.pop();
         if (! topPrep.equals(_prep)) {
@@ -123,8 +124,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     @External
     public void clearPrevious(Address _user) {
-        Context.require(_user.equals(Context.getCaller()), TAG+
-                " :You are not authorized to clear others delegation preference");
+        if (_user != Context.getCaller()) {
+            throw DelegationException.unknown(TAG+
+                    " :You are not authorized to clear others delegation preference");
+        }
         PrepDelegations[] defaultDelegation = distributeVoteToContributors();
         updateDelegations(defaultDelegation, _user);
     }
@@ -170,8 +173,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     private void validatePrep(Address _address) {
         Map<String, ?> prepDetails = call(Map.class, ZERO_SCORE_ADDRESS, "getPRep", _address);
         boolean isActive = prepDetails.get("status").equals(BigInteger.ZERO);
-
-        Context.require(isActive, TAG + ": Invalid prep: "+_address);
+        if(! isActive) {
+            throw DelegationException.unknown(TAG + ": Invalid prep: "+_address);
+        }
     }
 
     @External(readonly = true)
@@ -194,13 +198,16 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         }
 
         PrepDelegations[] userDelegations;
+        int delegationsLength = _delegations.length;
 
-        if (_delegations == null || _delegations.length == 0) {
+        if (_delegations == null || delegationsLength == 0) {
             userDelegations = getUserDelegationDetails(currentUser);
         } else {
-            Context.require(_delegations.length <=5, TAG +
-                    " updating delegation unsuccessful, more than 5 preps provided by user"+
-                    " delegations provided " + _delegations.length);
+            if (delegationsLength > 5) {
+                throw DelegationException.unknown(TAG +
+                        " updating delegation unsuccessful, more than 5 preps provided by user"+
+                        " delegations provided " + delegationsLength);
+            }
             userDelegations = _delegations;
         }
 
@@ -243,10 +250,12 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             prepVotes = prepVotes.add(prepVote);
             totalPercentage = totalPercentage.add(votes);
         }
-        Context.require(totalPercentage.equals(ICX), TAG+
-                ": updating delegation unsuccessful,sum of percentages not equal to 100 "+
-                "sum total of percentages " + totalPercentage +
-                " delegation preferences "+ userDelegations.length);
+        if (! totalPercentage.equals(ICX)) {
+            throw DelegationException.unknown(TAG+
+                    ": updating delegation unsuccessful,sum of percentages not equal to 100 "+
+                    "sum total of percentages " + totalPercentage +
+                    " delegation preferences "+ userDelegations.length);
+        }
 
         _userVotes.set(user, userStakedToken);
         BigInteger totalVotes = _totalVotes.getOrDefault(BigInteger.ZERO);
