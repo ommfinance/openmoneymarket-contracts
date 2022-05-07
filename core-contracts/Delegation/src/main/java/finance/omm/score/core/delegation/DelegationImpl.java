@@ -344,16 +344,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             }
         }
 
-        int size = userDetails.size();
-        PrepDelegations[] prepDelegations = new PrepDelegations[size];
-
-        for (int i = 0; i < size; i++) {
-            PrepDelegations delegation = userDetails.get(i);
-            PrepDelegations prepDelegation = new PrepDelegations(delegation._address, delegation._votes_in_per);
-            prepDelegations[i] = prepDelegation;
-        }
-
-        return prepDelegations;
+        return getPrepDelegations(userDetails);
     }
 
     @External(readonly = true)
@@ -424,15 +415,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                 e._votes_in_per = e._votes_in_per.add(dustVotes);
                 prepDelegations.set(maxVotePrepIndex, e);
             }
-            int size = prepDelegations.size();
-            PrepDelegations[] prepDelegationsArr = new PrepDelegations[size];
-
-            for (int i = 0; i < size; i++) {
-                PrepDelegations delegation = prepDelegations.get(i);
-                PrepDelegations prepDelegation = new PrepDelegations(delegation._address, delegation._votes_in_per);
-                prepDelegationsArr[i] = prepDelegation;
-            }
-            return prepDelegationsArr;
+            return getPrepDelegations(prepDelegations);
         }
         return  new PrepDelegations[0];
     }
@@ -440,6 +423,17 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public boolean contains(Address target, List<Address> addresses) {
         for(Address address : addresses) {
             if (address.equals(target)){
+    private PrepDelegations[] getPrepDelegations(List<PrepDelegations> userDetails) {
+        int size = userDetails.size();
+        PrepDelegations[] prepDelegations = new PrepDelegations[size];
+
+        for (int i = 0; i < size; i++) {
+           prepDelegations[i] = userDetails.get(i);
+        }
+
+        return prepDelegations;
+    }
+
     private boolean isContributor(Address prep) {
         int size = _contributors.size();
         for (int i = 0; i < size; i++) {
