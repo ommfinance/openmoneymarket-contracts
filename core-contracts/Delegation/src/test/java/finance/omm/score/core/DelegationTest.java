@@ -236,6 +236,7 @@ public class DelegationTest extends TestBase {
 
         // check for default delegations
         assertArrayEquals(scoreDelegations, defDelegations);
+        assertEquals(true,delegationScore.call("userDefaultDelegation", user1.getAddress()));
     }
 
     @DisplayName("users delegate to default delegation")
@@ -277,9 +278,8 @@ public class DelegationTest extends TestBase {
         BigInteger total = (BigInteger) delegationScore.call("getTotalVotes");
         assertEquals(BigInteger.TEN.pow(18), total);
 
-        /* TODO: check userDefaultDelegation method as well */
-//        boolean isDefault = (boolean)delegationScore.call("userDefaultDelegation", owner.getAddress());
-//        assertEquals(true, isDefault);
+        boolean isDefault = (boolean)delegationScore.call("userDefaultDelegation", owner.getAddress());
+        assertEquals(true, isDefault);
     }
 
     @DisplayName("user should be able to update their delegation")
@@ -416,6 +416,8 @@ public class DelegationTest extends TestBase {
             expectedDelegation[i] = new PrepDelegations(prep, vote);
         }
         assertArrayEquals(expectedDelegation, observedDelegation);
+        boolean isDefault = (boolean)delegationScore.call("userDefaultDelegation", owner.getAddress());
+        assertEquals(false, isDefault);
     }
 
     @DisplayName("multiple users update their delegations")
@@ -795,6 +797,12 @@ public class DelegationTest extends TestBase {
         BigInteger expectedTotal = staked2000.add(staked1000).add(staked1000).add(staked500).add(staked500);
         assertEquals(total, expectedTotal);
 
+        // default delegations check
+        assertEquals(false, (boolean)delegationScore.call("userDefaultDelegation", user1.getAddress()));
+        assertEquals(false, (boolean)delegationScore.call("userDefaultDelegation", user2.getAddress()));
+        assertEquals(false, (boolean)delegationScore.call("userDefaultDelegation", user3.getAddress()));
+        assertEquals(false, (boolean)delegationScore.call("userDefaultDelegation", user4.getAddress()));
+        assertEquals(true, (boolean)delegationScore.call("userDefaultDelegation", user5.getAddress()));
 
         // prepVotes method check
 
