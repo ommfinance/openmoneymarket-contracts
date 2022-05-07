@@ -4,7 +4,7 @@ import java.math.BigInteger;
 
 import score.Address;
 
-public interface FreeProvider extends AddressProvider {
+public interface FeeProvider extends AddressProvider {
 
     void setLoanOriginationFeePercentage(BigInteger _percentage);
     String name();

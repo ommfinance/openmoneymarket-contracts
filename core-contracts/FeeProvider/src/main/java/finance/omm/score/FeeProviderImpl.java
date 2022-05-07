@@ -4,7 +4,7 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 import java.math.BigInteger;
 
-import finance.omm.core.score.interfaces.FreeProvider;
+import finance.omm.core.score.interfaces.FeeProvider;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.utils.exceptions.OMMException;
@@ -15,7 +15,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public class FreeProviderImpl extends AddressProvider implements FreeProvider {
+public class FeeProviderImpl extends AddressProvider implements FeeProvider {
 
     private static final String TAG = "Fee Provider";
 
@@ -24,7 +24,7 @@ public class FreeProviderImpl extends AddressProvider implements FreeProvider {
     private VarDB<BigInteger> _originationFeePercent = Context
             .newVarDB(ORIGINATION_FEE_PERCENT, BigInteger.class);
 
-    public FreeProviderImpl(Address _addressProvider, @Optional boolean _update) {
+    public FeeProviderImpl(Address _addressProvider, @Optional boolean _update) {
         super(_addressProvider, _update);
         if (_update) {
             Context.println(TAG + "| on update event:" + Context.getAddress());

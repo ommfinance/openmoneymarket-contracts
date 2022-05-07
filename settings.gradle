@@ -26,6 +26,6 @@ findProject(":Score").projectDir = file("libs/Score")
 include('DaoFund')
 findProject(":DaoFund").projectDir = file("core-contracts/DaoFund")
 
-include('FreeProvider')
-findProject(":FreeProvider").projectDir = file("core-contracts/FreeProvider")
+include('FeeProvider')
+findProject(":FeeProvider").projectDir = file("core-contracts/FeeProvider")
 

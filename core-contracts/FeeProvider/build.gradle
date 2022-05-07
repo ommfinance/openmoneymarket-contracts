@@ -1,17 +1,7 @@
 version = '0.1.0'
 
-dependencies {
-    implementation project(':AddressProvider')
-    implementation project(':Score')
-    implementation project(':ScoreUtils')
-    implementation project(':OMMStruct')
-
-    // test dependencies
-    testImplementation project(':TestUtils')
-}
-
 optimizedJar {
-    mainClassName = 'finance.omm.score.FreeProviderImpl'
+    mainClassName = 'finance.omm.score.FeeProviderImpl'
     dependsOn(':AddressProvider:build')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {

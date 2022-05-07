@@ -17,7 +17,7 @@ import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 
-public class FreeProviderTest extends TestBase {
+public class FeeProviderTest extends TestBase {
 
     private static ServiceManager sm = getServiceManager();
     private static Account owner = sm.createAccount();
@@ -25,7 +25,7 @@ public class FreeProviderTest extends TestBase {
     private BigInteger decimals = BigInteger.valueOf(10);
     private static BigInteger totalSupply = BigInteger.valueOf(50000000000L);
 
-    private Score freeProvider;
+    private Score feeProvider;
     private Score ommToken;
     private Account accountAddressProvider = sm.createAccount();
     private Account accountGovernance = sm.createAccount();
@@ -44,7 +44,7 @@ public class FreeProviderTest extends TestBase {
         governanceDetails.name = Contracts.GOVERNANCE.getKey();
         governanceDetails.address = accountGovernance.getAddress();
 
-        freeProvider = sm.deploy(owner, FreeProviderImpl.class, accountAddressProvider.getAddress(), false);
+        feeProvider = sm.deploy(owner, FeeProviderImpl.class, accountAddressProvider.getAddress(), false);
         ommToken = sm.deploy(owner, MockOmmToken.class);
 
         ommTokenDetails = new AddressDetails();
@@ -58,14 +58,14 @@ public class FreeProviderTest extends TestBase {
     void testTransferFund() {
 
         AddressDetails[] addressDetails = {governanceDetails, ommTokenDetails};
-        freeProvider.invoke(accountAddressProvider, "setAddresses", (Object) addressDetails);
+        feeProvider.invoke(accountAddressProvider, "setAddresses", (Object) addressDetails);
 
         BigInteger amount = TEN.pow(decimals.intValue());
         Account receiver = sm.createAccount();
 
         ommToken.invoke(owner, "setOwner", ommToken.getAccount());
         ommToken.invoke(owner, "addTo", receiver);
-        freeProvider.invoke(accountGovernance, "transferFund",
+        feeProvider.invoke(accountGovernance, "transferFund",
                 ommToken.getAddress(), amount, receiver.getAddress());
 
         assertEquals(amount, receiver.getBalance(Contracts.OMM_TOKEN.getKey()));
@@ -77,14 +77,14 @@ public class FreeProviderTest extends TestBase {
     @Test
     void testLoanOriginationFeePercentage() {
 
-        var actualFeePercentage = (BigInteger) freeProvider.call("getLoanOriginationFeePercentage");
+        var actualFeePercentage = (BigInteger) feeProvider.call("getLoanOriginationFeePercentage");
 
         assertEquals(BigInteger.ZERO, actualFeePercentage);
 
         var feePercentage = new BigInteger("8");
-        freeProvider.invoke(owner, "setLoanOriginationFeePercentage", feePercentage);
+        feeProvider.invoke(owner, "setLoanOriginationFeePercentage", feePercentage);
 
-        actualFeePercentage = (BigInteger) freeProvider.call("getLoanOriginationFeePercentage");
+        actualFeePercentage = (BigInteger) feeProvider.call("getLoanOriginationFeePercentage");
         assertEquals(feePercentage, actualFeePercentage);
     }
 }
