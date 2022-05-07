@@ -85,11 +85,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     @External
     public void addContributor(Address _prep) {
         checkOwner();
-        List<Address> contributors = getContributors();
-        boolean isContributor = contains(_prep, contributors);
-        if (!isContributor) {
-            _contributors.add(_prep);
-        }
+        addContributorInternal(_prep);
     }
 
     @External
@@ -119,8 +115,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     @External
     public void addAllContributors(Address[] _preps) {
+        checkOwner();
         for (Address prep : _preps) {
-            addContributor(prep);
+            addContributorInternal(prep);
         }
     }
 
@@ -434,6 +431,13 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             }
         }
         return false;
+    }
+
+    private void addContributorInternal(Address prep) {
+        boolean isContributor = isContributor(prep);
+        if (!isContributor) {
+            _contributors.add(prep);
+        }
     }
 
     private void checkOwner() {
