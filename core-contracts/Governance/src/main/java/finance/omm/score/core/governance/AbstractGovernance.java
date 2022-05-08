@@ -151,4 +151,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
         return null;
     }
 
+    public void call(Contracts contract, String method, Object... params) {
+        Context.call(getAddress(contract.getKey()), method, params);
+    }
+
 }

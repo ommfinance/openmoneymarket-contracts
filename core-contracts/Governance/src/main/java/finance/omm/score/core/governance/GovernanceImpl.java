@@ -46,10 +46,13 @@ public class GovernanceImpl extends AbstractGovernance {
         lendingPoolCore.updateIsFreezed(_reserve, _status);
     }
 
+    /*
+    https://github.com/icon-project/javaee-annotation-processor/pull/1/files
+     */
     @External
     public void setReserveConstants(ReserveConstant[] _constants) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        lendingPoolCore.setReserveConstants(_constants);
+        call(Contracts.LENDING_POOL_CORE, "setReserveConstants", new Object[]{_constants});
     }
 
     @External
@@ -485,8 +488,8 @@ public class GovernanceImpl extends AbstractGovernance {
                 Map.entry("quorum", quorum),
                 Map.entry("for", _for),
                 Map.entry("against", _against),
-                Map.entry("for_voter_count", proposal.forVotersCount.get()),
-                Map.entry("against_voter_count", proposal.againstVotersCount.get()),
+                Map.entry("for_voter_count", proposal.forVotersCount.getOrDefault(BigInteger.ZERO)),
+                Map.entry("against_voter_count", proposal.againstVotersCount.getOrDefault(BigInteger.ZERO)),
                 Map.entry("forum", proposal.forumLink.get()),
                 Map.entry("status", status)
         );
