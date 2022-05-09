@@ -57,16 +57,14 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public DelegationImpl(Address addressProvider, @Optional boolean update) {
         super(addressProvider, update);
         if (update) {
-            Context.println(TAG + " : on update event");
             onUpdate();
             return;
         }
+        _voteThreshold.set(ICX.divide(BigInteger.valueOf(1000)));
     }
 
     public void onUpdate() {
-        if (_voteThreshold.get() == null) {
-            _voteThreshold.set(ICX.divide(BigInteger.valueOf(1000)));
-        }
+        Context.println(TAG + " : on update event");
     }
 
     @External(readonly = true)
