@@ -2,7 +2,7 @@ package finance.omm.score.core.addreess.manager.exception;
 
 import finance.omm.utils.exceptions.OMMException;
 
-public class AddressManagerException extends OMMException.AddressManager{
+public class AddressManagerException extends OMMException.AddressManager {
 
     public AddressManagerException(Coded code, String message) {
         super(code, message);
@@ -12,9 +12,12 @@ public class AddressManagerException extends OMMException.AddressManager{
         return new AddressManagerException(Code.NotOwner, "require owner access");
     }
 
+//    public static AddressManagerException unknown(String msg) {
+//        return new AddressManagerException(Code.Unknown, msg);
+//    }
+
     public enum Code implements OMMException.Coded {
-        Unknown(0), NotOwner(1), InvalidRecipient(2), InvalidAsset(3), InvalidTotalPercentage(4),
-        NotGovernanceContract(5), NotStakedLp(6), NotLendingPool(7), HandleActionDisabled(8), RewardClaimDisabled(9);
+        Unknown(0), NotOwner(1);
 
         final int code;
 
