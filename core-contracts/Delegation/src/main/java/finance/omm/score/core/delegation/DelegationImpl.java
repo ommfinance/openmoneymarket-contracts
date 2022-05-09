@@ -54,9 +54,17 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     private final ArrayDB<Address> _contributors = Context.newArrayDB(CONTRIBUTORS, Address.class);
     public final VarDB<BigInteger> _voteThreshold = Context.newVarDB(VOTE_THRESHOLD, BigInteger.class);
 
-    public DelegationImpl(Address addressProvider) {
-        super(addressProvider);
-        if (_voteThreshold.get()== null) {
+    public DelegationImpl(Address addressProvider, @Optional boolean update) {
+        super(addressProvider, update);
+        if (update) {
+            Context.println(TAG + " : on update event");
+            onUpdate();
+            return;
+        }
+    }
+
+    public void onUpdate() {
+        if (_voteThreshold.get() == null) {
             _voteThreshold.set(ICX.divide(BigInteger.valueOf(1000)));
         }
     }
