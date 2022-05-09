@@ -22,6 +22,7 @@ import score.Address;
 import score.Context;
 import score.annotation.External;
 import scorex.util.ArrayList;
+import scorex.util.HashMap;
 
 public class GovernanceImpl extends AbstractGovernance {
 
@@ -446,10 +447,12 @@ public class GovernanceImpl extends AbstractGovernance {
 
     @External(readonly = true)
     public Map<String, ?> checkVote(int _vote_index) {
+
         ProposalDB proposal = ProposalDB.getByVoteIndex(_vote_index);
         if (proposal == null) {
             throw GovernanceException.proposalNotFound(_vote_index);
         }
+
         BigInteger totalOMMStaked = ommToken.totalStakedBalanceOfAt(proposal.voteSnapshot.get());
 
         BigInteger totalForVoted = proposal.totalForVotes.getOrDefault(BigInteger.ZERO);
@@ -466,7 +469,8 @@ public class GovernanceImpl extends AbstractGovernance {
         BigInteger start = proposal.startSnapshot.get();
         BigInteger snapshot = proposal.voteSnapshot.get();
 
-        if (status.equals(ProposalStatus.ACTIVE.getStatus()) && TimeConstants.getBlockTimestamp().compareTo(end) >= 0) {
+        if (status.equals(ProposalStatus.ACTIVE.getStatus())
+                && TimeConstants.getBlockTimestamp().compareTo(end) >= 0) {
             if (_for.add(_against).compareTo(quorum) < 0) {
                 status = ProposalStatus.NO_QUORUM.getStatus();
             } else if (ICX.subtract(majority).multiply(_for).compareTo(majority.multiply(_against)) > 0) {
@@ -476,23 +480,24 @@ public class GovernanceImpl extends AbstractGovernance {
             }
         }
 
-        return Map.ofEntries(
-                Map.entry("id", _vote_index),
-                Map.entry("name", proposal.name.get()),
-                Map.entry("proposer", proposal.proposer.get()),
-                Map.entry("description", proposal.description.get()),
-                Map.entry("majority", majority),
-                Map.entry("vote snapshot", snapshot),
-                Map.entry("start day", start),
-                Map.entry("end day", end),
-                Map.entry("quorum", quorum),
-                Map.entry("for", _for),
-                Map.entry("against", _against),
-                Map.entry("for_voter_count", proposal.forVotersCount.getOrDefault(BigInteger.ZERO)),
-                Map.entry("against_voter_count", proposal.againstVotersCount.getOrDefault(BigInteger.ZERO)),
-                Map.entry("forum", proposal.forumLink.get()),
-                Map.entry("status", status)
-        );
+        String finalStatus = status;
+        return new HashMap<>() {{
+            put("id", _vote_index);
+            put("name", proposal.name.get());
+            put("proposer", proposal.proposer.get());
+            put("description", proposal.description.get());
+            put("majority", majority);
+            put("vote snapshot", snapshot);
+            put("start day", start);
+            put("end day", end);
+            put("quorum", quorum);
+            put("for", _for);
+            put("against", _against);
+            put("for_voter_count", proposal.forVotersCount.getOrDefault(BigInteger.ZERO));
+            put("against_voter_count", proposal.againstVotersCount.getOrDefault(BigInteger.ZERO));
+            put("forum", proposal.forumLink.get());
+            put("status", finalStatus);
+        }};
     }
 
     @External(readonly = true)

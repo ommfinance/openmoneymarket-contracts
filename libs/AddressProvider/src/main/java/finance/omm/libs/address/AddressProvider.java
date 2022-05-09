@@ -30,7 +30,7 @@ public class AddressProvider {
             return;
         }
 
-        if (_addressProvider.getOrDefault(null) == null) {
+        if (_addressProvider.get() == null) {
             _addressProvider.set(addressProvider);
         }
     }
