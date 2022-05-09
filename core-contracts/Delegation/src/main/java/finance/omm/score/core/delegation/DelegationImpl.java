@@ -13,7 +13,6 @@ import finance.omm.libs.structs.PrepDelegations;
 import finance.omm.libs.structs.PrepICXDelegations;
 import finance.omm.score.core.delegation.exception.DelegationException;
 import finance.omm.utils.db.EnumerableSet;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public static final String PREP_VOTES = "prepVotes";
     public static final String USER_VOTES = "userVotes";
     public static final String TOTAL_VOTES = "totalVotes";
-//    public static final String EQUAL_DISTRIBUTION = "equalDistribution";
+    //    public static final String EQUAL_DISTRIBUTION = "equalDistribution";
     public static final String CONTRIBUTORS = "contributors";
     public static final String VOTE_THRESHOLD = "voteThreshold";
 
@@ -69,11 +68,11 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     @External(readonly = true)
     public String name() {
-        return "OMM "+TAG;
+        return "OMM " + TAG;
     }
 
     @External(readonly = true)
-    public  BigInteger getTotalVotes() {
+    public BigInteger getTotalVotes() {
         return _totalVotes.getOrDefault(BigInteger.ZERO);
     }
 
@@ -103,7 +102,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
         int size = _contributors.size();
         Address topPrep = _contributors.pop();
-        if (! topPrep.equals(_prep)) {
+        if (!topPrep.equals(_prep)) {
             for (int i = 0; i < size; i++) {
                 if (_contributors.get(i).equals(_prep)) {
                     _contributors.set(i, topPrep);
@@ -133,7 +132,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     @External
     public void clearPrevious(Address _user) {
         if (_user != Context.getCaller()) {
-            throw DelegationException.unknown(TAG+
+            throw DelegationException.unknown(TAG +
                     " :You are not authorized to clear others delegation preference");
         }
         PrepDelegations[] defaultDelegation = distributeVoteToContributors();
@@ -152,12 +151,12 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         for (int i = 0; i < userDetails.length; i++) {
             PrepDelegations contributor = contributors[i];
             PrepDelegations userDetail = userDetails[i];
-            if (! contributor._address.equals(userDetail._address) &&
-                ! contributor._votes_in_per.equals(userDetail._votes_in_per)) {
+            if (!contributor._address.equals(userDetail._address) &&
+                    !contributor._votes_in_per.equals(userDetail._votes_in_per)) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -195,8 +194,8 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     private void validatePrep(Address _address) {
         Map<String, ?> prepDetails = call(Map.class, ZERO_SCORE_ADDRESS, "getPRep", _address);
         boolean isActive = prepDetails.get("status").equals(BigInteger.ZERO);
-        if(! isActive) {
-            throw DelegationException.unknown(TAG + ": Invalid prep: "+_address);
+        if (!isActive) {
+            throw DelegationException.unknown(TAG + ": Invalid prep: " + _address);
         }
     }
 
@@ -222,14 +221,14 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         }
 
         PrepDelegations[] userDelegations;
-        int delegationsLength = _delegations.length;
 
-        if (_delegations == null || delegationsLength == 0) {
+        if (_delegations == null || _delegations.length == 0) {
             userDelegations = getUserDelegationDetails(currentUser);
         } else {
+            int delegationsLength = _delegations.length;
             if (delegationsLength > 5) {
                 throw DelegationException.unknown(TAG +
-                        " updating delegation unsuccessful, more than 5 preps provided by user"+
+                        " updating delegation unsuccessful, more than 5 preps provided by user" +
                         " delegations provided " + delegationsLength);
             }
             userDelegations = _delegations;
@@ -259,7 +258,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             Address address = userDelegation._address;
             BigInteger votes = userDelegation._votes_in_per;
 
-            if (! _preps.contains(address)) {
+            if (!_preps.contains(address)) {
                 validatePrep(address);
                 _preps.add(address);
             }
@@ -274,11 +273,11 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             prepVotes = prepVotes.add(prepVote);
             totalPercentage = totalPercentage.add(votes);
         }
-        if (! totalPercentage.equals(ICX)) {
-            throw DelegationException.unknown(TAG+
-                    ": updating delegation unsuccessful,sum of percentages not equal to 100 "+
+        if (!totalPercentage.equals(ICX)) {
+            throw DelegationException.unknown(TAG +
+                    ": updating delegation unsuccessful,sum of percentages not equal to 100 " +
                     "sum total of percentages " + totalPercentage +
-                    " delegation preferences "+ userDelegations.length);
+                    " delegation preferences " + userDelegations.length);
         }
 
         _userVotes.set(user, userStakedToken);
@@ -291,14 +290,14 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                 updatedDelegation
         };
 
-        call(Contracts.LENDING_POOL_CORE,"updatePrepDelegations", params);
+        call(Contracts.LENDING_POOL_CORE, "updatePrepDelegations", params);
     }
 
     public PrepDelegations[] distributeVoteToContributors() {
 
         int contributorSize = _contributors.size();
         PrepDelegations[] userDetails = new PrepDelegations[contributorSize];
-        BigInteger totalContributors =  BigInteger.valueOf(contributorSize);
+        BigInteger totalContributors = BigInteger.valueOf(contributorSize);
         BigInteger prepPercentage = ICX.divide(totalContributors);
         BigInteger totalPercentage = BigInteger.ZERO;
 
@@ -324,7 +323,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External(readonly = true)
-    public Map<String,BigInteger> userPrepVotes(Address _user) {
+    public Map<String, BigInteger> userPrepVotes(Address _user) {
         Map<String, BigInteger> userDetailsBalance = call(Map.class,
                 Contracts.OMM_TOKEN, "details_balanceOf", _user);
         BigInteger userStakedToken = userDetailsBalance.get("stakedBalance");
@@ -372,8 +371,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         Map<String, BigInteger> userDetailsBalance = call(Map.class,
                 Contracts.OMM_TOKEN, "details_balanceOf", _user);
         BigInteger userStakedToken = userDetailsBalance.get("stakedBalance");
-        Map<String, BigInteger> totalStaked = call(Map.class,
-                Contracts.OMM_TOKEN, "getTotalStaked");
+        Map<String, BigInteger> totalStaked = call(Map.class, Contracts.OMM_TOKEN, "getTotalStaked");
         BigInteger totalStakedToken = totalStaked.get("totalStaked");
 
         Address lendingPoolCore = getAddress(Contracts.LENDING_POOL_CORE.getKey());
@@ -403,7 +401,8 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         if (totalVotes.equals(BigInteger.ZERO)) {
             PrepDelegations[] defaultPreference = distributeVoteToContributors();
             for (int i = 0; i < defaultPreference.length; i++) {
-                defaultPreference[i]._votes_in_per = defaultPreference[i]._votes_in_per.multiply(BigInteger.valueOf(100L));
+                defaultPreference[i]._votes_in_per = defaultPreference[i]._votes_in_per.multiply(
+                        BigInteger.valueOf(100L));
             }
             return defaultPreference;
         }
@@ -422,19 +421,19 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                     totalPercentage = totalPercentage.add(votes);
                     if (votes.compareTo(maxVotes) > 0) {
                         maxVotes = votes;
-                        maxVotePrepIndex = prepDelegations.size()-1;
+                        maxVotePrepIndex = prepDelegations.size() - 1;
                     }
                 }
             }
             BigInteger dustVotes = ICX.multiply(BigInteger.valueOf(100)).subtract(totalPercentage);
-            if (dustVotes.compareTo(BigInteger.ZERO) > 0 ) {
+            if (dustVotes.compareTo(BigInteger.ZERO) > 0) {
                 PrepDelegations e = prepDelegations.get(maxVotePrepIndex);
                 e._votes_in_per = e._votes_in_per.add(dustVotes);
                 prepDelegations.set(maxVotePrepIndex, e);
             }
             return getPrepDelegations(prepDelegations);
         }
-        return  new PrepDelegations[0];
+        return new PrepDelegations[0];
     }
 
     private PrepDelegations[] getPrepDelegations(List<PrepDelegations> userDetails) {
@@ -442,7 +441,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         PrepDelegations[] prepDelegations = new PrepDelegations[size];
 
         for (int i = 0; i < size; i++) {
-           prepDelegations[i] = userDetails.get(i);
+            prepDelegations[i] = userDetails.get(i);
         }
 
         return prepDelegations;
@@ -470,6 +469,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             throw DelegationException.notOwner();
         }
     }
+
     public void call(Contracts contract, String method, Object... params) {
         Context.call(getAddress(contract.getKey()), method, params);
     }
