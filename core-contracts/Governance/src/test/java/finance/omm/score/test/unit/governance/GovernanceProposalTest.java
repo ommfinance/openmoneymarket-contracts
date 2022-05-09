@@ -23,17 +23,17 @@ import score.Address;
 
 public class GovernanceProposalTest extends AbstractGovernanceTest {
 
-    Account    ommToken = MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN);
+    Account OMM_TOKEN_ACCOUNT = MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN);
     BigInteger value = THOUSAND.multiply(ICX);
     BigInteger FIVE_MINUTES = BigInteger.valueOf(5L).multiply(SIXTY).multiply(BigInteger.valueOf(1_000_000L));
     BigInteger snapshot = TimeConstants.getBlockTimestamp().add(FIVE_MINUTES);
     BigInteger voteStart = snapshot.add(FIVE_MINUTES);
-    Account    fromWallet = sm.createAccount(10);
-    Address    from = fromWallet.getAddress();
-    String     name = "Zero Knowledge";
-    String     forum = "https://forum.omm.finance/random_proposal";
-    String     description = "Verify your statement is true without having to show how you proved it.";
-    String     methodName = "defineVote";
+    Account fromWallet = sm.createAccount(10);
+    Address from = fromWallet.getAddress();
+    String name = "Zero Knowledge";
+    String forum = "https://forum.omm.finance/random_proposal";
+    String description = "Verify your statement is true without having to show how you proved it.";
+    String methodName = "defineVote";
     BigInteger duration = TWO.multiply(BigInteger.valueOf(86400 * 1_000_000L));
     BigInteger quorum = THIRTY_THREE.multiply(PERCENT);
     BigInteger ZERO = BigInteger.ZERO;
@@ -51,12 +51,12 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         JsonObject internalParameters = new JsonObject()
                 .add("name", name)
                 .add("forum", forum)
-                .add("description",description)
+                .add("description", description)
                 .add("vote_start", voteStart.longValue())
                 .add("snapshot", snapshot.longValue());
 
         JsonObject jsonData = new JsonObject()
-                .add("method",methodName)
+                .add("method", methodName)
                 .add("params", internalParameters);
 
         byte[] data = jsonData.toString().getBytes();
@@ -68,10 +68,10 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         BigInteger userStaked = HUNDRED.multiply(ICX);
         BigInteger totalStaked = TWO.multiply(HUNDRED.multiply(ICX));
 
-        doReturn(totalSupply).when(scoreSpy.ommToken).totalSupply();
-        doReturn(userStaked).when(scoreSpy.ommToken).stakedBalanceOfAt(any(), any());
-        doReturn(totalStaked).when(scoreSpy.ommToken).totalStakedBalanceOfAt(any());
-        doNothing().when(scoreSpy.ommToken).transfer(any(), any(), any());
+        doReturn(totalSupply).when(ommToken).totalSupply();
+        doReturn(userStaked).when(ommToken).stakedBalanceOfAt(any(), any());
+        doReturn(totalStaked).when(ommToken).totalStakedBalanceOfAt(any());
+        doNothing().when(ommToken).transfer(any(), any(), any());
     }
 
     @Test
@@ -126,7 +126,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         // general case of proposal creation
         successfulProposalCreationMocks();
-        score.invoke(ommToken, "tokenFallback", from, value, data);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
         verify(scoreSpy).ProposalCreated(ONE, name, from);
 
         // proposals count should increase
@@ -142,58 +142,67 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         // insufficient fee check
         BigInteger insufficientValue = HUNDRED.multiply(ICX);
-        Executable insufficientFeeSent = () -> score.invoke(ommToken, "tokenFallback", from,
+        Executable insufficientFeeSent = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from,
                 insufficientValue, data);
         expectErrorMessage(insufficientFeeSent, "Insufficient fee to create proposal");
 
         // method not named defineVote
         String invalidMethodName = "notDefineVote";
         byte[] invalidData1 = createByteArray(name, forum, description, voteStart, snapshot, invalidMethodName);
-        Executable wrongMethodName = () -> score.invoke(ommToken, "tokenFallback", from, value, invalidData1);
+        Executable wrongMethodName = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, invalidData1);
         expectErrorMessageIn(wrongMethodName, "No valid method called :: ");
 
         // length of description over 500
         String invalidDescription = "Invalid Description".repeat(200);
         byte[] invalidData2 = createByteArray(methodName, forum, invalidDescription, voteStart, snapshot, methodName);
-        Executable invalidDescriptionLength = () -> score.invoke(ommToken, "tokenFallback", from, value, invalidData2);
+        Executable invalidDescriptionLength = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value,
+                invalidData2);
         expectErrorMessage(invalidDescriptionLength, "Description must be less than or equal to 500 characters.");
 
         // snapshot not in microseconds
         BigInteger snapshotNotInMicro = TimeConstants.getBlockTimestamp().divide(THOUSAND);
-        byte[] invalidData3 = createByteArray(methodName, forum, description, voteStart, snapshotNotInMicro, methodName);
-        Executable snapshotNotInMicroSecond = () -> score.invoke(ommToken, "tokenFallback", from, value, invalidData3);
+        byte[] invalidData3 = createByteArray(methodName, forum, description, voteStart, snapshotNotInMicro,
+                methodName);
+        Executable snapshotNotInMicroSecond = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value,
+                invalidData3);
         expectErrorMessage(snapshotNotInMicroSecond, "snapshot start timestamp should be in microseconds");
 
         // vote_start not in microseconds
         BigInteger voteStartNotInMicro = TimeConstants.getBlockTimestamp().divide(THOUSAND);
-        byte[] invalidData3a = createByteArray(methodName, forum, description, voteStartNotInMicro, snapshot, methodName);
-        Executable voteStartNotInMicroSecond = () -> score.invoke(ommToken, "tokenFallback", from, value, invalidData3a);
+        byte[] invalidData3a = createByteArray(methodName, forum, description, voteStartNotInMicro, snapshot,
+                methodName);
+        Executable voteStartNotInMicroSecond = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value,
+                invalidData3a);
         expectErrorMessage(voteStartNotInMicroSecond, "vote_start timestamp should be in microseconds");
 
         // start vote before current timestamp
         BigInteger invalidVoteStartTime = TimeConstants.getBlockTimestamp().subtract(FIVE_MINUTES);
-        byte[] invalidData4 = createByteArray(methodName, forum, description, invalidVoteStartTime, snapshot, methodName);
-        Executable voteStartBeforeCurrentTime = () -> score.invoke(ommToken, "tokenFallback", from, value, invalidData4);
+        byte[] invalidData4 = createByteArray(methodName, forum, description, invalidVoteStartTime, snapshot,
+                methodName);
+        Executable voteStartBeforeCurrentTime = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value,
+                invalidData4);
         expectErrorMessage(voteStartBeforeCurrentTime, "Vote cannot start at or before the current timestamp.");
 
         // reference snapshot check
         String expected = "The reference snapshot must be in the range: [current_time";
         BigInteger invalidSnapshot = voteStart.add(FIVE_MINUTES);
         byte[] invalidData5 = createByteArray(name, forum, description, voteStart, invalidSnapshot, methodName);
-        Executable referenceSnapshot = () -> score.invoke(ommToken, "tokenFallback", from, value, invalidData5);
+        Executable referenceSnapshot = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value,
+                invalidData5);
         expectErrorMessageIn(referenceSnapshot, expected);
 
         // proposal already exists check
         String existingName = "Zero Knowledge";
         expected = "Proposal name (" + existingName + ") has already been used.";
         byte[] invalidData6 = createByteArray(existingName, forum, description, voteStart, snapshot, methodName);
-        Executable alreadyExists = () -> score.invoke(ommToken, "tokenFallback", from, value, invalidData6);
+        Executable alreadyExists = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, invalidData6);
         expectErrorMessage(alreadyExists, expected);
 
         // insufficient staking balance
-        doReturn(PERCENT).when(scoreSpy.ommToken).stakedBalanceOfAt(any(), any());
+        doReturn(PERCENT).when(ommToken).stakedBalanceOfAt(any(), any());
         byte[] insufficentData = createByteArray(name, forum, description, voteStart, snapshot, methodName);
-        Executable insufficientStaked = () -> score.invoke(ommToken, "tokenFallback", from, value, insufficentData);
+        Executable insufficientStaked = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value,
+                insufficentData);
         expectErrorMessageIn(insufficientStaked, "User needs at least ");
 
         // still only one proposal
@@ -206,8 +215,8 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         initialize();
 
         successfulProposalCreationMocks();
-        byte[] data = createByteArray(name+" 1", forum, description, voteStart, snapshot, methodName);
-        score.invoke(ommToken, "tokenFallback", from, value, data);
+        byte[] data = createByteArray(name + " 1", forum, description, voteStart, snapshot, methodName);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
 
         Map<String, ?> voteCheck = (Map<String, ?>) score.call("checkVote", 1);
 
@@ -233,12 +242,12 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         initialize();
 
         successfulProposalCreationMocks();
-        byte[] data1 = createByteArray(name+" 10", forum, description, voteStart, snapshot, methodName);
-        byte[] data2 = createByteArray(name+" 20", forum, description, voteStart, snapshot, methodName);
-        byte[] data3 = createByteArray(name+" 30", forum, description, voteStart, snapshot, methodName);
-        score.invoke(ommToken, "tokenFallback", from, value, data1);
-        score.invoke(ommToken, "tokenFallback", from, value, data2);
-        score.invoke(ommToken, "tokenFallback", from, value, data3);
+        byte[] data1 = createByteArray(name + " 10", forum, description, voteStart, snapshot, methodName);
+        byte[] data2 = createByteArray(name + " 20", forum, description, voteStart, snapshot, methodName);
+        byte[] data3 = createByteArray(name + " 30", forum, description, voteStart, snapshot, methodName);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data1);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data2);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data3);
 
         int count = (int) score.call("getProposalCount");
         assertEquals(3, count);
@@ -275,7 +284,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         successfulProposalCreationMocks();
         byte[] data1 = createByteArray(name, forum, description, voteStart, snapshot, methodName);
-        score.invoke(ommToken, "tokenFallback", from, value, data1);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data1);
         verify(scoreSpy).ProposalCreated(ONE, name, from);
 
         // non owner
@@ -303,7 +312,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         // general case of proposal creation
         successfulProposalCreationMocks();
         byte[] data = createByteArray(name, forum, description, voteStart, snapshot, methodName);
-        score.invoke(ommToken, "tokenFallback", from, value, data);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
         verify(scoreSpy).ProposalCreated(ONE, name, from);
 
         // random user should not be able to cancel proposal
@@ -312,7 +321,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         expectErrorMessage(randomUserError, "Only owner or proposer may call this method.");
 
         // check status for cancelled proposal
-        score.invoke(owner, "cancelVote",1);
+        score.invoke(owner, "cancelVote", 1);
         Map<String, ?> proposal = (Map<String, ?>) score.call("checkVote", 1);
         assertEquals(proposal.get("status"), "Cancelled");
 
@@ -320,9 +329,10 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         BigInteger ONE_HOUR = FIVE_MINUTES.multiply(BigInteger.valueOf(12));
         BigInteger ONE_DAY = ONE_HOUR.multiply(BigInteger.valueOf(24L));
         voteStart = voteStart.add(ONE_DAY);
-        byte[] data1 = createByteArray(name+" abcd", forum, description, voteStart.add(ONE_DAY), snapshot, methodName);
-        score.invoke(ommToken, "tokenFallback", from, value, data1);
-        verify(scoreSpy).ProposalCreated(TWO, name+" abcd", from);
+        byte[] data1 = createByteArray(name + " abcd", forum, description, voteStart.add(ONE_DAY), snapshot,
+                methodName);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data1);
+        verify(scoreSpy).ProposalCreated(TWO, name + " abcd", from);
 
         increaseTimeBy(voteStart.add(FIVE_MINUTES));
         Executable voteStarted = () -> score.invoke(fromWallet, "cancelVote", 2);
@@ -349,9 +359,9 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         Address from = user2.getAddress();
         /*
-          * ommToken total supply 1000
-          * ommToken total staked 800
-          * ommToken user staked 50, 100, 200, 300, 150
+         * ommToken total supply 1000
+         * ommToken total staked 800
+         * ommToken user staked 50, 100, 200, 300, 150
          */
         BigInteger FIFTY = BigInteger.valueOf(50).multiply(ICX);
         BigInteger HUNDRED = FIFTY.multiply(TWO);
@@ -359,33 +369,33 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         BigInteger THREE_HUNDRED = HUNDRED.add(TWO_HUNDRED);
         BigInteger HUNDRED_FIFTY = FIFTY.add(HUNDRED);
 
-        doReturn(THOUSAND.multiply(ICX)).when(scoreSpy.ommToken).totalSupply();
-        doReturn(EIGHTY.multiply(ICX).multiply(TEN)).when(scoreSpy.ommToken).totalStakedBalanceOfAt(any());
+        doReturn(THOUSAND.multiply(ICX)).when(ommToken).totalSupply();
+        doReturn(EIGHTY.multiply(ICX).multiply(TEN)).when(ommToken).totalStakedBalanceOfAt(any());
 
-        doReturn(FIFTY).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user1.getAddress()), any());
-        doReturn(HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user2.getAddress()), any());
-        doReturn(TWO_HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user3.getAddress()), any());
-        doReturn(THREE_HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user4.getAddress()), any());
-        doReturn(HUNDRED_FIFTY).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user5.getAddress()), any());
+        doReturn(FIFTY).when(ommToken).stakedBalanceOfAt(eq(user1.getAddress()), any());
+        doReturn(HUNDRED).when(ommToken).stakedBalanceOfAt(eq(user2.getAddress()), any());
+        doReturn(TWO_HUNDRED).when(ommToken).stakedBalanceOfAt(eq(user3.getAddress()), any());
+        doReturn(THREE_HUNDRED).when(ommToken).stakedBalanceOfAt(eq(user4.getAddress()), any());
+        doReturn(HUNDRED_FIFTY).when(ommToken).stakedBalanceOfAt(eq(user5.getAddress()), any());
 
         // user2 will create a proposal
         byte[] data = createByteArray(name, forum, description, voteStart, snapshot, methodName);
-        score.invoke(ommToken, "tokenFallback", from, value, data);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
         verify(scoreSpy).ProposalCreated(ONE, name, from);
 
         BigInteger ONE_HOUR = FIVE_MINUTES.multiply(BigInteger.valueOf(12));
         increaseTimeBy(ONE_HOUR.multiply(TWO));
 
         score.invoke(user1, "castVote", 1, true);
-        verify(scoreSpy).VoteCast(name, true, user1.getAddress(), FIFTY, FIFTY, ZERO );
+        verify(scoreSpy).VoteCast(name, true, user1.getAddress(), FIFTY, FIFTY, ZERO);
         score.invoke(user2, "castVote", 1, false);
-        verify(scoreSpy).VoteCast(name, false, user2.getAddress(), HUNDRED, FIFTY, HUNDRED );
+        verify(scoreSpy).VoteCast(name, false, user2.getAddress(), HUNDRED, FIFTY, HUNDRED);
         score.invoke(user3, "castVote", 1, true);
         verify(scoreSpy).VoteCast(name, true, user3.getAddress(), TWO_HUNDRED, TWO_HUNDRED.add(FIFTY), HUNDRED);
         score.invoke(user4, "castVote", 1, true);
         BigInteger FIVE_HUNDRED_FIFTY = TWO_HUNDRED.add(THREE_HUNDRED).add(FIFTY);
         verify(scoreSpy).VoteCast(name, true, user4.getAddress(),
-                THREE_HUNDRED, FIVE_HUNDRED_FIFTY, HUNDRED );
+                THREE_HUNDRED, FIVE_HUNDRED_FIFTY, HUNDRED);
         score.invoke(user5, "castVote", 1, false);
         verify(scoreSpy).VoteCast(name, false, user5.getAddress(),
                 HUNDRED_FIFTY, FIVE_HUNDRED_FIFTY, HUNDRED.add(HUNDRED_FIFTY));
@@ -404,7 +414,8 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         assertEquals(proposal.get("end day"), voteStart.add(duration));
         assertEquals(proposal.get("quorum"), quorum);
         assertEquals(proposal.get("for"), exaDivide(FIVE_HUNDRED_FIFTY, BigInteger.valueOf(800L).multiply(ICX)));
-        assertEquals(proposal.get("against"), exaDivide(HUNDRED.add(HUNDRED_FIFTY), BigInteger.valueOf(800L).multiply(ICX)));
+        assertEquals(proposal.get("against"),
+                exaDivide(HUNDRED.add(HUNDRED_FIFTY), BigInteger.valueOf(800L).multiply(ICX)));
         assertEquals(proposal.get("for_voter_count"), BigInteger.valueOf(3L));
         assertEquals(proposal.get("against_voter_count"), TWO);
         assertEquals(proposal.get("forum"), forum);
@@ -469,18 +480,18 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         BigInteger HUNDRED_FIFTY = FIFTY.add(HUNDRED);
         BigInteger TWO_THOUSAND = BigInteger.valueOf(2000L).multiply(ICX);
 
-        doReturn(BigInteger.valueOf(15_000L).multiply(ICX)).when(scoreSpy.ommToken).totalSupply();
-        doReturn(TWO_THOUSAND).when(scoreSpy.ommToken).totalStakedBalanceOfAt(any());
+        doReturn(BigInteger.valueOf(15_000L).multiply(ICX)).when(ommToken).totalSupply();
+        doReturn(TWO_THOUSAND).when(ommToken).totalStakedBalanceOfAt(any());
 
-        doReturn(FIFTY).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user1.getAddress()), any());
-        doReturn(HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user2.getAddress()), any());
-        doReturn(TWO_HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user3.getAddress()), any());
-        doReturn(THREE_HUNDRED).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user4.getAddress()), any());
-        doReturn(HUNDRED_FIFTY).when(scoreSpy.ommToken).stakedBalanceOfAt(eq(user5.getAddress()), any());
+        doReturn(FIFTY).when(ommToken).stakedBalanceOfAt(eq(user1.getAddress()), any());
+        doReturn(HUNDRED).when(ommToken).stakedBalanceOfAt(eq(user2.getAddress()), any());
+        doReturn(TWO_HUNDRED).when(ommToken).stakedBalanceOfAt(eq(user3.getAddress()), any());
+        doReturn(THREE_HUNDRED).when(ommToken).stakedBalanceOfAt(eq(user4.getAddress()), any());
+        doReturn(HUNDRED_FIFTY).when(ommToken).stakedBalanceOfAt(eq(user5.getAddress()), any());
 
         // user3 will create a proposal
         byte[] data = createByteArray(name, forum, description, voteStart, snapshot, methodName);
-        score.invoke(ommToken, "tokenFallback", from, value, data);
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
         verify(scoreSpy).ProposalCreated(ONE, name, from);
 
         BigInteger ONE_HOUR = FIVE_MINUTES.multiply(BigInteger.valueOf(12));
@@ -520,7 +531,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         assertEquals(proposal.get("status"), "Succeeded");
 
         // try to execute that proposal now
-        score.invoke(owner,"execute_proposal", 1);
+        score.invoke(owner, "execute_proposal", 1);
         verify(scoreSpy).ActionExecuted(ONE, "Executed");
     }
 }

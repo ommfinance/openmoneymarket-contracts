@@ -2,14 +2,11 @@ package finance.omm.score.core.governance;
 
 import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.core.score.interfaces.DAOFundClient;
-import finance.omm.core.score.interfaces.FeeProvider;
 import finance.omm.core.score.interfaces.FeeProviderClient;
 import finance.omm.core.score.interfaces.Governance;
-import finance.omm.core.score.interfaces.LendingPoolCore;
 import finance.omm.core.score.interfaces.LendingPoolCoreClient;
 import finance.omm.core.score.interfaces.OMMToken;
 import finance.omm.core.score.interfaces.OMMTokenClient;
-import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.core.score.interfaces.StakedLPClient;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Authorization;
@@ -17,7 +14,6 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.governance.db.ProposalDB;
 import finance.omm.score.core.governance.exception.GovernanceException;
 import finance.omm.score.core.governance.interfaces.GovernanceEventLogs;
-import finance.omm.score.core.governance.interfaces.RewardDistributionImpl;
 import finance.omm.score.core.governance.interfaces.RewardDistributionImplClient;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.constants.TimeConstants.Timestamp;
@@ -41,27 +37,17 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     public final VarDB<BigInteger> quorum = Context.newVarDB("quorum", BigInteger.class);
 
 
-    public LendingPoolCore lendingPoolCore;
-    public RewardDistributionImpl rewardDistribution;
-    public StakedLP stakedLP;
-    public DAOFund daoFund;
-    public FeeProvider feeProvider;
-    public OMMToken ommToken;
 
     public AbstractGovernance(Address addressProvider, boolean _update) {
         super(addressProvider, _update);
 
-        lendingPoolCore = instanceFactory(LendingPoolCoreClient.class, Contracts.LENDING_POOL_CORE);
-        rewardDistribution = instanceFactory(RewardDistributionImplClient.class, Contracts.REWARDS);
-        stakedLP = instanceFactory(StakedLPClient.class, Contracts.STAKED_LP);
-        daoFund = instanceFactory(DAOFundClient.class, Contracts.DAO_FUND);
-        feeProvider = instanceFactory(FeeProviderClient.class, Contracts.FEE_PROVIDER);
-        ommToken = instanceFactory(OMMTokenClient.class, Contracts.OMM_TOKEN);
     }
 
     protected void refundVoteDefinitionFee(ProposalDB proposal) {
         if (!proposal.feeRefunded.getOrDefault(Boolean.FALSE)) {
             proposal.feeRefunded.set(Boolean.TRUE);
+
+            DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
             daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get());
         }
     }
@@ -103,6 +89,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             throw GovernanceException.invalidVoteParams("Proposal name (" + name + ") has already been used.");
         }
 
+        OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
+
         BigInteger ommTotalSupply = ommToken.totalSupply();
         BigInteger userStakedBalance = ommToken.stakedBalanceOfAt(proposer, snapshot);
 
@@ -126,26 +114,26 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     }
 
 
-    protected <T> T instanceFactory(Class<T> clazz, Contracts contract) {
+    public <T> T getInstance(Class<T> clazz, Contracts contract) {
         switch (contract) {
             case LENDING_POOL_CORE:
                 return clazz.cast(new LendingPoolCoreClient(
-                        this.getAddress(Contracts.LENDING_POOL_CORE.getKey())));
+                        this.getAddress(contract.getKey())));
             case REWARDS:
                 return clazz.cast(new RewardDistributionImplClient(
-                        this.getAddress(Contracts.REWARDS.getKey())));
+                        this.getAddress(contract.getKey())));
             case OMM_TOKEN:
                 return clazz.cast(new OMMTokenClient(
-                        this.getAddress(Contracts.OMM_TOKEN.getKey())));
+                        this.getAddress(contract.getKey())));
             case FEE_PROVIDER:
                 return clazz.cast(new FeeProviderClient(
-                        this.getAddress(Contracts.FEE_PROVIDER.getKey())));
+                        this.getAddress(contract.getKey())));
             case STAKED_LP:
                 return clazz.cast(new StakedLPClient(
-                        this.getAddress(Contracts.STAKED_LP.getKey())));
+                        this.getAddress(contract.getKey())));
             case DAO_FUND:
                 return clazz.cast(new DAOFundClient(
-                        this.getAddress(Contracts.DAO_FUND.getKey())));
+                        this.getAddress(contract.getKey())));
         }
         return null;
     }

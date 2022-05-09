@@ -6,6 +6,11 @@ import static finance.omm.utils.math.MathUtils.isValidPercentage;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
+import finance.omm.core.score.interfaces.DAOFund;
+import finance.omm.core.score.interfaces.FeeProvider;
+import finance.omm.core.score.interfaces.LendingPoolCore;
+import finance.omm.core.score.interfaces.OMMToken;
+import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AssetConfig;
 import finance.omm.libs.structs.governance.ReserveAttributes;
@@ -13,6 +18,7 @@ import finance.omm.libs.structs.governance.ReserveConstant;
 import finance.omm.score.core.governance.db.ProposalDB;
 import finance.omm.score.core.governance.enums.ProposalStatus;
 import finance.omm.score.core.governance.exception.GovernanceException;
+import finance.omm.score.core.governance.interfaces.RewardDistributionImpl;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
@@ -38,12 +44,14 @@ public class GovernanceImpl extends AbstractGovernance {
     @External
     public void setReserveActiveStatus(Address _reserve, boolean _status) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.updateIsActive(_reserve, _status);
     }
 
     @External
     public void setReserveFreezeStatus(Address _reserve, boolean _status) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.updateIsFreezed(_reserve, _status);
     }
 
@@ -59,54 +67,72 @@ public class GovernanceImpl extends AbstractGovernance {
     @External
     public void initializeReserve(ReserveAttributes _reserve) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.addReserveData(_reserve);
     }
 
     @External
     public void updateBaseLTVasCollateral(Address _reserve, BigInteger _baseLtv) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.updateBaseLTVasCollateral(_reserve, _baseLtv);
     }
 
     @External
     public void updateLiquidationThreshold(Address _reserve, BigInteger _liquidationThreshold) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.updateLiquidationThreshold(_reserve, _liquidationThreshold);
     }
 
     @External
     public void updateBorrowThreshold(Address _reserve, BigInteger _borrowThreshold) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.updateBorrowThreshold(_reserve, _borrowThreshold);
     }
 
     @External
     public void updateLiquidationBonus(Address _reserve, BigInteger _liquidationBonus) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.updateLiquidationBonus(_reserve, _liquidationBonus);
     }
 
     @External
     public void updateBorrowingEnabled(Address _reserve, boolean _borrowingEnabled) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.updateBorrowingEnabled(_reserve, _borrowingEnabled);
     }
 
     @External
     public void updateUsageAsCollateralEnabled(Address _reserve, boolean _usageAsCollateralEnabled) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        LendingPoolCore lendingPoolCore = getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
         lendingPoolCore.updateUsageAsCollateralEnabled(_reserve, _usageAsCollateralEnabled);
     }
 
     @External
     public void enableRewardClaim() {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.enableRewardClaim();
     }
 
     @External
     public void disableRewardClaim() {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.disableRewardClaim();
     }
 
@@ -125,9 +151,12 @@ public class GovernanceImpl extends AbstractGovernance {
 
         int poolId = _assetConfig.poolID;
         if (poolId > 0) {
+            StakedLP stakedLP = getInstance(StakedLP.class, Contracts.STAKED_LP);
             Address asset = _assetConfig.asset;
             stakedLP.addPool(poolId, asset);
         }
+
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.configureAssetConfig(_assetConfig);
     }
 
@@ -135,8 +164,10 @@ public class GovernanceImpl extends AbstractGovernance {
     public void removePool(Address _asset) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
 
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         int poolId = rewardDistribution.getPoolIDByAsset(_asset).intValue();
         if (poolId > 0) {
+            StakedLP stakedLP = getInstance(StakedLP.class, Contracts.STAKED_LP);
             stakedLP.removePool(poolId);
         }
         rewardDistribution.removeAssetConfig(_asset);
@@ -145,18 +176,23 @@ public class GovernanceImpl extends AbstractGovernance {
     @External
     public void transferOmmToDaoFund(BigInteger _value) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.transferOmmToDaoFund(_value);
     }
 
     @External
     public void transferOmmFromDaoFund(BigInteger _value, Address _address) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
         daoFund.transferOmm(_value, _address);
     }
 
     @External
     public void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        FeeProvider feeProvider = getInstance(FeeProvider.class, Contracts.FEE_PROVIDER);
         feeProvider.transferFund(_token, _value, _to);
     }
 
@@ -317,6 +353,7 @@ public class GovernanceImpl extends AbstractGovernance {
         if (proposal == null) {
             throw GovernanceException.proposalNotFound(vote_index);
         }
+
         BigInteger start = proposal.startSnapshot.get();
         BigInteger end = proposal.endSnapshot.get();
         BigInteger now = TimeConstants.getBlockTimestamp();
@@ -324,6 +361,8 @@ public class GovernanceImpl extends AbstractGovernance {
         if ((now.compareTo(start) <= 0 || now.compareTo(end) >= 0) && !proposal.active.get()) {
             throw GovernanceException.proposalNotActive(vote_index);
         }
+        OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
+
         Address sender = Context.getCaller();
         BigInteger snapshot = proposal.voteSnapshot.get();
 
@@ -452,7 +491,7 @@ public class GovernanceImpl extends AbstractGovernance {
         if (proposal == null) {
             throw GovernanceException.proposalNotFound(_vote_index);
         }
-
+        OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
         BigInteger totalOMMStaked = ommToken.totalStakedBalanceOfAt(proposal.voteSnapshot.get());
 
         BigInteger totalForVoted = proposal.totalForVotes.getOrDefault(BigInteger.ZERO);
@@ -514,6 +553,7 @@ public class GovernanceImpl extends AbstractGovernance {
 
     @External(readonly = true)
     public BigInteger myVotingWeight(Address _address, BigInteger _timestamp) {
+        OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
         return ommToken.stakedBalanceOfAt(_address, _timestamp);
     }
 
@@ -544,6 +584,7 @@ public class GovernanceImpl extends AbstractGovernance {
 
         defineVote(name, description, voteStart, snapshot, _from, forum);
 
+        OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
         ommToken.transfer(getAddress(Contracts.DAO_FUND.getKey()), voteFee, null);
         BigInteger remainingOMMToken = _value.subtract(voteFee);
         if (remainingOMMToken.compareTo(BigInteger.ZERO) > 0) {

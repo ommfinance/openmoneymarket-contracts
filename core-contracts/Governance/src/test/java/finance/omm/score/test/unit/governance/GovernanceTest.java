@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
+import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AssetConfig;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
@@ -33,7 +34,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).updateIsActive(reserve, status);
+        doNothing().when(lendingPoolCore).updateIsActive(reserve, status);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "setReserveActiveStatus", reserve, status);
@@ -41,7 +42,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "setReserveActiveStatus", reserve, status);
-        verify(scoreSpy, times(1));
+        verify(lendingPoolCore, times(1)).updateIsActive(reserve, status);
     }
 
     @Test
@@ -51,7 +52,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).updateIsFreezed(reserve, status);
+        doNothing().when(lendingPoolCore).updateIsFreezed(reserve, status);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "setReserveFreezeStatus", reserve, status);
@@ -59,7 +60,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "setReserveFreezeStatus", reserve, status);
-        verify(scoreSpy, times(1));
+        verify(lendingPoolCore, times(1)).updateIsFreezed(reserve, status);
     }
 
     @Test
@@ -79,7 +80,9 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Object[] params = new Object[]{constants};
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).setReserveConstants(constants);
+//        doNothing().when(lendingPoolCore).setReserveConstants(constants);
+
+        doNothing().when(scoreSpy).call(Contracts.LENDING_POOL_CORE, "setReserveConstants", params);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "setReserveConstants", params);
@@ -87,7 +90,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "setReserveConstants", params);
-        verify(scoreSpy, times(1));
+        verify(scoreSpy, times(1)).call(Contracts.LENDING_POOL_CORE, "setReserveConstants", params);
     }
 
     private ReserveAttributes createReserveAttributes(int index) {
@@ -118,7 +121,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).addReserveData(reserveData);
+        doNothing().when(lendingPoolCore).addReserveData(reserveData);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "initializeReserve", reserveData);
@@ -135,7 +138,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).updateBaseLTVasCollateral(reserve, baseLtv);
+        doNothing().when(lendingPoolCore).updateBaseLTVasCollateral(reserve, baseLtv);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "updateBaseLTVasCollateral", reserve, baseLtv);
@@ -143,7 +146,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "updateBaseLTVasCollateral", reserve, baseLtv);
-        verify(scoreSpy, times(1));
+        verify(lendingPoolCore, times(1)).updateBaseLTVasCollateral(reserve, baseLtv);
     }
 
     @Test
@@ -153,7 +156,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).updateLiquidationThreshold(reserve, liquidationThreshold);
+        doNothing().when(lendingPoolCore).updateLiquidationThreshold(reserve, liquidationThreshold);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "updateLiquidationThreshold", reserve, liquidationThreshold);
@@ -161,7 +164,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "updateLiquidationThreshold", reserve, liquidationThreshold);
-        verify(scoreSpy, times(1));
+        verify(lendingPoolCore, times(1)).updateLiquidationThreshold(reserve, liquidationThreshold);
     }
 
     @Test
@@ -171,7 +174,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).updateBorrowThreshold(reserve, borrowThreshold);
+        doNothing().when(lendingPoolCore).updateBorrowThreshold(reserve, borrowThreshold);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "updateBorrowThreshold", reserve, borrowThreshold);
@@ -179,7 +182,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "updateBorrowThreshold", reserve, borrowThreshold);
-        verify(scoreSpy, times(1));
+        verify(lendingPoolCore, times(1)).updateBorrowThreshold(reserve, borrowThreshold);
     }
 
     @Test
@@ -189,7 +192,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).updateLiquidationBonus(reserve, liquidationBonus);
+        doNothing().when(lendingPoolCore).updateLiquidationBonus(reserve, liquidationBonus);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "updateLiquidationBonus", reserve, liquidationBonus);
@@ -197,7 +200,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "updateLiquidationBonus", reserve, liquidationBonus);
-        verify(scoreSpy, times(1));
+        verify(lendingPoolCore, times(1)).updateLiquidationBonus(reserve, liquidationBonus);
     }
 
     @Test
@@ -207,7 +210,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).updateBorrowingEnabled(reserve, status);
+        doNothing().when(lendingPoolCore).updateBorrowingEnabled(reserve, status);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "updateBorrowingEnabled", reserve, status);
@@ -215,7 +218,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "updateBorrowingEnabled", reserve, status);
-        verify(scoreSpy, times(1));
+        verify(lendingPoolCore, times(1)).updateBorrowingEnabled(reserve, status);
     }
 
     @Test
@@ -225,7 +228,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.lendingPoolCore).updateUsageAsCollateralEnabled(reserve, status);
+        doNothing().when(lendingPoolCore).updateUsageAsCollateralEnabled(reserve, status);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "updateUsageAsCollateralEnabled", reserve, status);
@@ -233,7 +236,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "updateUsageAsCollateralEnabled", reserve, status);
-        verify(scoreSpy, times(1));
+        verify(lendingPoolCore, times(1)).updateUsageAsCollateralEnabled(reserve, status);
     }
 
     @Test
@@ -241,7 +244,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.rewardDistribution).enableRewardClaim();
+        doNothing().when(rewardDistribution).enableRewardClaim();
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "enableRewardClaim");
@@ -249,7 +252,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "enableRewardClaim");
-        verify(scoreSpy, times(1));
+        verify(rewardDistribution, times(1)).enableRewardClaim();
     }
 
     @Test
@@ -257,7 +260,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.rewardDistribution).disableRewardClaim();
+        doNothing().when(rewardDistribution).disableRewardClaim();
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "disableRewardClaim");
@@ -265,7 +268,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "disableRewardClaim");
-        verify(scoreSpy, times(1));
+        verify(rewardDistribution, times(1)).disableRewardClaim();
     }
 
     private AssetConfig createAssetConfig(int i) {
@@ -286,8 +289,8 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.stakedLP).addPool(poolId, config.asset);
-        doNothing().when(scoreSpy.rewardDistribution).configureAssetConfig(config);
+        doNothing().when(stakedLP).addPool(poolId, config.asset);
+        doNothing().when(rewardDistribution).configureAssetConfig(config);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "addPool", config);
@@ -295,7 +298,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
 
         // owner
         score.invoke(owner, "addPool", config);
-        verify(scoreSpy, times(1));
+        verify(rewardDistribution, times(1)).configureAssetConfig(config);
     }
 
     @DisplayName("Add pool method for non LP tokens")
@@ -305,11 +308,11 @@ public class GovernanceTest extends AbstractGovernanceTest {
         AssetConfig config = createAssetConfig(poolId);
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.rewardDistribution).configureAssetConfig(config);
+        doNothing().when(rewardDistribution).configureAssetConfig(config);
 
         // owner
         score.invoke(owner, "addPool", config);
-        verify(scoreSpy, times(1));
+        verify(rewardDistribution, times(1)).configureAssetConfig(config);
     }
 
     @Test
@@ -327,8 +330,8 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doNothing().when(scoreSpy.stakedLP).addPool(2, config3.asset);
-        doNothing().when(scoreSpy.rewardDistribution).configureAssetConfig(any());
+        doNothing().when(stakedLP).addPool(2, config3.asset);
+        doNothing().when(rewardDistribution).configureAssetConfig(any());
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "addPools", params);
@@ -349,9 +352,9 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
 
         // mock class client and call the method
-        doReturn(poolId).when(scoreSpy.rewardDistribution).getPoolIDByAsset(asset);
-        doNothing().when(scoreSpy.stakedLP).removePool(poolId.intValue());
-        doNothing().when(scoreSpy.rewardDistribution).removeAssetConfig(asset);
+        doReturn(poolId).when(rewardDistribution).getPoolIDByAsset(asset);
+        doNothing().when(stakedLP).removePool(poolId.intValue());
+        doNothing().when(rewardDistribution).removeAssetConfig(asset);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "removePool", asset);
@@ -365,8 +368,8 @@ public class GovernanceTest extends AbstractGovernanceTest {
          */
         poolId = BigInteger.ZERO;
 
-        doReturn(poolId).when(scoreSpy.rewardDistribution).getPoolIDByAsset(asset);
-        doNothing().when(scoreSpy.rewardDistribution).removeAssetConfig(asset);
+        doReturn(poolId).when(rewardDistribution).getPoolIDByAsset(asset);
+        doNothing().when(rewardDistribution).removeAssetConfig(asset);
 
         // not owner
         notOwnerCall = () -> score.invoke(notOwner, "removePool", asset);
@@ -382,7 +385,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
         BigInteger value = ICX;
 
-        doNothing().when(scoreSpy.rewardDistribution).transferOmmToDaoFund(value);
+        doNothing().when(rewardDistribution).transferOmmToDaoFund(value);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "transferOmmToDaoFund", value);
@@ -398,7 +401,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Address randomAddr = sm.createAccount().getAddress();
         BigInteger value = ICX;
 
-        doNothing().when(scoreSpy.daoFund).transferOmm(value, randomAddr);
+        doNothing().when(daoFund).transferOmm(value, randomAddr);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "transferOmmFromDaoFund", value, randomAddr);
@@ -415,7 +418,7 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Address randomAddr = sm.createAccount().getAddress();
         BigInteger value = ICX;
 
-        doNothing().when(scoreSpy.feeProvider).transferFund(token, value, randomAddr);
+        doNothing().when(feeProvider).transferFund(token, value, randomAddr);
 
         // not owner
         Executable notOwnerCall = () -> score.invoke(notOwner, "transferFundFromFeeProvider", token, value, randomAddr);

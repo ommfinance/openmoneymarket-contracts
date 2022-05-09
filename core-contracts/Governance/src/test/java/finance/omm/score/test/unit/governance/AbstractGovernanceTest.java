@@ -2,6 +2,7 @@ package finance.omm.score.test.unit.governance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
 import com.iconloop.score.test.Account;
@@ -56,13 +57,13 @@ public class AbstractGovernanceTest extends TestBase {
         put(Contracts.DAO_FUND, Account.newScoreAccount(103));
         put(Contracts.WORKER_TOKEN, Account.newScoreAccount(104));
         put(Contracts.OMM_TOKEN, Account.newScoreAccount(105));
-        put(Contracts.BOOSTED_OMM, Account.newScoreAccount(106));
+        put(Contracts.LENDING_POOL_CORE, Account.newScoreAccount(106));
     }};
 
     protected DAOFund daoFund;
     protected RewardDistributionImpl rewardDistribution;
     protected LendingPoolCore lendingPoolCore;
-    protected StakedLP stakedLp;
+    protected StakedLP stakedLP;
     protected FeeProvider feeProvider;
     protected OMMToken ommToken;
 
@@ -99,16 +100,16 @@ public class AbstractGovernanceTest extends TestBase {
         daoFund = spy(DAOFund.class);
         rewardDistribution = spy(RewardDistributionImpl.class);
         lendingPoolCore = spy(LendingPoolCore.class);
-        stakedLp = spy(StakedLP.class);
+        stakedLP = spy(StakedLP.class);
         feeProvider = spy(FeeProvider.class);
         ommToken = spy(OMMToken.class);
 
-        scoreSpy.daoFund = daoFund;
-        scoreSpy.rewardDistribution = rewardDistribution;
-        scoreSpy.lendingPoolCore = lendingPoolCore;
-        scoreSpy.stakedLP = stakedLp;
-        scoreSpy.feeProvider = feeProvider;
-        scoreSpy.ommToken = ommToken;
+        doReturn(daoFund).when(scoreSpy).getInstance(DAOFund.class, Contracts.DAO_FUND);
+        doReturn(rewardDistribution).when(scoreSpy).getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
+        doReturn(lendingPoolCore).when(scoreSpy).getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
+        doReturn(stakedLP).when(scoreSpy).getInstance(StakedLP.class, Contracts.STAKED_LP);
+        doReturn(feeProvider).when(scoreSpy).getInstance(FeeProvider.class, Contracts.FEE_PROVIDER);
+        doReturn(ommToken).when(scoreSpy).getInstance(OMMToken.class, Contracts.OMM_TOKEN);
     }
 
 
@@ -140,7 +141,9 @@ public class AbstractGovernanceTest extends TestBase {
 
     @Test
     public void testTransfer() {
-        doNothing().when(scoreSpy.daoFund).transferOmm(TestBase.ICX, addresses[0]);
+
+        doNothing().when(daoFund).transferOmm(TestBase.ICX, addresses[0]);
+
         score.invoke(owner, "transferOmmFromDaoFund", TestBase.ICX, addresses[0]);
     }
 }
