@@ -1,0 +1,31 @@
+rootProject.name = 'openmoneymarket-contracts'
+
+include(":VotingEscrowToken")
+findProject(":VotingEscrowToken").projectDir = file("token-contracts/VotingEscrowToken")
+
+include(":RewardWeightController")
+findProject(":RewardWeightController").projectDir = file("core-contracts/RewardWeightController")
+
+include(":RewardDistribution")
+findProject(":RewardDistribution").projectDir = file("core-contracts/RewardDistribution")
+
+include(":AddressManager")
+findProject(":AddressManager").projectDir = file("core-contracts/AddressManager")
+
+include(':AddressProvider')
+findProject(":AddressProvider").projectDir = file("libs/AddressProvider")
+
+include(':OMMStruct')
+findProject(":OMMStruct").projectDir = file("libs/OMMStruct")
+
+include(':ScoreUtils')
+findProject(":ScoreUtils").projectDir = file("libs/ScoreUtils")
+
+include(':TestUtils')
+findProject(":TestUtils").projectDir = file("libs/TestUtils")
+
+include(':Score')
+findProject(":Score").projectDir = file("libs/Score")
+
+include('DaoFund')
+findProject(":DaoFund").projectDir = file("core-contracts/DaoFund")

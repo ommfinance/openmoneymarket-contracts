@@ -1,0 +1,42 @@
+apply plugin: 'java-library'
+
+optimizedJar.enabled = false
+
+def loadAddresses = {
+    def jsonFile = project.file("$rootDir/scores/contracts-${env}.json")
+    def json = new groovy.json.JsonSlurper().parseText(jsonFile.text)
+    ext['contracts'] = json
+}
+
+task init() {
+//    loadAddresses()
+//    contracts.each { contract, config ->
+//        config.each { key, value ->
+//            systemProperty "$contract.$key", value
+//        }
+//    }
+
+}
+
+
+dependencies {
+    implementation "foundation.icon:icon-sdk:$iconsdkVersion"
+    implementation "foundation.icon:javaee-score-client:$scoreClientVersion"
+    implementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    implementation('com.fasterxml.jackson.core:jackson-databind:2.13.2')
+    implementation("com.github.javafaker:javafaker:1.0.2")
+    implementation "foundation.icon:javaee-unittest:$javaeeUnittestVersion"
+    implementation 'org.mockito:mockito-core:4.3.1'
+
+}
+
+repositories {
+    mavenCentral()
+};
+
+
+
+
+
+
+
