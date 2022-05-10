@@ -21,11 +21,12 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-//            to = 'cxc5ceb52f91e5862f347d72673142ff6fb06250f2'
+            to = rootProject.findProperty("contracts.address-manager")
             nid = 0x53
         }
         mainnet {
             uri = 'https://ctz.solidwallet.io/api/v3'
+            to = "cx6a66130200b4f08c65ef394469404378ab52e5b6"
             nid = 0x1
         }
     }

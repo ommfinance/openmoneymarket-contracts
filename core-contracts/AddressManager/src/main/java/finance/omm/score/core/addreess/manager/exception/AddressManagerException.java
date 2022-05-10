@@ -12,9 +12,9 @@ public class AddressManagerException extends OMMException.AddressManager {
         return new AddressManagerException(Code.NotOwner, "require owner access");
     }
 
-//    public static AddressManagerException unknown(String msg) {
-//        return new AddressManagerException(Code.Unknown, msg);
-//    }
+    public static AddressManagerException unknown(String msg) {
+        return new AddressManagerException(Code.Unknown, msg);
+    }
 
     public enum Code implements OMMException.Coded {
         Unknown(0), NotOwner(1);
