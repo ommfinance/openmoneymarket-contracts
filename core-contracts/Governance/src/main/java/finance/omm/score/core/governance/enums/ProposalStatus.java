@@ -8,7 +8,7 @@ public enum ProposalStatus {
     PENDING("Pending"),
     ACTIVE("Active"),
     CANCELLED("Cancelled"),
-    DEFEATED("Pending"),
+    DEFEATED("Defeated"),
     SUCCEEDED("Succeeded"),
     NO_QUORUM("No Quorum"),
     EXECUTED("Executed"),
