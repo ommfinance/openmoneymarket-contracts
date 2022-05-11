@@ -36,9 +36,6 @@ findProject(":WorkerToken").projectDir = file("token-contracts/WorkerToken")
 include(':Score')
 findProject(":Score").projectDir = file("libs/Score")
 
-
-
-
 include('DToken')
 findProject(":DToken").projectDir = file("token-contracts/DToken")
 
