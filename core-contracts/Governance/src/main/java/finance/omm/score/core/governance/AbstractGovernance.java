@@ -13,7 +13,6 @@ import finance.omm.libs.address.Authorization;
 import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.governance.db.ProposalDB;
 import finance.omm.score.core.governance.exception.GovernanceException;
-import finance.omm.score.core.governance.interfaces.GovernanceEventLogs;
 import finance.omm.score.core.governance.interfaces.RewardDistributionImplClient;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.constants.TimeConstants.Timestamp;
@@ -22,8 +21,9 @@ import java.math.BigInteger;
 import score.Address;
 import score.Context;
 import score.VarDB;
+import score.annotation.EventLog;
 
-public abstract class AbstractGovernance extends AddressProvider implements Governance, GovernanceEventLogs,
+public abstract class AbstractGovernance extends AddressProvider implements Governance,
         Authorization<GovernanceException> {
 
     public static final String TAG = "Governance Manager";
@@ -42,6 +42,16 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
         super(addressProvider, _update);
 
     }
+
+    @EventLog(indexed = 2)
+    public void ProposalCreated(BigInteger vote_index, String name, Address proposer) {}
+
+    @EventLog(indexed = 2)
+    public void VoteCast(String vote_name, boolean vote, Address voter, BigInteger stake, BigInteger total_for,
+            BigInteger total_against) {}
+
+    @EventLog(indexed = 2)
+    public void ActionExecuted(BigInteger vote_index, String vote_status) {}
 
 
     protected void refundVoteDefinitionFee(ProposalDB proposal) {
