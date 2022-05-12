@@ -459,13 +459,6 @@ public class GovernanceImpl extends AbstractGovernance {
         return proposal;
     }
 
-    private void refundVoteDefinitionFee(ProposalDB proposal) {
-        if (!proposal.feeRefunded.getOrDefault(Boolean.FALSE)) {
-            proposal.feeRefunded.set(Boolean.TRUE);
-            transferOmmFromDaoFund(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get());
-        }
-    }
-
     @External
     public void execute_proposal(int vote_index) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
