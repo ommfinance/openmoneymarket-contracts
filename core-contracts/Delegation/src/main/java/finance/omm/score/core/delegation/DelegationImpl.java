@@ -53,17 +53,11 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     private final ArrayDB<Address> _contributors = Context.newArrayDB(CONTRIBUTORS, Address.class);
     public final VarDB<BigInteger> _voteThreshold = Context.newVarDB(VOTE_THRESHOLD, BigInteger.class);
 
-    public DelegationImpl(Address addressProvider, @Optional boolean update) {
-        super(addressProvider, update);
-        if (update) {
-            onUpdate();
-            return;
+    public DelegationImpl(Address addressProvider) {
+        super(addressProvider, false);
+        if (_voteThreshold.get() == null) {
+            _voteThreshold.set(ICX.divide(BigInteger.valueOf(1000)));
         }
-        _voteThreshold.set(ICX.divide(BigInteger.valueOf(1000)));
-    }
-
-    public void onUpdate() {
-        Context.println(TAG + " : on update event");
     }
 
     @External(readonly = true)
@@ -131,7 +125,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     @External
     public void clearPrevious(Address _user) {
-        if (_user != Context.getCaller()) {
+        if (!_user.equals(Context.getCaller())) {
             throw DelegationException.unknown(TAG +
                     " :You are not authorized to clear others delegation preference");
         }
@@ -141,18 +135,16 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     @External(readonly = true)
     public boolean userDefaultDelegation(Address _user) {
-        PrepDelegations[] userDetails = getUserDelegationDetails(_user);
-        PrepDelegations[] contributors = distributeVoteToContributors();
 
-        if (userDetails.length != contributors.length) {
+        PrepDelegations[] userDetails = getUserDelegationDetails(_user);
+        List<PrepDelegations> contributors = List.of(distributeVoteToContributors());
+
+        if (userDetails.length != contributors.size()) {
             return false;
         }
 
-        for (int i = 0; i < userDetails.length; i++) {
-            PrepDelegations contributor = contributors[i];
-            PrepDelegations userDetail = userDetails[i];
-            if (!contributor._address.equals(userDetail._address) &&
-                    !contributor._votes_in_per.equals(userDetail._votes_in_per)) {
+        for (PrepDelegations prepDelegation : userDetails) {
+            if (!contributors.contains(prepDelegation)) {
                 return false;
             }
         }
@@ -162,7 +154,8 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     private void resetUser(Address _user) {
         Address ommToken = getAddress(Contracts.OMM_TOKEN.getKey());
-        if (Context.getCaller().equals(_user) || Context.getCaller().equals(ommToken)) {
+        Address caller = Context.getCaller();
+        if (caller.equals(_user) || caller.equals(ommToken)) {
             BigInteger prepVotes = BigInteger.ZERO;
             BigInteger userVote = _userVotes.getOrDefault(_user, BigInteger.ZERO);
 
@@ -180,14 +173,14 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                     BigInteger newPrepVote = currentPrepVote.subtract(prepVote);
                     _prepVotes.set(currentPrep, newPrepVote);
                 }
-                userPrep.set(i, ZERO_SCORE_ADDRESS);
-                percentageDelegationsOfUser.set(i, BigInteger.ZERO);
+                userPrep.set(i, null);
+                percentageDelegationsOfUser.set(i, null);
                 prepVotes = prepVotes.add(prepVote);
             }
 
             BigInteger beforeTotalVotes = _totalVotes.getOrDefault(BigInteger.ZERO);
             _totalVotes.set(beforeTotalVotes.subtract(prepVotes));
-            _userVotes.set(_user, BigInteger.ZERO);
+            _userVotes.set(_user, null);
         }
     }
 
@@ -214,10 +207,11 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user) {
         Address ommToken = getAddress(Contracts.OMM_TOKEN.getKey());
         Address currentUser;
-        if ((_user != null) && (Context.getCaller().equals(ommToken))) {
+        Address caller = Context.getCaller();
+        if (_user != null && caller.equals(ommToken)) {
             currentUser = _user;
         } else {
-            currentUser = Context.getCaller();
+            currentUser = caller;
         }
 
         PrepDelegations[] userDelegations;
@@ -303,8 +297,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
         for (int i = 0; i < contributorSize; i++) {
             Address prep = _contributors.get(i);
-            PrepDelegations prepDelegation = new PrepDelegations(prep, prepPercentage);
-            userDetails[i] = prepDelegation;
+            userDetails[i] = new PrepDelegations(prep, prepPercentage);
             totalPercentage = totalPercentage.add(prepPercentage);
         }
 
