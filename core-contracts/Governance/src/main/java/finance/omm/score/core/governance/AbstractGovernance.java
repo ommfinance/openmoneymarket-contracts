@@ -43,15 +43,6 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
 
     }
 
-    protected void refundVoteDefinitionFee(ProposalDB proposal) {
-        if (!proposal.feeRefunded.getOrDefault(Boolean.FALSE)) {
-            proposal.feeRefunded.set(Boolean.TRUE);
-
-            DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
-            daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get());
-        }
-    }
-
     /**
      * Defines a new vote and which actions are to be executed if it is successful.
      *

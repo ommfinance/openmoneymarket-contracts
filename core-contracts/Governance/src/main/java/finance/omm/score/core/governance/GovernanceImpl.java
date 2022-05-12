@@ -27,6 +27,7 @@ import java.util.Map;
 import score.Address;
 import score.Context;
 import score.annotation.External;
+import score.annotation.Optional;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
@@ -229,7 +230,6 @@ public class GovernanceImpl extends AbstractGovernance {
     @External
     public void setQuorum(BigInteger quorum) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        //TODO > 0 and < 1 or >=0 and <=1
         if (!isValidPercentage(quorum)) {
             throw GovernanceException.unknown("Quorum must be between 0 and " + ICX + ".");
         }
@@ -321,7 +321,13 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     @External(readonly = true)
-    public List<Map<String, ?>> getProposals(int batch_size, int offset) {
+    public List<Map<String, ?>> getProposals(@Optional int batch_size, @Optional int offset) {
+        if (batch_size == 0) {
+            batch_size = 20;
+        }
+        if (offset == 0) {
+            offset = 1;
+        }
         List<Map<String, ?>> proposals = new ArrayList<>();
         int start = Math.max(1, offset);
         int end = Math.min(batch_size + start, getProposalCount());
@@ -358,7 +364,7 @@ public class GovernanceImpl extends AbstractGovernance {
         BigInteger end = proposal.endSnapshot.get();
         BigInteger now = TimeConstants.getBlockTimestamp();
 
-        if ((now.compareTo(start) <= 0 || now.compareTo(end) >= 0) && !proposal.active.get()) {
+        if (now.compareTo(start) < 0 || now.compareTo(end) > 0 || !proposal.active.get()) {
             throw GovernanceException.proposalNotActive(vote_index);
         }
         OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
@@ -407,7 +413,7 @@ public class GovernanceImpl extends AbstractGovernance {
 
             if (isFirstTimeVote) {
                 proposal.againstVotersCount.set(againstVotersCount.add(BigInteger.ONE));
-            } else if (!priorAgainstVote.equals(BigInteger.ZERO)) {
+            } else if (!priorForVote.equals(BigInteger.ZERO)) {
                 proposal.againstVotersCount.set(againstVotersCount.add(BigInteger.ONE));
                 proposal.forVotersCount.set(forVotersCount.subtract(BigInteger.ONE));
             }
@@ -434,7 +440,7 @@ public class GovernanceImpl extends AbstractGovernance {
 
         BigInteger end = proposal.endSnapshot.get();
 
-        if (TimeConstants.getBlockTimestamp().compareTo(end) < 0) {
+        if (TimeConstants.getBlockTimestamp().compareTo(end) <= 0) {
             throw GovernanceException.unknown("Voting period has not ended");
         }
 
@@ -451,6 +457,13 @@ public class GovernanceImpl extends AbstractGovernance {
         }
         proposal.active.set(Boolean.FALSE);
         return proposal;
+    }
+
+    private void refundVoteDefinitionFee(ProposalDB proposal) {
+        if (!proposal.feeRefunded.getOrDefault(Boolean.FALSE)) {
+            proposal.feeRefunded.set(Boolean.TRUE);
+            transferOmmFromDaoFund(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get());
+        }
     }
 
     @External
@@ -489,7 +502,7 @@ public class GovernanceImpl extends AbstractGovernance {
 
         ProposalDB proposal = ProposalDB.getByVoteIndex(_vote_index);
         if (proposal == null) {
-            throw GovernanceException.proposalNotFound(_vote_index);
+            return Map.of();
         }
         OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
         BigInteger totalOMMStaked = ommToken.totalStakedBalanceOfAt(proposal.voteSnapshot.get());
@@ -543,7 +556,7 @@ public class GovernanceImpl extends AbstractGovernance {
     public Map<String, ?> getVotesOfUser(int vote_index, Address user) {
         ProposalDB proposal = ProposalDB.getByVoteIndex(vote_index);
         if (proposal == null) {
-            throw GovernanceException.proposalNotFound(vote_index);
+            return Map.of("for", BigInteger.ZERO,"against",BigInteger.ZERO);
         }
         return Map.of(
                 "for", proposal.forVotesOfUser.getOrDefault(user, BigInteger.ZERO),
@@ -552,9 +565,9 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     @External(readonly = true)
-    public BigInteger myVotingWeight(Address _address, BigInteger _timestamp) {
+    public BigInteger myVotingWeight(Address _address, BigInteger _day) {
         OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
-        return ommToken.stakedBalanceOfAt(_address, _timestamp);
+        return ommToken.stakedBalanceOfAt(_address, _day);
     }
 
     @External
