@@ -89,7 +89,7 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             throw GovernanceException.invalidVoteParams("Vote cannot start at or before the current timestamp.");
         }
 
-        if (snapshot.compareTo(currentTimestamp) < 0 || voteStart.compareTo(snapshot) < 0) {
+        if (currentTimestamp.compareTo(snapshot) > 0 || snapshot.compareTo(voteStart) >= 0) {
             throw GovernanceException.invalidVoteParams(
                     "The reference snapshot must be in the range: [current_time (" + currentTimestamp
                             + "), start_time  (" + voteStart + ")].");
