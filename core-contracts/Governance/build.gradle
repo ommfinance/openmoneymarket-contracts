@@ -15,7 +15,7 @@ optimizedJar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-    enableDebug = true
+    enableDebug = false
 }
 
 deployJar {
