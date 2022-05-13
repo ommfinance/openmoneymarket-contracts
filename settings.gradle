@@ -12,6 +12,9 @@ findProject(":RewardDistribution").projectDir = file("core-contracts/RewardDistr
 include(":Delegation")
 findProject(":Delegation").projectDir = file("core-contracts/Delegation")
 
+include(":AddressManager")
+findProject(":AddressManager").projectDir = file("core-contracts/AddressManager")
+
 include(':AddressProvider')
 findProject(":AddressProvider").projectDir = file("libs/AddressProvider")
 

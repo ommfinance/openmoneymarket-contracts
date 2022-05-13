@@ -1,0 +1,69 @@
+version = '0.0.1'
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.core.addreess.manager.AddressManagerImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
+
+    testImplementation project(':TestUtils')
+}
+
+deployJar {
+    endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.address-manager")
+            nid = 0x53
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            to = "cx6a66130200b4f08c65ef394469404378ab52e5b6"
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        systemProperty 'keyStore', scoreTest.keystoreName
+        systemProperty 'keyPassword', scoreTest.keystorePass
+
+        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+
+//        systemProperty 'address', "cxecae13f554df1495b9104b44a43613df009fb4f0"
+//        systemProperty 'isUpdate', "false"
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+
+
+
+    }
+
+}
