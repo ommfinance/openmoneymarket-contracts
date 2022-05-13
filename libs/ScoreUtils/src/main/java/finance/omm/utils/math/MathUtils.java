@@ -66,6 +66,14 @@ public class MathUtils {
         return halfSecond.add(first.multiply(ICX)).divide(second);
     }
 
+    /**
+     * If a=8*EXA and b=3*EXA ,it  returns 2666666666666666666
+     * If a=100*EXA and b=6*EXA , it returns 16666666666666666666
+     */
+    public static BigInteger exaDivideFloor(BigInteger first, BigInteger second) {
+        return first.multiply(ICX).divide(second);
+    }
+
     public static BigInteger convertToExa(BigInteger _amount, BigInteger _decimals) {
         Integer decimal = _decimals.intValue();
         if (decimal.equals(18)) {
