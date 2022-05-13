@@ -94,8 +94,8 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             throw DelegationException.unknown(TAG + ": " + _prep + " is not in contributor list");
         }
 
-        int size = _contributors.size();
         Address topPrep = _contributors.pop();
+        int size = _contributors.size();
         if (!topPrep.equals(_prep)) {
             for (int i = 0; i < size; i++) {
                 if (_contributors.get(i).equals(_prep)) {
