@@ -32,3 +32,7 @@ findProject(":Score").projectDir = file("libs/Score")
 
 include('DaoFund')
 findProject(":DaoFund").projectDir = file("core-contracts/DaoFund")
+
+include(":Governance")
+findProject(":Governance").projectDir = file("core-contracts/Governance")
+

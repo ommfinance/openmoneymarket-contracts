@@ -14,7 +14,8 @@ public class OMMException extends UserRevertException {
         RewardDistribution(10),
         bOMMException(20),
         DelegationException(30),
-        AddressManager(50),
+        AddressManager(35),
+        Governance(40),
         RESERVED(80);
 
         int offset;
@@ -168,6 +169,17 @@ public class OMMException extends UserRevertException {
         }
 
         public DelegationException(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class Governance extends OMMException {
+
+        public Governance(int code, String message) {
+            super(Type.Governance, code, message);
+        }
+
+        public Governance(Coded code, String message) {
             this(code.code(), message);
         }
     }
