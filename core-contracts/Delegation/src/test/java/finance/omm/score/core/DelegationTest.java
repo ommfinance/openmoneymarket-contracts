@@ -45,7 +45,7 @@ public class DelegationTest extends TestBase {
 
     @BeforeAll
     public static void setup() throws Exception {
-        delegationScore = sm.deploy(owner, DelegationImpl.class, MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), false);
+        delegationScore = sm.deploy(owner, DelegationImpl.class, MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress());
         DelegationImpl t = (DelegationImpl) delegationScore.getInstance();
         scoreSpy = spy(t);
         delegationScore.setInstance(scoreSpy);
