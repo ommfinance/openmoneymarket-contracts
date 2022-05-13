@@ -1,25 +1,23 @@
 package finance.omm.score;
 
-import finance.omm.core.score.interfaces.DaoFund;
+import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.utils.exceptions.OMMException;
-
 import java.math.BigInteger;
-
 import score.Address;
 import score.Context;
-import score.UserRevertedException;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public class DaoFundImpl extends AddressProvider implements DaoFund{
+public class DaoFundImpl extends AddressProvider implements DAOFund {
 
     public static final String TAG = "Dao Fund Manager";
+
     /**
-     * _addressProvider: contract address of the provider _update: allow to
-     * mimic on update event call, default to false
+     * _addressProvider: contract address of the provider _update: allow to mimic on update event call, default to
+     * false
      */
     public DaoFundImpl(Address _addressProvider, @Optional boolean _update) {
         super(_addressProvider, _update);
