@@ -1,4 +1,4 @@
-version '0.1'
+version '0.0.1'
 
 optimizedJar {
     mainClassName = 'finance.omm.score.core.delegation.DelegationImpl'
@@ -26,13 +26,14 @@ deployJar {
         }
         mainnet {
             uri = 'https://ctz.solidwallet.io/api/v3'
+            to = 'cx841f29ec6ce98b527d49a275e87d427627f1afe5'
             nid = 0x1
         }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('addressProvider', rootProject.findProperty("contracts.address-provider"))
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
     }
 }
 

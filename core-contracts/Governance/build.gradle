@@ -27,6 +27,7 @@ deployJar {
         }
         mainnet {
             uri = 'https://ctz.solidwallet.io/api/v3'
+            to = 'cx8190de91c8831f382dcabdbc87968448380c4838'
             nid = 0x1
         }
     }
