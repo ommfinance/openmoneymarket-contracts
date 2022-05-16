@@ -1,4 +1,5 @@
 version = '0.0.1'
+apply plugin: 'jacoco'
 
 dependencies {
     implementation project(':AddressProvider')
@@ -7,6 +8,7 @@ dependencies {
     implementation project(':OMMStruct')
     testImplementation project(':TestUtils')
     testImplementation 'com.github.sink772:javaee-tokens:0.6.1'
+    testImplementation 'org.mockito:mockito-inline:4.3.1'
 }
 
 optimizedJar {
@@ -39,8 +41,41 @@ deployJar {
     }
 }
 
-tasks.named('test') {
-    // Use JUnit Platform for unit tests.
+test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
 
+
+configurations {
+    itestImplementation.extendsFrom implementation
+    itestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        systemProperty 'keyStore', scoreTest.keystoreName
+        systemProperty 'keyPassword', scoreTest.keystorePass
+
+        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+
+        systemProperty '_addressProvider', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
+        systemProperty '_update', "true"
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+    }
+
+}

@@ -3,6 +3,7 @@ package finance.omm.score.tokens;
 import java.math.BigInteger;
 import java.util.Map;
 
+import finance.omm.core.score.interfaces.OToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
@@ -22,8 +23,9 @@ import static finance.omm.utils.math.MathUtils.*;
 /**
 Implementation of IRC2
 */
-public class OTokenImpl extends AddressProvider {
+public class OTokenImpl extends AddressProvider implements OToken {
 
+    public static final String TAG = "Omm oToken";
     private static final String NAME = "token_name";
     private static final String SYMBOL = "token_symbol";
     private static final String DECIMALS = "decimals";
@@ -162,13 +164,14 @@ public class OTokenImpl extends AddressProvider {
             return this.totalSupply.getOrDefault(ZERO);
         } else {
             BigInteger actualDecimals = this.decimals.getOrDefault(ZERO);
+            BigInteger normalizedDebt = Context.call(BigInteger.class,
+                    lendingPoolCoreAddress,
+                    "getNormalizedDebt",
+                    reserveAddress);
             BigInteger newBalance = exaDivide(
                     exaMultiply(
-                            convertToExa(principalTotalSupply, actualDecimals),
-                            Context.call(BigInteger.class,
-                                    lendingPoolCoreAddress,
-                                    "getNormalizedDebt",
-                                    reserveAddress)
+                            convertToExa(principalTotalSupply, actualDecimals), 
+                            normalizedDebt
                             ),
                     borrowIndex);
             return convertExaToOther(newBalance, actualDecimals.intValue());
@@ -259,7 +262,7 @@ public class OTokenImpl extends AddressProvider {
     * factor below 1
     * */
     @External(readonly = true)
-    public Boolean isTransferAllowed(Address _user, BigInteger _amount) {
+    public boolean isTransferAllowed(Address _user, BigInteger _amount) {
         Address lendingPoolDataProviderAddress = this._addresses.get(Contracts.LENDING_POOL_DATA_PROVIDER.getKey());
         Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
 
@@ -271,7 +274,7 @@ public class OTokenImpl extends AddressProvider {
             Context.revert(Contracts.RESERVE.getKey() + " is not configured");
         }
 
-        return Context.call(Boolean.class, lendingPoolDataProviderAddress, "balanceDecreaseAllowed", reserveAddress, _user, _amount);
+        return Context.call(boolean.class, lendingPoolDataProviderAddress, "balanceDecreaseAllowed", reserveAddress, _user, _amount);
     }
 
     @External(readonly = true)
@@ -453,8 +456,9 @@ public class OTokenImpl extends AddressProvider {
             Context.revert(TAG +": Transferring value:" + value +" cannot be less than 0.");
         }
 
-        if (this.balances.get(from).compareTo(value) < 0) {
-            Context.revert(TAG +" : Token transfer error:Insufficient balance: " + this.balances.get(from) );
+        BigInteger balanceFrom = this.balances.getOrDefault(from, ZERO);
+        if (balanceFrom.compareTo(value) < 0) {
+            Context.revert(TAG +" : Token transfer error:Insufficient balance: " + balanceFrom );
         }
 
         if (! this.isTransferAllowed( Context.getCaller(), value)) {
@@ -462,8 +466,8 @@ public class OTokenImpl extends AddressProvider {
         }
 
         Map<String, BigInteger> previousBalances = this.executeTransfer(from, to, value);
-        this.balances.set(from, this.balances.get(from).subtract(value) );
-        this.balances.set(to, this.balances.get(to).add(value) );
+        this.balances.set(from, balanceFrom.subtract(value) );
+        this.balances.set(to, this.balances.getOrDefault(to, ZERO).add(value) );
         this.callRewards(previousBalances.get("fromPreviousPrincipalBalance"),
                 previousBalances.get("toPreviousPrincipalBalance"), previousBalances.get("beforeTotalSupply"),
                 from,
@@ -495,7 +499,7 @@ public class OTokenImpl extends AddressProvider {
         }
 
         this.totalSupply.set(this.totalSupply.get().add(amount) );
-        this.balances.set(account, this.balances.get(account).add(amount));
+        this.balances.set(account, this.balances.getOrDefault(account, ZERO).add(amount));
 
         // Emits an event log Mint
         this.Transfer(AddressConstant.ZERO_ADDRESS, account, amount, "mint".getBytes());
@@ -508,7 +512,7 @@ public class OTokenImpl extends AddressProvider {
     @param account: The account at which token is to be destroyed.
     @param amount: The `amount` of tokens of `account` to be destroyed.
     */
-    public void burn(Address account, BigInteger amount) {
+    protected void burn(Address account, BigInteger amount) {
         if (amount.equals(ZERO)) {
             return;
         }
@@ -517,7 +521,7 @@ public class OTokenImpl extends AddressProvider {
             Context.revert( TAG + ": Invalid value: "+ amount + " to burn");
         }
         BigInteger actualTotalSupply = this.totalSupply.get();
-        BigInteger userBalance = this.balances.get(account);
+        BigInteger userBalance = this.balances.getOrDefault(account, ZERO);
         if (amount.compareTo(actualTotalSupply) > 0) {
             Context.revert( TAG + ": " + amount+ " is greater than total supply :" +actualTotalSupply );
         }
@@ -526,7 +530,7 @@ public class OTokenImpl extends AddressProvider {
         }
 
         this.totalSupply.set(actualTotalSupply.subtract(amount));
-        this.balances.set(account, this.balances.get(account).subtract(amount));
+        this.balances.set(account, this.balances.getOrDefault(account, ZERO).subtract(amount));
 
         // Emits an event log Burn
         this.Transfer(account, AddressConstant.ZERO_ADDRESS, amount, "burn".getBytes());
