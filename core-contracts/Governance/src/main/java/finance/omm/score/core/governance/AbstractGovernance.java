@@ -1,13 +1,6 @@
 package finance.omm.score.core.governance;
 
-import finance.omm.core.score.interfaces.DAOFund;
-import finance.omm.core.score.interfaces.DAOFundClient;
-import finance.omm.core.score.interfaces.FeeProviderClient;
-import finance.omm.core.score.interfaces.Governance;
-import finance.omm.core.score.interfaces.LendingPoolCoreClient;
-import finance.omm.core.score.interfaces.OMMToken;
-import finance.omm.core.score.interfaces.OMMTokenClient;
-import finance.omm.core.score.interfaces.StakedLPClient;
+import finance.omm.core.score.interfaces.*;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Authorization;
 import finance.omm.libs.address.Contracts;
@@ -32,7 +25,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     public static final BigInteger MAX_ACTIONS = BigInteger.valueOf(5L);
 
     public final VarDB<BigInteger> voteDuration = Context.newVarDB("vote_duration", BigInteger.class);
-    public final VarDB<BigInteger> ommVoteDefinitionCriterion = Context.newVarDB("min_omm", BigInteger.class);
+    //public final VarDB<BigInteger> ommVoteDefinitionCriterion = Context.newVarDB("min_omm", BigInteger.class);
+    public final VarDB<BigInteger> boostedOmmVoteDefinitionCriterion = Context.newVarDB("min_boosted_omm", BigInteger.class);
     public final VarDB<BigInteger> voteDefinitionFee = Context.newVarDB("definition_fee", BigInteger.class);
     public final VarDB<BigInteger> quorum = Context.newVarDB("quorum", BigInteger.class);
 
@@ -69,46 +63,39 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
      * @param name
      * @param description
      * @param voteStart
-     * @param snapshot
      * @param proposer
      * @param forum
      */
-    protected void defineVote(String name, String description, BigInteger voteStart, BigInteger snapshot,
-            Address proposer, String forum) {
+    protected void defineVote(String name, String description, BigInteger voteStart, Address proposer, String forum) {
         if (description.length() > 500) {
             throw GovernanceException.invalidVoteParams("Description must be less than or equal to 500 characters.");
         }
+        BigInteger snapshot = BigInteger.valueOf(Context.getBlockHeight()); // self.block_height
         BigInteger currentTimestamp = TimeConstants.getBlockTimestamp();
 
         TimeConstants.checkIsValidTimestamp(voteStart, Timestamp.MICRO_SECONDS,
                 GovernanceException.invalidVoteParams("vote_start timestamp should be in microseconds"));
-        TimeConstants.checkIsValidTimestamp(snapshot, Timestamp.MICRO_SECONDS,
-                GovernanceException.invalidVoteParams("snapshot start timestamp should be in microseconds"));
 
-        if (voteStart.compareTo(currentTimestamp) <= 0) {
-            throw GovernanceException.invalidVoteParams("Vote cannot start at or before the current timestamp.");
+        if (voteStart.compareTo(currentTimestamp) < 0) {
+            throw GovernanceException.invalidVoteParams("Vote cannot start before the current timestamp");
         }
 
-        if (currentTimestamp.compareTo(snapshot) > 0 || snapshot.compareTo(voteStart) >= 0) {
-            throw GovernanceException.invalidVoteParams(
-                    "The reference snapshot must be in the range: [current_time (" + currentTimestamp
-                            + "), start_time  (" + voteStart + ")].");
-        }
 
         int voteIndex = ProposalDB.getProposalId(name);
         if (voteIndex > 0) {
             throw GovernanceException.invalidVoteParams("Proposal name (" + name + ") has already been used.");
         }
 
-        OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
 
-        BigInteger ommTotalSupply = ommToken.totalSupply();
-        BigInteger userStakedBalance = ommToken.stakedBalanceOfAt(proposer, snapshot);
+        BoostedToken boostedToken = getInstance(BoostedToken.class,Contracts.BOOSTED_OMM);
+        BigInteger userBommBalance = boostedToken.balanceOfAt(proposer,snapshot);
+        System.out.println(userBommBalance);
+        BigInteger bommTotal = boostedToken.totalSupplyAt(snapshot);
+        System.out.println(bommTotal);
+        BigInteger bommCriterion = getBoostedOmmVoteDefinitionCriterion();
 
-        BigInteger ommCriterion = this.ommVoteDefinitionCriterion.get();
-
-        if (MathUtils.exaDivide(userStakedBalance, ommTotalSupply).compareTo(ommCriterion) < 0) {
-            throw GovernanceException.insufficientStakingBalance(ommCriterion);
+        if (MathUtils.exaDivide(userBommBalance, bommTotal).compareTo(bommCriterion) < 0) {
+            throw GovernanceException.insufficientStakingBalance(bommCriterion);
         }
 
         ProposalDB proposal = new ProposalDB.ProposalBuilder(proposer, name)
@@ -144,6 +131,9 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
                         this.getAddress(contract.getKey())));
             case DAO_FUND:
                 return clazz.cast(new DAOFundClient(
+                        this.getAddress(contract.getKey())));
+            case BOOSTED_OMM:
+                return clazz.cast(new BoostedTokenClient(
                         this.getAddress(contract.getKey())));
         }
         return null;
