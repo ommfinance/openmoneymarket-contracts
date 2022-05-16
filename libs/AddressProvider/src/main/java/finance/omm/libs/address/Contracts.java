@@ -7,6 +7,7 @@ public enum Contracts {
     oICX("oICX"),
     oUSDs("oUSDS"),
     oIUSDC("oIUSDC"),
+    oTOKEN("oToken"),
     dICX("dICX"),
     dUSDs("dUSDS"),
     dIUSDC("dIUSDC"),
