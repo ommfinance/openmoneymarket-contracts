@@ -34,10 +34,11 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('_addressProvider', rootProject.findProperty("contracts.address-provider"))
+        arg('_addressProvider', 'cxa755b2ef6eb46c1e817c636be3c21d26c81fe6cc')
         arg('_name', 'Boosted OMM token')
         arg('_symbol', 'bOMM')
-        arg('_decimals', '18')
+        arg('_decimals', '0x6')
+        arg('_update', '0x0')
     }
 }
 
@@ -71,6 +72,9 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
         systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
 
         systemProperty '_addressProvider', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
+        systemProperty '_name', "Ooo Token"
+        systemProperty '_symbol', "oToken"
+        systemProperty '_decimals', "6"
         systemProperty '_update', "true"
         systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
 
