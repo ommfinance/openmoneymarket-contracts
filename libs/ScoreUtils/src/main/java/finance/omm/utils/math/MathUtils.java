@@ -1,10 +1,13 @@
 package finance.omm.utils.math;
 
+import com.eclipsesource.json.JsonValue;
+import finance.omm.utils.exceptions.OMMException;
 import java.math.BigInteger;
 
 public class MathUtils {
 
     public static BigInteger ICX = pow10(18);
+    public static BigInteger HUNDRED = BigInteger.valueOf(100L);
     public static BigInteger HALF_ICX = ICX.divide(BigInteger.TWO);
     public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(ICX);
     public static BigInteger HUNDRED_THOUSAND = BigInteger.valueOf(100_000L).multiply(ICX);
@@ -25,6 +28,11 @@ public class MathUtils {
     public static boolean isGreaterThan(BigInteger first, BigInteger second) {
         return first.compareTo(second) > 0;
     }
+
+    public static boolean isValidPercentage(BigInteger value) {
+        return value != null && value.compareTo(BigInteger.ZERO) >= 0 && value.compareTo(ICX) <= 0;
+    }
+
 
     public static BigInteger pow10(int exponent) {
         return pow(BigInteger.TEN, exponent);
@@ -58,6 +66,14 @@ public class MathUtils {
         return halfSecond.add(first.multiply(ICX)).divide(second);
     }
 
+    /**
+     * If a=8*EXA and b=3*EXA ,it  returns 2666666666666666666
+     * If a=100*EXA and b=6*EXA , it returns 16666666666666666666
+     */
+    public static BigInteger exaDivideFloor(BigInteger first, BigInteger second) {
+        return first.multiply(ICX).divide(second);
+    }
+
     public static BigInteger convertToExa(BigInteger _amount, BigInteger _decimals) {
         Integer decimal = _decimals.intValue();
         if (decimal.equals(18)) {
@@ -75,5 +91,30 @@ public class MathUtils {
             return _amount.multiply(pow10(_decimals)).divide(ICX);
         }
         return _amount;
+    }
+
+    public static BigInteger percentageInHundred(BigInteger value) {
+        return value.multiply(HUNDRED).divide(ICX);
+    }
+
+    public static BigInteger convertToNumber(JsonValue value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.isString()) {
+            String number = value.asString();
+            try {
+                if (number.startsWith("0x") || number.startsWith("-0x")) {
+                    return new BigInteger(number.replace("0x", ""), 16);
+                } else {
+                    return new BigInteger(number);
+                }
+            } catch (NumberFormatException e) {
+                throw OMMException.unknown("Invalid numeric value: " + number);
+            }
+        } else if (value.isNumber()) {
+            return new BigInteger(value.toString());
+        }
+        throw OMMException.unknown("Invalid value format for minimum receive amount: " + value.toString());
     }
 }

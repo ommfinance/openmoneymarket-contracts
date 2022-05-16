@@ -3,6 +3,7 @@ package finance.omm.core.score.interfaces;
 import finance.omm.libs.structs.AssetConfig;
 import finance.omm.libs.structs.DistPercentage;
 import finance.omm.libs.structs.UserDetails;
+import foundation.icon.score.client.ScoreInterface;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import score.Address;
 import score.annotation.External;
 import score.annotation.Optional;
 
+@ScoreInterface(suffix = "Client")
 public interface RewardDistribution extends AddressProvider {
 
     @External(readonly = true)
