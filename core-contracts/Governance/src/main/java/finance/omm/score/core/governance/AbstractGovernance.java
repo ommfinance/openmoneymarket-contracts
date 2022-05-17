@@ -25,7 +25,6 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     public static final BigInteger MAX_ACTIONS = BigInteger.valueOf(5L);
 
     public final VarDB<BigInteger> voteDuration = Context.newVarDB("vote_duration", BigInteger.class);
-    //public final VarDB<BigInteger> ommVoteDefinitionCriterion = Context.newVarDB("min_omm", BigInteger.class);
     public final VarDB<BigInteger> boostedOmmVoteDefinitionCriterion = Context.newVarDB("min_boosted_omm", BigInteger.class);
     public final VarDB<BigInteger> voteDefinitionFee = Context.newVarDB("definition_fee", BigInteger.class);
     public final VarDB<BigInteger> quorum = Context.newVarDB("quorum", BigInteger.class);
@@ -89,9 +88,7 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
 
         BoostedToken boostedToken = getInstance(BoostedToken.class,Contracts.BOOSTED_OMM);
         BigInteger userBommBalance = boostedToken.balanceOfAt(proposer,snapshot);
-        System.out.println(userBommBalance);
         BigInteger bommTotal = boostedToken.totalSupplyAt(snapshot);
-        System.out.println(bommTotal);
         BigInteger bommCriterion = getBoostedOmmVoteDefinitionCriterion();
 
         if (MathUtils.exaDivide(userBommBalance, bommTotal).compareTo(bommCriterion) < 0) {
