@@ -1,14 +1,13 @@
 package finance.omm.score;
 
 import java.math.BigInteger;
-import java.util.Map;
 
 import finance.omm.libs.address.AddressProvider;
-import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
 import finance.omm.libs.structs.UserDetails;
 import finance.omm.utils.constants.AddressConstant;
+import finance.omm.utils.exceptions.OMMException;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -226,9 +225,9 @@ public class DToken extends AddressProvider{
 
     }
     
-    //@only_lending_pool_core
     @External(readonly = true)
     public void mintOnBorrow(Address _user, BigInteger _amount, BigInteger _balanceIncrease) {
+        onlyLendingPool();
         
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
@@ -250,9 +249,10 @@ public class DToken extends AddressProvider{
         Context.call(rewardsAddress, "handleAction", userDetails);        
     }
     
-    //@only_lending_pool_core
     @External
     public void burnOnRepay(Address _user, BigInteger _amount, BigInteger _balanceIncrease ) {
+        onlyLendingPool();
+        
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
         this._mintInterestAndUpdateIndex(_user, _balanceIncrease);
@@ -267,9 +267,10 @@ public class DToken extends AddressProvider{
 
     }
     
-    //@only_lending_pool_core
     @External
     public void burnOnLiquidation(Address _user, BigInteger _amount, BigInteger _balanceIncrease) {
+        onlyLendingPool();
+        
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
         this._mintInterestAndUpdateIndex(_user, _balanceIncrease);
@@ -349,9 +350,6 @@ public class DToken extends AddressProvider{
         this.Transfer(AddressConstant.ZERO_ADDRESS, _account, _amount, _data);
     }
     
-    
-    
-    
     /***
     return total supply for reward distribution
     :return: total supply
@@ -363,5 +361,13 @@ public class DToken extends AddressProvider{
         totalStaked.totalStaked = this.totalSupply();
         return totalStaked;
     }
-        
+
+    public void onlyLendingPool() {
+        onlyOrElseThrow(Contracts.LENDING_POOL,
+                OMMException.unknown(TAG 
+                        + ":  SenderNotAuthorized: (sender)" + Context.getCaller() 
+                        + " (lendingPool)" + this._addresses.get(Contracts.LENDING_POOL.getKey()) + "}" ));
+    }
+    
+    
 }
