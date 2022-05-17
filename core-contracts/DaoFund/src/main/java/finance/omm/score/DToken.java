@@ -7,6 +7,8 @@ import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
+import finance.omm.libs.structs.UserDetails;
+import finance.omm.utils.constants.AddressConstant;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -176,14 +178,190 @@ public class DToken extends AddressProvider{
         return supplyDetails;
     }   
 
-   
+    /***
+     * Returns the total number of tokens in existence 
+     ***/
+    @External(readonly = true)
+    public BigInteger totalSupply() {
+        Address lendingPoolCoreAddress = this._addresses.get(Contracts.LENDING_POOL_CORE.getKey());
+        Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
+        
+        BigInteger borrowIndex  = Context.call(BigInteger.class,
+                lendingPoolCoreAddress,
+                "getReserveBorrowCumulativeIndex",
+                reserveAddress);
+        BigInteger principalTotalSupply = this.principalTotalSupply();
+        
+        if (borrowIndex == null || borrowIndex.equals(BigInteger.ZERO)) {
+            return this._totalSupply.getOrDefault(BigInteger.ZERO);
+        }else {
+            BigInteger decimals = this._decimals.getOrDefault(BigInteger.ZERO);
+            BigInteger balance =  exaDivide( exaMultiply( convertToExa(principalTotalSupply,decimals),Context.call(BigInteger.class,
+                    lendingPoolCoreAddress,
+                    "getNormalizedDebt",
+                    reserveAddress)), 
+                    borrowIndex );
+            return  convertExaToOther(balance, decimals.intValue());
+        }
+    }
+    
+
     public void _resetDataOnZeroBalanceInternal(Address _user) {
         this._userIndexes.set(_user, BigInteger.ZERO);
     }
-    
-}
 
+    
+    public void _mintInterestAndUpdateIndex(Address _user, BigInteger _balanceIncrease) {
+        Address lendingPoolCoreAddress = this._addresses.get(Contracts.LENDING_POOL_CORE.getKey());
+        Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
+
+        if (_balanceIncrease!= null && _balanceIncrease.compareTo(BigInteger.ZERO)>0) {
+            this._mint(_user, _balanceIncrease, null);
+        }
+        BigInteger userIndex = Context.call(BigInteger.class,
+                lendingPoolCoreAddress,
+                "getReserveBorrowCumulativeIndex",
+                reserveAddress);
+        this._userIndexes.set(_user, userIndex);
+
+    }
+    
+    //@only_lending_pool_core
+    @External(readonly = true)
+    public void mintOnBorrow(Address _user, BigInteger _amount, BigInteger _balanceIncrease) {
         
-                
-                
+        BigInteger beforeTotalSupply = this.principalTotalSupply();
+        BigInteger beforeUserSupply = this.principalBalanceOf(_user);
+        this._mintInterestAndUpdateIndex(_user, _balanceIncrease);
+        this._mint(_user, _amount, null);
+        this._handleAction(_user, beforeUserSupply, beforeTotalSupply);
+        this.MintOnBorrow(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, BigInteger.ZERO));        
+    }
+    
+    
+    public void _handleAction(Address _user,BigInteger _user_balance, BigInteger _total_supply) {
+        Address rewardsAddress = this._addresses.get(Contracts.REWARDS.getKey());
+
+        UserDetails userDetails = new UserDetails();
+        userDetails._userBalance = _user_balance;
+        userDetails._totalSupply = _total_supply;
+        userDetails._decimals = this.decimals();
+
+        Context.call(rewardsAddress, "handleAction", userDetails);        
+    }
+    
+    //@only_lending_pool_core
+    @External
+    public void burnOnRepay(Address _user, BigInteger _amount, BigInteger _balanceIncrease ) {
+        BigInteger beforeTotalSupply = this.principalTotalSupply();
+        BigInteger beforeUserSupply = this.principalBalanceOf(_user);
+        this._mintInterestAndUpdateIndex(_user, _balanceIncrease);
+        this._burn(_user, _amount, "loanRepaid".getBytes());
+        
+        this._handleAction(_user, beforeUserSupply, beforeTotalSupply);
+        
+        if(this.principalBalanceOf(_user).compareTo(BigInteger.ZERO) == 0) {
+            this._resetDataOnZeroBalanceInternal(_user);
+        }
+        this.BurnOnRepay(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, BigInteger.ZERO));
+
+    }
+    
+    //@only_lending_pool_core
+    @External
+    public void burnOnLiquidation(Address _user, BigInteger _amount, BigInteger _balanceIncrease) {
+        BigInteger beforeTotalSupply = this.principalTotalSupply();
+        BigInteger beforeUserSupply = this.principalBalanceOf(_user);
+        this._mintInterestAndUpdateIndex(_user, _balanceIncrease);
+        this._burn(_user, _amount, "userLiquidated".getBytes());
+        
+        this._handleAction(_user, beforeUserSupply, beforeTotalSupply);
+        if(this.principalBalanceOf(_user).compareTo(BigInteger.ZERO) == 0) {
+            this._resetDataOnZeroBalanceInternal(_user);
+        }
+        
+        this.BurnOnLiquidation(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, BigInteger.ZERO));
+    }
+    
+
+    /***
+    Transfers certain amount of tokens from sender to the receiver.
+    :param _to: The account to which the token is to be transferred.
+    :param _value: The no. of tokens to be transferred.
+    :param _data: Any information or message
+    ***/
+    public void transfer(Address _to, BigInteger _value, byte[] _data) {
+        Context.revert(TAG +"Transfer not allowed in debt token ");
+    }
+
+    /***
+    * Creates amount number of tokens, and assigns to account
+    * Increases the balance of that account and total supply.
+    * This is an internal function.
+    * :param account: The account at which token is to be created.
+    * :param amount: Number of tokens to be created at the `account`.
+    ***/
+    public void _mint(Address _account, BigInteger _amount, byte[] _data) {
+        if (_data == null || _data.length == 0 ) {
+            _data = "mint".getBytes();
+        }
+        
+        if (_amount!= null && _amount.compareTo(BigInteger.ZERO)<0) {
+            Context.revert(TAG +": Invalid value:" + _amount +" to mint");
+        }
+        
+        this._totalSupply.set(this._totalSupply.get().add(_amount));
+        this._balances.set(_account, this._balances.getOrDefault(_account, BigInteger.ZERO).add(_amount));
+        //Emits an event log Mint
+        this.Transfer(AddressConstant.ZERO_ADDRESS, _account, _amount, _data);
+
+    }
+    
+    /***
+    Destroys `amount` number of tokens from `account`
+    Decreases the balance of that `account` and total supply.
+    This is an internal function.
+    :param account: The account at which token is to be destroyed.
+    :param amount: The `amount` of tokens of `account` to be destroyed.
+    ***/
+    public void _burn(Address _account, BigInteger _amount, byte[] _data) {
+        if (_data == null || _data.length == 0 ) {
+            _data = "burn".getBytes();
+        }
+        
+        if (_amount!= null && _amount.compareTo(BigInteger.ZERO)<0) {
+            Context.revert(TAG +": Invalid value:" + _amount +" to burn");
+        }
+        BigInteger  totalSupply = this._totalSupply.getOrDefault(BigInteger.ZERO);
+        
+        if (_amount.compareTo(totalSupply)>=1) {
+            Context.revert(TAG +" "+  _amount  +" is greater than total supply :" + totalSupply);
+        }
+        
+        BigInteger userBalance = this._balances.getOrDefault(_account, BigInteger.ZERO);
+        if(_amount.compareTo(userBalance)>=1) {
+            Context.revert(TAG +": Cannot burn more than user balance. Amount to burn: " + _amount +" User Balance: "+userBalance);
+        }
+        
+        this._totalSupply.set(totalSupply.subtract(_amount));
+        this._balances.set(_account, this._balances.getOrDefault(_account, BigInteger.ZERO).subtract(_amount));
+        // Emits an event log Burn
+        this.Transfer(AddressConstant.ZERO_ADDRESS, _account, _amount, _data);
+    }
+    
+    
+    
+    
+    /***
+    return total supply for reward distribution
+    :return: total supply
+    ***/   
+    @External(readonly = true)
+    public TotalStaked getTotalStaked() {
+        TotalStaked totalStaked = new TotalStaked();
+        totalStaked.decimals = this.decimals();
+        totalStaked.totalStaked = this.totalSupply();
+        return totalStaked;
+    }
+        
 }
