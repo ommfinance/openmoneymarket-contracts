@@ -9,11 +9,7 @@ import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
-import finance.omm.core.score.interfaces.DAOFund;
-import finance.omm.core.score.interfaces.FeeProvider;
-import finance.omm.core.score.interfaces.LendingPoolCore;
-import finance.omm.core.score.interfaces.OMMToken;
-import finance.omm.core.score.interfaces.StakedLP;
+import finance.omm.core.score.interfaces.*;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.score.core.governance.GovernanceImpl;
@@ -58,6 +54,7 @@ public class AbstractGovernanceTest extends TestBase {
         put(Contracts.WORKER_TOKEN, Account.newScoreAccount(104));
         put(Contracts.OMM_TOKEN, Account.newScoreAccount(105));
         put(Contracts.LENDING_POOL_CORE, Account.newScoreAccount(106));
+        put(Contracts.BOOSTED_OMM, Account.newScoreAccount(107));
     }};
 
     protected DAOFund daoFund;
@@ -66,6 +63,8 @@ public class AbstractGovernanceTest extends TestBase {
     protected StakedLP stakedLP;
     protected FeeProvider feeProvider;
     protected OMMToken ommToken;
+
+    protected BoostedToken bOMM;
 
     @BeforeAll
     protected static void init() {
@@ -103,6 +102,7 @@ public class AbstractGovernanceTest extends TestBase {
         stakedLP = spy(StakedLP.class);
         feeProvider = spy(FeeProvider.class);
         ommToken = spy(OMMToken.class);
+        bOMM=spy(BoostedToken.class);
 
         doReturn(daoFund).when(scoreSpy).getInstance(DAOFund.class, Contracts.DAO_FUND);
         doReturn(rewardDistribution).when(scoreSpy).getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
@@ -110,6 +110,7 @@ public class AbstractGovernanceTest extends TestBase {
         doReturn(stakedLP).when(scoreSpy).getInstance(StakedLP.class, Contracts.STAKED_LP);
         doReturn(feeProvider).when(scoreSpy).getInstance(FeeProvider.class, Contracts.FEE_PROVIDER);
         doReturn(ommToken).when(scoreSpy).getInstance(OMMToken.class, Contracts.OMM_TOKEN);
+        doReturn(bOMM).when(scoreSpy).getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
     }
 
 
