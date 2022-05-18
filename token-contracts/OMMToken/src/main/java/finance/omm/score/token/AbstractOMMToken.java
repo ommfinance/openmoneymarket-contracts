@@ -16,7 +16,7 @@ import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
 
-abstract class AbstractOMMToken extends AddressProvider implements OMMToken,
+public abstract class AbstractOMMToken extends AddressProvider implements OMMToken,
         Authorization<OMMTokenException> {
 
     protected final String TAG = "Omm Token";
@@ -34,7 +34,7 @@ abstract class AbstractOMMToken extends AddressProvider implements OMMToken,
     public static final String ADMIN = "admin";
     public static final String LOCK_LIST = "lock_list";
 
-    public static final String MINUMUM_STAKE = "minimum_stake";
+    public static final String MINIMUM_STAKE = "minimum_stake";
     public static final String STAKED_BALANCES = "staked_balances";
     public static final String TOTAL_STAKED_BALANCE = "total_stake_balance";
     public static final String UNSTAKING_PERIOD = "unstaking_period";
@@ -47,16 +47,16 @@ abstract class AbstractOMMToken extends AddressProvider implements OMMToken,
     public final VarDB<BigInteger> decimals = Context.newVarDB(DECIMALS, BigInteger.class);
     public final VarDB<BigInteger> totalSupply = Context.newVarDB(TOTAL_SUPPLY, BigInteger.class);
     public final DictDB<Address, BigInteger> balances = Context.newDictDB(BALANCES, BigInteger.class);
-    public final VarDB<Address> admin = Context.newVarDB(ADMIN, Address.class);
+    //    public final VarDB<Address> admin = Context.newVarDB(ADMIN, Address.class);
     public final EnumerableSet<Address> lockList = new EnumerableSet<>(LOCK_LIST, Address.class);
 
-    public final VarDB<BigInteger> minimumStake = Context.newVarDB(MINUMUM_STAKE, BigInteger.class);
+    public final VarDB<BigInteger> minimumStake = Context.newVarDB(MINIMUM_STAKE, BigInteger.class);
     public final BranchDB<Address, DictDB<Integer, BigInteger>> stakedBalances = Context.newBranchDB(STAKED_BALANCES,
             BigInteger.class);
     public final VarDB<BigInteger> totalStakedBalance = Context.newVarDB(TOTAL_STAKED_BALANCE, BigInteger.class);
     public final VarDB<BigInteger> unstakingPeriod = Context.newVarDB(UNSTAKING_PERIOD, BigInteger.class);
-    public final VarDB<BigInteger> snapshotStartedAt = Context.newVarDB(SNAPSHOT_STARTED_AT, BigInteger.class);
     public final EnumerableSet<Address> stakers = new EnumerableSet<>(STAKERS, Address.class);
+    public final VarDB<BigInteger> snapshotStartedAt = Context.newVarDB(SNAPSHOT_STARTED_AT, BigInteger.class);
 
     public AbstractOMMToken(Address addressProvider, String tokenName, String symbolName) {
         super(addressProvider, false);
