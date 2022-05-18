@@ -72,6 +72,17 @@ public class AddressProvider {
         return this._addressProvider.get();
     }
 
+    protected void call(Address address, String method, Object... params) {
+        Context.call(address, method, params);
+    }
+
+    protected void call(Contracts contract, String method, Object... params) {
+        call(getAddress(contract.getKey()), method, params);
+    }
+
+    protected <K> K call(Class<K> kClass, Contracts contract, String method, Object... params) {
+        return Context.call(kClass, getAddress(contract.getKey()), method, params);
+    }
 
     protected void checkAddressProvider() {
         if (!Context.getCaller().equals(_addressProvider.get())) {

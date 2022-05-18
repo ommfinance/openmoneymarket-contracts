@@ -1,10 +1,13 @@
 package finance.omm.utils.db;
 
+import java.util.List;
 import score.ArrayDB;
 import score.Context;
 import score.DictDB;
+import scorex.util.ArrayList;
 
 public class EnumerableSet<V> {
+
     private final ArrayDB<V> entries;
     private final DictDB<V, Integer> indexes;
 
@@ -58,5 +61,15 @@ public class EnumerableSet<V> {
             }
         }
         return null;
+    }
+
+    public List<V> range(int start, int end) {
+        List<V> result = new ArrayList<>();
+        int _end = Math.min(end, length() - 1);
+
+        for (int i = start; i <= _end; i++) {
+            result.add(at(start));
+        }
+        return result;
     }
 }
