@@ -1,6 +1,14 @@
 package finance.omm.score.core.governance;
 
-import finance.omm.core.score.interfaces.*;
+import finance.omm.core.score.interfaces.BoostedToken;
+import finance.omm.core.score.interfaces.BoostedTokenClient;
+import finance.omm.core.score.interfaces.DAOFund;
+import finance.omm.core.score.interfaces.DAOFundClient;
+import finance.omm.core.score.interfaces.FeeProviderClient;
+import finance.omm.core.score.interfaces.Governance;
+import finance.omm.core.score.interfaces.LendingPoolCoreClient;
+import finance.omm.core.score.interfaces.OMMTokenClient;
+import finance.omm.core.score.interfaces.StakedLPClient;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Authorization;
 import finance.omm.libs.address.Contracts;
