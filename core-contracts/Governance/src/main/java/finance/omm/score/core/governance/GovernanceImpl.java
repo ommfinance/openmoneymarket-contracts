@@ -591,10 +591,13 @@ public class GovernanceImpl extends AbstractGovernance {
         String forum = params.getString("forum", "null");
         String description = params.getString("description", null);
         JsonValue vote_start = params.get("vote_start");
+        BigInteger voteStart;
+
         if (vote_start == null){
-            vote_start = Json.value(TimeConstants.getBlockTimestamp().longValue());
+            voteStart = TimeConstants.getBlockTimestamp();
+        } else {
+            voteStart = convertToNumber(vote_start);
         }
-        BigInteger voteStart = convertToNumber(vote_start);
 
         defineVote(name, description, voteStart, _from, forum);
 
