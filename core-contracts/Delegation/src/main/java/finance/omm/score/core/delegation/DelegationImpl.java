@@ -47,6 +47,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     public static final String LOCKED_PREPS = "lockedPreps";
     public static final String LOCKED_PREP_VOTES = "lockedPrepVotes";
+    public static final String CALLED_BEFORE = "calledBefore";
 
     private final EnumerableSet<Address> _preps = new EnumerableSet<>(LOCKED_PREPS, Address.class);
     private final BranchDB<Address, DictDB<Integer, Address>> _userPreps = Context.newBranchDB(
@@ -62,15 +63,28 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public final VarDB<BigInteger> workingTotalSupply = Context.newVarDB(WORKING_TOTAL_SUPPLY, BigInteger.class);
     public final DictDB<Address, BigInteger> workingBalance = Context.newDictDB(WORKING_BALANCE, BigInteger.class);
 
+    public final VarDB<Boolean> calledBefore = Context.newVarDB(CALLED_BEFORE, Boolean.class);
+
     public DelegationImpl(Address addressProvider) {
         super(addressProvider, false);
         if (workingTotalSupply.get() == null) {
             workingTotalSupply.set(BigInteger.ZERO);
         }
+        if (calledBefore.get() == null) {
+            calledBefore.set(false);
+        }
     }
 
+    /**
+     * This method should be called only once after bOMM upgrade
+     * calledBefore flag used to prevent calling it multiple times
+     */
     @External
     public void initializeVoteToContributors() {
+        if (calledBefore.get()) {
+            throw DelegationException.unknown(TAG + " : This method cannot be called again.");
+        }
+
         checkOwner();
         PrepDelegations[] defaultDelegations = distributeVoteToContributors();
         BigInteger totalPercentage = BigInteger.ZERO;
@@ -89,6 +103,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                 defaultDelegations
         };
         call(Contracts.LENDING_POOL_CORE, "updatePrepDelegations", params);
+        calledBefore.set(true);
     }
 
     @External(readonly = true)

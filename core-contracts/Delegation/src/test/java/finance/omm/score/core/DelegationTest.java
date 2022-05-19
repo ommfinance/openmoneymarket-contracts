@@ -1095,6 +1095,19 @@ public class DelegationTest extends TestBase {
         assertEquals(expected,user3IcxDelegations.get(1)._votes_in_icx);
     }
 
+    @Test
+    public void initializeVoteToContributors() {
+        initialize();
+        Account user = sm.createAccount();
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
+
+        delegationScore.invoke(owner, "initializeVoteToContributors");
+        // calling this function again
+        Executable call = () -> delegationScore.invoke(owner, "initializeVoteToContributors");
+
+        expectErrorMessage(call, "Delegation : This method cannot be called again.");
+    }
+
 
     public void expectErrorMessage(Executable contractCall, String errorMessage) {
         AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
