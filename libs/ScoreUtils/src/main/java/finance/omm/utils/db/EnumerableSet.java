@@ -68,7 +68,7 @@ public class EnumerableSet<V> {
         int _end = Math.min(end, length() - 1);
 
         for (int i = start; i <= _end; i++) {
-            result.add(at(start));
+            result.add(at(i));
         }
         return result;
     }
