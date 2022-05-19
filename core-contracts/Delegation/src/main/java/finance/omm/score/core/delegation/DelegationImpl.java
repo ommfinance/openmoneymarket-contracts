@@ -43,7 +43,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public static final String VOTE_THRESHOLD = "voteThreshold";
 
     public static final String WORKING_BALANCE = "workingBalance";
-    public static final String WORKING_TOTAL_SUPPLY = "workingTotalTupply";
+    public static final String WORKING_TOTAL_SUPPLY = "workingTotalSupply";
 
     public static final String LOCKED_PREPS = "lockedPreps";
     public static final String LOCKED_PREP_VOTES = "lockedPrepVotes";
@@ -64,29 +64,31 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     public DelegationImpl(Address addressProvider) {
         super(addressProvider, false);
-        workingTotalSupply.set(BigInteger.ZERO);
+        if (workingTotalSupply.get() == null) {
+            workingTotalSupply.set(BigInteger.ZERO);
+        }
     }
 
     @External
     public void initializeVoteToContributors() {
         checkOwner();
-        PrepDelegations[] prepDelegations = initializeVoteToContributorsInternal();
-        Object[] params = new Object[]{
-                prepDelegations
-        };
-        call(Contracts.LENDING_POOL_CORE, "updatePrepDelegations", params);
-    }
-
-    private PrepDelegations[] initializeVoteToContributorsInternal() {
         PrepDelegations[] defaultDelegations = distributeVoteToContributors();
+        BigInteger totalPercentage = BigInteger.ZERO;
         int size = defaultDelegations.length;
-        PrepDelegations[] delegations = new PrepDelegations[size];
         for (int i = 0; i < size; i++) {
             Address prep = defaultDelegations[i]._address;
             BigInteger votes = defaultDelegations[i]._votes_in_per.multiply(BigInteger.valueOf(100));
-            delegations[i] = new PrepDelegations(prep, votes);
+            totalPercentage = totalPercentage.add(votes);
+            defaultDelegations[i]._votes_in_per = votes;
         }
-        return delegations;
+        BigInteger dustVotes = ICX.multiply(BigInteger.valueOf(100L)).subtract(totalPercentage);
+        if (dustVotes.compareTo(BigInteger.ZERO) > 0) {
+            defaultDelegations[0]._votes_in_per = defaultDelegations[0]._votes_in_per.add(dustVotes);
+        }
+        Object[] params = new Object[]{
+                defaultDelegations
+        };
+        call(Contracts.LENDING_POOL_CORE, "updatePrepDelegations", params);
     }
 
     @External(readonly = true)
@@ -224,7 +226,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     private BigInteger updateWorkingBalance(Address user) {
         BigInteger newWorkingBalance = call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user);
-        BigInteger currentWorkingTotal = workingTotalSupply.get();
+        BigInteger currentWorkingTotal = getWorkingTotalSupply();
         BigInteger currentWorkingBalance = getWorkingBalance(user);
 
         workingBalance.set(user, newWorkingBalance);
