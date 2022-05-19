@@ -110,6 +110,7 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
                 .setSnapshot(snapshot)
                 .setStartVote(voteStart)
                 .setEndVote(voteStart.add(voteDuration.get()))
+                .setTotalVotingWeight(bommTotal)
                 .setFee(voteDefinitionFee.get())
                 .setForum(forum).build();
 

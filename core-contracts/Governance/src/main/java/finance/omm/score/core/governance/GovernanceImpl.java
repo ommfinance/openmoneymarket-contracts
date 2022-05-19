@@ -349,6 +349,16 @@ public class GovernanceImpl extends AbstractGovernance {
         proposal.forumLink.set(forum);
     }
 
+    @External
+    public void updateTotalVotingWeight(int vote_index, BigInteger weight) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        ProposalDB proposal = ProposalDB.getByVoteIndex(vote_index);
+        if (proposal == null) {
+            throw GovernanceException.proposalNotFound(vote_index);
+        }
+        proposal.totalVotingWeight.set(weight);
+    }
+
     /**
      * Casts a vote in the named poll.
      *
@@ -507,14 +517,15 @@ public class GovernanceImpl extends AbstractGovernance {
 //        OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
 //        BigInteger totalOMMStaked = ommToken.totalStakedBalanceOfAt(proposal.voteSnapshot.get());
 
-        BoostedToken boostedToken = getInstance(BoostedToken.class,Contracts.BOOSTED_OMM);
-        BigInteger totalBomm= boostedToken.totalSupplyAt(proposal.voteSnapshot.get());
+//        BoostedToken boostedToken = getInstance(BoostedToken.class,Contracts.BOOSTED_OMM);
+        BigInteger totalVotingWeight = proposal.totalVotingWeight.get();
 
         BigInteger totalForVoted = proposal.totalForVotes.getOrDefault(BigInteger.ZERO);
         BigInteger totalAgainstVotes = proposal.totalAgainstVotes.getOrDefault(BigInteger.ZERO);
 
-        BigInteger _for = MathUtils.exaDivide(totalForVoted, totalBomm);
-        BigInteger _against = MathUtils.exaDivide(totalAgainstVotes, totalBomm);
+
+        BigInteger _for = MathUtils.exaDivide(totalForVoted, totalVotingWeight);
+        BigInteger _against = MathUtils.exaDivide(totalAgainstVotes, totalVotingWeight);
 
         String status = proposal.status.get();
         BigInteger majority = proposal.majority.get();
@@ -550,6 +561,7 @@ public class GovernanceImpl extends AbstractGovernance {
             put("against", _against);
             put("for_voter_count", proposal.forVotersCount.getOrDefault(BigInteger.ZERO));
             put("against_voter_count", proposal.againstVotersCount.getOrDefault(BigInteger.ZERO));
+            put("total voting weight", totalVotingWeight);
             put("forum", proposal.forumLink.get());
             put("status", finalStatus);
         }};
