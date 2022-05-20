@@ -12,7 +12,7 @@ import score.Address;
 import score.annotation.Optional;
 
 @ScoreInterface(suffix = "Client")
-public interface OMMToken extends IRC2 {
+public interface OMMToken extends IRC2, AddressProvider {
 
     SupplyDetails getPrincipalSupply(Address _user);
 
@@ -35,12 +35,6 @@ public interface OMMToken extends IRC2 {
 
 
     BigInteger getUnstakingPeriod();
-
-
-    void addStakers(Address[] _stakers);
-
-
-    void removeStakers(Address[] _stakers);
 
 
     List<Address> getStakersList(int _start, int _end);

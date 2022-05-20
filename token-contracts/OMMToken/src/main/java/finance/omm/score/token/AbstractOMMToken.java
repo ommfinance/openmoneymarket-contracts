@@ -23,15 +23,13 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
     protected static final String TOKEN_NAME = "Omm Token";
     protected static final String SYMBOL_NAME = "OMM";
 
-    protected static final BigInteger DEFAULT_DECIMAL_VALUE = BigInteger.valueOf(18);
-    protected static final BigInteger DEFAULT_INITIAL_SUPPLY = BigInteger.ZERO;
 
     public static final String NAME = "name";
     public static final String SYMBOL = "symbol";
     public static final String DECIMALS = "decimals";
     public static final String TOTAL_SUPPLY = "total_supply";
     public static final String BALANCES = "balances";
-    public static final String ADMIN = "admin";
+//    public static final String ADMIN = "admin";
     public static final String LOCK_LIST = "lock_list";
 
     public static final String MINIMUM_STAKE = "minimum_stake";
@@ -56,6 +54,7 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
     public final VarDB<BigInteger> totalStakedBalance = Context.newVarDB(TOTAL_STAKED_BALANCE, BigInteger.class);
     public final VarDB<BigInteger> unstakingPeriod = Context.newVarDB(UNSTAKING_PERIOD, BigInteger.class);
     public final EnumerableSet<Address> stakers = new EnumerableSet<>(STAKERS, Address.class);
+
     public final VarDB<BigInteger> snapshotStartedAt = Context.newVarDB(SNAPSHOT_STARTED_AT, BigInteger.class);
 
     public AbstractOMMToken(Address addressProvider, String tokenName, String symbolName) {
@@ -63,8 +62,8 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
         if (this.name.get() == null && this.totalSupply.get() == null) {
             this.name.set(tokenName);
             this.symbol.set(symbolName);
-            this.decimals.set(DEFAULT_DECIMAL_VALUE);
-            this.totalSupply.set(DEFAULT_INITIAL_SUPPLY);
+            this.decimals.set(BigInteger.valueOf(18));
+            this.totalSupply.set(BigInteger.ZERO);
         }
     }
 
@@ -83,7 +82,7 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
     protected void makeAvailable(Address user) {
         DictDB<Integer, BigInteger> stakeInfo = this.stakedBalances.at(user);
         BigInteger unstakingPeriod = stakeInfo.getOrDefault(Status.UNSTAKING_PERIOD.getKey(), BigInteger.ZERO);
-        if (unstakingPeriod.compareTo(TimeConstants.getBlockTimestamp()) < 0) {
+        if (unstakingPeriod.compareTo(TimeConstants.getBlockTimestamp()) <= 0) {
             stakeInfo.set(Status.UNSTAKING.getKey(), BigInteger.ZERO);
         }
     }
@@ -105,10 +104,7 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
             throw OMMTokenException.insufficientBalance("Insufficient balance");
         }
 
-        Boolean isFeeSharingEnabled = call(Boolean.class, Contracts.LENDING_POOL, "isFeeSharingEnable", from);
-        if (isFeeSharingEnabled) {
-            Context.setFeeSharingProportion(100);
-        }
+        checkFeeSharing(from);
         this.makeAvailable(to);
         this.makeAvailable(from);
         BigInteger senderAvailableBalance = this.available_balanceOf(from);
@@ -127,5 +123,12 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
         }
 
         this.Transfer(from, to, value, data);
+    }
+
+    protected void checkFeeSharing(Address from) {
+        Boolean isFeeSharingEnabled = call(Boolean.class, Contracts.LENDING_POOL, "isFeeSharingEnable", from);
+        if (isFeeSharingEnabled) {
+            Context.setFeeSharingProportion(100);
+        }
     }
 }

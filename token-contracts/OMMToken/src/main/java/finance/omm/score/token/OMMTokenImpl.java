@@ -124,22 +124,24 @@ public class OMMTokenImpl extends AbstractOMMToken {
         return this.unstakingPeriod.getOrDefault(BigInteger.ZERO);
     }
 
-    @External
-    public void addStakers(Address[] stakers) {
-        onlyOwnerOrElseThrow(OMMTokenException.notOwner());
-        for (Address staker : stakers) {
-            this.addStaker(staker);
-        }
-    }
-
-    @External
-    public void removeStakers(Address[] stakers) {
-        onlyOwnerOrElseThrow(OMMTokenException.notOwner());
-        for (Address staker : stakers) {
-            this.removeStaker(staker);
-        }
-    }
-
+    /**
+     * Unused methods
+     */
+//    @External
+//    public void addStakers(Address[] stakers) {
+//        onlyOwnerOrElseThrow(OMMTokenException.notOwner());
+//        for (Address staker : stakers) {
+//            this.addStaker(staker);
+//        }
+//    }
+//
+//    @External
+//    public void removeStakers(Address[] stakers) {
+//        onlyOwnerOrElseThrow(OMMTokenException.notOwner());
+//        for (Address staker : stakers) {
+//            this.removeStaker(staker);
+//        }
+//    }
     @External(readonly = true)
     public List<Address> getStakersList(int _start, int _end) {
         if (_end <= _start) {
@@ -156,18 +158,18 @@ public class OMMTokenImpl extends AbstractOMMToken {
     public int totalStakers() {return this.stakers.length();}
 
     @External(readonly = true)
-    public boolean inStakerList(Address _staker) {return this.stakers.indexOf(_staker) != null;}
+    public boolean inStakerList(Address _staker) {return this.stakers.contains(_staker);}
 
     @External(readonly = true)
     public Map<String, BigInteger> details_balanceOf(Address _owner) {
         BigInteger userBalance = this.balances.getOrDefault(_owner, BigInteger.ZERO);
-        DictDB<Integer, BigInteger> staked = this.stakedBalances.at(_owner);
+        DictDB<Integer, BigInteger> stakedInfo = this.stakedBalances.at(_owner);
 
         BigInteger currentTime = TimeConstants.getBlockTimestamp();
 
-        BigInteger stakedBalance = staked.getOrDefault(Status.STAKED.getKey(), BigInteger.ZERO);
-        BigInteger unstakingAmount = staked.getOrDefault(Status.UNSTAKING.getKey(), BigInteger.ZERO);
-        BigInteger unstakingTime = staked.getOrDefault(Status.UNSTAKING_PERIOD.getKey(), BigInteger.ZERO);
+        BigInteger stakedBalance = stakedInfo.getOrDefault(Status.STAKED.getKey(), BigInteger.ZERO);
+        BigInteger unstakingAmount = stakedInfo.getOrDefault(Status.UNSTAKING.getKey(), BigInteger.ZERO);
+        BigInteger unstakingTime = stakedInfo.getOrDefault(Status.UNSTAKING_PERIOD.getKey(), BigInteger.ZERO);
 
         if (unstakingTime.compareTo(currentTime) < 0) {
             unstakingAmount = BigInteger.ZERO;
@@ -213,7 +215,6 @@ public class OMMTokenImpl extends AbstractOMMToken {
         if (stakedBalance.compareTo(BigInteger.ZERO) > 0) {
             this.makeAvailable(user);
 
-            stakedInfo.set(Status.STAKED.getKey(), BigInteger.ZERO);
             BigInteger unstakingAmount = stakedInfo.getOrDefault(Status.UNSTAKING.getKey(), BigInteger.ZERO);
 
             stakedInfo.set(Status.STAKED.getKey(), BigInteger.ZERO);
@@ -221,8 +222,8 @@ public class OMMTokenImpl extends AbstractOMMToken {
             stakedInfo.set(Status.UNSTAKING_PERIOD.getKey(),
                     TimeConstants.getBlockTimestamp().add(getUnstakingPeriod()));
 
-            BigInteger totalStakedBalance = this.totalStakedBalance.getOrDefault(BigInteger.ZERO);
-            this.totalStakedBalance.set(totalStakedBalance.subtract(unstakingAmount));
+            BigInteger newTotalStakedBalance = this.total_staked_balance().subtract(stakedBalance);
+            this.totalStakedBalance.set(newTotalStakedBalance);
         }
     }
 
@@ -273,7 +274,7 @@ public class OMMTokenImpl extends AbstractOMMToken {
 
     @External
     public void cancelUnstake(BigInteger _value) {
-        if (_value.compareTo(BigInteger.ZERO) < 0) {
+        if (_value.compareTo(BigInteger.ZERO) <= 0) {
             throw OMMTokenException.unknown("Cannot cancel negative unstake");
         }
         Address user = Context.getCaller();
@@ -286,16 +287,12 @@ public class OMMTokenImpl extends AbstractOMMToken {
         BigInteger unstakingBalance = userBalances.get("unstakingBalance");
         BigInteger userOldStake = userBalances.get("'stakedBalance'");
 
-        if (unstakingBalance.compareTo(_value) > 0) {
+        if (_value.compareTo(unstakingBalance) > 0) {
             throw OMMTokenException.insufficientBalance(
                     "Cannot cancel unstake,cancel value is more than the actual unstaking amount");
         }
 
-        Boolean isFeeSharingEnabled = call(Boolean.class, Contracts.LENDING_POOL, "isFeeSharingEnable", user);
-
-        if (isFeeSharingEnabled) {
-            Context.setFeeSharingProportion(100);
-        }
+        checkFeeSharing(user);
 
         BigInteger newStakedBalance = userOldStake.add(_value);
 
@@ -304,30 +301,33 @@ public class OMMTokenImpl extends AbstractOMMToken {
         statedInfo.set(Status.STAKED.getKey(), newStakedBalance);
         statedInfo.set(Status.UNSTAKING.getKey(), unstakingBalance.subtract(_value));
         this.addStaker(user);
+
+        BigInteger newTotalStakedBalance = this.total_staked_balance().add(_value);
+        this.totalStakedBalance.set(newTotalStakedBalance);
     }
 
 
     @External
     public void unstake(BigInteger _value, Address _user) {
-        onlyOrElseThrow(Contracts.LENDING_POOL,
+        onlyContractOrElseThrow(Contracts.LENDING_POOL,
                 OMMTokenException.unauthorized("Only lending pool contract can call unstake method"));
-        if (_value.compareTo(BigInteger.ZERO) < 0) {
-            throw OMMTokenException.unknown("Cannot unstake less than zero value to stake " + _value);
+        if (_value.compareTo(BigInteger.ZERO) <= 0) {
+            throw OMMTokenException.unknown("Cannot unstake less than or equals to zero value to stake " + _value);
         }
         if (lockList.contains(_user)) {
             throw OMMTokenException.notPermitted("Cannot unstake,the address " + _user + " is locked");
         }
         this.makeAvailable(_user);
 
-        BigInteger stakedBalance = this.staked_balanceOf(_user);
+        DictDB<Integer, BigInteger> stakeInfo = this.stakedBalances.at(_user);
+        BigInteger stakedBalance = stakeInfo.getOrDefault(Status.STAKED.getKey(), BigInteger.ZERO);
 
-        if (stakedBalance.compareTo(_value) > 0) {
+        if (_value.compareTo(stakedBalance) > 0) {
             throw OMMTokenException.insufficientBalance(
                     "Cannot unstake,user dont have enough staked balance amount to unstake " + _value
                             + " staked balance of user: " + _user + " is " + stakedBalance);
         }
 
-        DictDB<Integer, BigInteger> stakeInfo = this.stakedBalances.at(_user);
         BigInteger currentUnstakingAmount = stakeInfo.getOrDefault(Status.UNSTAKING.getKey(), BigInteger.ZERO);
 
         if (currentUnstakingAmount.compareTo(BigInteger.ZERO) > 0) {
@@ -341,17 +341,21 @@ public class OMMTokenImpl extends AbstractOMMToken {
         stakeInfo.set(Status.UNSTAKING_PERIOD.getKey(),
                 TimeConstants.getBlockTimestamp().add(this.getUnstakingPeriod()));
 
-
         if (newStakedBalance.equals(BigInteger.ZERO)) {
             this.removeStaker(_user);
         }
+
+        BigInteger newTotalStakedBalance = this.total_staked_balance().subtract(_value);
+        this.totalStakedBalance.set(newTotalStakedBalance);
     }
 
 
     @External
     public void migrateStakedOMM(BigInteger _amount, BigInteger _lockPeriod) {
         Address user = Context.getCaller();
-        BigInteger stakedBalance = this.staked_balanceOf(user);
+        DictDB<Integer, BigInteger> stakeInfo = this.stakedBalances.at(user);
+
+        BigInteger stakedBalance = stakeInfo.getOrDefault(Status.STAKED.getKey(), BigInteger.ZERO);
 
         if (stakedBalance.compareTo(_amount) < 0) {
             throw OMMTokenException.insufficientBalance("Cannot lock more than staked.");
@@ -367,14 +371,11 @@ public class OMMTokenImpl extends AbstractOMMToken {
         }
         data.add("params", params);
 
-        DictDB<Integer, BigInteger> stakeInfo = this.stakedBalances.at(user);
-        BigInteger oldStaked = stakeInfo.getOrDefault(Status.STAKED.getKey(), BigInteger.ZERO);
-        BigInteger newStaked = oldStaked.subtract(_amount);
+        BigInteger newStaked = stakedBalance.subtract(_amount);
         stakeInfo.set(Status.STAKED.getKey(), newStaked);
 
-        BigInteger oldTotalStaked = this.totalSupply.getOrDefault(BigInteger.ZERO);
-
-        this.totalSupply.set(oldTotalStaked.subtract(_amount));
+        BigInteger newTotalStakedBalance = this.total_staked_balance().subtract(_amount);
+        this.totalStakedBalance.set(newTotalStakedBalance);
 
         if (newStaked.equals(BigInteger.ZERO)) {
             removeStaker(user);

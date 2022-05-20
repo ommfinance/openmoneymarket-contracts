@@ -13,7 +13,7 @@ public interface Authorization<T extends OMMException> extends AddressProvider {
     }
 
     default void onlyContractOrElseThrow(Contracts contract, T exception) {
-        if (!Context.getOwner().equals(getAddress(contract.getKey()))) {
+        if (!Context.getCaller().equals(getAddress(contract.getKey()))) {
             throw exception;
         }
     }
