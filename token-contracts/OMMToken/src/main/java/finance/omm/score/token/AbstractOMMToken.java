@@ -36,7 +36,7 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
     public static final String STAKED_BALANCES = "staked_balances";
     public static final String TOTAL_STAKED_BALANCE = "total_stake_balance";
     public static final String UNSTAKING_PERIOD = "unstaking_period";
-    public static final String SNAPSHOT_STARTED_AT = "snapshot-started-at";
+//    public static final String SNAPSHOT_STARTED_AT = "snapshot-started-at";
     public static final String STAKERS = "stakers";
 
 
@@ -55,7 +55,7 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
     public final VarDB<BigInteger> unstakingPeriod = Context.newVarDB(UNSTAKING_PERIOD, BigInteger.class);
     public final EnumerableSet<Address> stakers = new EnumerableSet<>(STAKERS, Address.class);
 
-    public final VarDB<BigInteger> snapshotStartedAt = Context.newVarDB(SNAPSHOT_STARTED_AT, BigInteger.class);
+//    public final VarDB<BigInteger> snapshotStartedAt = Context.newVarDB(SNAPSHOT_STARTED_AT, BigInteger.class);
 
     public AbstractOMMToken(Address addressProvider, String tokenName, String symbolName) {
         super(addressProvider, false);
