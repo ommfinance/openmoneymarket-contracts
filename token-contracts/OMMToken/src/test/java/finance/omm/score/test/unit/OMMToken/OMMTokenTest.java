@@ -1,8 +1,15 @@
 package finance.omm.score.test.unit.OMMToken;
 
+import static finance.omm.utils.constants.AddressConstant.ZERO_SCORE_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
+import finance.omm.libs.address.Contracts;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -16,7 +23,7 @@ public class OMMTokenTest extends AbstractOMMTokenTest {
 
     BigInteger FIVE_MINUTES = BigInteger.valueOf(5L).multiply(SIXTY).multiply(BigInteger.valueOf(1_000_000L));
     Account notOwner = sm.createAccount(10);
-
+    Account REWARDS_TOKEN_ACCOUNT = MOCK_CONTRACT_ADDRESS.get(Contracts.REWARDS);
     @Test
     public void tokenBasicInfo() {
         String actual = (String) score.call("name");
@@ -132,4 +139,107 @@ public class OMMTokenTest extends AbstractOMMTokenTest {
         score.invoke(owner, "setUnstakingPeriod", FIVE_MINUTES);
         score.invoke(owner, "setMinimumStake", ICX);
     }
+    @Test
+    public void transfer(){
+        Account bob = sm.createAccount(100);
+        Account alice = sm.createAccount(100);
+
+        BigInteger value = BigInteger.valueOf(50);
+        BigInteger amountToMint = BigInteger.valueOf(100);
+        BigInteger senderAvailableBalance = BigInteger.valueOf(10);
+        byte[] data = "transfer".getBytes();
+
+         //add bob to lockList
+        score.invoke(owner, "addToLockList", bob.getAddress());
+        Executable transferSenderLock = () -> score.invoke(bob,"transfer",alice.getAddress(),value,data);
+        expectErrorMessage(transferSenderLock, "Cannot transfer, the sender " +
+                bob.getAddress() + " is locked");
+
+        //remove bob from lockList and add Alice
+        score.invoke(owner, "removeFromLockList",bob.getAddress() );
+        score.invoke(owner, "addToLockList", alice.getAddress());
+        Executable transferReceiverLock = () -> score.invoke(bob,"transfer",
+                alice.getAddress(),value,data);
+        expectErrorMessage(transferReceiverLock, "Cannot transfer, the receiver " +
+                alice.getAddress() + " is locked");
+
+        // remove alice from lockList
+        score.invoke(owner,"removeFromLockList",alice.getAddress());
+        Executable transferLessThanZero = () -> score.invoke(bob,"transfer",
+                alice.getAddress(),BigInteger.valueOf(-1),data);
+        expectErrorMessage(transferLessThanZero,"Transferring value cannot be less than 0.");
+
+        Executable insufficientBalance = () -> score.invoke(bob,"transfer",alice.getAddress(),value,data);
+        expectErrorMessage(insufficientBalance,"Insufficient balance");
+
+        // mint token by Rewards Contracts
+        score.invoke(REWARDS_TOKEN_ACCOUNT,"mint",amountToMint,data);
+
+        doReturn( true).when(scoreSpy).call(eq(Boolean.class),eq(
+                Contracts.LENDING_POOL),eq("isFeeSharingEnable"),any());
+
+        // transfer token to bob's account
+        score.invoke(REWARDS_TOKEN_ACCOUNT,"transfer",bob.getAddress(),value,data);
+
+        doReturn(senderAvailableBalance).when(scoreSpy).available_balanceOf(REWARDS_TOKEN_ACCOUNT.getAddress());
+        Executable senderAvialableBalance = () -> score.invoke(REWARDS_TOKEN_ACCOUNT,"transfer",
+                bob.getAddress(),value,data);
+        expectErrorMessage(senderAvialableBalance,"available balance of user " +
+                senderAvailableBalance + "balance to transfer " + value);
+
+        // transfer token from bob to alice
+        BigInteger beforeBalanceBob = (BigInteger) score.call("balanceOf",bob.getAddress());
+        BigInteger beforeBalanceAlice = (BigInteger) score.call("balanceOf",alice.getAddress());
+
+        score.invoke(bob,"transfer",alice.getAddress(),BigInteger.valueOf(10),data);
+
+        BigInteger afterBalanceBob = beforeBalanceBob.subtract(BigInteger.valueOf(10));
+        BigInteger afterBalanceAlice = beforeBalanceAlice.add(BigInteger.valueOf(10));
+
+        assertEquals(afterBalanceBob,score.call("balanceOf",bob.getAddress()));
+        assertEquals(afterBalanceAlice,score.call("balanceOf",alice.getAddress()));
+
+        verify(scoreSpy,times(3)).call(eq(Boolean.class), eq(Contracts.LENDING_POOL), eq("isFeeSharingEnable"), any());
+        verify(scoreSpy).Transfer(bob.getAddress(),alice.getAddress(),BigInteger.valueOf(10),data);
+        verify(scoreSpy).Transfer(REWARDS_TOKEN_ACCOUNT.getAddress(),bob.getAddress(),value,data);
+        verify(scoreSpy).Transfer(ZERO_SCORE_ADDRESS, REWARDS_TOKEN_ACCOUNT.getAddress(),amountToMint,data);
+    }
+
+    @Test
+    public void mint(){
+        Account notRewardScore = sm.createAccount(100);
+        BigInteger amountToMint = BigInteger.valueOf(1000);
+        byte[] data = "mint".getBytes();
+        Executable unauthorized = () -> score.invoke(notRewardScore,"mint", amountToMint,data);
+        expectErrorMessage(unauthorized,"Only reward distribution contract can call mint method");
+
+        Executable zeroValueError = () -> score.invoke(REWARDS_TOKEN_ACCOUNT,"mint", ZERO,data);
+        expectErrorMessage(zeroValueError,"ZeroValueError: _amount: " + ZERO);
+
+        BigInteger beforeTotalSupply = (BigInteger) score.call("totalSupply");
+
+        score.invoke(REWARDS_TOKEN_ACCOUNT,"mint",amountToMint,data);
+
+        BigInteger afterTotalSupply = beforeTotalSupply.add(BigInteger.valueOf(1000));
+        assertEquals(afterTotalSupply,score.call("totalSupply"));
+
+        // userBalance details
+        Map<String,BigInteger >details = (Map<String, BigInteger>) score.call("details_balanceOf",REWARDS_TOKEN_ACCOUNT.getAddress());
+        assertEquals(details.get("totalBalance"),afterTotalSupply);
+
+        // minting again
+        // totalSupply and userBalance should increase by 100.
+        score.invoke(REWARDS_TOKEN_ACCOUNT,"mint",BigInteger.valueOf(100),data);
+
+        BigInteger newAfterTotalSupply = afterTotalSupply.add(BigInteger.valueOf(100)) ;
+        assertEquals(newAfterTotalSupply,score.call("totalSupply"));
+
+        // userBalance details after minting again.
+        Map<String,BigInteger >details1 = (Map<String, BigInteger>) score.call("details_balanceOf",REWARDS_TOKEN_ACCOUNT.getAddress());
+        assertEquals(details1.get("totalBalance"),newAfterTotalSupply);
+
+        verify(scoreSpy).Transfer(ZERO_SCORE_ADDRESS, REWARDS_TOKEN_ACCOUNT.getAddress(),amountToMint,data);
+        verify(scoreSpy).Transfer(ZERO_SCORE_ADDRESS, REWARDS_TOKEN_ACCOUNT.getAddress(),BigInteger.valueOf(100),data);
+    }
+
 }

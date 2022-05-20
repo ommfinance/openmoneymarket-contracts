@@ -49,6 +49,7 @@ public class AbstractOMMTokenTest extends TestBase {
         put(Contracts.WORKER_TOKEN, Account.newScoreAccount(104));
         put(Contracts.OMM_TOKEN, Account.newScoreAccount(105));
         put(Contracts.LENDING_POOL, Account.newScoreAccount(106));
+        put(Contracts.REWARDS,Account.newScoreAccount(107));
     }};
 
     protected DAOFund daoFund;
@@ -93,6 +94,7 @@ public class AbstractOMMTokenTest extends TestBase {
         stakedLP = spy(StakedLP.class);
         feeProvider = spy(FeeProvider.class);
         ommToken = spy(OMMToken.class);
+        rewardDistribution = spy(RewardDistribution.class);
 
 //        doReturn(daoFund).when(scoreSpy).getInstance(DAOFund.class, Contracts.DAO_FUND);
 //        doReturn(rewardDistribution).when(scoreSpy).getInstance(RewardDistribution.class, Contracts.REWARDS);
