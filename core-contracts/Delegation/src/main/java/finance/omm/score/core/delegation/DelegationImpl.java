@@ -32,13 +32,8 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     public static final String TAG = "Delegation";
 
-    public static final String PREPS = "preps";
     public static final String USER_PREPS = "userPreps";
     public static final String PERCENTAGE_DELEGATIONS = "percentageDelegations";
-    public static final String PREP_VOTES = "prepVotes";
-    public static final String USER_VOTES = "userVotes";
-    public static final String TOTAL_VOTES = "totalVotes";
-    //    public static final String EQUAL_DISTRIBUTION = "equalDistribution";
     public static final String CONTRIBUTORS = "contributors";
     public static final String VOTE_THRESHOLD = "voteThreshold";
 
@@ -55,8 +50,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     private final BranchDB<Address, DictDB<Integer, BigInteger>> _percentageDelegations = Context.newBranchDB(
             PERCENTAGE_DELEGATIONS, BigInteger.class);
     private final DictDB<Address, BigInteger> _prepVotes = Context.newDictDB(LOCKED_PREP_VOTES, BigInteger.class);
-//    private final DictDB<Address, BigInteger> _userVotes = Context.newDictDB(USER_VOTES, BigInteger.class);
-//    public final VarDB<BigInteger> _totalVotes = Context.newVarDB(TOTAL_VOTES, BigInteger.class);
     private final ArrayDB<Address> _contributors = Context.newArrayDB(CONTRIBUTORS, Address.class);
     public final VarDB<BigInteger> _voteThreshold = Context.newVarDB(VOTE_THRESHOLD, BigInteger.class);
 
@@ -284,7 +277,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     private void handleCalculation(PrepDelegations[] userDelegations, Address user) {
         BigInteger totalPercentage = BigInteger.ZERO;
-//        BigInteger prepVotes = BigInteger.ZERO;
 
         resetUser(user);
         BigInteger userWorkingBalance = updateWorkingBalance(user);
@@ -309,7 +301,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             userPreps.set(i, address);
             percentageDelegations.set(i, votes);
 
-//            prepVotes = prepVotes.add(prepVote);
             totalPercentage = totalPercentage.add(votes);
         }
         if (!totalPercentage.equals(ICX)) {
@@ -318,10 +309,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                     "sum total of percentages " + totalPercentage +
                     " delegation preferences " + userDelegations.length);
         }
-
-//        _userVotes.set(user, userStakedToken);
-//        BigInteger totalVotes = _totalVotes.getOrDefault(BigInteger.ZERO);
-//        _totalVotes.set(totalVotes.add(prepVotes));
 
         PrepDelegations[] updatedDelegation = computeDelegationPercentages();
 
