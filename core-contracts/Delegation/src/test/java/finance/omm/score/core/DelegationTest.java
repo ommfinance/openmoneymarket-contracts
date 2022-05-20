@@ -56,7 +56,7 @@ public class DelegationTest extends TestBase {
 
     public static final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new java.util.HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
-        put(Contracts.OMM_TOKEN, Account.newScoreAccount(102));
+        put(Contracts.BOOSTED_OMM, Account.newScoreAccount(102));
         put(Contracts.LENDING_POOL_CORE, Account.newScoreAccount(103));
         put(Contracts.STAKING, Account.newScoreAccount(104));
         put(Contracts.sICX, Account.newScoreAccount(105));
@@ -202,11 +202,12 @@ public class DelegationTest extends TestBase {
         Account user1 = sm.createAccount();
 
         initialize();
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.TEN.pow(18));
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user1.getAddress());
 
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", user1.getAddress());
+        BigInteger balance = (BigInteger) delegationScore.call("getWorkingBalance",user1.getAddress());
+        assertEquals(BigInteger.ZERO, balance);
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -216,18 +217,18 @@ public class DelegationTest extends TestBase {
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
-        BigInteger prevTotal = (BigInteger) delegationScore.call("getTotalVotes");
+        BigInteger prevTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
         assertEquals(prevTotal, BigInteger.ZERO);
 
         PrepDelegations[] delegations = getPrepDelegations1(4);
         delegationScore.invoke(user1, "updateDelegations", delegations, user1.getAddress());
-        BigInteger betweenTotal = (BigInteger) delegationScore.call("getTotalVotes");
+        BigInteger betweenTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
 
         delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
-        BigInteger afterTotal = (BigInteger) delegationScore.call("getTotalVotes");
+        BigInteger afterTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
 
         assertEquals(betweenTotal, afterTotal);
-        assertEquals(afterTotal, detailsBalanceOf.get("stakedBalance"));
+        assertEquals(afterTotal, workingBalance);
 
         PrepDelegations[] scoreDelegations = (PrepDelegations[]) delegationScore
                 .call("getUserDelegationDetails", user1.getAddress());
@@ -250,11 +251,9 @@ public class DelegationTest extends TestBase {
      */
     void defaultDelegation() {
         initialize();
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.TEN.pow(18));
-
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", owner.getAddress());
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", owner.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -275,7 +274,7 @@ public class DelegationTest extends TestBase {
         // check for default delegations
         assertArrayEquals(scoreDelegations, defDelegations);
 
-        BigInteger total = (BigInteger) delegationScore.call("getTotalVotes");
+        BigInteger total = (BigInteger) delegationScore.call("getWorkingTotalSupply");
         assertEquals(BigInteger.TEN.pow(18), total);
 
         boolean isDefault = (boolean)delegationScore.call("userDefaultDelegation", owner.getAddress());
@@ -296,13 +295,9 @@ public class DelegationTest extends TestBase {
 
         PrepDelegations[] delegations = getPrepDelegations1(4);
 
-        BigInteger stakedBalance = BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18));
-
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", stakedBalance);
-
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", owner.getAddress());
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", owner.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -319,7 +314,7 @@ public class DelegationTest extends TestBase {
 
         int val = 100 / 4;
         BigInteger defaultVote = exaMultiply(BigInteger.valueOf(val).multiply(BigInteger.valueOf(10).pow(16)),
-                stakedBalance);
+                workingBalance);
 
         for (PrepDelegations prepDelegation: delegations) {
             Address prep = prepDelegation._address;
@@ -352,11 +347,9 @@ public class DelegationTest extends TestBase {
 
         PrepDelegations[] delegations = getPrepDelegations1(2);
 
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.TEN.pow(18));
-
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", owner.getAddress());
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", owner.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -438,18 +431,13 @@ public class DelegationTest extends TestBase {
         PrepDelegations[] delegation1 = getPrepDelegations1(5);
         PrepDelegations[] delegation2 = getPrepDelegations1(4);
 
-        BigInteger staked500 = BigInteger.valueOf(500).multiply(BigInteger.TEN.pow(18));
-        BigInteger staked1000 = BigInteger.valueOf(1000).multiply(BigInteger.TEN.pow(18));
+        BigInteger workingBalance1 = BigInteger.valueOf(500).multiply(BigInteger.TEN.pow(18));
+        BigInteger workingBalance2 = BigInteger.valueOf(1000).multiply(BigInteger.TEN.pow(18));
 
-        Map <String, BigInteger> detailsBalanceOf1 = Map.of("stakedBalance",staked500);
-        Map <String, BigInteger> detailsBalanceOf2 = Map.of("stakedBalance",staked1000);
-
-        doReturn(detailsBalanceOf1).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", user1.getAddress());
-        doReturn(detailsBalanceOf2).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", user2.getAddress());
+        doReturn(workingBalance1).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user1.getAddress());
+        doReturn(workingBalance2).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user2.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -465,7 +453,7 @@ public class DelegationTest extends TestBase {
         // for user 1, delegate to 5 preps
         int val = 100 / 5;
         BigInteger defaultVote = exaMultiply(BigInteger.valueOf(val).multiply(BigInteger.valueOf(10).pow(16)),
-                staked500);
+                workingBalance1);
 
         for (PrepDelegations prepDelegation: delegation1) {
             Address prep = prepDelegation._address;
@@ -476,7 +464,7 @@ public class DelegationTest extends TestBase {
         // for user 2, delegate to 4 preps
         val = 100 / 4;
         defaultVote = exaMultiply(BigInteger.valueOf(val).multiply(BigInteger.valueOf(10).pow(16)),
-                staked1000);
+                workingBalance2);
 
         for (PrepDelegations prepDelegation: delegation2) {
             Address prep = prepDelegation._address;
@@ -495,8 +483,8 @@ public class DelegationTest extends TestBase {
 
         val = 100 / 5;
         BigInteger expectedVote = exaMultiply(BigInteger.valueOf(val).multiply(BigInteger.valueOf(10).pow(16)),
-                staked1000).add(exaMultiply(BigInteger.valueOf(val).multiply(BigInteger.valueOf(10).pow(16)),
-                staked500));
+                workingBalance2).add(exaMultiply(BigInteger.valueOf(val).multiply(BigInteger.valueOf(10).pow(16)),
+                workingBalance1));
 
         for (PrepDelegations prepDelegation: delegation1) {
             Address prep = prepDelegation._address;
@@ -528,11 +516,10 @@ public class DelegationTest extends TestBase {
             delegations[i] = new PrepDelegations(prep, votesInPer);
         }
 
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.TEN.pow(18));
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
 
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", owner.getAddress());
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", owner.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -566,11 +553,10 @@ public class DelegationTest extends TestBase {
             delegations[i] = new PrepDelegations(prep, votesInPer);
         }
 
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.TEN.pow(18));
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
 
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", owner.getAddress());
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", owner.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -598,18 +584,12 @@ public class DelegationTest extends TestBase {
 
         PrepDelegations[] delegation = getPrepDelegations1(4);
 
-        BigInteger staked500 = BigInteger.valueOf(200).multiply(BigInteger.TEN.pow(18));
-        BigInteger staked1000 = BigInteger.valueOf(800).multiply(BigInteger.TEN.pow(18));
-
-        Map <String, BigInteger> detailsBalanceOf1 = Map.of("stakedBalance",staked500);
-        Map <String, BigInteger> detailsBalanceOf2 = Map.of("stakedBalance",staked1000);
-
-        doReturn(detailsBalanceOf1).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", user1.getAddress());
-        doReturn(detailsBalanceOf2).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", user2.getAddress());
+        BigInteger workingBalance1 = BigInteger.valueOf(200).multiply(BigInteger.TEN.pow(18));
+        BigInteger workingBalance2 = BigInteger.valueOf(800).multiply(BigInteger.TEN.pow(18));
+        doReturn(workingBalance1).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user1.getAddress());
+        doReturn(workingBalance2).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user2.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -652,19 +632,10 @@ public class DelegationTest extends TestBase {
         Account user4 = sm.createAccount();
         Account user5 = sm.createAccount();
 
-        BigInteger staked500 = BigInteger.valueOf(500).multiply(BigInteger.TEN.pow(18));
-        Map <String, BigInteger> detailsBalanceOf1 = Map.of("stakedBalance",staked500);
+        BigInteger workingBalance = BigInteger.valueOf(500).multiply(BigInteger.TEN.pow(18));
+        doReturn(workingBalance).when(scoreSpy)
+                .call(eq(BigInteger.class), eq(Contracts.BOOSTED_OMM), eq("balanceOf"), any());
 
-        doReturn(detailsBalanceOf1).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user1.getAddress());
-        doReturn(detailsBalanceOf1).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user2.getAddress());
-        doReturn(detailsBalanceOf1).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user3.getAddress());
-        doReturn(detailsBalanceOf1).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user4.getAddress());
-        doReturn(detailsBalanceOf1).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user5.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
         doReturn(prepDetails).when(scoreSpy)
@@ -680,8 +651,8 @@ public class DelegationTest extends TestBase {
         delegationScore.invoke(user4, "updateDelegations",  new PrepDelegations[0], user4.getAddress());
         delegationScore.invoke(user5, "updateDelegations",  new PrepDelegations[0], user5.getAddress());
 
-        BigInteger total = (BigInteger) delegationScore.call("getTotalVotes");
-        BigInteger expectedTotal = staked500.multiply(BigInteger.valueOf(5));
+        BigInteger total = (BigInteger) delegationScore.call("getWorkingTotalSupply");
+        BigInteger expectedTotal = workingBalance.multiply(BigInteger.valueOf(5));
         assertEquals(expectedTotal, total);
 
         // compute delegation percentages
@@ -750,13 +721,9 @@ public class DelegationTest extends TestBase {
         // delegation for user 4
         delegations4[0] = new PrepDelegations(preps.get(0), exaHelper(100));
 
-        BigInteger staked500 = BigInteger.valueOf(500).multiply(BigInteger.TEN.pow(18));
-        BigInteger staked1000 = BigInteger.valueOf(1000).multiply(BigInteger.TEN.pow(18));
-        BigInteger staked2000 = BigInteger.valueOf(2000).multiply(BigInteger.TEN.pow(18));
-
-        Map <String, BigInteger> detailsBalanceOf1 = Map.of("stakedBalance",staked500);
-        Map <String, BigInteger> detailsBalanceOf2 = Map.of("stakedBalance",staked1000);
-        Map <String, BigInteger> detailsBalanceOf3 = Map.of("stakedBalance",staked2000);
+        BigInteger workingBalance1 = BigInteger.valueOf(500).multiply(BigInteger.TEN.pow(18));
+        BigInteger workingBalance2 = BigInteger.valueOf(1000).multiply(BigInteger.TEN.pow(18));
+        BigInteger workingBalance3 = BigInteger.valueOf(2000).multiply(BigInteger.TEN.pow(18));
 
         /*
          * User 1 -> 500  - 1 (10) |  2 (15) |  3 (25) |  4 (05)  |  5 (45)
@@ -766,16 +733,16 @@ public class DelegationTest extends TestBase {
          * User 5 -> 1000 -  default delegation | 50/50
          */
 
-        doReturn(detailsBalanceOf1).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user1.getAddress());
-        doReturn(detailsBalanceOf2).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user2.getAddress());
-        doReturn(detailsBalanceOf3).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user3.getAddress());
-        doReturn(detailsBalanceOf1).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user4.getAddress());
-        doReturn(detailsBalanceOf2).when(scoreSpy).call(Map.class ,
-                Contracts.OMM_TOKEN,"details_balanceOf", user5.getAddress());
+        doReturn(workingBalance1).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user1.getAddress());
+        doReturn(workingBalance2).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user2.getAddress());
+        doReturn(workingBalance3).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user3.getAddress());
+        doReturn(workingBalance1).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user4.getAddress());
+        doReturn(workingBalance2).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user5.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
         doReturn(prepDetails).when(scoreSpy)
@@ -793,8 +760,8 @@ public class DelegationTest extends TestBase {
 
 
         // total votes check
-        BigInteger total = (BigInteger) delegationScore.call("getTotalVotes");
-        BigInteger expectedTotal = staked2000.add(staked1000).add(staked1000).add(staked500).add(staked500);
+        BigInteger total = (BigInteger) delegationScore.call("getWorkingTotalSupply");
+        BigInteger expectedTotal = workingBalance3.add(workingBalance2).add(workingBalance2).add(workingBalance1).add(workingBalance1);
         assertEquals(total, expectedTotal);
 
         // default delegations check
@@ -945,11 +912,10 @@ public class DelegationTest extends TestBase {
         Account user1 = sm.createAccount();
 
         initialize();
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.TEN.pow(18));
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
 
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(Map.class ,Contracts.OMM_TOKEN,
-                        "details_balanceOf", user1.getAddress());
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user1.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
@@ -959,7 +925,7 @@ public class DelegationTest extends TestBase {
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
-        BigInteger prevTotal = (BigInteger) delegationScore.call("getTotalVotes");
+        BigInteger prevTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
         assertEquals(prevTotal, BigInteger.ZERO);
 
         PrepDelegations[] delegations1 = getPrepDelegations1(4);
@@ -974,7 +940,7 @@ public class DelegationTest extends TestBase {
         delegationScore.invoke(user1, "updateDelegations", delegations3, user1.getAddress());
         delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
 
-        BigInteger newTotal = (BigInteger) delegationScore.call("getTotalVotes");
+        BigInteger newTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
         assertEquals(BigInteger.TEN.pow(18), newTotal);
     }
 
@@ -983,6 +949,7 @@ public class DelegationTest extends TestBase {
     public void userICXDelegationDetails() {
 
         Account user1 = sm.createAccount();
+        Account user2 = sm.createAccount();
 
         initialize();
         List<Address> preps = new ArrayList<>();
@@ -997,12 +964,9 @@ public class DelegationTest extends TestBase {
         delegations1[1] = new PrepDelegations(preps.get(1), exaHelper(40));
         delegations1[2] = new PrepDelegations(preps.get(2), exaHelper(50));
 
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18)));
-        Map <String, BigInteger> totalStaked = Map.of("totalStaked", BigInteger.valueOf(200).multiply(BigInteger.TEN.pow(18)));
-
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(eq(Map.class) ,eq(Contracts.OMM_TOKEN),eq("details_balanceOf"), any());
-        doReturn(totalStaked).when(scoreSpy).call(Map.class ,Contracts.OMM_TOKEN,"getTotalStaked");
+        BigInteger workingBalance = BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18));
+        doReturn(workingBalance).when(scoreSpy)
+                .call(eq(BigInteger.class) ,eq(Contracts.BOOSTED_OMM),eq("balanceOf"), any());
 
         // 2 * 10 ** 18
         BigInteger twoExa = BigInteger.TWO.multiply(BigInteger.TEN.pow(18));
@@ -1019,6 +983,7 @@ public class DelegationTest extends TestBase {
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
         delegationScore.invoke(user1, "updateDelegations", delegations1, user1.getAddress());
+        delegationScore.invoke(user2, "updateDelegations", delegations1, user2.getAddress());
 
         List<PrepICXDelegations> user1IcxDelegations = (List<PrepICXDelegations>)
                 delegationScore.call("getUserICXDelegation", user1.getAddress());
@@ -1046,6 +1011,7 @@ public class DelegationTest extends TestBase {
         Account user1 = sm.createAccount();
         Account user2 = sm.createAccount();
         Account user3 = sm.createAccount();
+        Account user4 = sm.createAccount();
 
         initialize();
         List<Address> preps = new ArrayList<>();
@@ -1065,12 +1031,18 @@ public class DelegationTest extends TestBase {
         delegations2[0] = new PrepDelegations(preps.get(0), exaHelper(60));
         delegations2[1] = new PrepDelegations(preps.get(3), exaHelper(40));
 
-        Map <String, BigInteger> detailsBalanceOf = Map.of("stakedBalance", BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18)));
-        Map <String, BigInteger> totalStaked = Map.of("totalStaked", BigInteger.valueOf(2000L).multiply(BigInteger.TEN.pow(18)));
+        BigInteger workingBalance = BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18));
+        BigInteger workingBalanceX = BigInteger.valueOf(1700).multiply(BigInteger.TEN.pow(18));
 
-        doReturn(detailsBalanceOf).when(scoreSpy)
-                .call(eq(Map.class) ,eq(Contracts.OMM_TOKEN),eq("details_balanceOf"), any());
-        doReturn(totalStaked).when(scoreSpy).call(Map.class ,Contracts.OMM_TOKEN,"getTotalStaked");
+
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user1.getAddress());
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user2.getAddress());
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user3.getAddress());
+        doReturn(workingBalanceX).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user4.getAddress());
 
         // 2 * 10 ** 18
         BigInteger twoExa = BigInteger.TWO.multiply(BigInteger.TEN.pow(18));
@@ -1089,6 +1061,7 @@ public class DelegationTest extends TestBase {
         delegationScore.invoke(user1, "updateDelegations", delegations1, user1.getAddress());
         delegationScore.invoke(user2, "updateDelegations", delegations2, user2.getAddress());
         delegationScore.invoke(user3, "updateDelegations", new PrepDelegations[0], user3.getAddress());
+        delegationScore.invoke(user4, "updateDelegations", new PrepDelegations[0], user4.getAddress());
 
         List<PrepICXDelegations> user1IcxDelegations = (List<PrepICXDelegations>)
                 delegationScore.call("getUserICXDelegation", user1.getAddress());
@@ -1120,6 +1093,19 @@ public class DelegationTest extends TestBase {
         BigInteger expected = exaMultiply(BigInteger.valueOf(100).multiply(BigInteger.TEN.pow(18)), exaHelper(50));
         assertEquals(expected,user3IcxDelegations.get(0)._votes_in_icx);
         assertEquals(expected,user3IcxDelegations.get(1)._votes_in_icx);
+    }
+
+    @Test
+    public void initializeVoteToContributors() {
+        initialize();
+        Account user = sm.createAccount();
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
+
+        delegationScore.invoke(owner, "initializeVoteToContributors");
+        // calling this function again
+        Executable call = () -> delegationScore.invoke(owner, "initializeVoteToContributors");
+
+        expectErrorMessage(call, "Delegation : This method cannot be called again.");
     }
 
 

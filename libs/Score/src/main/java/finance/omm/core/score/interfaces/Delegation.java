@@ -12,8 +12,6 @@ public interface Delegation {
 
     String name();
 
-    BigInteger getTotalVotes();
-
     void setVoteThreshold(BigInteger _vote);
 
     BigInteger getVoteThreshold();
@@ -35,6 +33,10 @@ public interface Delegation {
     void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user);
 
     BigInteger prepVotes(Address _prep);
+
+    BigInteger getWorkingBalance(Address _user);
+
+    BigInteger getWorkingTotalSupply();
 
     Map<String,BigInteger> userPrepVotes(Address _user);
 
