@@ -1,6 +1,7 @@
 package finance.omm.score.test.unit.OMMToken;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
 import com.iconloop.score.test.Account;
@@ -23,7 +24,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import score.Address;
+import score.BranchDB;
+import score.Context;
+import score.DictDB;
 
 public class AbstractOMMTokenTest extends TestBase {
     public static final ServiceManager sm = getServiceManager();
@@ -35,6 +41,7 @@ public class AbstractOMMTokenTest extends TestBase {
     public static final BigInteger ONE = BigInteger.ONE;
     public static final BigInteger SIXTY = BigInteger.valueOf(60L);
     public static final BigInteger THOUSAND = BigInteger.valueOf(1000L);
+    public static final BigInteger THOUSAND_ICX = THOUSAND.multiply(ICX);
 
 
     protected Address[] addresses = new Address[]{
@@ -71,8 +78,19 @@ public class AbstractOMMTokenTest extends TestBase {
         sm.getBlock().increase(blocks);
     }
 
+    MockedStatic<Context> contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
+
+    protected BranchDB<Address, DictDB<Integer, BigInteger>> stakedBalances =
+            Mockito.mock(BranchDB.class);
+
+    protected DictDB<Integer, BigInteger> stakedDictDB =
+            Mockito.mock(DictDB.class);
+
     @BeforeEach
     void setup() throws Exception {
+        contextMock
+                .when(() -> Context.newBranchDB("staked_balances", BigInteger.class))
+                .thenReturn(stakedBalances);
 
         owner = sm.createAccount(100);
 
@@ -81,28 +99,9 @@ public class AbstractOMMTokenTest extends TestBase {
         setAddresses();
         OMMTokenImpl t = (OMMTokenImpl) score.getInstance();
         scoreSpy = spy(t);
-        mockScoreClients();
         score.setInstance(scoreSpy);
     }
 
-    /**
-     * mock score clients
-     */
-    private void mockScoreClients() {
-        daoFund = spy(DAOFund.class);
-        lendingPoolCore = spy(LendingPoolCore.class);
-        stakedLP = spy(StakedLP.class);
-        feeProvider = spy(FeeProvider.class);
-        ommToken = spy(OMMToken.class);
-        rewardDistribution = spy(RewardDistribution.class);
-
-//        doReturn(daoFund).when(scoreSpy).getInstance(DAOFund.class, Contracts.DAO_FUND);
-//        doReturn(rewardDistribution).when(scoreSpy).getInstance(RewardDistribution.class, Contracts.REWARDS);
-//        doReturn(lendingPoolCore).when(scoreSpy).getInstance(LendingPoolCore.class, Contracts.LENDING_POOL_CORE);
-//        doReturn(stakedLP).when(scoreSpy).getInstance(StakedLP.class, Contracts.STAKED_LP);
-//        doReturn(feeProvider).when(scoreSpy).getInstance(FeeProvider.class, Contracts.FEE_PROVIDER);
-//        doReturn(ommToken).when(scoreSpy).getInstance(OMMToken.class, Contracts.OMM_TOKEN);
-    }
 
 
     private void setAddresses() {

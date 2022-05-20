@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
+import finance.omm.score.token.enums.Status;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.Mockito;
 import score.Address;
 
 public class OMMTokenTest extends AbstractOMMTokenTest {
@@ -199,7 +201,8 @@ public class OMMTokenTest extends AbstractOMMTokenTest {
         assertEquals(afterBalanceBob,score.call("balanceOf",bob.getAddress()));
         assertEquals(afterBalanceAlice,score.call("balanceOf",alice.getAddress()));
 
-        verify(scoreSpy,times(3)).call(eq(Boolean.class), eq(Contracts.LENDING_POOL), eq("isFeeSharingEnable"), any());
+        verify(scoreSpy,times(3)).call(eq(Boolean.class),
+                eq(Contracts.LENDING_POOL), eq("isFeeSharingEnable"), any());
         verify(scoreSpy).Transfer(bob.getAddress(),alice.getAddress(),BigInteger.valueOf(10),data);
         verify(scoreSpy).Transfer(REWARDS_TOKEN_ACCOUNT.getAddress(),bob.getAddress(),value,data);
         verify(scoreSpy).Transfer(ZERO_SCORE_ADDRESS, REWARDS_TOKEN_ACCOUNT.getAddress(),amountToMint,data);
@@ -224,7 +227,8 @@ public class OMMTokenTest extends AbstractOMMTokenTest {
         assertEquals(afterTotalSupply,score.call("totalSupply"));
 
         // userBalance details
-        Map<String,BigInteger >details = (Map<String, BigInteger>) score.call("details_balanceOf",REWARDS_TOKEN_ACCOUNT.getAddress());
+        Map<String,BigInteger >details = (Map<String, BigInteger>) score.
+                call("details_balanceOf",REWARDS_TOKEN_ACCOUNT.getAddress());
         assertEquals(details.get("totalBalance"),afterTotalSupply);
 
         // minting again
@@ -235,11 +239,79 @@ public class OMMTokenTest extends AbstractOMMTokenTest {
         assertEquals(newAfterTotalSupply,score.call("totalSupply"));
 
         // userBalance details after minting again.
-        Map<String,BigInteger >details1 = (Map<String, BigInteger>) score.call("details_balanceOf",REWARDS_TOKEN_ACCOUNT.getAddress());
+        Map<String,BigInteger >details1 = (Map<String, BigInteger>) score.call
+                ("details_balanceOf",REWARDS_TOKEN_ACCOUNT.getAddress());
         assertEquals(details1.get("totalBalance"),newAfterTotalSupply);
 
         verify(scoreSpy).Transfer(ZERO_SCORE_ADDRESS, REWARDS_TOKEN_ACCOUNT.getAddress(),amountToMint,data);
         verify(scoreSpy).Transfer(ZERO_SCORE_ADDRESS, REWARDS_TOKEN_ACCOUNT.getAddress(),BigInteger.valueOf(100),data);
     }
 
+    @Test
+    public void stake() {
+        Account LENDING_POOL = MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL);
+        Executable notLendingPool = () -> score.invoke(notOwner, "stake", THOUSAND_ICX, notOwner.getAddress());
+        expectErrorMessage(notLendingPool, "Only lending pool contract can call stake method");
+
+        Executable notSupported = () -> score.invoke(LENDING_POOL, "stake", THOUSAND_ICX, notOwner.getAddress());
+        expectErrorMessage(notSupported, "Staking of OMM token no longer supported.");
+    }
+
+    private void mockStakedBalance(BigInteger staked, BigInteger unstaking, BigInteger unstakingPeriod) {
+        Mockito.reset(stakedBalances);
+        Mockito.reset(stakedDictDB);
+
+        doReturn(stakedDictDB).when(stakedBalances).at(any());
+        doReturn(staked).when(stakedDictDB).getOrDefault(Status.STAKED.getKey(), ZERO);
+        doReturn(unstaking).when(stakedDictDB).getOrDefault(Status.UNSTAKING.getKey(), ZERO);
+        doReturn(unstakingPeriod).when(stakedDictDB).getOrDefault(Status.UNSTAKING_PERIOD.getKey(), ZERO);
+    }
+
+    @Test
+    public void stakedBalanceTransfer() {
+        Account userWallet = sm.createAccount(10);
+        Address user = userWallet.getAddress();
+        byte[] data = new byte[0];
+
+        mockStakedBalance(ZERO,ZERO,ZERO);
+        score.invoke(REWARDS_TOKEN_ACCOUNT,"mint",THOUSAND_ICX, "data".getBytes());
+
+        doReturn( true).when(scoreSpy).call(eq(Boolean.class),eq(
+                Contracts.LENDING_POOL),eq("isFeeSharingEnable"),any());
+
+        score.invoke(REWARDS_TOKEN_ACCOUNT,"transfer",user,THOUSAND_ICX, data);
+
+        Map<?,?> value = (Map<?,?>) score.call("details_balanceOf", user);
+        assertEquals(value.get("totalBalance"), THOUSAND_ICX);
+        assertEquals(value.get("availableBalance"), THOUSAND_ICX);
+        assertEquals(value.get("unstakingBalance"), ZERO);
+        assertEquals(value.get("stakedBalance"), ZERO);
+        assertEquals(value.get("unstakingTimeInMicro"), ZERO);
+
+        mockStakedBalance(ICX, ZERO, ZERO);
+        Address user2 = sm.createAccount(10).getAddress();
+        Executable insufficient = () -> score.invoke(userWallet,"transfer", user2, THOUSAND_ICX, data);
+        BigInteger senderAvailableBalance = THOUSAND_ICX.subtract(ICX);
+        expectErrorMessage(insufficient, "available balance of user " +
+                senderAvailableBalance + "balance to transfer " + THOUSAND_ICX);
+
+
+        score.invoke(userWallet,"transfer", user2, senderAvailableBalance, data);
+
+        Map<?,?> senderDetails = (Map<?,?>) score.call("details_balanceOf", user);
+        System.out.println(senderDetails);
+        assertEquals(senderDetails.get("totalBalance"), ICX);
+        assertEquals(senderDetails.get("availableBalance"), ZERO);
+        assertEquals(senderDetails.get("unstakingBalance"), ZERO);
+        assertEquals(senderDetails.get("stakedBalance"), ICX);
+        assertEquals(senderDetails.get("unstakingTimeInMicro"), ZERO);
+
+        Map<?,?> recieverDetails = (Map<?,?>) score.call("details_balanceOf", user2);
+        assertEquals(recieverDetails.get("totalBalance"), senderAvailableBalance);
+        assertEquals(recieverDetails.get("availableBalance"), senderAvailableBalance.subtract(ICX));
+        assertEquals(recieverDetails.get("unstakingBalance"), ZERO);
+        assertEquals(recieverDetails.get("stakedBalance"), ICX);
+        assertEquals(recieverDetails.get("unstakingTimeInMicro"), ZERO);
+
+    }
 }

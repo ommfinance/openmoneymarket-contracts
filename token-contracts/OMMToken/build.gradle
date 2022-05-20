@@ -8,7 +8,7 @@ dependencies {
 
     testImplementation project(':TestUtils')
 
-
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.3.0'
 }
 
 optimizedJar {
