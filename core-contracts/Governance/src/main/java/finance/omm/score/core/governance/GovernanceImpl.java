@@ -383,12 +383,6 @@ public class GovernanceImpl extends AbstractGovernance {
         Address sender = Context.getCaller();
         BigInteger snapshot = proposal.voteSnapshot.get();
 
-//        BigInteger stake = ommToken.stakedBalanceOfAt(sender, snapshot);
-//        if (stake.equals(BigInteger.ZERO)) {
-//            throw GovernanceException.unknown("Omm tokens need to be staked to cast the vote.");
-//
-//        }
-
         BigInteger votingWeight = myVotingWeight(sender,snapshot);
         if (votingWeight.equals(BigInteger.ZERO)) {
             throw GovernanceException.unknown("Boosted OMM tokens needed to cast the vote.");
@@ -514,10 +508,7 @@ public class GovernanceImpl extends AbstractGovernance {
         if (proposal == null) {
             return Map.of();
         }
-//        OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
-//        BigInteger totalOMMStaked = ommToken.totalStakedBalanceOfAt(proposal.voteSnapshot.get());
 
-//        BoostedToken boostedToken = getInstance(BoostedToken.class,Contracts.BOOSTED_OMM);
         BigInteger totalVotingWeight = proposal.totalVotingWeight.get();
 
         BigInteger totalForVoted = proposal.totalForVotes.getOrDefault(BigInteger.ZERO);
