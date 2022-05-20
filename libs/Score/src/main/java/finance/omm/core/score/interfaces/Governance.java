@@ -66,9 +66,9 @@ public interface Governance extends AddressProvider {
     BigInteger getVoteDefinitionFee();
 
 
-    void setOmmVoteDefinitionCriterion(BigInteger percentage);
+    void setBoostedVoteDefinitionCriterion(BigInteger percentage);
 
-    BigInteger getOmmVoteDefinitionCriterion();
+    BigInteger getBoostedOmmVoteDefinitionCriterion();
 
     void cancelVote(int vote_index);
 
@@ -104,5 +104,9 @@ public interface Governance extends AddressProvider {
 
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
+
+    void enableHandleActions();
+
+    void disableHandleActions();
 
 }

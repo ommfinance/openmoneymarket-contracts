@@ -29,6 +29,7 @@ public class ProposalDB {
     public final VarDB<BigInteger> forVotersCount;
     public final VarDB<BigInteger> againstVotersCount;
     public final VarDB<BigInteger> totalAgainstVotes;
+    public final VarDB<BigInteger> totalVotingWeight;
     public final VarDB<String> status;
     public final VarDB<BigInteger> fee;
     public final VarDB<Boolean> feeRefunded;
@@ -54,6 +55,7 @@ public class ProposalDB {
         forVotersCount = Context.newVarDB(key + "_for_voters_count", BigInteger.class);
         againstVotersCount = Context.newVarDB(key + "_against_voters_count", BigInteger.class);
         totalAgainstVotes = Context.newVarDB(key + "_total_against_votes", BigInteger.class);
+        totalVotingWeight = Context.newVarDB(key + "_total_voting_weight", BigInteger.class);
         status = Context.newVarDB(key + "_status", String.class);
         fee = Context.newVarDB(key + "_fee", BigInteger.class);
         feeRefunded = Context.newVarDB(key + "_fee_refunded", Boolean.class);
@@ -82,6 +84,7 @@ public class ProposalDB {
         public BigInteger snapshot;
         public BigInteger startVote;
         public BigInteger endVote;
+        public BigInteger totalVotingWeight;
         public BigInteger fee;
         public String forum;
 
@@ -122,6 +125,11 @@ public class ProposalDB {
             return this;
         }
 
+        public ProposalBuilder setTotalVotingWeight(BigInteger totalVotingWeight) {
+            this.totalVotingWeight = totalVotingWeight;
+            return this;
+        }
+
         public ProposalBuilder setFee(BigInteger fee) {
             this.fee = fee;
             return this;
@@ -155,6 +163,7 @@ public class ProposalDB {
 
             proposal.forVotersCount.set(BigInteger.ZERO);
             proposal.againstVotersCount.set(BigInteger.ZERO);
+            proposal.totalVotingWeight.set(totalVotingWeight);
             validateProposalDB(proposal);
             return proposal;
         }
