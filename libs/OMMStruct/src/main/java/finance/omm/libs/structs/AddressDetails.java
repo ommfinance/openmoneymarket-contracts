@@ -14,4 +14,6 @@ public class AddressDetails {
         this.name = name;
         this.address = address;
     }
+
+
 }

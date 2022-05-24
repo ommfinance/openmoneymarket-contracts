@@ -1,5 +1,6 @@
 package finance.omm.utils.constants;
 
+import finance.omm.utils.exceptions.OMMException;
 import finance.omm.utils.math.UnsignedBigInteger;
 import java.math.BigInteger;
 import score.Context;
@@ -44,6 +45,11 @@ public class TimeConstants {
      * @param format - SECONDS, MILLI_SECONDS, MICRO_SECONDS
      */
     public static void checkIsValidTimestamp(BigInteger value, Timestamp format) {
+        checkIsValidTimestamp(value, format,
+                OMMException.unknown("Invalid timestamp value " + value + " (" + format + ")"));
+    }
+
+    public static void checkIsValidTimestamp(BigInteger value, Timestamp format, OMMException exception) {
         boolean isValid = false;
         switch (format) {
             case SECONDS:
@@ -57,7 +63,7 @@ public class TimeConstants {
                 break;
         }
         if (!isValid) {
-            Context.revert("Invalid timestamp value " + value + " (" + format + ")");
+            throw exception;
         }
     }
 }
