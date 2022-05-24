@@ -3,7 +3,6 @@ package finance.omm.libs.address;
 
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.utils.exceptions.OMMException;
-
 import java.util.Map;
 import score.Address;
 import score.ArrayDB;
@@ -31,14 +30,14 @@ public class AddressProvider {
             return;
         }
 
-        if (_addressProvider.getOrDefault(null) == null) {
+        if (_addressProvider.get() == null) {
             _addressProvider.set(addressProvider);
         }
     }
 
-	public void onUpdate() {
-		Context.println(TAG + " | on update");
-	}
+    public void onUpdate() {
+        Context.println(TAG + " | on update");
+    }
 
     @External
     public void setAddresses(AddressDetails[] _addressDetails) {
@@ -73,9 +72,22 @@ public class AddressProvider {
         return this._addressProvider.get();
     }
 
+    public void call(Address address, String method, Object... params) {
+        Context.call(address, method, params);
+    }
+
+    public void call(Contracts contract, String method, Object... params) {
+        call(getAddress(contract.getKey()), method, params);
+    }
+
+    public  <K> K call(Class<K> kClass, Contracts contract, String method, Object... params) {
+        return Context.call(kClass, getAddress(contract.getKey()), method, params);
+    }
 
     protected void checkAddressProvider() {
-        Context.require(Context.getCaller().equals(_addressProvider.get()), "require Address provider contract access");
+        if (!Context.getCaller().equals(_addressProvider.get())) {
+            throw OMMException.unknown("require Address provider contract access");
+        }
     }
 
     public void onlyOrElseThrow(Contracts contract, OMMException ommException) {

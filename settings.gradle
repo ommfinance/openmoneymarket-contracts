@@ -9,8 +9,15 @@ findProject(":RewardWeightController").projectDir = file("core-contracts/RewardW
 include(":RewardDistribution")
 findProject(":RewardDistribution").projectDir = file("core-contracts/RewardDistribution")
 
+include(":Delegation")
+findProject(":Delegation").projectDir = file("core-contracts/Delegation")
+
+include(":AddressManager")
+findProject(":AddressManager").projectDir = file("core-contracts/AddressManager")
+
 include(':AddressProvider')
 findProject(":AddressProvider").projectDir = file("libs/AddressProvider")
+
 include(':OMMStruct')
 findProject(":OMMStruct").projectDir = file("libs/OMMStruct")
 
@@ -28,3 +35,10 @@ findProject(":Score").projectDir = file("libs/Score")
 
 include('DaoFund')
 findProject(":DaoFund").projectDir = file("core-contracts/DaoFund")
+
+include(":Governance")
+findProject(":Governance").projectDir = file("core-contracts/Governance")
+
+include(":OMMToken")
+findProject(":OMMToken").projectDir = file("token-contracts/OMMToken")
+

@@ -1,10 +1,12 @@
 package finance.omm.core.score.interfaces;
 
+import foundation.icon.score.client.ScoreInterface;
 import java.math.BigInteger;
 import score.Address;
 import score.annotation.Optional;
 
-public interface DaoFund extends AddressProvider {
+@ScoreInterface(suffix = "Client")
+public interface DAOFund extends AddressProvider {
 
     String name();
 

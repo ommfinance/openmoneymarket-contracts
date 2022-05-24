@@ -1,34 +1,21 @@
 package finance.omm.utils.db;
 
-/*
- * Copyright 2021 ICON Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+import java.util.List;
 import score.ArrayDB;
 import score.Context;
 import score.DictDB;
+import scorex.util.ArrayList;
 
 public class EnumerableSet<V> {
+
     private final ArrayDB<V> entries;
     private final DictDB<V, Integer> indexes;
 
-    public EnumerableSet(String id, Class<V> valueClass) {
+    public EnumerableSet(String varKey, Class<V> valueClass) {
         // array of valueClass
-        this.entries = Context.newArrayDB(id, valueClass);
+        this.entries = Context.newArrayDB(varKey + "_es_entries", valueClass);
         // value => array index
-        this.indexes = Context.newDictDB(id, Integer.class);
+        this.indexes = Context.newDictDB(varKey + "_es_indexes", Integer.class);
     }
 
     public int length() {
@@ -43,6 +30,15 @@ public class EnumerableSet<V> {
         return indexes.get(value) != null;
     }
 
+    public Integer indexOf(V value) {
+        // returns null if value doesn't exist
+        Integer result = indexes.get(value);
+        if (result != null) {
+            return result - 1;
+        }
+        return null;
+    }
+
     public void add(V value) {
         if (!contains(value)) {
             // add new value
@@ -51,18 +47,30 @@ public class EnumerableSet<V> {
         }
     }
 
-    public void remove(V value) {
-        var valueIndex = indexes.get(value);
+    public V remove(V value) {
+        Integer valueIndex = indexOf(value);
+
         if (valueIndex != null) {
-            // pop and swap with the last entry
-            int lastIndex = entries.size();
+            int lastIndex = entries.size() - 1;
             V lastValue = entries.pop();
             indexes.set(value, null);
             if (lastIndex != valueIndex) {
-                entries.set(valueIndex - 1, lastValue);
-                indexes.set(lastValue, valueIndex);
+                entries.set(valueIndex, lastValue);
+                indexes.set(lastValue, valueIndex + 1);
+                return lastValue;
             }
         }
+        return null;
+    }
+
+    public List<V> range(int start, int end) {
+        List<V> result = new ArrayList<>();
+        int _end = Math.min(end, length() - 1);
+
+        for (int i = start; i < _end; i++) {
+            result.add(at(i));
+        }
+        return result;
     }
 
     public ArrayDB<V> getEntries() {
