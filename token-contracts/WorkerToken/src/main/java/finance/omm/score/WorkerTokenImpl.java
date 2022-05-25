@@ -8,6 +8,7 @@ import java.util.List;
 
 import finance.omm.core.score.interfaces.WorkerToken;
 import finance.omm.utils.db.EnumerableSet;
+import finance.omm.utils.math.MathUtils;
 import score.Address;
 import score.ArrayDB;
 import score.Context;
@@ -47,7 +48,7 @@ public class WorkerTokenImpl implements WorkerToken {
             Context.revert("Decimals cannot be less than zero");
         }
 
-        BigInteger totalSupply = _initialSupply.multiply(pow(TEN, _decimals.intValue()));
+        BigInteger totalSupply = _initialSupply.multiply(MathUtils.pow(TEN, _decimals.intValue()));
         Context.println(TAG + "| total_supply " + totalSupply);
 
         this.totalSupply.set(totalSupply);
@@ -98,9 +99,7 @@ public class WorkerTokenImpl implements WorkerToken {
             _data = "None".getBytes();
         }
 
-        if (!wallets.contains(_to)) {
-            this.wallets.add(_to);
-        }
+        this.wallets.add(_to);
         this._transfer(Context.getCaller(), _to, _value, _data);
     }
 
@@ -137,14 +136,6 @@ public class WorkerTokenImpl implements WorkerToken {
     @External(readonly = true)
     public List<Address> getWallets() {
         return arrayDbToList(this.wallets.getEntries());
-    }
-
-    private static BigInteger pow(BigInteger base, int exponent) {
-        BigInteger result = BigInteger.ONE;
-        for (int i = 0; i < exponent; i++) {
-            result = result.multiply(base);
-        }
-        return result;
     }
 
     private <T> List<T> arrayDbToList(ArrayDB<T> arraydb) {

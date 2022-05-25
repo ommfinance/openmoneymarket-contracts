@@ -3,10 +3,11 @@ package finance.omm.core.score.interfaces;
 import java.math.BigInteger;
 import java.util.List;
 
+import finance.omm.core.score.interfaces.token.IRC2;
 import score.Address;
 import score.annotation.Optional;
 
-public interface WorkerToken {
+public interface WorkerToken extends IRC2{
 
     String name();
     String symbol();
