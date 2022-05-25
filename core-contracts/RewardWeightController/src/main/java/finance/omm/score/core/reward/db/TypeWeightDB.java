@@ -52,7 +52,7 @@ public class TypeWeightDB implements Searchable {
         BigInteger latestCheckpoint = this.timeCheckpoint.getOrDefault(checkpointCounter, BigInteger.ZERO);
         int compareValue = latestCheckpoint.compareTo(timestamp);
 
-        if (latestCheckpoint.compareTo(timestamp) > 0) {
+        if (compareValue > 0) {
             throw RewardWeightException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
         }
 
