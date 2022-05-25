@@ -7,7 +7,6 @@ import java.math.BigInteger;
 
 import org.junit.jupiter.api.Test;
 
-import finance.omm.core.score.interfaces.DaoFund;
 import finance.omm.core.score.interfaces.WorkerToken;
 import finance.omm.core.score.interfaces.WorkerTokenScoreClient;
 import finance.omm.libs.test.ScoreIntegrationTest;
