@@ -297,7 +297,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
 
-    @Override
+    @External
     public void distribute() {
         BigInteger day = distributedDay.getOrDefault(BigInteger.ZERO);  //0
 
@@ -364,20 +364,19 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
 
-    @Override
     @External(readonly = true)
     public BigInteger getDistributedDay() {
         return this.distributedDay.get();
     }
 
-    @Override
+    @External
     public void transferOmmToDaoFund(BigInteger _value) {
         checkGovernance();
         Address daoFundAddress = this.getAddress(Contracts.DAO_FUND.getKey());
         call(Contracts.OMM_TOKEN, "transfer", daoFundAddress, _value);
     }
 
-    @Override
+    @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
 
     }
