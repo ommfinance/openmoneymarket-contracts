@@ -330,8 +330,9 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             if (Contracts.WORKER_TOKEN.getKey().equals(transferToContractMap.get(key))) {
                 distributeWorkerToken(accruedRewards);
             } else if (Contracts.DAO_FUND.getKey().equals(transferToContractMap.get(key))) {
-                call(Contracts.OMM_TOKEN, "transfer", Contracts.DAO_FUND, accruedRewards);
-                Distribution("daoFund", getAddress(Contracts.DAO_FUND.toString()), accruedRewards);
+                Address daoFundAddress = getAddress(Contracts.DAO_FUND.getKey());
+                call(Contracts.OMM_TOKEN, "transfer", daoFundAddress, accruedRewards);
+                Distribution("daoFund", daoFundAddress, accruedRewards);
             }
         }
 
