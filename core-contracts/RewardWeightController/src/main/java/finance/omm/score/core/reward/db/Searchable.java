@@ -13,19 +13,20 @@ public interface Searchable {
             return checkpointCount;
         }
 
+        /*
+        return previous checkpoint if latest timestamp and search timestamp is equals
+         */
         if (latestTimestamp.compareTo(timestamp) == 0 && checkpointCount != 1) {
             return checkpointCount - 1;
         }
+           /*
+        return 0  if latest timestamp is greater than search timestamp
+        searching for old timestamp than first checkpoint's timestamp
+         */
         if (checkpointCount == 1 && latestTimestamp.compareTo(timestamp) >= 0) {
             return 0;
         }
 
-        if (checkpointCount != 1) {
-            BigInteger firstTimestamp = timeCheckpoints.get(1);
-            if (firstTimestamp != null && firstTimestamp.compareTo(timestamp) >= 0) {
-                return 1;
-            }
-        }
         int lower = 1, upper = checkpointCount;
         while (lower < upper) {
             int mid = (upper + lower + 1) / 2;

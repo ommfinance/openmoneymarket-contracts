@@ -36,6 +36,9 @@ import score.Address;
 public class RewardControllerUnitTest extends TestBase {
 
     private static final ServiceManager sm = getServiceManager();
+
+    private static final BigInteger TEN_SECOND_IN_MICROSECONDS = BigInteger.TEN.multiply(BigInteger.TEN.pow(6));
+
     private Account owner;
     private Score score;
     private RewardWeightControllerImpl scoreSpy;
@@ -113,7 +116,7 @@ public class RewardControllerUnitTest extends TestBase {
         addType(mockAddress.get(Contracts.REWARDS), "Key-1");
 
         Executable call = () -> addType(mockAddress.get(Contracts.REWARDS), "Key-1");
-        expectErrorMessage(call, "duplicate key (Key-1)");
+        expectErrorMessage(call, "duplicate type (Key-1)");
     }
 
     @DisplayName("invalid total type weight")
@@ -138,7 +141,8 @@ public class RewardControllerUnitTest extends TestBase {
         initTypeWeight(BigInteger.ZERO, 10L, 20L, 70L);
 
         Map<Integer, BigInteger> snapshots = new HashMap<>();
-        snapshots.put(1, getTimestamp());
+
+        snapshots.put(1, getTimestamp().add(TEN_SECOND_IN_MICROSECONDS));
 
         verify(scoreSpy).SetTypeWeight(getTimestamp(), "Type weight updated");
 
@@ -151,7 +155,7 @@ public class RewardControllerUnitTest extends TestBase {
         }});
 
         checkpoints = (BigInteger) score.call("getTypeCheckpointCount");
-        assertEquals(BigInteger.ONE, checkpoints);
+        assertEquals(BigInteger.TWO, checkpoints);
 
         Executable call = () -> setTypeWeight(snapshots.get(1), new HashMap<>() {{
             put(1, 40L);

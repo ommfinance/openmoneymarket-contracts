@@ -1,6 +1,6 @@
 package finance.omm.score.core.reward.db;
 
-import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.HUNDRED_PERCENT;
 
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.score.core.reward.exception.RewardWeightException;
@@ -12,65 +12,69 @@ import score.BranchDB;
 import score.Context;
 import score.DictDB;
 import score.VarDB;
-import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
 public class TypeWeightDB implements Searchable {
 
     private final static String TAG = "Type Weight DB";
     private final TypeDB types;
+    //checkpoint -> name of type -> weight value
     private final BranchDB<Integer, DictDB<String, BigInteger>> wCheckpoint;
-    private final DictDB<Integer, BigInteger> totalCheckpoint;
-    private final DictDB<Integer, BigInteger> tCheckpoint;
+    //checkpoint -> sum of all weights at checkpoint
+    private final DictDB<Integer, BigInteger> totalAtCheckpoint;
+    //checkpoint -> timestamp
+    private final DictDB<Integer, BigInteger> timeCheckpoint;
     private final VarDB<Integer> checkpointCounter;
 
 
     public TypeWeightDB(String id) {
         this.types = new TypeDB(id + "type-key-name");
         this.checkpointCounter = Context.newVarDB(id + "CheckpointCounter", Integer.class);
-        this.totalCheckpoint = Context.newDictDB(id + "Total", BigInteger.class);
+        this.totalAtCheckpoint = Context.newDictDB(id + "Total", BigInteger.class);
         this.wCheckpoint = Context.newBranchDB(id + "WeightCheckpoint", BigInteger.class);
-        this.tCheckpoint = Context.newDictDB(id + "TimestampCheckpoint", BigInteger.class);
+        this.timeCheckpoint = Context.newDictDB(id + "TimestampCheckpoint", BigInteger.class);
     }
 
-    public boolean isKeyExists(String key) {
-        return types.getOrDefault(key, null) != null;
+    public boolean isTypeExists(String type) {
+        return types.get(type) != null;
     }
 
 
-    public void add(String key, Boolean transferToContract) {
-        if (isKeyExists(key)) {
-            throw RewardWeightException.unknown("duplicate key (" + key + ")");
+    public void add(String type, Boolean transferToContract) {
+        if (isTypeExists(type)) {
+            throw RewardWeightException.unknown("duplicate type (" + type + ")");
         }
-        this.types.put(key, transferToContract);
+        this.types.put(type, transferToContract);
     }
-
-    public boolean isValidId(String typeId) {
-        return this.types.get(typeId) != null;
-    }
-
 
     public void setWeights(TypeWeightStruct[] weights, BigInteger timestamp) {
         Integer checkpointCounter = this.checkpointCounter.getOrDefault(0);
-        BigInteger latestCheckpoint = this.tCheckpoint.getOrDefault(checkpointCounter, BigInteger.ZERO);
+        BigInteger latestCheckpoint = this.timeCheckpoint.getOrDefault(checkpointCounter, BigInteger.ZERO);
         int compareValue = latestCheckpoint.compareTo(timestamp);
 
         if (compareValue > 0) {
             throw RewardWeightException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
         }
-        BigInteger total = this.totalCheckpoint.getOrDefault(checkpointCounter, BigInteger.ZERO);
+
+        if (TimeConstants.getBlockTimestamp().compareTo(timestamp) > 0) {
+            throw RewardWeightException.unknown("can't set weight value for old timestamp " + timestamp);
+        }
+
+        BigInteger total = this.totalAtCheckpoint.getOrDefault(checkpointCounter, BigInteger.ZERO);
+
         if (compareValue == 0) {
             setWeights(weights, total, checkpointCounter);
         } else {
             DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(checkpointCounter);
             Integer counter = checkpointCounter + 1;
+            DictDB<String, BigInteger> newCheckPoints = this.wCheckpoint.at(counter);
             for (String key : this.types.keySet()) {
                 BigInteger value = dictDB.get(key);
-                this.wCheckpoint.at(counter).set(key, value);
+                newCheckPoints.set(key, value);
             }
 
             setWeights(weights, total, counter);
-            this.tCheckpoint.set(counter, timestamp);
+            this.timeCheckpoint.set(counter, timestamp);
             this.checkpointCounter.set(counter);
         }
 
@@ -79,44 +83,32 @@ public class TypeWeightDB implements Searchable {
     private void setWeights(TypeWeightStruct[] weights, BigInteger total, Integer counter) {
         DictDB<String, BigInteger> dictDB = this.wCheckpoint.at(counter);
         for (TypeWeightStruct tw : weights) {
-            if (!isValidId(tw.key)) {
+            if (!isTypeExists(tw.key)) {
                 throw RewardWeightException.unknown(msg("Invalid type key :: " + tw.key));
             }
             BigInteger prevWeight = dictDB.getOrDefault(tw.key, BigInteger.ZERO);
             total = total.subtract(prevWeight).add(tw.weight);
             dictDB.set(tw.key, tw.weight);
         }
-        if (!total.equals(ICX)) {
+        if (!total.equals(HUNDRED_PERCENT)) {
             throw RewardWeightException.invalidTotalPercentage();
         }
-        this.totalCheckpoint.set(counter, total);
+        this.totalAtCheckpoint.set(counter, total);
     }
 
     private int searchCheckpoint(BigInteger timestamp) {
         Integer checkpointCount = checkpointCounter.getOrDefault(1);
-        DictDB<Integer, BigInteger> timeCheckpoints = this.tCheckpoint;
-        return searchCheckpoint(timestamp, checkpointCount, timeCheckpoints);
+        return searchCheckpoint(timestamp, checkpointCount, this.timeCheckpoint);
     }
 
 
     public BigInteger getTotal(BigInteger timestamp) {
         int index = searchCheckpoint(timestamp);
-        return this.totalCheckpoint.get(index);
+        return this.totalAtCheckpoint.get(index);
     }
 
     public static String msg(String message) {
         return TAG + " :: " + message;
-    }
-
-    public List<String> getContractTypeIds() {
-        List<String> response = new ArrayList<>();
-        List<String> list = types.keySet();
-        for (String key : list) {
-            if (isContractType(key)) {
-                response.add(key);
-            }
-        }
-        return response;
     }
 
     public List<String> getTypes() {
@@ -132,7 +124,7 @@ public class TypeWeightDB implements Searchable {
         return response;
     }
 
-
+    //TODO remove me
     public Map<String, BigInteger> searchTypeWeight(String type) {
         BigInteger timestamp = TimeConstants.getBlockTimestamp();
         return searchTypeWeight(type, timestamp);
@@ -143,7 +135,7 @@ public class TypeWeightDB implements Searchable {
         return Map.of("index", BigInteger.valueOf(index), "value", this.wCheckpoint.at(index)
                         .getOrDefault(type,
                                 BigInteger.ZERO),
-                "timestamp", this.tCheckpoint.getOrDefault(index, BigInteger.ZERO));
+                "timestamp", this.timeCheckpoint.getOrDefault(index, BigInteger.ZERO));
     }
 
 
@@ -162,8 +154,7 @@ public class TypeWeightDB implements Searchable {
     }
 
     public boolean isContractType(String typeId) {
-        Boolean isContract = this.types.get(typeId);
-        return Boolean.TRUE.compareTo(isContract) == 0;
+        return this.types.getOrDefault(typeId, Boolean.FALSE);
     }
 }
 
