@@ -23,19 +23,20 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-            to = 'cx3807f5159a37e31291ba0ec58a09cd023dfdcdbe'
+            to = rootProject.findProperty("contracts.reward-distribution") as String
             nid = 0x53
         }
         mainnet {
             uri = 'https://ctz.solidwallet.io/api/v3'
+            to = "cx4f2d730ad969f5c839229de42184c5e47aefef6f"
             nid = 0x1
         }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('addressProvider', 'cx36e3408f031983d220d99b1a58849ac443d2c585')
-        arg('bOMMRewardStartDate', '1646438400')
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+        arg('bOMMRewardStartDate', rootProject.findProperty("bOMMRewardStartDate") as String)
     }
 }
 
