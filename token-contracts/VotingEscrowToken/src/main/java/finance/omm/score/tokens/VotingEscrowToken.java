@@ -17,10 +17,10 @@ package finance.omm.score.tokens;
 
 import static finance.omm.utils.constants.AddressConstant.ZERO_ADDRESS;
 import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.convertToNumber;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
 import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
@@ -456,13 +456,13 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         JsonObject json = Json.parse(unpackedData).asObject();
 
         String method = json.get("method").asString();
-        JsonValue params = json.get("params");
+        JsonObject params = json.get("params").asObject();
         BigInteger unlockTime = BigInteger.ZERO;
 
         switch (method) {
             case "increaseAmount":
                 try {
-                    unlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
+                    unlockTime = convertToNumber(params.get("unlockTime"));
                 } catch (NullPointerException ignored) {
 
                 }
@@ -473,11 +473,11 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
                 if (minimumLockingAmount.compareTo(_value) > 0) {
                     throw BoostedOMMException.invalidMinimumLockingAmount(minimumLockingAmount);
                 }
-                unlockTime = BigInteger.valueOf(params.asObject().get("unlockTime").asLong());
+                unlockTime = convertToNumber(params.get("unlockTime"));
                 this.createLock(_from, _value, unlockTime);
                 break;
             case "depositFor":
-                Address sender = Address.fromString(params.asObject().get("address").asString());
+                Address sender = Address.fromString(params.get("address").asString());
                 this.depositFor(sender, _value);
                 break;
             default:
@@ -594,7 +594,8 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         UnsignedBigInteger blockHeight = UnsignedBigInteger.valueOf(Context.getBlockHeight());
         UnsignedBigInteger blockTimestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
 
-        Context.require(block.compareTo(blockHeight.toBigInteger()) <= 0, "BalanceOfAt: Invalid given block height");
+        Context.require(block.compareTo(blockHeight.toBigInteger()) <= 0,
+                "BalanceOfAt: Invalid given block height");
         BigInteger userEpoch = this.findUserPointHistory(address, block);
         Point uPoint = this.userPointHistory.at(address).getOrDefault(userEpoch, new Point());
 
@@ -746,7 +747,6 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     private Point getUserPointHistory(Address user, BigInteger epoch) {
         return this.userPointHistory.at(user).getOrDefault(epoch, new Point());
     }
-
 
     public void scoreCall(Contracts contract, String method, Object... params) {
         Context.call(getAddress(contract.getKey()), method, params);
