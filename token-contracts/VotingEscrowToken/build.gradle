@@ -21,7 +21,7 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-            to = rootProject.findProperty("contracts.bOMM")
+            to = rootProject.findProperty("contracts.bOMM") as String
             nid = 0x53
         }
         mainnet {
@@ -32,8 +32,8 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('addressProvider', rootProject.findProperty("contracts.address-provider"))
-        arg('tokenAddress', rootProject.findProperty("contracts.omm-token"))
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+        arg('tokenAddress', rootProject.findProperty("contracts.omm-token") as String)
         arg('name', 'Boosted OMM token')
         arg('symbol', 'bOMM')
     }
