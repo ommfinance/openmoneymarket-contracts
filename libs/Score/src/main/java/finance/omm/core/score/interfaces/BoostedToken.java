@@ -24,7 +24,7 @@ public interface BoostedToken {
 
     List<Address> getUsers(int start, int end);
 
-    int lockersCount();
+    int activeUsersCount();
 
     boolean hasLocked(Address address);
 
