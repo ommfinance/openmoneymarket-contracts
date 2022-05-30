@@ -6,11 +6,11 @@ dependencies {
     implementation project(':Score')
     implementation project(':OMMStruct')
     testImplementation project(':TestUtils')
-    testImplementation 'com.github.sink772:javaee-tokens:0.6.1'
+    testImplementation 'com.github.sink772:javaee-tokens:0.6.2'
 }
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.tokens.VotingEscrowToken'
+    mainClassName = 'finance.omm.score.tokens.BoostedOMM'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }

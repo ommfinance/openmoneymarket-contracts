@@ -60,7 +60,7 @@ public class StateMachineTest extends TestBase {
     private Score bOmmScore;
     private Score tokenScore;
 
-    private VotingEscrowToken scoreSpy;
+    private BoostedOMM scoreSpy;
 
     public static class OmmToken extends IRC2Mintable {
 
@@ -102,9 +102,9 @@ public class StateMachineTest extends TestBase {
     @BeforeEach
     public void setup() throws Exception {
         tokenScore = sm.deploy(owner, OmmToken.class, "OMM Token", "OMM", 18);
-        bOmmScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        bOmmScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 "Boosted Omm", "bOMM");
-        scoreSpy = (VotingEscrowToken) spy(bOmmScore.getInstance());
+        scoreSpy = (BoostedOMM) spy(bOmmScore.getInstance());
         bOmmScore.setInstance(scoreSpy);
 
         bOmmScore.invoke(owner, "setMinimumLockingAmount", ICX);

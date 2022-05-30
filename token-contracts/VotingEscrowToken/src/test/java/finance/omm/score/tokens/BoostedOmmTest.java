@@ -39,7 +39,7 @@ class BoostedOmmTest extends TestBase {
     private Score veOmmScore;
     private Score tokenScore;
 
-    private Account addressProvider = Account.newScoreAccount(1001);
+    private final Account addressProvider = Account.newScoreAccount(1001);
 
     private static final String name = "OMM Token";
     private static final String symbol = "Omm";
@@ -59,7 +59,7 @@ class BoostedOmmTest extends TestBase {
     @BeforeEach
     public void setup() throws Exception {
         tokenScore = sm.deploy(owner, IRC2BasicToken.class, name, symbol, decimals, initialSupply);
-        veOmmScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        veOmmScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 bOmmName, bOmmSymbol);
     }
 

@@ -26,7 +26,7 @@ public interface BoostedToken {
 
     int activeUsersCount();
 
-    boolean hasLocked(Address address);
+    boolean hasLocked(Address _owner);
 
     BigInteger getLastUserSlope(Address address);
 
