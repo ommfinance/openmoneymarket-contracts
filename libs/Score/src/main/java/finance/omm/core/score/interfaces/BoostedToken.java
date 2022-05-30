@@ -24,6 +24,9 @@ public interface BoostedToken {
 
     List<Address> getUsers(int start, int end);
 
+    int activeUsersCount();
+
+    boolean hasLocked(Address address);
 
     BigInteger getLastUserSlope(Address address);
 

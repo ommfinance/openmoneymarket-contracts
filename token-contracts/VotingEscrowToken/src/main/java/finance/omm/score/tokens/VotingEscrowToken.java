@@ -194,6 +194,16 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
 
     }
 
+    @External(readonly = true)
+    public int activeUsersCount() {
+        return users.length();
+    }
+
+    @External(readonly = true)
+    public boolean hasLocked(Address address) {
+        return users.contains(address);
+    }
+
 
     @External(readonly = true)
     public BigInteger getLastUserSlope(Address address) {
@@ -457,15 +467,10 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
 
         String method = json.get("method").asString();
         JsonObject params = json.get("params").asObject();
-        BigInteger unlockTime = BigInteger.ZERO;
+        BigInteger unlockTime = convertToNumber(params.get("unlockTime"), BigInteger.ZERO);
 
         switch (method) {
             case "increaseAmount":
-                try {
-                    unlockTime = convertToNumber(params.get("unlockTime"));
-                } catch (NullPointerException ignored) {
-
-                }
                 this.increaseAmount(_from, _value, unlockTime);
                 break;
             case "createLock":
@@ -473,7 +478,6 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
                 if (minimumLockingAmount.compareTo(_value) > 0) {
                     throw BoostedOMMException.invalidMinimumLockingAmount(minimumLockingAmount);
                 }
-                unlockTime = convertToNumber(params.get("unlockTime"));
                 this.createLock(_from, _value, unlockTime);
                 break;
             case "depositFor":
