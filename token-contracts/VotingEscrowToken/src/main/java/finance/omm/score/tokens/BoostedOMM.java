@@ -34,7 +34,6 @@ import score.Address;
 import score.Context;
 import score.annotation.External;
 import score.annotation.Optional;
-import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
 public class BoostedOMM extends AbstractBoostedOMM {
@@ -91,16 +90,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
     @External(readonly = true)
     public List<Address> getUsers(int start, int end) {
         Context.require(end - start <= 100, "Get users :Fetch only 100 users at a time");
-        int userCount = users.length();
-        if (userCount <= end) {
-            end = userCount - 1;
-        }
-        List<Address> userList = new ArrayList<>();
-        for (int index = start; index <= end; ++index) {
-            userList.add(users.at(index));
-        }
-        return userList;
-
+        return users.range(start, end);
     }
 
     @External(readonly = true)
