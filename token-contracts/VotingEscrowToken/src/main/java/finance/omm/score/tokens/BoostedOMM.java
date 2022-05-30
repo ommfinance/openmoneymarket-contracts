@@ -16,120 +16,32 @@ package finance.omm.score.tokens;
  */
 
 import static finance.omm.utils.constants.AddressConstant.ZERO_ADDRESS;
-import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.convertToNumber;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import finance.omm.core.score.interfaces.BoostedToken;
-import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.score.tokens.exception.BoostedOMMException;
 import finance.omm.score.tokens.model.LockedBalance;
 import finance.omm.score.tokens.model.Point;
 import finance.omm.utils.constants.TimeConstants;
-import finance.omm.utils.db.EnumerableSet;
 import finance.omm.utils.math.UnsignedBigInteger;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import score.Address;
-import score.BranchDB;
 import score.Context;
-import score.DictDB;
-import score.VarDB;
-import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
-public class VotingEscrowToken extends AddressProvider implements BoostedToken {
-
-    public static final BigInteger MAX_TIME = BigInteger.valueOf(4L).multiply(TimeConstants.YEAR_IN_MICRO_SECONDS);
-    private static final UnsignedBigInteger MULTIPLIER = UnsignedBigInteger.pow10(18);
-
-    private static final int DEPOSIT_FOR_TYPE = 0;
-    private static final int CREATE_LOCK_TYPE = 1;
-    private static final int INCREASE_LOCK_AMOUNT = 2;
-    private static final int INCREASE_UNLOCK_TIME = 3;
-
-    private final String name;
-    private final String symbol;
-    private final int decimals;
-
-    private final NonReentrant nonReentrant = new NonReentrant("Boosted_Omm_Reentrancy");
-
-    private final Address tokenAddress;
-    private final VarDB<BigInteger> supply = Context.newVarDB("Boosted_Omm_Supply", BigInteger.class);
-
-    private final DictDB<Address, LockedBalance> locked = Context.newDictDB("Boosted_Omm_locked", LockedBalance.class);
-
-    private final VarDB<BigInteger> epoch = Context.newVarDB("Boosted_Omm_epoch", BigInteger.class);
-    private final DictDB<BigInteger, Point> pointHistory = Context.newDictDB("Boosted_Omm_point_history",
-            Point.class);
-    private final BranchDB<Address, DictDB<BigInteger, Point>> userPointHistory = Context.newBranchDB(
-            "Boosted_Omm_user_point_history", Point.class);
-    private final DictDB<Address, BigInteger> userPointEpoch = Context.newDictDB("Boosted_Omm_user_point_epoch",
-            BigInteger.class);
-    private final DictDB<BigInteger, BigInteger> slopeChanges = Context.newDictDB("Boosted_Omm_slope_changes",
-            BigInteger.class);
-
-    private final VarDB<Address> admin = Context.newVarDB("Boosted_Omm_admin", Address.class);
-    private final VarDB<Address> futureAdmin = Context.newVarDB("Boosted_Omm_future_admin", Address.class);
-    private final EnumerableSet<Address> users = new EnumerableSet<>("users_list", Address.class);
-
-    private final VarDB<BigInteger> minimumLockingAmount = Context.newVarDB(KeyConstants.bOMM_MINIMUM_LOCKING_AMOUNT,
-            BigInteger.class);
+public class BoostedOMM extends AbstractBoostedOMM {
 
 
-    @EventLog
-    public void CommitOwnership(Address admin) {
-    }
-
-    @EventLog
-    public void ApplyOwnership(Address admin) {
-    }
-
-    @EventLog(indexed = 2)
-    public void Deposit(Address provider, BigInteger locktime, BigInteger value, int type, BigInteger timestamp) {
-    }
-
-    @EventLog(indexed = 1)
-    public void Withdraw(Address provider, BigInteger value, BigInteger timestamp) {
-    }
-
-    @EventLog
-    public void Supply(BigInteger prevSupply, BigInteger supply) {
-    }
-
-    public VotingEscrowToken(Address addressProvider, Address tokenAddress, String name, String symbol) {
-        super(addressProvider, false);
-        this.admin.set(Context.getCaller());
-        this.tokenAddress = tokenAddress;
-
-        Point point = new Point();
-        point.block = UnsignedBigInteger.valueOf(Context.getBlockHeight());
-        point.timestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
-        this.pointHistory.set(BigInteger.ZERO, point);
-
-        this.decimals = ((BigInteger) Context.call(tokenAddress, "decimals", new Object[0])).intValue();
-        this.name = name;
-        this.symbol = symbol;
-        Context.require(this.decimals <= 72, "Decimals should be less than 72");
-
-        if (this.supply.get() == null) {
-            this.supply.set(BigInteger.ZERO);
-        }
-
-        if (this.epoch.get() == null) {
-            this.epoch.set(BigInteger.ZERO);
-        }
-
-        if (this.minimumLockingAmount.get() == null) {
-            this.minimumLockingAmount.set(ICX);
-        }
+    public BoostedOMM(Address addressProvider, Address tokenAddress, String name, String symbol) {
+        super(addressProvider, tokenAddress, name, symbol);
     }
 
     @External
@@ -173,10 +85,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
 
     @External(readonly = true)
     public BigInteger getTotalLocked() {
-        BigInteger contractBalance = Context.call(BigInteger.class, this.tokenAddress, "balanceOf",
-                Context.getAddress());
-        return contractBalance;
-
+        return (BigInteger) callToken("balanceOf", Context.getAddress());
     }
 
     @External(readonly = true)
@@ -200,8 +109,8 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     }
 
     @External(readonly = true)
-    public boolean hasLocked(Address address) {
-        return users.contains(address);
+    public boolean hasLocked(Address _owner) {
+        return users.contains(_owner);
     }
 
 
@@ -250,7 +159,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
             //          oldLocked.end can be in the past and in the future
             //          newLocked.end can ONLY be in the FUTURE unless everything expired: than zeros
             oldDSlope = this.slopeChanges.getOrDefault(oldLocked.getEnd(), BigInteger.ZERO);
-            if (!newLocked.end.equals(BigInteger.ZERO)) {
+            if (!newLocked.end.equals(UnsignedBigInteger.ZERO)) {
                 if (newLocked.end.equals(oldLocked.end)) {
                     newDSlope = oldDSlope;
                 } else {
@@ -375,15 +284,15 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         Supply(supplyBefore, supplyBefore.add(value));
 
         //calling update delegation
-        scoreCall(Contracts.DELEGATION, "updateDelegations", null, address);
+        call(Contracts.DELEGATION, "updateDelegations", null, address);
         // calling handle action for rewards
         Map<String, Object> userDetails = new HashMap<>();
         userDetails.put("_user", address);
         userDetails.put("_userBalance", balanceOf(address, BigInteger.ZERO));
         userDetails.put("_totalSupply", totalSupply(BigInteger.ZERO));
-        userDetails.put("_decimals", BigInteger.valueOf(decimals()));
+        userDetails.put("_decimals", decimals());
 
-        scoreCall(Contracts.REWARDS, "handleAction", userDetails);
+        call(Contracts.REWARDS, "handleAction", userDetails);
     }
 
     @External
@@ -457,7 +366,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
         Address token = Context.getCaller();
-        Context.require(token.equals(this.tokenAddress), "Token Fallback: Only Omm deposits are allowed");
+        Context.require(token.equals(this.tokenAddress.get()), "Token Fallback: Only Omm deposits are allowed");
 
         Context.require(_value.signum() > 0, "Token Fallback: Token value should be a positive number");
         String unpackedData = new String(_data);
@@ -530,7 +439,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         this.supply.set(supplyBefore.subtract(value));
 
         this.checkpoint(sender, oldLocked, locked);
-        Context.call(this.tokenAddress, "transfer", sender, value, "withdraw".getBytes());
+        callToken("transfer", sender, value, "withdraw".getBytes());
         users.remove(sender);
         Withdraw(sender, value, blockTimestamp);
         Supply(supplyBefore, supplyBefore.subtract(value));
@@ -570,7 +479,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     }
 
     @External(readonly = true)
-    public BigInteger balanceOf(Address address, @Optional BigInteger timestamp) {
+    public BigInteger balanceOf(Address _owner, @Optional BigInteger timestamp) {
         UnsignedBigInteger uTimestamp;
         if (timestamp.equals(BigInteger.ZERO)) {
             uTimestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
@@ -578,11 +487,11 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
             uTimestamp = new UnsignedBigInteger(timestamp);
         }
 
-        BigInteger epoch = this.userPointEpoch.getOrDefault(address, BigInteger.ZERO);
+        BigInteger epoch = this.userPointEpoch.getOrDefault(_owner, BigInteger.ZERO);
         if (epoch.equals(BigInteger.ZERO)) {
             return BigInteger.ZERO;
         } else {
-            Point lastPoint = getUserPointHistory(address, epoch);
+            Point lastPoint = getUserPointHistory(_owner, epoch);
             UnsignedBigInteger _delta = uTimestamp.subtract(lastPoint.timestamp);
             lastPoint.bias = lastPoint.bias.subtract(lastPoint.slope.multiply(_delta.toBigInteger()));
             if (lastPoint.bias.compareTo(BigInteger.ZERO) < 0) {
@@ -594,14 +503,14 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
     }
 
     @External(readonly = true)
-    public BigInteger balanceOfAt(Address address, BigInteger block) {
+    public BigInteger balanceOfAt(Address _owner, BigInteger block) {
         UnsignedBigInteger blockHeight = UnsignedBigInteger.valueOf(Context.getBlockHeight());
         UnsignedBigInteger blockTimestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
 
         Context.require(block.compareTo(blockHeight.toBigInteger()) <= 0,
                 "BalanceOfAt: Invalid given block height");
-        BigInteger userEpoch = this.findUserPointHistory(address, block);
-        Point uPoint = this.userPointHistory.at(address).getOrDefault(userEpoch, new Point());
+        BigInteger userEpoch = this.findUserPointHistory(_owner, block);
+        Point uPoint = this.userPointHistory.at(_owner).getOrDefault(userEpoch, new Point());
 
         BigInteger maxEpoch = this.epoch.get();
         BigInteger epoch = this.findBlockEpoch(block, maxEpoch);
@@ -703,6 +612,7 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         response.decimals = BigInteger.valueOf(decimals());
         response.principalUserBalance = balanceOf(_user, BigInteger.ZERO);
         response.principalTotalSupply = totalSupply(BigInteger.ZERO);
+        response.principalTotalSupply = totalSupply(BigInteger.ZERO);
 
         return response;
 
@@ -718,24 +628,10 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         return this.futureAdmin.get();
     }
 
-    @External(readonly = true)
-    public String name() {
-        return this.name;
-    }
 
     @External(readonly = true)
-    public String symbol() {
-        return this.symbol;
-    }
-
-    @External(readonly = true)
-    public BigInteger userPointEpoch(Address address) {
-        return this.userPointEpoch.getOrDefault(address, BigInteger.ZERO);
-    }
-
-    @External(readonly = true)
-    public int decimals() {
-        return this.decimals;
+    public BigInteger userPointEpoch(Address _owner) {
+        return this.userPointEpoch.getOrDefault(_owner, BigInteger.ZERO);
     }
 
     private void ownerRequired() {
@@ -752,11 +648,4 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
         return this.userPointHistory.at(user).getOrDefault(epoch, new Point());
     }
 
-    public void scoreCall(Contracts contract, String method, Object... params) {
-        Context.call(getAddress(contract.getKey()), method, params);
-    }
-
-    public <K> K scoreCall(Class<K> kClass, Contracts contract, String method, Object... params) {
-        return Context.call(kClass, getAddress(contract.getKey()), method, params);
-    }
 }

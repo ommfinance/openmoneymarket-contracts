@@ -52,7 +52,7 @@ public class BoostedOMMUnlockTest extends TestBase {
     private Score veOMMScore;
     private Score tokenScore;
 
-    private VotingEscrowToken scoreSpy;
+    private BoostedOMM scoreSpy;
 
     private Account addressProvider = Account.newScoreAccount(1001);
 
@@ -66,9 +66,9 @@ public class BoostedOMMUnlockTest extends TestBase {
     @BeforeEach
     public void setup() throws Exception {
         tokenScore = sm.deploy(owner, IRC2Token.class, INITIAL_SUPPLY);
-        veOMMScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        veOMMScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 BOOSTED_OMM, B_OMM_SYMBOL);
-        scoreSpy = (VotingEscrowToken) spy(veOMMScore.getInstance());
+        scoreSpy = (BoostedOMM) spy(veOMMScore.getInstance());
         veOMMScore.setInstance(scoreSpy);
 
         VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
