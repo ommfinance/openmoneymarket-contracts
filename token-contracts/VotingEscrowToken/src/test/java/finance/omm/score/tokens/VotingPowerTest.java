@@ -62,7 +62,7 @@ public class VotingPowerTest extends TestBase {
     private static final Account alice = sm.createAccount();
     private static final Account bob = sm.createAccount();
 
-    private VotingEscrowToken scoreSpy;
+    private BoostedOMM scoreSpy;
 
     private Account addressProvider = Account.newScoreAccount(1001);
 
@@ -77,7 +77,7 @@ public class VotingPowerTest extends TestBase {
     @BeforeEach
     public void setup() throws Exception {
         tokenScore = sm.deploy(owner, IRC2Token.class, INITIAL_SUPPLY);
-        bBALNScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        bBALNScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 BOOSTED_OMM, VE_OMM_SYMBOL);
         tokenScore.invoke(owner, "mintTo", alice.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
         tokenScore.invoke(owner, "mintTo", bob.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
@@ -87,7 +87,7 @@ public class VotingPowerTest extends TestBase {
 //        Move to timing which is good for testing - beginning of a UTC week
         BigInteger timestamp = getBlockTimestamp();
         setBlockTimestamp(timestamp.divide(WEEK).add(BigInteger.ONE).multiply(WEEK).longValue());
-        scoreSpy = (VotingEscrowToken) spy(bBALNScore.getInstance());
+        scoreSpy = (BoostedOMM) spy(bBALNScore.getInstance());
         bBALNScore.setInstance(scoreSpy);
     }
 
