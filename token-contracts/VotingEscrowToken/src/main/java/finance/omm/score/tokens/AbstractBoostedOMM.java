@@ -4,14 +4,12 @@ import static finance.omm.utils.math.MathUtils.ICX;
 
 import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.libs.address.AddressProvider;
-import finance.omm.libs.address.Contracts;
 import finance.omm.score.tokens.model.LockedBalance;
 import finance.omm.score.tokens.model.Point;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.db.EnumerableSet;
 import finance.omm.utils.math.UnsignedBigInteger;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import score.Address;
 import score.BranchDB;
 import score.Context;
@@ -131,16 +129,6 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     public String symbol() {
         return this.symbol.get();
     }
-
-    public void scoreCall(Contracts contract, String method, Object... params) {
-        new ArrayList<Address>().toArray(new Address[0]);
-        Context.call(getAddress(contract.getKey()), method, new Object[]{new Address[0]});
-    }
-
-    public <K> K scoreCall(Class<K> kClass, Contracts contract, String method, Object... params) {
-        return Context.call(kClass, getAddress(contract.getKey()), method, params);
-    }
-
 
     public Object callToken(String method, Object... params) {
         return Context.call(this.tokenAddress.get(), method, params);

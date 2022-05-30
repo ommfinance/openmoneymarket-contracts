@@ -284,7 +284,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
         Supply(supplyBefore, supplyBefore.add(value));
 
         //calling update delegation
-        scoreCall(Contracts.DELEGATION, "updateDelegations", null, address);
+        call(Contracts.DELEGATION, "updateDelegations", null, address);
         // calling handle action for rewards
         Map<String, Object> userDetails = new HashMap<>();
         userDetails.put("_user", address);
@@ -292,7 +292,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
         userDetails.put("_totalSupply", totalSupply(BigInteger.ZERO));
         userDetails.put("_decimals", decimals());
 
-        scoreCall(Contracts.REWARDS, "handleAction", userDetails);
+        call(Contracts.REWARDS, "handleAction", userDetails);
     }
 
     @External
@@ -479,7 +479,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
     }
 
     @External(readonly = true)
-    public BigInteger balanceOf(Address address, @Optional BigInteger timestamp) {
+    public BigInteger balanceOf(Address _owner, @Optional BigInteger timestamp) {
         UnsignedBigInteger uTimestamp;
         if (timestamp.equals(BigInteger.ZERO)) {
             uTimestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
@@ -487,11 +487,11 @@ public class BoostedOMM extends AbstractBoostedOMM {
             uTimestamp = new UnsignedBigInteger(timestamp);
         }
 
-        BigInteger epoch = this.userPointEpoch.getOrDefault(address, BigInteger.ZERO);
+        BigInteger epoch = this.userPointEpoch.getOrDefault(_owner, BigInteger.ZERO);
         if (epoch.equals(BigInteger.ZERO)) {
             return BigInteger.ZERO;
         } else {
-            Point lastPoint = getUserPointHistory(address, epoch);
+            Point lastPoint = getUserPointHistory(_owner, epoch);
             UnsignedBigInteger _delta = uTimestamp.subtract(lastPoint.timestamp);
             lastPoint.bias = lastPoint.bias.subtract(lastPoint.slope.multiply(_delta.toBigInteger()));
             if (lastPoint.bias.compareTo(BigInteger.ZERO) < 0) {
@@ -503,14 +503,14 @@ public class BoostedOMM extends AbstractBoostedOMM {
     }
 
     @External(readonly = true)
-    public BigInteger balanceOfAt(Address address, BigInteger block) {
+    public BigInteger balanceOfAt(Address _owner, BigInteger block) {
         UnsignedBigInteger blockHeight = UnsignedBigInteger.valueOf(Context.getBlockHeight());
         UnsignedBigInteger blockTimestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
 
         Context.require(block.compareTo(blockHeight.toBigInteger()) <= 0,
                 "BalanceOfAt: Invalid given block height");
-        BigInteger userEpoch = this.findUserPointHistory(address, block);
-        Point uPoint = this.userPointHistory.at(address).getOrDefault(userEpoch, new Point());
+        BigInteger userEpoch = this.findUserPointHistory(_owner, block);
+        Point uPoint = this.userPointHistory.at(_owner).getOrDefault(userEpoch, new Point());
 
         BigInteger maxEpoch = this.epoch.get();
         BigInteger epoch = this.findBlockEpoch(block, maxEpoch);
@@ -630,8 +630,8 @@ public class BoostedOMM extends AbstractBoostedOMM {
 
 
     @External(readonly = true)
-    public BigInteger userPointEpoch(Address address) {
-        return this.userPointEpoch.getOrDefault(address, BigInteger.ZERO);
+    public BigInteger userPointEpoch(Address _owner) {
+        return this.userPointEpoch.getOrDefault(_owner, BigInteger.ZERO);
     }
 
     private void ownerRequired() {

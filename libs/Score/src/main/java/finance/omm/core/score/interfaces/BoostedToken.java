@@ -49,10 +49,10 @@ public interface BoostedToken {
     void withdraw();
 
 
-    BigInteger balanceOf(Address address, @Optional BigInteger timestamp);
+    BigInteger balanceOf(Address _owner, @Optional BigInteger timestamp);
 
 
-    BigInteger balanceOfAt(Address address, BigInteger block);
+    BigInteger balanceOfAt(Address _owner, BigInteger block);
 
 
     BigInteger totalSupply(@Optional BigInteger time);
@@ -73,7 +73,7 @@ public interface BoostedToken {
     String symbol();
 
 
-    BigInteger userPointEpoch(Address address);
+    BigInteger userPointEpoch(Address _owner);
 
 
     int decimals();
