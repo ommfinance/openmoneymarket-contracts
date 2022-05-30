@@ -194,6 +194,16 @@ public class VotingEscrowToken extends AddressProvider implements BoostedToken {
 
     }
 
+    @External(readonly = true)
+    public int lockersCount() {
+        return users.length();
+    }
+
+    @External(readonly = true)
+    public boolean hasLocked(Address address) {
+        return users.contains(address);
+    }
+
 
     @External(readonly = true)
     public BigInteger getLastUserSlope(Address address) {
