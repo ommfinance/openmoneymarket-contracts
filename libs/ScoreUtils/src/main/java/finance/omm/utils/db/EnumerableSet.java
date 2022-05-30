@@ -65,7 +65,7 @@ public class EnumerableSet<V> {
 
     public List<V> range(int start, int end) {
         List<V> result = new ArrayList<>();
-        int _end = Math.min(end, length() - 1);
+        int _end = Math.min(end, length());
 
         for (int i = start; i < _end; i++) {
             result.add(at(i));
