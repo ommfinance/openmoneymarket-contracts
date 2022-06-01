@@ -100,7 +100,7 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
         BigInteger bommCriterion = getBoostedOmmVoteDefinitionCriterion();
 
         if (MathUtils.exaDivide(userBommBalance, bommTotal).compareTo(bommCriterion) < 0) {
-            throw GovernanceException.insufficientStakingBalance(bommCriterion);
+            throw GovernanceException.insufficientbOMMBalance(bommCriterion);
         }
 
         ProposalDB proposal = new ProposalDB.ProposalBuilder(proposer, name)
