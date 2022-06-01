@@ -17,6 +17,7 @@ public class OMMException extends UserRevertException {
         AddressManager(35),
         Governance(40),
         OMMToken(50),
+        StakeLPException(60),
         RESERVED(80);
 
         int offset;
@@ -137,6 +138,17 @@ public class OMMException extends UserRevertException {
         }
 
         public AddressManager(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class StakedLPImpl extends OMMException {
+
+        public StakedLPImpl(int code, String message) {
+            super(Type.StakeLPException, code, message);
+        }
+
+        public StakedLPImpl(Coded code, String message) {
             this(code.code(), message);
         }
     }

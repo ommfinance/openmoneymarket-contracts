@@ -18,6 +18,9 @@ findProject(":AddressManager").projectDir = file("core-contracts/AddressManager"
 include(':AddressProvider')
 findProject(":AddressProvider").projectDir = file("libs/AddressProvider")
 
+include(':StakedLP')
+findProject(":StakedLP").projectDir = file("core-contracts/StakedLP")
+
 include(':OMMStruct')
 findProject(":OMMStruct").projectDir = file("libs/OMMStruct")
 
