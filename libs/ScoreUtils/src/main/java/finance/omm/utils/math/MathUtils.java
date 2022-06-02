@@ -93,8 +93,8 @@ public class MathUtils {
         return _amount;
     }
 
-    public static float percentageInHundred(BigInteger value) {
-        return (float) (100*value.doubleValue()/ICX.doubleValue());
+    public static double percentageInHundred(BigInteger value) {
+        return 100*value.doubleValue()/ICX.doubleValue();
     }
 
     public static BigInteger convertToNumber(JsonValue value) {
