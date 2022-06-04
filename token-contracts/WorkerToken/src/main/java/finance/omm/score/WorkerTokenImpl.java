@@ -135,16 +135,6 @@ public class WorkerTokenImpl implements WorkerToken {
 
     @External(readonly = true)
     public List<Address> getWallets() {
-        return arrayDbToList(this.wallets.getEntries());
-    }
-
-    private <T> List<T> arrayDbToList(ArrayDB<T> arraydb) {
-        @SuppressWarnings("unchecked")
-        T[] addressList = (T[]) new Object[arraydb.size()];
-
-        for (int i = 0; i < arraydb.size(); i++) {
-            addressList[i] = arraydb.get(i);
-        }
-        return List.of(addressList);
+    	return this.wallets.toList();
     }
 }
