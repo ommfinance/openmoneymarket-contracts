@@ -45,17 +45,15 @@ public interface StakedLP {
     @External(readonly = true)
     Map<String, Address> getSupportedPools();
 
-    void _stake(Address _user, int _id, BigInteger _value);
-
     @External
     void unstake(int _id, BigInteger _value);
 
     @External
-    void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte data);
+    void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] data);
 
     @External(readonly = true)
     SupplyDetails getLPStakedSupply(int _id, Address _user);
 
-    BigInteger _getAverageDecimals(int _id);
+
 
 }
