@@ -17,10 +17,13 @@ public class TimeConstants {
     public static final BigInteger DAY_IN_MICRO_SECONDS = BigInteger.valueOf(24L).multiply(HOUR_IN_MICRO_SECONDS);
     public static final BigInteger DAY_IN_SECONDS = BigInteger.valueOf(60 * 60 * 24);
     public static final BigInteger WEEK_IN_MICRO_SECONDS = BigInteger.valueOf(7L).multiply(DAY_IN_MICRO_SECONDS);
+
     public static final BigInteger MONTH_IN_MICRO_SECONDS = BigInteger.valueOf(30L).multiply(DAY_IN_MICRO_SECONDS);
+    public static final BigInteger MONTH_IN_SECONDS = BigInteger.valueOf(30L).multiply(DAY_IN_SECONDS);
 
     public static final BigInteger DAYS_PER_YEAR = BigInteger.valueOf(365L);
     public static final BigInteger YEAR_IN_MICRO_SECONDS = DAYS_PER_YEAR.multiply(DAY_IN_MICRO_SECONDS);
+    public static final BigInteger YEAR_IN_SECONDS = DAYS_PER_YEAR.multiply(DAY_IN_SECONDS);
 
     public static final UnsignedBigInteger U_WEEK_IN_MICRO_SECONDS = new UnsignedBigInteger(WEEK_IN_MICRO_SECONDS);
 
@@ -31,6 +34,16 @@ public class TimeConstants {
      */
     public static BigInteger getBlockTimestamp() {
         return BigInteger.valueOf(Context.getBlockTimestamp());
+    }
+
+
+    /**
+     * get current block timestamp in seconds
+     *
+     * @return - BigInteger
+     */
+    public static BigInteger getBlockTimestampInSecond() {
+        return BigInteger.valueOf(Context.getBlockTimestamp()).divide(SECOND);
     }
 
     /**
