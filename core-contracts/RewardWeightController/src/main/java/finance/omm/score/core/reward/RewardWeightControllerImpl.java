@@ -471,7 +471,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         return this._timestampAtStart.get();
     }
 
-    @External
+    @External(readonly = true)
     public Map<String, ?> precompute(BigInteger day) {
         Map<String, Object> response = new HashMap<>() {{
             put("isValid", true);
