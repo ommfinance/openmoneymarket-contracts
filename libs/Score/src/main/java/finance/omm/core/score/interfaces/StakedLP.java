@@ -24,8 +24,8 @@ public interface StakedLP {
     @External(readonly = true)
     TotalStaked getTotalStaked(int _id);
 
-    @External(readonly = true)
-    Map<Address, BigInteger> balanceOf(Address _owner, int _id);
+
+    Map<String, BigInteger> balanceOf(Address _owner, int _id);
 
     @External(readonly = true)
     List<Map<String,BigInteger>> getBalanceByPool();

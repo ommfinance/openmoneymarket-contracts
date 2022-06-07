@@ -13,6 +13,7 @@ import score.annotation.External;
 import scorex.util.ArrayList;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,28 +48,57 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public TotalStaked getTotalStaked(int _id) {
+        BigInteger decimals = this._getAverageDecimals(_id);
 
-        return null;
+        TotalStaked totalStaked = new TotalStaked();
+        totalStaked.decimals = decimals;
+        totalStaked.totalStaked = this.totalStaked.get(Context.getCaller());
+
+        return totalStaked;
     }
 
     @External(readonly = true)
-    public Map<Address, BigInteger> balanceOf(Address _owner, int _id) {
+    public Map<String, BigInteger> balanceOf(Address _owner, int _id) {
+        BigInteger userBalance=call(BigInteger.class,Contracts.DEX,"balanceOf",_owner, _id);
 
+        Map<String, BigInteger> balance = new HashMap<>();
+
+        balance.put("poolID",BigInteger.valueOf(_id));
+        balance.put("userTotalBalance",userBalance.add(this.poolStakeDetails.at(_owner).get(_id)[Status.STAKED]));
+        balance.put("userAvailableBalance",userBalance);
+        balance.put("userStakedBalance",userBalance.add(this.poolStakeDetails.at(_owner).get(_id)[Status.STAKED]));
+        balance.put("totalStakedBalance",totalStaked.get(_id));
         return null;
     }
 
     @External(readonly = true)
     public List<Map<String, BigInteger>> getBalanceByPool() {
+        List<Map<String, BigInteger>> result = new ArrayList<>();
 
-        return null;
+        for (int i = 0; i < supportedPools.size(); i++) {
+            BigInteger totalBalance = call(BigInteger.class, Contracts.DEX,"balanceOf",Context.getAddress(), i);
+            Map<String, BigInteger> pool_details = new HashMap<>();
+
+            pool_details.put("poolID",BigInteger.valueOf(i));
+            pool_details.put("totalStakedBalance",totalBalance);
+
+            result.add(pool_details);
+
+        }
+        return result;
     }
 
     @External(readonly = true)
     public List<Map<String, BigInteger>> getPoolBalanceByUser(Address _owner) {
 
-        ArrayList result = new ArrayList();
+        List<Map<String, BigInteger>> result = new ArrayList<>();
+        for (int i = 0; i < supportedPools.size(); i++) {
+            Map<String, BigInteger> userBalance = this.balanceOf(_owner,i);
 
-        return null;
+            result.add(userBalance);
+
+        }
+        return result;
     }
 
     @External
@@ -185,7 +215,7 @@ public class StakedLPImpl extends AbstractStakedLP {
 
         Address _user = Context.getCaller();
         BigInteger previousUserStaked = this.poolStakeDetails.at(Context.getCaller()).get(_id);
-        BigInteger previousTotalStaked = this.totalStaked.get(Context.getCaller());
+        BigInteger previousTotalStaked = this.totalStaked.get(_id);
 
         if(previousUserStaked.compareTo(_value)<0){
             throw StakedLPException.unknown("Cannot unstake,user dont have enough staked balance\namount to unstake" + _value + "staked balance of user: " +_user+ " is " +previousUserStaked);
@@ -219,7 +249,7 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public SupplyDetails getLPStakedSupply(int _id, Address _user) {
-        Map<Address, BigInteger> balance = balanceOf(_user, _id);
+        Map<String, BigInteger> balance = balanceOf(_user, _id);
 
         SupplyDetails supply = new SupplyDetails();
         supply.decimals = _getAverageDecimals(_id);
