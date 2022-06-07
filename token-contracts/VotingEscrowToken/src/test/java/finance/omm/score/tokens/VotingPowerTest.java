@@ -412,10 +412,10 @@ public class VotingPowerTest extends TestBase {
     private void createLock(Account account, BigInteger lockUntil, BigInteger amount) {
         VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
         doNothing().when(scoreSpy)
-                .scoreCall(eq(Contracts.DELEGATION), eq("updateDelegations"),
+                .call(eq(Contracts.DELEGATION), eq("updateDelegations"),
                         ArgumentMatchers.<Object>argThat(matcher));
         doNothing().when(scoreSpy)
-                .scoreCall(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
+                .call(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
 
         Map<String, Object> map = new HashMap<>();
         map.put("method", "createLock");
