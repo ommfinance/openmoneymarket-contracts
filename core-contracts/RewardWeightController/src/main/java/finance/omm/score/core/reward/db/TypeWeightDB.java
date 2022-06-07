@@ -114,6 +114,10 @@ public class TypeWeightDB implements Searchable {
         return types.keySet();
     }
 
+    public BigInteger getTimestamp(int index) {
+        return this.timeCheckpoint.get(index);
+    }
+
     public Map<String, BigInteger> weightOfAllTypes(BigInteger timestamp) {
         Map<String, BigInteger> response = new HashMap<>();
         for (String key : types.keySet()) {
