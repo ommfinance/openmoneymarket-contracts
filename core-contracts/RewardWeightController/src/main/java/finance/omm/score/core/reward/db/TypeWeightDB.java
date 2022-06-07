@@ -4,7 +4,6 @@ import static finance.omm.utils.math.MathUtils.HUNDRED_PERCENT;
 
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.score.core.reward.exception.RewardWeightException;
-import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +39,11 @@ public class TypeWeightDB implements Searchable {
     }
 
 
-    public void add(String type, Boolean transferToContract) {
+    public void add(String type, Boolean isPlatformRecipient) {
         if (isTypeExists(type)) {
             throw RewardWeightException.unknown("duplicate type (" + type + ")");
         }
-        this.types.put(type, transferToContract);
+        this.types.put(type, isPlatformRecipient);
     }
 
     public void setWeights(TypeWeightStruct[] weights, BigInteger timestamp) {
@@ -56,7 +55,7 @@ public class TypeWeightDB implements Searchable {
             throw RewardWeightException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
         }
 
-        if (TimeConstants.getBlockTimestamp().compareTo(timestamp) > 0) {
+        if (getBlockTimestampInSecond().compareTo(timestamp) > 0) {
             throw RewardWeightException.unknown("can't set weight value for old timestamp " + timestamp);
         }
 
@@ -126,7 +125,7 @@ public class TypeWeightDB implements Searchable {
 
     //TODO remove me
     public Map<String, BigInteger> searchTypeWeight(String type) {
-        BigInteger timestamp = TimeConstants.getBlockTimestamp();
+        BigInteger timestamp = getBlockTimestampInSecond();
         return searchTypeWeight(type, timestamp);
     }
 
