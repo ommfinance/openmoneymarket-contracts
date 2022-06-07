@@ -321,6 +321,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         BigInteger toTimestamp = (BigInteger) precomputeInfo.get("timestamp");
 
         distributedDay.set(newDay);
+        call(Contracts.OMM_TOKEN, "mint", amountToMint);
+        OmmTokenMinted(newDay, amountToMint, newDay.subtract(day));
 
         BigInteger transferToContract = BigInteger.ZERO;
 
@@ -342,9 +344,6 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         if (transferToContract.compareTo(amountToMint) > 0) {
             throw RewardDistributionException.unknown("transfer to contract exceed total distribution");
         }
-
-        call(Contracts.OMM_TOKEN, "mint", amountToMint);
-        OmmTokenMinted(newDay, amountToMint, newDay.subtract(day));
 
     }
 
