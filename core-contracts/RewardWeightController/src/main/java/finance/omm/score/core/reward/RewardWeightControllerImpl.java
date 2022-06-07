@@ -325,6 +325,16 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     @External(readonly = true)
+    public BigInteger getAssetTimestampAtCheckpoint(String typeId, int checkpointId) {
+        return assetWeightDB.getTimestamp(typeId, checkpointId);
+    }
+
+    @External(readonly = true)
+    public BigInteger getTypeTimestampAtCheckpoint(int checkpointId) {
+        return typeWeightDB.getTimestamp(checkpointId);
+    }
+
+    @External(readonly = true)
     public Map<String, BigInteger> getTypeWeightByTimestamp(BigInteger timestamp) {
         return this.typeWeightDB.getWeightByTimestamp(timestamp);
     }
