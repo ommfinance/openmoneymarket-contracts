@@ -1,6 +1,6 @@
 package finance.omm.score.core.reward.distribution;
 
-import static finance.omm.utils.constants.TimeConstants.SECOND;
+import static finance.omm.utils.constants.TimeConstants.getBlockTimestampInSecond;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaDivide;
@@ -17,6 +17,7 @@ import finance.omm.score.core.reward.distribution.exception.RewardDistributionEx
 import finance.omm.score.core.reward.distribution.legacy.LegacyRewards;
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.constants.TimeConstants;
+import finance.omm.utils.constants.TimeConstants.Timestamp;
 import finance.omm.utils.db.EnumerableDictDB;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
@@ -202,7 +203,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
         BigInteger accruedReward = BigInteger.ZERO;
         List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
-
+        BigInteger toTimestampInSeconds = getBlockTimestampInSecond();
         for (Address address : assets) {
             Asset asset = this.assets.get(address);
             if (asset == null) {
@@ -212,7 +213,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             workingBalance.bOMMUserBalance = bOMMUserBalance;
             workingBalance.bOMMTotalSupply = bOMMTotalSupply;
 
-            BigInteger newReward = updateIndexes(asset.address, user);
+            BigInteger newReward = updateIndexes(asset.address, user, toTimestampInSeconds);
 
             accruedReward = accruedReward.add(newReward);
 
@@ -236,12 +237,12 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         return userClaimedRewards.getOrDefault(user, BigInteger.ZERO);
     }
 
-    protected BigInteger updateIndexes(Address assetAddr, Address user) {
+    protected BigInteger updateIndexes(Address assetAddr, Address user, BigInteger toTimestampInSeconds) {
         BigInteger userBalance = this.workingBalance.at(user).getOrDefault(assetAddr, BigInteger.ZERO);
 
         BigInteger userIndex = this.assets.getUserIndex(assetAddr, user);
 
-        BigInteger newIndex = this.getAssetIndex(assetAddr, false);
+        BigInteger newIndex = this.getAssetIndex(assetAddr, toTimestampInSeconds, false);
 
         BigInteger accruedRewards = this.assets.getAccruedRewards(user, assetAddr);
         if (newIndex.equals(userIndex)) {
@@ -265,39 +266,37 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
         BigInteger accruedRewards = this.assets.getAccruedRewards(user, assetAddr);
 
-        BigInteger newIndex = this.getAssetIndex(assetAddr, true);
+        BigInteger newIndex = this.getAssetIndex(assetAddr, TimeConstants.getBlockTimestampInSecond(), true);
 
         return calculateReward(userBalance, newIndex, userIndex).add(accruedRewards);
     }
 
-    protected BigInteger getAssetIndex(Address assetAddr, Boolean readonly) {
+    protected BigInteger getAssetIndex(Address assetAddr, BigInteger toTimestampInSeconds, Boolean readonly) {
         BigInteger totalSupply = this.workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
 
-        return getAssetIndex(assetAddr, totalSupply, readonly);
+        return getAssetIndex(assetAddr, totalSupply, toTimestampInSeconds, readonly);
     }
 
-    protected BigInteger getAssetIndex(Address assetAddr, BigInteger totalSupply, Boolean readonly) {
-
+    protected BigInteger getAssetIndex(Address assetAddr, BigInteger totalSupply, BigInteger toTimestampInSeconds,
+            Boolean readonly) {
+        TimeConstants.checkIsValidTimestamp(toTimestampInSeconds, Timestamp.SECONDS);
         BigInteger oldIndex = this.assets.getAssetIndex(assetAddr);
         BigInteger lastUpdateTimestamp = getIndexUpdateTimestamp(assetAddr);
-        BigInteger currentTime = TimeConstants.getBlockTimestamp().divide(SECOND);
 
-        if (currentTime.equals(lastUpdateTimestamp)) {
+        if (toTimestampInSeconds.equals(lastUpdateTimestamp)) {
             return oldIndex;
         }
-        /*
-        reward weight controller store snapshot in micro second
-         */
-        BigInteger assetIndex = call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "getIntegrateIndex",
+
+        BigInteger assetIndex = call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "calculateIntegrateIndex",
                 assetAddr,
-                totalSupply, lastUpdateTimestamp.multiply(SECOND));
+                totalSupply, lastUpdateTimestamp, toTimestampInSeconds);
         BigInteger newIndex = oldIndex.add(assetIndex);
         if (!readonly) {
             if (!oldIndex.equals(newIndex)) {
                 this.assets.setAssetIndex(assetAddr, newIndex);
                 this.AssetIndexUpdated(assetAddr, oldIndex, newIndex);
             }
-            this.assets.setLastUpdateTimestamp(assetAddr, currentTime);
+            this.assets.setIndexUpdatedTimestamp(assetAddr, toTimestampInSeconds);
         }
         return newIndex;
     }
