@@ -1,5 +1,6 @@
 package finance.omm.score.reward.test.unit;
 
+import static finance.omm.utils.constants.TimeConstants.DAY_IN_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.SECOND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.spy;
@@ -74,7 +75,9 @@ public abstract class RewardDistributionAbstractTest extends TestBase {
 
         owner = sm.createAccount(100);
 
-        BigInteger bOMMCutOff = BigInteger.valueOf(sm.getBlock().getTimestamp()).divide(SECOND);
+        BigInteger bOMMCutOff = BigInteger.valueOf(sm.getBlock().getTimestamp())
+                .divide(SECOND)
+                .subtract(DAY_IN_SECONDS.multiply(BigInteger.TWO));
 
         score = sm.deploy(owner, RewardDistributionImpl.class,
                 MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), bOMMCutOff);
