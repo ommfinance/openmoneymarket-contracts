@@ -135,7 +135,7 @@ public interface RewardDistribution extends AddressProvider {
     void handleLPAction(Address _asset, UserDetails _userDetails);
 
     @External
-    void addType(String key, boolean transferToContract);
+    void addType(String key, boolean isPlatformRecipient);
 
 
     @External

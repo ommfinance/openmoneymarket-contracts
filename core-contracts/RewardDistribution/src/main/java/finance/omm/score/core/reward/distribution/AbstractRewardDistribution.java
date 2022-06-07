@@ -50,7 +50,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     //user address = > asset address => total
     public final BranchDB<Address, DictDB<Address, BigInteger>> workingBalance;
     //    public final VarDB<BigInteger> weight;
-    protected final EnumerableDictDB<Address, String> transferToContractMap = new EnumerableDictDB<>(
+    protected final EnumerableDictDB<Address, String> isPlatformRecipientMap = new EnumerableDictDB<>(
             "transferToContract",
             Address.class, String.class);
 
@@ -79,7 +79,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     @External(readonly = true)
     public Map<String, BigInteger> getWorkingBalances(Address user) {
-        Map<String, String> assets = this.assets.getAssetName(this.transferToContractMap.keySet());
+        Map<String, String> assets = this.assets.getAssetName(this.isPlatformRecipientMap.keySet());
         Map<String, BigInteger> response = new HashMap<>();
         DictDB<Address, BigInteger> balances = workingBalance.at(user);
         for (Map.Entry<String, String> entry : assets.entrySet()) {
@@ -91,7 +91,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     @External(readonly = true)
     public Map<String, BigInteger> getWorkingTotal() {
-        Map<String, String> assets = this.assets.getAssetName(this.transferToContractMap.keySet());
+        Map<String, String> assets = this.assets.getAssetName(this.isPlatformRecipientMap.keySet());
         Map<String, BigInteger> response = new HashMap<>();
         for (Map.Entry<String, String> entry : assets.entrySet()) {
             BigInteger assetWorkingTotal = workingTotal.getOrDefault(Address.fromString(entry.getKey()),
@@ -103,16 +103,16 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
 
     @External
-    public void addType(String key, boolean transferToContract) {
+    public void addType(String key, boolean isPlatformRecipient) {
         checkOwner();
         Object[] params = new Object[]{
-                key, transferToContract
+                key, isPlatformRecipient
         };
-        if (transferToContract) {
+        if (isPlatformRecipient) {
             Address address = getAddress(key);
             if (address == null) {
                 throw RewardDistributionException.unknown(
-                        "Address required for type if transferToContract is enable (" + key + ")");
+                        "Address required for type if is Platform Recipient (" + key + ")");
             }
             params = new Object[]{
                     key, true, address
@@ -122,11 +122,11 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             asset.lpID = null;
             assets.put(address, asset);
 //            this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
-            transferToContractMap.put(address, key);
+            isPlatformRecipientMap.put(address, key);
             AssetAdded(key, key, address, BigInteger.ZERO);
         }
         call(Contracts.REWARD_WEIGHT_CONTROLLER, "addType", params);
-        AddType(key, transferToContract);
+        AddType(key, isPlatformRecipient);
     }
 
 
@@ -156,7 +156,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         Map<String, Object> response = new HashMap<>();
         BigInteger totalRewards = BigInteger.ZERO;
 
-        List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+        List<Address> assets = this.assets.keySet(this.isPlatformRecipientMap.keySet());
         for (Address address : assets) {
             Asset asset = this.assets.get(address);
             if (asset == null) {
@@ -202,7 +202,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         BigInteger bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
 
         BigInteger accruedReward = BigInteger.ZERO;
-        List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+        List<Address> assets = this.assets.keySet(this.isPlatformRecipientMap.keySet());
         BigInteger toTimestampInSeconds = getBlockTimestampInSecond();
         for (Address address : assets) {
             Asset asset = this.assets.get(address);
@@ -412,7 +412,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     }
 
     @EventLog(indexed = 2)
-    public void AddType(String id, boolean transferToContract) {
+    public void AddType(String id, boolean isPlatformRecipient) {
     }
 
     @EventLog(indexed = 1)
