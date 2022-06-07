@@ -85,6 +85,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = getBlockTimestampInSecond();
         }
+        TimeConstants.checkIsValidTimestamp(timestamp, Timestamp.SECONDS);
 
         typeWeightDB.setWeights(weights, timestamp);
         SetTypeWeight(timestamp, "Type weight updated");
@@ -125,6 +126,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = getBlockTimestampInSecond();
         }
+        TimeConstants.checkIsValidTimestamp(timestamp, Timestamp.SECONDS);
         assetWeightDB.setWeights(type, weights, timestamp);
         SetAssetWeight(type, timestamp, "Asset weight updated");
     }
