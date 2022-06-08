@@ -64,9 +64,9 @@ public class StakedLPImpl extends AbstractStakedLP {
         Map<String, BigInteger> balance = new HashMap<>();
 
         balance.put("poolID",BigInteger.valueOf(_id));
-        balance.put("userTotalBalance",userBalance.add(this.poolStakeDetails.at(_owner).at(_id).get(STAKED)));
+        balance.put("userTotalBalance",userBalance.add(this.poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,BigInteger.ONE)));
         balance.put("userAvailableBalance",userBalance);
-        balance.put("userStakedBalance",userBalance.add(this.poolStakeDetails.at(_owner).at(_id).get(STAKED)));
+        balance.put("userStakedBalance",userBalance.add(this.poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,BigInteger.ONE)));
         balance.put("totalStakedBalance",totalStaked.get(_id));
         return balance;
     }
@@ -184,7 +184,7 @@ public class StakedLPImpl extends AbstractStakedLP {
         }
 
         Address _user = Context.getCaller();
-        BigInteger previousUserStaked = this.poolStakeDetails.at(Context.getCaller()).at(_id).get(STAKED);
+        BigInteger previousUserStaked = this.poolStakeDetails.at(Context.getCaller()).at(_id).getOrDefault(STAKED,BigInteger.ONE);
         BigInteger previousTotalStaked = this.totalStaked.get(_id);
 
         if(previousUserStaked.compareTo(_value)<0){

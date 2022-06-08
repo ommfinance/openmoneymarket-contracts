@@ -65,7 +65,7 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
         if(_value.compareTo(minimumStake.get())<=0){
             throw StakedLPException.unknown("Amount to stake:" + _value+ " is smaller the minimum stake:" + minimumStake.get());
         }
-        BigInteger previousUserStaked = this.poolStakeDetails.at(Context.getCaller()).at(_id).get(STAKED);
+        BigInteger previousUserStaked = this.poolStakeDetails.at(Context.getCaller()).at(_id).getOrDefault(STAKED,BigInteger.ONE);
         BigInteger previousTotalStaked = this.totalStaked.get(_id);
 
         BigInteger decimals = getAverageDecimals(_id);
