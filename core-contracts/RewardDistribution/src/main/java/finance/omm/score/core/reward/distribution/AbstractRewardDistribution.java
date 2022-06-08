@@ -51,7 +51,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     public final BranchDB<Address, DictDB<Address, BigInteger>> workingBalance;
     //    public final VarDB<BigInteger> weight;
     protected final EnumerableDictDB<Address, String> isPlatformRecipientMap = new EnumerableDictDB<>(
-            "isPlatformRecipientMap",
+            "isPlatformRecipient",
             Address.class, String.class);
 
     public final VarDB<BigInteger> bOMMRewardStartDate = Context.newVarDB(B_OMM_REWARD_START_DATE, BigInteger.class);
