@@ -361,11 +361,11 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             BigInteger amount = MathUtils.exaMultiply(MathUtils.exaDivide(userWorkerTokenBalance, totalSupply), reward);
             Distribution("worker", user, amount);
             call(Contracts.OMM_TOKEN, "transfer", user, amount);
-            totalSupply = totalSupply.subtract(userWorkerTokenBalance);
             total = total.add(amount);
         }
         if (total.compareTo(reward) > 0) {
-            throw RewardDistributionException.unknown("worker token distribution exceed accrued reward");
+            throw RewardDistributionException.unknown("total "+ total + "  reward" + reward +
+                    " worker token distribution exceed accrued reward");
         }
     }
 
