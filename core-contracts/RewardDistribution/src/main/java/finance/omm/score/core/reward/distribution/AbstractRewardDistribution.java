@@ -50,8 +50,8 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
     //user address = > asset address => total
     public final BranchDB<Address, DictDB<Address, BigInteger>> workingBalance;
     //    public final VarDB<BigInteger> weight;
-    protected final EnumerableDictDB<Address, String> isPlatformRecipientMap = new EnumerableDictDB<>(
-            "isPlatformRecipient",
+    protected final EnumerableDictDB<Address, String> platformRecipientMap = new EnumerableDictDB<>(
+            "platformRecipient",
             Address.class, String.class);
 
     public final VarDB<BigInteger> bOMMRewardStartDate = Context.newVarDB(B_OMM_REWARD_START_DATE, BigInteger.class);
@@ -79,7 +79,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     @External(readonly = true)
     public Map<String, BigInteger> getWorkingBalances(Address user) {
-        Map<String, String> assets = this.assets.getAssetName(this.isPlatformRecipientMap.keySet());
+        Map<String, String> assets = this.assets.getAssetName(this.platformRecipientMap.keySet());
         Map<String, BigInteger> response = new HashMap<>();
         DictDB<Address, BigInteger> balances = workingBalance.at(user);
         for (Map.Entry<String, String> entry : assets.entrySet()) {
@@ -91,7 +91,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     @External(readonly = true)
     public Map<String, BigInteger> getWorkingTotal() {
-        Map<String, String> assets = this.assets.getAssetName(this.isPlatformRecipientMap.keySet());
+        Map<String, String> assets = this.assets.getAssetName(this.platformRecipientMap.keySet());
         Map<String, BigInteger> response = new HashMap<>();
         for (Map.Entry<String, String> entry : assets.entrySet()) {
             BigInteger assetWorkingTotal = workingTotal.getOrDefault(Address.fromString(entry.getKey()),
@@ -122,7 +122,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
             asset.lpID = null;
             assets.put(address, asset);
 //            this.assets.setLastUpdateTimestamp(address, TimeConstants.getBlockTimestamp().divide(SECOND));
-            isPlatformRecipientMap.put(address, key);
+            platformRecipientMap.put(address, key);
             AssetAdded(key, key, address, BigInteger.ZERO);
         }
         call(Contracts.REWARD_WEIGHT_CONTROLLER, "addType", params);
@@ -156,7 +156,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         Map<String, Object> response = new HashMap<>();
         BigInteger totalRewards = BigInteger.ZERO;
 
-        List<Address> assets = this.assets.keySet(this.isPlatformRecipientMap.keySet());
+        List<Address> assets = this.assets.keySet(this.platformRecipientMap.keySet());
         for (Address address : assets) {
             Asset asset = this.assets.get(address);
             if (asset == null) {
@@ -202,7 +202,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         BigInteger bOMMTotalSupply = boostedBalance.get("bOMMTotalSupply");
 
         BigInteger accruedReward = BigInteger.ZERO;
-        List<Address> assets = this.assets.keySet(this.isPlatformRecipientMap.keySet());
+        List<Address> assets = this.assets.keySet(this.platformRecipientMap.keySet());
         BigInteger toTimestampInSeconds = getBlockTimestampInSecond();
         for (Address address : assets) {
             Asset asset = this.assets.get(address);

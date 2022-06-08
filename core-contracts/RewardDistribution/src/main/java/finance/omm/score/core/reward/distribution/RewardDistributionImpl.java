@@ -326,15 +326,15 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
         BigInteger transferToContract = BigInteger.ZERO;
 
-        for (Address key : this.isPlatformRecipientMap.keySet()) {
+        for (Address key : this.platformRecipientMap.keySet()) {
             BigInteger oldIndex = this.assets.getAssetIndex(key);
             BigInteger newIndex = this.getAssetIndex(key, ICX, toTimestamp, false);
             BigInteger accruedRewards = calculateReward(ICX, newIndex, oldIndex);
             transferToContract = transferToContract.add(accruedRewards);
 
-            if (Contracts.WORKER_TOKEN.getKey().equals(isPlatformRecipientMap.get(key))) {
+            if (Contracts.WORKER_TOKEN.getKey().equals(platformRecipientMap.get(key))) {
                 distributeWorkerToken(accruedRewards);
-            } else if (Contracts.DAO_FUND.getKey().equals(isPlatformRecipientMap.get(key))) {
+            } else if (Contracts.DAO_FUND.getKey().equals(platformRecipientMap.get(key))) {
                 Address daoFundAddress = getAddress(Contracts.DAO_FUND.getKey());
                 call(Contracts.OMM_TOKEN, "transfer", daoFundAddress, accruedRewards);
                 Distribution("daoFund", daoFundAddress, accruedRewards);
@@ -389,7 +389,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserDailyReward(Address user) {
-        Map<String, String> assets = this.assets.getAssetName(this.isPlatformRecipientMap.keySet());
+        Map<String, String> assets = this.assets.getAssetName(this.platformRecipientMap.keySet());
 
         Map<String, BigInteger> dailyRewards = call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER,
                 "getAssetDailyRewards");
@@ -418,7 +418,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         if (!bOMMBalances.get("bOMMUserBalance").equals(BigInteger.ZERO)) {
             throw RewardDistributionException.unknown(userAddr + " OMM locking is not expired");
         }
-        List<Address> assets = this.assets.keySet(this.isPlatformRecipientMap.keySet());
+        List<Address> assets = this.assets.keySet(this.platformRecipientMap.keySet());
         BigInteger toTimestampInSeconds = TimeConstants.getBlockTimestampInSecond();
         for (Address assetAddr : assets) {
             Asset asset = this.assets.get(assetAddr);
