@@ -10,15 +10,12 @@ import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
-import finance.omm.score.token.enums.Status;
 import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-import org.mockito.Mockito;
 import score.Address;
 
 public class OMMTokenTest extends AbstractOMMTokenTest {
@@ -91,50 +88,50 @@ public class OMMTokenTest extends AbstractOMMTokenTest {
         expectErrorMessage(removeFromLocklist, "require owner access");
 
         // no address in locklist yet
-        Executable locklistAddresses = () ->  score.call("get_locklist_addresses", 0, 0);
+        Executable locklistAddresses = () -> score.call("get_locklist_addresses", 0, 0);
         expectErrorMessage(locklistAddresses, "Locklist :: start index cannot be greater than end index");
 
-        Executable locklistAddressesOver100 = () ->  score.call("get_locklist_addresses", 0, 110);
+        Executable locklistAddressesOver100 = () -> score.call("get_locklist_addresses", 0, 110);
         expectErrorMessage(locklistAddressesOver100, "Locklist :: range cannot be greater than 100");
 
-        assertEquals(score.call("get_locklist_addresses", 0,10), new ArrayList<>());
+        assertEquals(score.call("get_locklist_addresses", 0, 10), new ArrayList<>());
 
         // add address to stakers list
-        Address user1 = sm.createAccount().getAddress();
-        Address user2 = sm.createAccount().getAddress();
-        Address user3 = sm.createAccount().getAddress();
-        Address[] stakerList = new Address[]{user1, user2, user3};
-        Object[] params = new Object[]{stakerList};
+//        Address user1 = sm.createAccount().getAddress();
+//        Address user2 = sm.createAccount().getAddress();
+//        Address user3 = sm.createAccount().getAddress();
+//        Address[] stakerList = new Address[]{user1, user2, user3};
+//        Object[] params = new Object[]{stakerList};
 
-        Executable addStakers = () -> score.invoke(notOwner, "addStakers",params);
-        expectErrorMessage(addStakers, "require owner access");
-
-        Executable removeStakers = () -> score.invoke(notOwner, "removeStakers", params);
-        expectErrorMessage(removeStakers, "require owner access");
-
-        score.invoke(owner, "addStakers", params);
+//        Executable addStakers = () -> score.invoke(notOwner, "addStakers",params);
+//        expectErrorMessage(addStakers, "require owner access");
+//
+//        Executable removeStakers = () -> score.invoke(notOwner, "removeStakers", params);
+//        expectErrorMessage(removeStakers, "require owner access");
+//
+//        score.invoke(owner, "addStakers", params);
 
         // inStakerList check
-        assertEquals(score.call("inStakerList",user1), true);
-        assertEquals(score.call("inStakerList",user2), true);
-        assertEquals(score.call("inStakerList",user3), true);
+//        assertEquals(score.call("inStakerList",user1), true);
+//        assertEquals(score.call("inStakerList",user2), true);
+//        assertEquals(score.call("inStakerList",user3), true);
 
         // 0,100 range, has 3 in list
-        List<Address> actualStakers = (List<Address>) score.call("getStakersList",0,100);
-        assertEquals(actualStakers.get(0), stakerList[0]);
-        assertEquals(actualStakers.get(1), stakerList[1]);
-        assertEquals(actualStakers.get(2), stakerList[2]);
-
-        // 0,2 range has 3 in list
-        actualStakers = (List<Address>) score.call("getStakersList",0,2);
-        assertEquals(actualStakers.get(0), stakerList[0]);
-        assertEquals(actualStakers.get(1), stakerList[1]);
-        assertEquals(actualStakers.get(2), stakerList[2]);
-
-        // 0,1 range has 3 in list
-        actualStakers = (List<Address>) score.call("getStakersList",0,1);
-        assertEquals(actualStakers.get(0), stakerList[0]);
-        assertEquals(actualStakers.get(1), stakerList[1]);
+//        List<Address> actualStakers = (List<Address>) score.call("getStakersList",0,100);
+//        assertEquals(actualStakers.get(0), stakerList[0]);
+//        assertEquals(actualStakers.get(1), stakerList[1]);
+//        assertEquals(actualStakers.get(2), stakerList[2]);
+//
+//        // 0,2 range has 3 in list
+//        actualStakers = (List<Address>) score.call("getStakersList",0,2);
+//        assertEquals(actualStakers.get(0), stakerList[0]);
+//        assertEquals(actualStakers.get(1), stakerList[1]);
+//        assertEquals(actualStakers.get(2), stakerList[2]);
+//
+//        // 0,1 range has 3 in list
+//        actualStakers = (List<Address>) score.call("getStakersList",0,1);
+//        assertEquals(actualStakers.get(0), stakerList[0]);
+//        assertEquals(actualStakers.get(1), stakerList[1]);
     }
 
     public void initialize() {
@@ -257,15 +254,7 @@ public class OMMTokenTest extends AbstractOMMTokenTest {
         expectErrorMessage(notSupported, "Staking of OMM token no longer supported.");
     }
 
-    private void mockStakedBalance(BigInteger staked, BigInteger unstaking, BigInteger unstakingPeriod) {
-        Mockito.reset(stakedBalances);
-        Mockito.reset(stakedDictDB);
 
-        doReturn(stakedDictDB).when(stakedBalances).at(any());
-        doReturn(staked).when(stakedDictDB).getOrDefault(Status.STAKED.getKey(), ZERO);
-        doReturn(unstaking).when(stakedDictDB).getOrDefault(Status.UNSTAKING.getKey(), ZERO);
-        doReturn(unstakingPeriod).when(stakedDictDB).getOrDefault(Status.UNSTAKING_PERIOD.getKey(), ZERO);
-    }
 
     @Test
     public void stakedBalanceTransfer() {
