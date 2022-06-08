@@ -27,11 +27,8 @@ import static org.mockito.Mockito.spy;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
-import com.iconloop.score.test.ServiceManager;
-import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.test.VarargAnyMatcher;
-import finance.omm.score.tokens.utils.IRC2Token;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,27 +42,26 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatchers;
 
 
-public class BoostedOMMUnlockTest extends TestBase {
+public class BoostedOMMUnlockTest extends AbstractBOMMTest {
 
-    private static final ServiceManager sm = getServiceManager();
-    private static final Account owner = sm.createAccount();
+
     private Score veOMMScore;
-    private Score tokenScore;
 
     private BoostedOMM scoreSpy;
 
     private Account addressProvider = Account.newScoreAccount(1001);
 
+    protected static final Account user = sm.createAccount();
+
     public static BigInteger WEEK = BigInteger.TEN.pow(6)
             .multiply(BigInteger.valueOf(86400L).multiply(BigInteger.valueOf(7L)));
-    private static final BigInteger INITIAL_SUPPLY = BigInteger.TEN.multiply(ICX);
+
     private static final String BOOSTED_OMM = "Boosted Omm";
     private static final String B_OMM_SYMBOL = "veOMM";
 
 
     @BeforeEach
     public void setup() throws Exception {
-        tokenScore = sm.deploy(owner, IRC2Token.class, INITIAL_SUPPLY);
         veOMMScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 BOOSTED_OMM, B_OMM_SYMBOL);
         scoreSpy = (BoostedOMM) spy(veOMMScore.getInstance());
@@ -78,6 +74,7 @@ public class BoostedOMMUnlockTest extends TestBase {
         doNothing().when(scoreSpy)
                 .call(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
 
+        tokenScore.invoke(owner, "mintTo", user.getAddress(), BigInteger.valueOf(1000).multiply(ICX));
     }
 
     @ParameterizedTest
@@ -92,19 +89,22 @@ public class BoostedOMMUnlockTest extends TestBase {
         map.put("params", Map.of("unlockTime", expectedUnlock));
         JSONObject json = new JSONObject(map);
         byte[] lockBytes = json.toString().getBytes();
-        tokenScore.invoke(owner, "transfer", veOMMScore.getAddress(), ICX.multiply(BigInteger.ONE), lockBytes);
+        tokenScore.invoke(user, "transfer", veOMMScore.getAddress(), ICX.multiply(BigInteger.ONE), lockBytes);
 
-        Map<String, BigInteger> balance = (Map<String, BigInteger>) veOMMScore.call("getLocked", owner.getAddress());
+        Map<String, BigInteger> balance = (Map<String, BigInteger>) veOMMScore.call("getLocked", user.getAddress());
         long actual_unlock = balance.get("end").longValue();
-        long delta = BigInteger.valueOf(actual_unlock - timestamp).divide(BigInteger.TEN.pow(6)).divide(BigInteger.TWO).longValue();
+        long delta = BigInteger.valueOf(actual_unlock - timestamp)
+                .divide(BigInteger.TEN.pow(6))
+                .divide(BigInteger.TWO)
+                .longValue();
 
         sm.getBlock().increase(delta - 5);
-        BigInteger _balance = (BigInteger) veOMMScore.call("balanceOf", owner.getAddress(), BigInteger.ZERO);
+        BigInteger _balance = (BigInteger) veOMMScore.call("balanceOf", user.getAddress(), BigInteger.ZERO);
         assertTrue(_balance.compareTo(BigInteger.ZERO) > 0);
 
         sm.getBlock().increase(6);
 
-        _balance = (BigInteger) veOMMScore.call("balanceOf", owner.getAddress(), BigInteger.ZERO);
+        _balance = (BigInteger) veOMMScore.call("balanceOf", user.getAddress(), BigInteger.ZERO);
         assertEquals(_balance, BigInteger.ZERO);
     }
 
@@ -121,26 +121,29 @@ public class BoostedOMMUnlockTest extends TestBase {
         JSONObject json = new JSONObject(map);
         byte[] lockBytes = json.toString().getBytes();
 
-        tokenScore.invoke(owner, "transfer", veOMMScore.getAddress(), ICX.multiply(BigInteger.ONE), lockBytes);
+        tokenScore.invoke(user, "transfer", veOMMScore.getAddress(), ICX.multiply(BigInteger.ONE), lockBytes);
 
-        Map<String, BigInteger> balance = (Map<String, BigInteger>) veOMMScore.call("getLocked", owner.getAddress());
+        Map<String, BigInteger> balance = (Map<String, BigInteger>) veOMMScore.call("getLocked", user.getAddress());
         BigInteger initialUnlock = balance.get("end");
         BigInteger expectedExtendedUnlockTime = initialUnlock.add(BigInteger.valueOf(extendedTime));
 
-        veOMMScore.invoke(owner, "increaseUnlockTime", expectedExtendedUnlockTime);
+        veOMMScore.invoke(user, "increaseUnlockTime", expectedExtendedUnlockTime);
 
-        Map<String, BigInteger> newBalance = (Map<String, BigInteger>) veOMMScore.call("getLocked", owner.getAddress());
+        Map<String, BigInteger> newBalance = (Map<String, BigInteger>) veOMMScore.call("getLocked", user.getAddress());
         BigInteger extendedActualUnlock = newBalance.get("end");
 
-        long delta = extendedActualUnlock.subtract(BigInteger.valueOf(timestamp)).divide(BigInteger.TEN.pow(6)).divide(BigInteger.TWO).longValue();
+        long delta = extendedActualUnlock.subtract(BigInteger.valueOf(timestamp))
+                .divide(BigInteger.TEN.pow(6))
+                .divide(BigInteger.TWO)
+                .longValue();
 
-        sm.getBlock().increase(delta - 2);
-        BigInteger _balance = (BigInteger) veOMMScore.call("balanceOf", owner.getAddress(), BigInteger.ZERO);
+        sm.getBlock().increase(delta - 3);
+        BigInteger _balance = (BigInteger) veOMMScore.call("balanceOf", user.getAddress(), BigInteger.ZERO);
         assertTrue(_balance.compareTo(BigInteger.ZERO) > 0);
 
         sm.getBlock().increase(3);
 
-        _balance = (BigInteger) veOMMScore.call("balanceOf", owner.getAddress(), BigInteger.ZERO);
+        _balance = (BigInteger) veOMMScore.call("balanceOf", user.getAddress(), BigInteger.ZERO);
         assertEquals(_balance, BigInteger.ZERO);
     }
 
@@ -149,7 +152,9 @@ public class BoostedOMMUnlockTest extends TestBase {
 
         long low = WEEK.longValue() * 2;
         long high = WEEK.longValue() * 52;
-        return Stream.of(Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1)), Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1)), Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1)));
+        return Stream.of(Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1)),
+                Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1)),
+                Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1)));
     }
 
     private static Stream<Arguments> extendedUnlockWeeks() {
@@ -157,6 +162,11 @@ public class BoostedOMMUnlockTest extends TestBase {
         long week = WEEK.longValue();
         long low = week * 2;
         long high = week * 52;
-        return Stream.of(Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1), ThreadLocalRandom.current().nextLong(week, low)), Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1), ThreadLocalRandom.current().nextLong(week, low)), Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1), ThreadLocalRandom.current().nextLong(week, low)));
+        return Stream.of(Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1),
+                        ThreadLocalRandom.current().nextLong(week, low)),
+                Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1),
+                        ThreadLocalRandom.current().nextLong(week, low)),
+                Arguments.of(ThreadLocalRandom.current().nextLong(low, high + 1),
+                        ThreadLocalRandom.current().nextLong(week, low)));
     }
 }

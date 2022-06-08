@@ -25,19 +25,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
-import com.iconloop.score.test.TestBase;
-import com.iconloop.score.token.irc2.IRC2Basic;
 import java.math.BigInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import score.Context;
 
-class BoostedOmmTest extends TestBase {
+class BoostedOmmTest extends AbstractBOMMTest {
 
     private static final ServiceManager sm = getServiceManager();
     private static final Account owner = sm.createAccount();
     private Score veOmmScore;
-    private Score tokenScore;
 
     private final Account addressProvider = Account.newScoreAccount(1001);
 
@@ -49,16 +45,9 @@ class BoostedOmmTest extends TestBase {
     private static final String bOmmName = "Voting Escrow Omm";
     private static final String bOmmSymbol = "veOMM";
 
-    public static class IRC2BasicToken extends IRC2Basic {
-        public IRC2BasicToken(String _name, String _symbol, int _decimals, BigInteger _totalSupply) {
-            super(_name, _symbol, _decimals);
-            _mint(Context.getCaller(), _totalSupply);
-        }
-    }
 
     @BeforeEach
     public void setup() throws Exception {
-        tokenScore = sm.deploy(owner, IRC2BasicToken.class, name, symbol, decimals, initialSupply);
         veOmmScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 bOmmName, bOmmSymbol);
     }
