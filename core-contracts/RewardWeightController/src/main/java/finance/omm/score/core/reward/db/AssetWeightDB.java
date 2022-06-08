@@ -6,7 +6,6 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.exception.RewardWeightException;
 import finance.omm.score.core.reward.model.Asset;
-import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
 import java.util.Map;
@@ -67,7 +66,7 @@ public class AssetWeightDB implements Searchable {
             throw RewardWeightException.unknown("latest " + latestCheckpoint + " checkpoint exists than " + timestamp);
         }
 
-        if (TimeConstants.getBlockTimestamp().compareTo(timestamp) > 0) {
+        if (getBlockTimestampInSecond().compareTo(timestamp) > 0) {
             throw RewardWeightException.unknown("can't set weight value for old timestamp " + timestamp);
         }
 
@@ -133,7 +132,7 @@ public class AssetWeightDB implements Searchable {
     }
 
     public BigInteger getTotal(String typeId) {
-        BigInteger timestamp = TimeConstants.getBlockTimestamp();
+        BigInteger timestamp = getBlockTimestampInSecond();
         return getTotal(typeId, timestamp);
     }
 

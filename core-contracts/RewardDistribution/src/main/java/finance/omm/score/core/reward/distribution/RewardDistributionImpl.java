@@ -51,9 +51,9 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         if (this.bOMMRewardStartDate.get() == null) {
             TimeConstants.checkIsValidTimestamp(bOMMRewardStartDate, Timestamp.SECONDS);
             this.bOMMRewardStartDate.set(bOMMRewardStartDate);
+            isHandleActionEnabled.set(Boolean.FALSE);
+            isRewardClaimEnabled.set(Boolean.FALSE);
         }
-        isHandleActionEnabled.set(Boolean.FALSE);
-        isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
     @External(readonly = true)
@@ -303,40 +303,45 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
         @SuppressWarnings("unchecked")
         Class<Map<String, ?>> clazz = (Class) Map.class;
-        Map<String, ?> distributionDetails = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "getDistributionDetails",
+        Map<String, ?> precomputeInfo = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "precompute",
                 day);
-        Boolean isValid = (Boolean) distributionDetails.get("isValid");
+        Boolean isValid = (Boolean) precomputeInfo.get("isValid");
 
         if (!isValid) {
-            return;
+            throw RewardDistributionException.unknown("invalid day to distribute rewards " + day);
         }
-        BigInteger tokenDistribution = (BigInteger) distributionDetails.get("distribution");
-        BigInteger newDay = (BigInteger) distributionDetails.get("day");
-        if (tokenDistribution.equals(BigInteger.ZERO)) {
-            return;
+        BigInteger amountToMint = (BigInteger) precomputeInfo.get("amountToMint");
+
+        if (amountToMint.equals(BigInteger.ZERO)) {
+            throw RewardDistributionException.unknown("no token to mint " + amountToMint);
         }
+
+        BigInteger newDay = (BigInteger) precomputeInfo.get("day");
+
+        BigInteger toTimestamp = (BigInteger) precomputeInfo.get("timestamp");
+
         distributedDay.set(newDay);
-        call(Contracts.OMM_TOKEN, "mint", tokenDistribution);
-        OmmTokenMinted(newDay, tokenDistribution, newDay.subtract(day));
+        call(Contracts.OMM_TOKEN, "mint", amountToMint);
+        OmmTokenMinted(newDay, amountToMint, newDay.subtract(day));
 
         BigInteger transferToContract = BigInteger.ZERO;
 
-        for (Address key : this.transferToContractMap.keySet()) {
+        for (Address key : this.platformRecipientMap.keySet()) {
             BigInteger oldIndex = this.assets.getAssetIndex(key);
-            BigInteger newIndex = this.getAssetIndex(key, ICX, false);
+            BigInteger newIndex = this.getAssetIndex(key, ICX, toTimestamp, false);
             BigInteger accruedRewards = calculateReward(ICX, newIndex, oldIndex);
             transferToContract = transferToContract.add(accruedRewards);
 
-            if (Contracts.WORKER_TOKEN.getKey().equals(transferToContractMap.get(key))) {
+            if (Contracts.WORKER_TOKEN.getKey().equals(platformRecipientMap.get(key))) {
                 distributeWorkerToken(accruedRewards);
-            } else if (Contracts.DAO_FUND.getKey().equals(transferToContractMap.get(key))) {
+            } else if (Contracts.DAO_FUND.getKey().equals(platformRecipientMap.get(key))) {
                 Address daoFundAddress = getAddress(Contracts.DAO_FUND.getKey());
                 call(Contracts.OMM_TOKEN, "transfer", daoFundAddress, accruedRewards);
                 Distribution("daoFund", daoFundAddress, accruedRewards);
             }
         }
 
-        if (transferToContract.compareTo(tokenDistribution) > 0) {
+        if (transferToContract.compareTo(amountToMint) > 0) {
             throw RewardDistributionException.unknown("transfer to contract exceed total distribution");
         }
 
@@ -356,11 +361,11 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             BigInteger amount = MathUtils.exaMultiply(MathUtils.exaDivide(userWorkerTokenBalance, totalSupply), reward);
             Distribution("worker", user, amount);
             call(Contracts.OMM_TOKEN, "transfer", user, amount);
-            totalSupply = totalSupply.subtract(userWorkerTokenBalance);
             total = total.add(amount);
         }
         if (total.compareTo(reward) > 0) {
-            throw RewardDistributionException.unknown("worker token distribution exceed accrued reward");
+            throw RewardDistributionException.unknown("total "+ total + "  reward" + reward +
+                    " worker token distribution exceed accrued reward");
         }
     }
 
@@ -384,7 +389,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserDailyReward(Address user) {
-        Map<String, String> assets = this.assets.getAssetName(this.transferToContractMap.keySet());
+        Map<String, String> assets = this.assets.getAssetName(this.platformRecipientMap.keySet());
 
         Map<String, BigInteger> dailyRewards = call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER,
                 "getAssetDailyRewards");
@@ -413,13 +418,14 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         if (!bOMMBalances.get("bOMMUserBalance").equals(BigInteger.ZERO)) {
             throw RewardDistributionException.unknown(userAddr + " OMM locking is not expired");
         }
-        List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+        List<Address> assets = this.assets.keySet(this.platformRecipientMap.keySet());
+        BigInteger toTimestampInSeconds = TimeConstants.getBlockTimestampInSecond();
         for (Address assetAddr : assets) {
             Asset asset = this.assets.get(assetAddr);
             if (asset == null) {
                 continue;
             }
-            updateIndexes(assetAddr, userAddr);
+            updateIndexes(assetAddr, userAddr, toTimestampInSeconds);
 
             WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, asset.lpID);
             workingBalance.bOMMUserBalance = bOMMBalances.get("bOMMUserBalance");
@@ -454,8 +460,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         }
 
         Address userAddr = _userDetails._user;
-
-        updateIndexes(assetAddr, userAddr);
+        BigInteger toTimestampInSeconds = TimeConstants.getBlockTimestampInSecond();
+        updateIndexes(assetAddr, userAddr, toTimestampInSeconds);
 
         Map<String, BigInteger> boostedBalance = getBoostedBalance(userAddr);
         WorkingBalance balance = getUserBalance(userAddr, assetAddr, asset.lpID);

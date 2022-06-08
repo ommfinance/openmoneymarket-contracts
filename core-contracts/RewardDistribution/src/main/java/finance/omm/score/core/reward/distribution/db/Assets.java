@@ -58,7 +58,7 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         this.assetIndex.set(assetAddr, newIndex);
     }
 
-    public void setLastUpdateTimestamp(Address assetAddr, BigInteger currentTime) {
+    public void setIndexUpdatedTimestamp(Address assetAddr, BigInteger currentTime) {
         this.indexUpdatedTimestamp.set(assetAddr, currentTime);
     }
 

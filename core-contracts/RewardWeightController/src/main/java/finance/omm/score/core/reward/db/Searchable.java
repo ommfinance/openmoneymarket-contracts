@@ -1,5 +1,6 @@
 package finance.omm.score.core.reward.db;
 
+import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import score.DictDB;
 
@@ -42,5 +43,9 @@ public interface Searchable {
         }
 
         return lower;
+    }
+
+    default BigInteger getBlockTimestampInSecond() {
+        return TimeConstants.getBlockTimestamp().divide(TimeConstants.SECOND);
     }
 }

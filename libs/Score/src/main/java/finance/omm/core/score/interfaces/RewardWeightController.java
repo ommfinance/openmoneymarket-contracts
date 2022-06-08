@@ -15,7 +15,7 @@ public interface RewardWeightController {
 
     String name();
 
-    void addType(String key, boolean transferToContract, @Optional Address address);
+    void addType(String key, boolean isPlatformRecipient, @Optional Address address);
 
     void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp);
 
@@ -31,11 +31,15 @@ public interface RewardWeightController {
 
     BigInteger getDay();
 
-    BigInteger getIntegrateIndex(Address assetAddr, BigInteger totalSupply, BigInteger lastUpdatedTimestamp);
+    BigInteger calculateIntegrateIndex(Address assetAddr, BigInteger totalSupply, BigInteger from, BigInteger to);
 
     BigInteger getTypeCheckpointCount();
 
     BigInteger getAssetCheckpointCount(String type);
+
+    BigInteger getAssetTimestampAtCheckpoint(String typeId, int checkpointId);
+
+    BigInteger getTypeTimestampAtCheckpoint(int checkpointId);
 
     Map<String, BigInteger> getTypeWeightByTimestamp(BigInteger timestamp);
 
@@ -55,7 +59,7 @@ public interface RewardWeightController {
 
     BigInteger getStartTimestamp();
 
-    Map<String, ?> getDistributionDetails(BigInteger day);
+    Map<String, ?> precompute(BigInteger day);
 
     Map<String, BigInteger> getEmissionRate(@Optional BigInteger timestamp);
 
