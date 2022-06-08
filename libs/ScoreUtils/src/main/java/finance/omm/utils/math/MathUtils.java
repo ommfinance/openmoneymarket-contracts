@@ -8,7 +8,6 @@ public class MathUtils {
 
     public static BigInteger ICX = pow10(18);
     public static BigInteger HUNDRED_PERCENT = ICX;
-    public static BigInteger HUNDRED = BigInteger.valueOf(100L);
     public static BigInteger HALF_ICX = ICX.divide(BigInteger.TWO);
     public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(ICX);
     public static BigInteger HUNDRED_THOUSAND = BigInteger.valueOf(100_000L).multiply(ICX);
@@ -94,8 +93,8 @@ public class MathUtils {
         return _amount;
     }
 
-    public static BigInteger percentageInHundred(BigInteger value) {
-        return value.multiply(HUNDRED).divide(ICX);
+    public static double percentageInHundred(BigInteger value) {
+        return 100*value.doubleValue()/ICX.doubleValue();
     }
 
     public static BigInteger convertToNumber(JsonValue value) {
