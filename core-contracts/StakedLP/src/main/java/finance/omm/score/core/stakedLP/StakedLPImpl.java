@@ -167,18 +167,14 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External
     public void unstake(int _id, BigInteger _value) {
-        boolean found = false;
         int size = supportedPools.size();
 
         for(int x=0; x<size; x++ ){
-            if(supportedPools.get(x) == _id){
-                found = true;
-                break;
+            if(!(supportedPools.get(x) == _id)){
+                throw StakedLPException.unknown("pool with id:" + _id +" is not supported");
             }
         }
-        if(!found){
-            throw StakedLPException.unknown("pool with id:" + _id +" is not supported");
-        }
+
         if(_value.compareTo(ZERO)<0){
             throw StakedLPException.unknown("Cannot unstake less than zero\nvalue to stake" + _value);
         }

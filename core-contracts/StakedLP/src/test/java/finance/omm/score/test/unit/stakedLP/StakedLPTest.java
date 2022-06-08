@@ -41,7 +41,9 @@ public class StakedLPTest extends AbstractStakedLPTest {
         assertEquals(THOUSAND,score.call("getMinimumStake"));
     }
 
+    @Test
+    public void Stake(){
 
-
+    }
 
 }

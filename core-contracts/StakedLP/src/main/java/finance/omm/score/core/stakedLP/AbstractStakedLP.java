@@ -46,19 +46,15 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
     }
 
     protected void stake(Address _user, Integer _id, BigInteger _value) {
-        //
-        boolean found = false;
+
         int size = supportedPools.size();
 
         for(int x=0; x<size; x++ ){
-            if(supportedPools.get(x) == _id){
-                found = true;
-                break;
+            if(!(supportedPools.get(x) == _id)){
+                throw StakedLPException.unknown("pool with id:" + _id +" is not supported");
             }
         }
-        if(!found){
-            throw StakedLPException.unknown("pool with id:" + _id +" is not supported");
-        }
+
         if(_value.compareTo(ZERO)<0){
             throw StakedLPException.unknown("Cannot stake less than zero, value to stake" + _value);
         }
