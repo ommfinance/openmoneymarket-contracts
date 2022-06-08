@@ -30,7 +30,8 @@ public enum Contracts {
     BAND_ORACLE("bandOracle"),
     STAKED_LP("stakedLP"),
     BOOSTED_OMM("bOMM"),
-    DEX("dex");
+    DEX("dex"),
+    DTOKEN("dToken");
 
 
     private String key;
