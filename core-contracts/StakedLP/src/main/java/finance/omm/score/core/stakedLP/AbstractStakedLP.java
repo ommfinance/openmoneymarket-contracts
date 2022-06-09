@@ -40,31 +40,42 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
     }
 
     protected BigInteger getAverageDecimals(int _id){
-        Map<String, BigInteger> poolStats  = call(Map.class, Contracts.DEX,"getPoolStats", BigInteger.valueOf(_id));
-        BigInteger quoteDecimals = poolStats.get("quote_decimals");
-        BigInteger baseDecimals = poolStats.get("base_decimals");
+        Map<String, ?> poolStats  = call(Map.class, Contracts.DEX,"getPoolStats", BigInteger.valueOf(_id));
+        BigInteger quoteDecimals = (BigInteger) poolStats.get("quote_decimals");
+        BigInteger baseDecimals = (BigInteger) poolStats.get("base_decimals");
         BigInteger averageDecimals = (quoteDecimals.add(baseDecimals)).divide(BigInteger.valueOf(2));
         return averageDecimals;
     }
 
-    protected void stake(Address _user, int _id, BigInteger _value) {
-        for (int i = 0; i < supportedPools.size(); i++) {
-            if (!(supportedPools.get(i)== _id)){
-                throw StakedLPException.unknown("pool with id: " + _id + "is not supported");
+    protected boolean inSupportedPools(int poolId) {
+        int size = supportedPools.size();
+        for (int i = 0; i < size; i++) {
+            if (supportedPools.get(i).equals(poolId)) {
+                return true;
             }
+        }
+        return false;
+    }
+
+    protected void stake(Address _user, int _id, BigInteger _value) {
+        boolean isSupported = inSupportedPools(_id);
+        if (!isSupported){
+            throw StakedLPException.unknown("pool with id: " + _id + " is not supported");
         }
 
         if (_value.compareTo(ZERO) < 0 ){
-            throw StakedLPException.unknown("Cannot stake less than zero ,value to stake" + _value);
+            throw StakedLPException.unknown("Cannot stake less than zero ,value to stake " + _value);
         }
         if (_value.compareTo(minimumStake.get()) < 0 ){
-            throw StakedLPException.unknown("Amount to stake: " + _value +"is smaller the minimum stake: "
+            throw StakedLPException.unknown("Amount to stake: " + _value +" is smaller the minimum stake: "
                     + minimumStake.get());
 
         }
 
+        // getORDefault is okay or not
         BigInteger previousUserStaked = poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED, ONE);
-        BigInteger previousTotalStaked = totalStaked.get(_id);
+
+        BigInteger previousTotalStaked = this.totalStaked.getOrDefault(_id,ZERO); // getORdefault ??
 
         BigInteger afterUserStaked = previousUserStaked.add(_value);
         BigInteger afterTotalStaked = previousTotalStaked.add(_value);
