@@ -1,15 +1,13 @@
 package finance.omm.score.test.unit.stakedLP;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
+import com.eclipsesource.json.JsonObject;
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
-import finance.omm.core.score.interfaces.*;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.score.core.stakedLP.StakedLPImpl;
@@ -32,23 +30,20 @@ public class AbstractStakedLPTest extends TestBase {
 
     public static final BigInteger ONE = BigInteger.ONE;
     public static final BigInteger ZERO = BigInteger.ZERO;
-    public static final BigInteger HUNDRED = BigInteger.valueOf(100L);
     public static final BigInteger THOUSAND = BigInteger.valueOf(1000L);
 
 
     protected Address[] addresses = new Address[]{
             Account.newScoreAccount(201).getAddress(),
+            Account.newScoreAccount(202).getAddress()
     };
 
 
     public static final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
-        put(Contracts.REWARD_WEIGHT_CONTROLLER, Account.newScoreAccount(102));
-        put(Contracts.DAO_FUND, Account.newScoreAccount(103));
-        put(Contracts.WORKER_TOKEN, Account.newScoreAccount(104));
-        put(Contracts.OMM_TOKEN, Account.newScoreAccount(105));
-        put(Contracts.LENDING_POOL_CORE, Account.newScoreAccount(106));
-        put(Contracts.BOOSTED_OMM, Account.newScoreAccount(107));
+        put(Contracts.GOVERNANCE, Account.newScoreAccount(102));
+        put(Contracts.DEX, Account.newScoreAccount(103));
+        put(Contracts.REWARDS, Account.newScoreAccount(104));
     }};
 
     @BeforeAll
@@ -101,6 +96,15 @@ public class AbstractStakedLPTest extends TestBase {
         AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
         boolean isInString = e.getMessage().contains(errorMessage);
         assertEquals(true, isInString);
+    }
+
+    protected byte[] createByteArray(String methodName){
+
+        JsonObject jsonData = new JsonObject()
+                .add("method",methodName);
+
+        byte[] data = jsonData.toString().getBytes();
+        return data;
     }
 
     @Test
