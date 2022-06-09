@@ -7,6 +7,7 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.stakedLP.exception.StakedLPException;
 import java.math.BigInteger;
 import java.util.Map;
+
 import score.Address;
 import score.ArrayDB;
 import score.BranchDB;
@@ -19,6 +20,7 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
         Authorization<StakedLPException> {
     public static final String TAG = "Staked Lp";
     public static final BigInteger ZERO = BigInteger.ZERO;
+    public static final BigInteger ONE = BigInteger.valueOf(1);
     public final ArrayDB<Integer> supportedPools = Context.newArrayDB("supportedPools", Integer.class);
     public final BranchDB<Address,BranchDB<Integer,DictDB<Integer,BigInteger>>>  poolStakeDetails = Context.newBranchDB(
             "poolStakeDetails", BigInteger.class);
@@ -37,32 +39,38 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
         }
     }
 
-    protected BigInteger getAverageDecimals(Integer _id){
-        Map<String, BigInteger> pool_stats = call(Map.class, Contracts.DEX, "getPoolStats", BigInteger.valueOf(_id));
-        BigInteger quote_decimals = pool_stats.get("quote_decimals");
-        BigInteger base_decimals = pool_stats.get("base_decimals");
-        BigInteger average_decimals = quote_decimals.add(base_decimals).divide(BigInteger.TWO);
-        return average_decimals;
+    protected BigInteger getAverageDecimals(int _id){
+        Map<String, BigInteger> poolStats  = call(Map.class, Contracts.DEX,"getPoolStats", BigInteger.valueOf(_id));
+        BigInteger quoteDecimals = poolStats.get("quote_decimals");
+        BigInteger baseDecimals = poolStats.get("base_decimals");
+        BigInteger averageDecimals = (quoteDecimals.add(baseDecimals)).divide(BigInteger.valueOf(2));
+        return averageDecimals;
     }
 
-    protected void stake(Address _user, Integer _id, BigInteger _value) {
-
-        int size = supportedPools.size();
-
-        for(int x=0; x<size; x++ ){
-            if(!(supportedPools.get(x) == _id)){
-                throw StakedLPException.unknown("pool with id:" + _id +" is not supported");
+    protected void stake(Address _user, int _id, BigInteger _value) {
+        for (int i = 0; i < supportedPools.size(); i++) {
+            if (!(supportedPools.get(i)== _id)){
+                throw StakedLPException.unknown("pool with id: " + _id + "is not supported");
             }
         }
 
-        if(_value.compareTo(ZERO)<0){
-            throw StakedLPException.unknown("Cannot stake less than zero, value to stake" + _value);
+        if (_value.compareTo(ZERO) < 0 ){
+            throw StakedLPException.unknown("Cannot stake less than zero ,value to stake" + _value);
         }
-        if(_value.compareTo(minimumStake.get())<=0){
-            throw StakedLPException.unknown("Amount to stake:" + _value+ " is smaller the minimum stake:" + minimumStake.get());
+        if (_value.compareTo(minimumStake.get()) < 0 ){
+            throw StakedLPException.unknown("Amount to stake: " + _value +"is smaller the minimum stake: "
+                    + minimumStake.get());
+
         }
-        BigInteger previousUserStaked = this.poolStakeDetails.at(Context.getCaller()).at(_id).getOrDefault(STAKED,BigInteger.ONE);
-        BigInteger previousTotalStaked = this.totalStaked.get(_id);
+
+        BigInteger previousUserStaked = poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED, ONE);
+        BigInteger previousTotalStaked = totalStaked.get(_id);
+
+        BigInteger afterUserStaked = previousUserStaked.add(_value);
+        BigInteger afterTotalStaked = previousTotalStaked.add(_value);
+
+        poolStakeDetails.at(_user).at(_id).set(STAKED,afterUserStaked);
+        totalStaked.set(_id,afterTotalStaked);
 
         BigInteger decimals = getAverageDecimals(_id);
         Map<String,Object> userDetails = new HashMap<>();
@@ -71,14 +79,8 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
         userDetails.put("_totalSupply", previousTotalStaked);
         userDetails.put("_decimals", decimals);
 
-//        UserDetails userDetails = new UserDetails();
-//        userDetails._user = _user;
-//        userDetails._userBalance = previousUserStaked;
-//        userDetails._totalSupply = previousTotalStaked;
-//        userDetails._decimals = getAverageDecimals(_id);
 
-        call(Contracts.REWARDS, "handleLPAction", addressMap.get(_id), userDetails);
-
+        call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id),userDetails);
     }
 
 

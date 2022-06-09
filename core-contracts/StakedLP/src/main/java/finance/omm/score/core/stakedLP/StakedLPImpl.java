@@ -5,7 +5,6 @@ import com.eclipsesource.json.JsonObject;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
-import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.core.stakedLP.exception.StakedLPException;
 import score.Address;
 import score.Context;
@@ -17,12 +16,9 @@ import scorex.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static finance.omm.utils.constants.AddressConstant.ZERO_SCORE_ADDRESS;
-
 public class StakedLPImpl extends AbstractStakedLP {
 
     public StakedLPImpl(Address addressProvider) {
-
         super(addressProvider, false);
     }
 
@@ -42,7 +38,6 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public BigInteger getMinimumStake() {
-
         return minimumStake.get();
     }
 
@@ -60,32 +55,26 @@ public class StakedLPImpl extends AbstractStakedLP {
     @External(readonly = true)
     public Map<String, BigInteger> balanceOf(Address _owner, int _id) {
         BigInteger userBalance=call(BigInteger.class,Contracts.DEX,"balanceOf",_owner, _id);
-
-        Map<String, BigInteger> balance = new HashMap<>();
-
-        balance.put("poolID",BigInteger.valueOf(_id));
-        balance.put("userTotalBalance",userBalance.add(this.poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,BigInteger.ONE)));
-        balance.put("userAvailableBalance",userBalance);
-        balance.put("userStakedBalance",userBalance.add(this.poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,BigInteger.ONE)));
-        balance.put("totalStakedBalance",totalStaked.get(_id));
-        return balance;
+        // integer or int?
+        BigInteger poolDetails = poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,ONE);
+        return Map.of(
+                "poolID",BigInteger.valueOf(_id),
+                "userTotalBalance",userBalance.add(poolDetails) ,
+                "userAvailableBalance",userBalance,
+                "userStakedBalance", poolDetails,
+                "totalStakedBalance",totalStaked.get(_id));
     }
 
     @External(readonly = true)
     public List<Map<String, BigInteger>> getBalanceByPool() {
-        List<Map<String, BigInteger>> result = new ArrayList<>();
-
-
+        List<Map<String,BigInteger>> result = new ArrayList<>();
         for (int i = 0; i < supportedPools.size(); i++) {
-            int _id = this.supportedPools.get(i);
-            BigInteger totalBalance = call(BigInteger.class, Contracts.DEX,"balanceOf",Context.getAddress(), _id);
-            Map<String, BigInteger> pool_details = new HashMap<>();
-
-            pool_details.put("poolID",BigInteger.valueOf(_id));
-            pool_details.put("totalStakedBalance",totalBalance);
-
-            result.add(pool_details);
-
+            Integer id = supportedPools.get(i);
+            BigInteger totalBalance = call(BigInteger.class, Contracts.DEX,"balanceOf", Context.getCaller(), id);
+            Map<String, BigInteger> poolDetails = Map.of(
+                    "poolID",BigInteger.valueOf(id),
+                    "totalStakedBalance",totalBalance);
+            result.add(poolDetails);
         }
         return result;
     }
@@ -105,73 +94,73 @@ public class StakedLPImpl extends AbstractStakedLP {
     }
 
     @External
-    public void addPool(int _poolID, Address asset) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE,StakedLPException.unknown("Not Governance contract"));
-        this.addressMap.set(_poolID,asset);
-        int size = supportedPools.size();
-
-        for(int x=0; x<size; x++ ) {
-            if (!(supportedPools.get(x) == _poolID)) {
-                this.supportedPools.add(_poolID);
+    public void addPool(int _id, Address _pool) {
+        onlyContractOrElseThrow(Contracts.GOVERNANCE,
+                StakedLPException.unauthorized("Sender not score governance error: (sender) " +
+                        Context.getCaller()+ "governance" + Contracts.GOVERNANCE));
+        this.addressMap.set(_id,_pool);
+        for (int i = 0; i < supportedPools.size(); i++) {
+            if (!(supportedPools.get(i) == _id)){
+                supportedPools.add(_id);
             }
         }
     }
 
     @External(readonly = true)
     public Address getPoolById(int _id) {
-
         return this.addressMap.get(_id);
     }
 
     @External
     public void removePool(int _poolID) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE,StakedLPException.unknown("Not Governance contract"));
+        onlyContractOrElseThrow(
+                Contracts.GOVERNANCE,StakedLPException.unauthorized("Sender not score governance error: (sender) " +
+                        Context.getCaller()+ "governance" + Contracts.GOVERNANCE));
         Address pool = this.addressMap.get(_poolID);
-        if(pool == null){
-            throw StakedLPException.unknown(TAG+ ": "+ _poolID + " is not in address map");
+        if (pool == null){
+            throw StakedLPException.unknown(TAG + ": " + _poolID + "is not in address map");
         }
         this.addressMap.set(_poolID,null);
+        Integer top = this.supportedPools.pop(); // wrapper class or int
+        // check the logic
+        //boolean isRemoved = top.equals(_poolID); // line 129-131
+        boolean isRemoved = false;
 
-        int top = this.supportedPools.pop();
-        //change
-        boolean _is_removed = top == _poolID;
-        if(!_is_removed) {
-            for (int i = 0; i < supportedPools.size(); i++) {
-                int _id = this.supportedPools.get(i);
-                if(_id == _poolID){
-                    this.supportedPools.set(_id,top);
-                    _is_removed = true;
+        if (top.equals(_poolID)){
+            isRemoved = true;
+        }
+        if (!isRemoved){
+            for (int i = 0; i < this.supportedPools.size(); i++) {
+                if (this.supportedPools.get(i).equals(_poolID)) {
+                    this.supportedPools.set(i,top);
+                    isRemoved = true;
                 }
-
             }
         }
-        if(!_is_removed) {
-            throw StakedLPException.unknown(TAG+ ": "+ _poolID + " is not in supported pool list");
-        }
 
+        if (!isRemoved){
+            throw StakedLPException.unknown(TAG + ": " + _poolID + "is not in supported pool list");
+        }
     }
 
     @External(readonly = true)
     public Map<String, Address> getSupportedPools() {
         // cast poolId to string
-        Map<String, Address> pools = new HashMap<>();
-        int size = this.supportedPools.size();
-
-        for(int x=0; x<size; x++ ){
-            int pool = supportedPools.get(x);
-            pools.put(String.valueOf(pool),addressMap.get(pool));
+        Map<String,Address> supportedPool = new HashMap<>();
+        for (int i = 0; i < this.supportedPools.size(); i++) {
+            int pool = this.supportedPools.get(i);
+            Address address = this.addressMap.get(pool);
+            supportedPool.put(String.valueOf(pool),address);
         }
-        return pools;
+        return supportedPool;
     }
 
 
     @External
     public void unstake(int _id, BigInteger _value) {
-        int size = supportedPools.size();
-
-        for(int x=0; x<size; x++ ){
-            if(!(supportedPools.get(x) == _id)){
-                throw StakedLPException.unknown("pool with id:" + _id +" is not supported");
+        for (int i = 0; i < this.supportedPools.size(); i++) {
+            if (!(this.supportedPools.get(i)== _id)){ // check this again
+                throw StakedLPException.unknown("pool with id: " + _id + "is not supported");
             }
         }
 
@@ -180,12 +169,21 @@ public class StakedLPImpl extends AbstractStakedLP {
         }
 
         Address _user = Context.getCaller();
-        BigInteger previousUserStaked = this.poolStakeDetails.at(Context.getCaller()).at(_id).getOrDefault(STAKED,BigInteger.ONE);
+        BigInteger previousUserStaked = this.poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED,BigInteger.ONE);
         BigInteger previousTotalStaked = this.totalStaked.get(_id);
 
-        if(previousUserStaked.compareTo(_value)<0){
-            throw StakedLPException.unknown("Cannot unstake,user dont have enough staked balance\namount to unstake" + _value + "staked balance of user: " +_user+ " is " +previousUserStaked);
+        if (previousUserStaked.compareTo(_value) > 0){
+            throw StakedLPException.unknown("Cannot unstake,user dont have enough staked balance" +
+                    "amount to unstake " + _value +
+                    "staked balance of user:" + _user  + "is" + previousUserStaked);
         }
+
+        BigInteger afterUserStaked = previousUserStaked.subtract(_value);
+        BigInteger afterTotalStaked = previousTotalStaked.subtract(_value);
+
+        poolStakeDetails.at(_user).at(_id).set(STAKED,afterUserStaked);
+        totalStaked.set(_id,afterTotalStaked);
+
 
         BigInteger decimals = getAverageDecimals(_id);
         Map<String,Object> userDetails = new HashMap<>();
@@ -194,12 +192,16 @@ public class StakedLPImpl extends AbstractStakedLP {
         userDetails.put("_totalSupply", previousTotalStaked);
         userDetails.put("_decimals", decimals);
 
-        call(Contracts.DEX, "transfer", _user,_value,_id,"transferBackToUser");
+        call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id),userDetails);
+        BigInteger id = BigInteger.valueOf(_id);
+        call(Contracts.DEX, "transfer", _user,_value,id,"transferBackToUser".getBytes());
     }
 
     @External
-    public void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data) {
-        onlyContractOrElseThrow(Contracts.DEX,StakedLPException.unknown("Not Governance contract"));
+    public void onIRC31Received(Address _operator, Address _from, int _id, BigInteger _value, byte[] _data) {
+        onlyContractOrElseThrow(Contracts.DEX,StakedLPException.unauthorized(
+                "Sender not score dex error: (sender) " +
+                        Context.getCaller()+ "dex" + Contracts.DEX));
 
         String data = new String(_data);
         JsonObject json = Json.parse(data).asObject();
@@ -208,7 +210,7 @@ public class StakedLPImpl extends AbstractStakedLP {
         JsonObject params = json.get("params").asObject();
 
         if(method.equals("stake")){
-            this.stake(_from, _id.intValue(), _value);
+            this.stake(_from, _id, _value);
         }else {
             throw StakedLPException.unknown("No valid method called :: " + data);
         }
@@ -217,12 +219,10 @@ public class StakedLPImpl extends AbstractStakedLP {
     @External(readonly = true)
     public SupplyDetails getLPStakedSupply(int _id, Address _user) {
         Map<String, BigInteger> balance = balanceOf(_user, _id);
-
-        SupplyDetails supply = new SupplyDetails();
-        supply.decimals = getAverageDecimals(_id);
-        supply.principalUserBalance = balance.get("userStakedBalance");
-        supply.principalTotalSupply = balance.get("totalStakedBalance");
-        return supply;
+        SupplyDetails supplyDetails = new SupplyDetails();
+        supplyDetails.decimals = getAverageDecimals(_id);
+        supplyDetails.principalTotalSupply = balance.get("userStakedBalance");
+        supplyDetails.principalUserBalance = balance.get("totalStakedBalance");
+        return supplyDetails;
     }
-
 }

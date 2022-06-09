@@ -16,8 +16,12 @@ public class StakedLPException extends OMMException.StakedLPImpl {
         return new StakedLPException(Code.NotOwner, "require owner access" );
     }
 
+    public static StakedLPException unauthorized(String msg) {
+        return new StakedLPException(Code.UnAuthorized, msg);
+    }
+
     public enum Code implements OMMException.Coded {
-        Unknown(0), NotOwner(1);
+        Unknown(0), NotOwner(1),UnAuthorized(2);
 
         final int code;
 
