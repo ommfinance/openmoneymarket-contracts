@@ -47,16 +47,21 @@ public class StakedLPTest extends AbstractStakedLPTest {
         score.invoke(owner,"setMinimumStake",ONE);
         assertEquals(ONE,score.call("getMinimumStake"));
     }
+
+    private void _addPool(Account account,int id, Address poolAddress){
+        score.invoke(account,"addPool",id,poolAddress);
+    }
     @Test
     public void addPool(){
         int id = 1;
         Address pool = addresses[0];
-        Executable unauthorized = () -> score.invoke(notGovernanceScore,"addPool",id,pool);
+        Executable unauthorized = () -> _addPool(notGovernanceScore,id,pool);
         String expectedErrorMessage = "Sender not score governance error: (sender) " +
                 notGovernanceScore.getAddress() + " governance " + GOVERNANCE_TOKEN_ACCOUNT.getAddress();
         expectErrorMessage(unauthorized,expectedErrorMessage);
 
-        score.invoke(GOVERNANCE_TOKEN_ACCOUNT,"addPool",id,pool);
+//        score.invoke(GOVERNANCE_TOKEN_ACCOUNT,"addPool",id,pool);
+        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id,pool);
         assertEquals(pool,score.call("getPoolById",id));
 
         // asserting HASH map
@@ -93,6 +98,20 @@ public class StakedLPTest extends AbstractStakedLPTest {
         assertNull(score.call("getPoolById", poolId2));
     }
 
+    private void _stake(Account account, Address operator, Address from, int id,
+                        BigInteger amount,byte[] data ){
+        doReturn(Map.of(
+                "quote_decimals", BigInteger.valueOf(2),
+                "base_decimals",BigInteger.valueOf(3) // OMM/USDS -> base/quote
+        )).when(scoreSpy).call(eq(Map.class),eq(Contracts.DEX),eq("getPoolStats"),
+                any(BigInteger.class));
+
+        doNothing().when(scoreSpy).call(eq(Contracts.REWARDS),eq("handleLPAction"),any(),any());
+        score.invoke(account,"onIRC31Received", operator,from,id,amount,data);
+    }
+
+
+
     @Test
     public void stake(){
         Account from = sm.createAccount(100);
@@ -103,8 +122,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
 
         // not called by DEX
         byte[] data = createByteArray(methodName);
-        Executable unauthorized = () -> score.invoke(notDEXScore,"onIRC31Received",
-                operator.getAddress(),from.getAddress(),id,value,data);
+        Executable unauthorized = () -> _stake(notDEXScore,operator.getAddress(),from.getAddress(),id,value,data);
         String expectedErrorMessage = "Sender not score dex error: (sender) " +
                 notDEXScore.getAddress() + " dex " + DEX_ACCOUNT.getAddress();
         expectErrorMessage(unauthorized,expectedErrorMessage);
@@ -112,21 +130,20 @@ public class StakedLPTest extends AbstractStakedLPTest {
         // invalidMethod Name
         String invalidName = "notStake";
         byte[] invalidData = createByteArray(invalidName);
-        Executable invalidCall = () -> score.invoke(DEX_ACCOUNT,"onIRC31Received",
-                operator.getAddress(),from.getAddress(),id,value,invalidData);
+        Executable invalidCall = () -> _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id,value,invalidData);
         expectedErrorMessage = "No valid method called :: ";
         expectErrorMessageIn(invalidCall,expectedErrorMessage);
 
         // invalid pool Id
-        Executable invalidPoolId = () -> score.invoke(DEX_ACCOUNT,"onIRC31Received",
+        Executable invalidPoolId = () -> _stake(DEX_ACCOUNT,
                 operator.getAddress(),from.getAddress(),id,value,data);
         expectedErrorMessage = "pool with id: " + id + " is not supported";
         expectErrorMessage(invalidPoolId,expectedErrorMessage);
 
-        addPool();
         // invalid stake amount
+        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id,addresses[0]);
         BigInteger invalidAmount = BigInteger.valueOf(10).negate();
-        Executable invalidStakeAmount = () -> score.invoke(DEX_ACCOUNT,"onIRC31Received",
+        Executable invalidStakeAmount = () -> _stake(DEX_ACCOUNT,
                 operator.getAddress(),from.getAddress(),id,invalidAmount,data);
         expectedErrorMessage = "Cannot stake less than zero ,value to stake "  + invalidAmount ;
         expectErrorMessage(invalidStakeAmount,expectedErrorMessage);
@@ -134,7 +151,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
         // stake amount less than minimum stake
         // minimum stake is set to 1
         setMinimumStake();
-        Executable lessStakeAmount = () -> score.invoke(DEX_ACCOUNT,"onIRC31Received",
+        Executable lessStakeAmount = () -> _stake(DEX_ACCOUNT,
                 operator.getAddress(),from.getAddress(),id,ZERO,data);
         expectedErrorMessage= "Amount to stake: " +ZERO + " is smaller the minimum stake: 1";
         expectErrorMessage(lessStakeAmount,expectedErrorMessage);
@@ -147,17 +164,26 @@ public class StakedLPTest extends AbstractStakedLPTest {
 
         doNothing().when(scoreSpy).call(eq(Contracts.REWARDS),eq("handleLPAction"),any(),any());
 
-        score.invoke(DEX_ACCOUNT,"onIRC31Received",
-                operator.getAddress(),from.getAddress(),id,value,data);
+        _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id,value,data);
 
         verify(scoreSpy).call(eq(Map.class),eq(Contracts.DEX),eq("getPoolStats"),any(BigInteger.class));
         verify(scoreSpy).call(eq(Contracts.REWARDS),eq("handleLPAction"),any(),any());
 
+        // balanceOF
     }
 
     @Test
     public void getTotalStaked(){ // check
-        stake();
+        Account from = sm.createAccount(100);
+        Account operator = sm.createAccount(100);
+        int id = 1;
+        BigInteger value = BigInteger.valueOf(10);
+        String methodName = "stake";
+        byte[] data = createByteArray(methodName);
+
+        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id,addresses[0]);
+        _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id,value,data);
+
         TotalStaked totalStaked = (TotalStaked) score.call("getTotalStaked", 1);
 
         BigInteger addedDecimals = BigInteger.TWO.add(BigInteger.valueOf(3));
