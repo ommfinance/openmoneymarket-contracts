@@ -33,4 +33,4 @@ jobs:
         run: docker-compose up -d
 
       - name: Run integration tests
-        run: ./gradlew -Pscore-test.url=http://localhost:9082/api/v3 -Pscore-test.nid=0x3 -Pscore-test.keystoreName=./gochain-local/data/godWallet.json -Pscore-test.keystorePass=gochain -Pscore-test.tester.keystoreName=./gochain-local/data/godWallet.json -Pscore-test.tester.keystorePass=gochain integrationTest
+        run: ./gradlew integrationTest
