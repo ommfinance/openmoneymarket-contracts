@@ -24,6 +24,8 @@ Implementation of IRC2
 **/
 public class DTokenImpl extends AddressProvider{
 
+    public static final String TAG = "DToken";
+    
     private static final String NAME = "token_name";
     private static final String SYMBOL = "token_symbol";
     private static final String DECIMALS = "decimals";

@@ -14,6 +14,7 @@ import com.iconloop.score.test.ServiceManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.math.BigInteger;
@@ -138,8 +139,40 @@ public class DTokenTest  extends TestBase {
         SupplyDetails principalSupply = (SupplyDetails) dToken.call("getPrincipalSupply", userAccount.getAddress());
         assertEquals(BigInteger.ZERO, principalSupply.principalUserBalance);
     }
+ 
+    @Test
+    void principalBalanceOfTest() {
+        BigInteger balances = (BigInteger)dToken.call("principalBalanceOf",  lendingPoolAccount.getAddress());
+        assertNotNull(balances);
+        assertEquals(BigInteger.ZERO,balances);
+    }
     
+    @Test
+    void getUserBorrowCumulativeIndexTest() {
+        BigInteger userBorrowIndex = (BigInteger)dToken.call("getUserBorrowCumulativeIndex", lendingPoolCoreAccount.getAddress());
+        assertNotNull(userBorrowIndex);
+        assertEquals(BigInteger.ZERO, userBorrowIndex);
+    }
     
+    @Test
+    void nameTest() {
+        String name = (String) dToken.call("name");
+        assertNotNull(name); 
+        assertEquals(DTokenImpl.TAG, name);
+    }
     
+    @Test
+    void symbolTest() {
+        String symbol = (String)dToken.call("symbol");
+        assertNotNull(symbol);
+        assertEquals(Contracts.DTOKEN.getKey(), symbol);
+    }
+    
+    @Test
+    void decimalsTest() {
+        BigInteger decimals = (BigInteger)dToken.call("decimals");
+        assertNotNull(decimals);
+        assertEquals(BigInteger.TEN, decimals);
+    }
     
 }
