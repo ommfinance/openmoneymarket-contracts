@@ -8,27 +8,21 @@ public interface Searchable {
 
     default int searchCheckpoint(BigInteger timestamp, Integer checkpointCount,
             DictDB<Integer, BigInteger> timeCheckpoints) {
-        BigInteger latestTimestamp = timeCheckpoints.getOrDefault(checkpointCount, BigInteger.ZERO);
+        int compareWithLatestTimestamp = timeCheckpoints.getOrDefault(checkpointCount, BigInteger.ZERO)
+                .compareTo(timestamp);
 
-        if (latestTimestamp.compareTo(timestamp) < 0) {
+        if (compareWithLatestTimestamp < 0) {
             return checkpointCount;
         }
 
         /*
         return previous checkpoint if latest timestamp and search timestamp is equals
          */
-        if (latestTimestamp.compareTo(timestamp) == 0 && checkpointCount != 1) {
+        if (compareWithLatestTimestamp == 0) {
             return checkpointCount - 1;
         }
-           /*
-        return 0  if latest timestamp is greater than search timestamp
-        searching for old timestamp than first checkpoint's timestamp
-         */
-        if (checkpointCount == 1 && latestTimestamp.compareTo(timestamp) >= 0) {
-            return 0;
-        }
 
-        int lower = 1, upper = checkpointCount;
+        int lower = 0, upper = checkpointCount;
         while (lower < upper) {
             int mid = (upper + lower + 1) / 2;
             BigInteger midTimestamp = timeCheckpoints.getOrDefault(mid, BigInteger.ZERO);
