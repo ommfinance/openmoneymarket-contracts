@@ -4,14 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
 
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +18,6 @@ import finance.omm.libs.structs.TotalStaked;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import score.Address;
-import score.ArrayDB;
-import scorex.util.ArrayList;
 
 public class StakedLPTest extends AbstractStakedLPTest {
 
@@ -66,15 +61,9 @@ public class StakedLPTest extends AbstractStakedLPTest {
                 notGovernanceScore.getAddress() + " governance " + GOVERNANCE_TOKEN_ACCOUNT.getAddress();
         expectErrorMessage(unauthorized,expectedErrorMessage);
 
-//        score.invoke(GOVERNANCE_TOKEN_ACCOUNT,"addPool",id,pool);
         _addPool(GOVERNANCE_TOKEN_ACCOUNT,id,pool);
         assertEquals(pool,score.call("getPoolById",id));
 
-        // asserting HASH map
-//        Map<String,Address> pools = new HashMap<>();
-//        pools.put(String.valueOf(id),pool);
-//        assertEquals(pools,score.call("getSupportedPools"));
-//        System.out.println(score.call("getSupportedPools"));
     }
 
     @Test
@@ -197,6 +186,9 @@ public class StakedLPTest extends AbstractStakedLPTest {
 
         assertEquals(BigInteger.valueOf(10),totalStaked.totalStaked);
         assertEquals(expectedDecimals,totalStaked.decimals);
+
+        verify(scoreSpy).call(eq(Contracts.REWARDS), eq("handleLPAction"),any(),any());
+
     }
 
     @Test
@@ -236,6 +228,12 @@ public class StakedLPTest extends AbstractStakedLPTest {
             assertEquals(expected.get(i).get("userStakedBalance"),value[i]);
 
         }
+
+        verify(scoreSpy,times(3)).call(eq(BigInteger.class), eq(Contracts.DEX),
+                eq("balanceOf"),any(Address.class),any(Integer.class));
+        verify(scoreSpy,times(2)).call(eq(Contracts.REWARDS), eq("handleLPAction"),any(),any());
+
+
     }
 
     @Test
@@ -252,7 +250,6 @@ public class StakedLPTest extends AbstractStakedLPTest {
         assertEquals(expected.get("userStakedBalance"),ZERO);
         assertEquals(expected.get("totalStakedBalance"),totalStakeBalance);
 
-        Account from = sm.createAccount(100);
         Account operator = sm.createAccount(100);
         BigInteger value = BigInteger.valueOf(10);
         String methodName = "stake";
@@ -274,12 +271,16 @@ public class StakedLPTest extends AbstractStakedLPTest {
         assertEquals(expected.get("userStakedBalance"),value);
         assertEquals(expected.get("totalStakedBalance"),totalStakeBalance.add(value));
 
+        verify(scoreSpy,times(2)).call(eq(BigInteger.class), eq(Contracts.DEX),
+                eq("balanceOf"),any(Address.class),any(Integer.class));
+        verify(scoreSpy).call(eq(Contracts.REWARDS), eq("handleLPAction"),any(),any());
+
+
     }
 
     @Test
     public void getBalanceByPool(){
-        addPool();
-        List result = (List) score.call("getBalanceByPool");
+
 
 
 
@@ -341,6 +342,9 @@ public class StakedLPTest extends AbstractStakedLPTest {
 
         assertEquals(BigInteger.valueOf(3),totalStaked.totalStaked);
         assertEquals(expectedDecimals,totalStaked.decimals);
+
+        verify(scoreSpy,times(2)).call(eq(Contracts.REWARDS),eq("handleLPAction"),any(),any());
+        verify(scoreSpy).call(eq(Contracts.DEX),eq("transfer"),any(),any(),any(),any());
     }
 
     @Test
@@ -367,6 +371,10 @@ public class StakedLPTest extends AbstractStakedLPTest {
         assertEquals(supplyDetails.decimals,expectedDecimals);
         assertEquals(supplyDetails.principalTotalSupply,value);
         assertEquals(supplyDetails.principalUserBalance,totalStakeBalance);
+
+        verify(scoreSpy).call(eq(BigInteger.class), eq(Contracts.DEX),
+                eq("balanceOf"),any(Address.class),any(Integer.class));
+        verify(scoreSpy).call(eq(Contracts.REWARDS), eq("handleLPAction"),any(),any());
 
     }
 
