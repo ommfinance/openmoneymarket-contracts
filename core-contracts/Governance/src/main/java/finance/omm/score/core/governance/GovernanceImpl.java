@@ -327,12 +327,9 @@ public class GovernanceImpl extends AbstractGovernance {
         if (batch_size == 0) {
             batch_size = 20;
         }
-        if (offset == 0) {
-            offset = 1;
-        }
         List<Map<String, ?>> proposals = new ArrayList<>();
         int start = Math.max(1, offset);
-        int end = Math.min(batch_size + start, getProposalCount());
+        int end = Math.min(batch_size + start - 1, getProposalCount());
         for (int i = start; i <= end; i++) {
             proposals.add(checkVote(i));
         }
@@ -383,7 +380,7 @@ public class GovernanceImpl extends AbstractGovernance {
         Address sender = Context.getCaller();
         BigInteger snapshot = proposal.voteSnapshot.get();
 
-        BigInteger votingWeight = myVotingWeight(sender,snapshot);
+        BigInteger votingWeight = myVotingWeight(sender, snapshot);
         if (votingWeight.equals(BigInteger.ZERO)) {
             throw GovernanceException.unknown("Boosted OMM tokens needed to cast the vote.");
         }
@@ -514,7 +511,6 @@ public class GovernanceImpl extends AbstractGovernance {
         BigInteger totalForVoted = proposal.totalForVotes.getOrDefault(BigInteger.ZERO);
         BigInteger totalAgainstVotes = proposal.totalAgainstVotes.getOrDefault(BigInteger.ZERO);
 
-
         BigInteger _for = MathUtils.exaDivide(totalForVoted, totalVotingWeight);
         BigInteger _against = MathUtils.exaDivide(totalAgainstVotes, totalVotingWeight);
 
@@ -562,7 +558,7 @@ public class GovernanceImpl extends AbstractGovernance {
     public Map<String, ?> getVotesOfUser(int vote_index, Address user) {
         ProposalDB proposal = ProposalDB.getByVoteIndex(vote_index);
         if (proposal == null) {
-            return Map.of("for", BigInteger.ZERO,"against",BigInteger.ZERO);
+            return Map.of("for", BigInteger.ZERO, "against", BigInteger.ZERO);
         }
         return Map.of(
                 "for", proposal.forVotesOfUser.getOrDefault(user, BigInteger.ZERO),
@@ -573,7 +569,7 @@ public class GovernanceImpl extends AbstractGovernance {
     @External(readonly = true)
     public BigInteger myVotingWeight(Address _address, BigInteger _block) {
         BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
-        return boostedToken.balanceOfAt(_address,_block);
+        return boostedToken.balanceOfAt(_address, _block);
     }
 
     @External
@@ -601,7 +597,7 @@ public class GovernanceImpl extends AbstractGovernance {
         JsonValue vote_start = params.get("vote_start");
         BigInteger voteStart;
 
-        if (vote_start == null){
+        if (vote_start == null) {
             voteStart = TimeConstants.getBlockTimestamp();
         } else {
             voteStart = convertToNumber(vote_start);
@@ -618,14 +614,14 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     @External
-    public void enableHandleActions(){
+    public void enableHandleActions() {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.enableHandleActions();
     }
 
     @External
-    public void disableHandleActions(){
+    public void disableHandleActions() {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.disableHandleActions();
