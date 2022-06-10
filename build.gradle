@@ -110,8 +110,8 @@ subprojects {
         def props = project.getProperties()
         def scoreTest = new HashMap<String, Object>()
 
-        scoreTest.put('keystoreName', props.get(prefix + 'keystoreName'))
-        scoreTest.put('keystorePass', props.get(prefix + 'keystorePass'))
+        scoreTest.put('keystoreName', props.getOrDefault(prefix + 'keystoreName', "$rootDir/gochain-local/data/godWallet.json"))
+        scoreTest.put('keystorePass', props.getOrDefault(prefix + 'keystorePass', "gochain"))
         scoreTest.put('url', props.getOrDefault(prefix + 'url', 'http://localhost:9082/api/v3'))
         scoreTest.put('nid', props.getOrDefault(prefix + 'nid', 3))
 
