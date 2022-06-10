@@ -20,7 +20,7 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
         Authorization<StakedLPException> {
     public static final String TAG = "Staked Lp";
     public static final BigInteger ZERO = BigInteger.ZERO;
-    public static final BigInteger ONE = BigInteger.valueOf(1);
+    public static final BigInteger ONE = BigInteger.ONE;
     public final ArrayDB<Integer> supportedPools = Context.newArrayDB("supportedPools", Integer.class);
     public final BranchDB<Address,BranchDB<Integer,DictDB<Integer,BigInteger>>>  poolStakeDetails = Context.newBranchDB(
             "poolStakeDetails", BigInteger.class);
