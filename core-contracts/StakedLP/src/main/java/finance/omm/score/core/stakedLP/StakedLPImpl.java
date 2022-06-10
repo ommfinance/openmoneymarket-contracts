@@ -52,21 +52,23 @@ public class StakedLPImpl extends AbstractStakedLP {
         return totalStaked;
     }
 
-
+    // added new api to call totalStaked
+    @External(readonly = true)
+    public BigInteger totalStaked(int _id){
+        return this.totalStaked.getOrDefault(_id,ZERO);
+    }
 
     @External(readonly = true)
     public Map<String, BigInteger> balanceOf(Address _owner, int _id) {
         BigInteger userBalance=call(BigInteger.class,Contracts.DEX,"balanceOf",_owner, _id);
-        System.out.println(userBalance);
         // integer or int?
-        BigInteger poolDetails = poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,ONE);
-        System.out.println(poolDetails);
+        BigInteger poolDetails = poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,ZERO);
         return Map.of(
                 "poolID",BigInteger.valueOf(_id),
                 "userTotalBalance",userBalance.add(poolDetails) ,
                 "userAvailableBalance",userBalance,
                 "userStakedBalance", poolDetails,
-                "totalStakedBalance",totalStaked.get(_id));
+                "totalStakedBalance",totalStaked(_id));
     }
 
     @External(readonly = true)
@@ -107,6 +109,10 @@ public class StakedLPImpl extends AbstractStakedLP {
         if (!isSupported){
             supportedPools.add(_id);
         }
+        // throws when trying to add pool id which is already added.
+//        else {
+//            throw StakedLPException.unknown(_id +" pool already added");
+//        }
     }
 
     @External(readonly = true)
@@ -126,12 +132,10 @@ public class StakedLPImpl extends AbstractStakedLP {
         this.addressMap.set(_poolID,null);
         Integer top = this.supportedPools.pop(); // wrapper class or int
         // check the logic
-        //boolean isRemoved = top.equals(_poolID); // line 129-131
-        boolean isRemoved = false;
 
-        if (top.equals(_poolID)){
-            isRemoved = true;
-        }
+        // optimized
+        boolean isRemoved = top.equals(_poolID);
+
         if (!isRemoved){
             for (int i = 0; i < this.supportedPools.size(); i++) {
                 if (this.supportedPools.get(i).equals(_poolID)) {
@@ -172,7 +176,7 @@ public class StakedLPImpl extends AbstractStakedLP {
 
         Address _user = Context.getCaller();
         BigInteger previousUserStaked = this.poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED,BigInteger.ONE);
-        BigInteger previousTotalStaked = this.totalStaked.get(_id);
+        BigInteger previousTotalStaked = totalStaked(_id);
 
         if (previousUserStaked.compareTo(_value) < 0){
             throw StakedLPException.unknown("Cannot unstake,user dont have enough staked balance" +
