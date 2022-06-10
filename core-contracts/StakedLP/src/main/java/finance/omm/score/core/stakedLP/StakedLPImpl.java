@@ -52,11 +52,15 @@ public class StakedLPImpl extends AbstractStakedLP {
         return totalStaked;
     }
 
+
+
     @External(readonly = true)
     public Map<String, BigInteger> balanceOf(Address _owner, int _id) {
         BigInteger userBalance=call(BigInteger.class,Contracts.DEX,"balanceOf",_owner, _id);
+        System.out.println(userBalance);
         // integer or int?
         BigInteger poolDetails = poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,ONE);
+        System.out.println(poolDetails);
         return Map.of(
                 "poolID",BigInteger.valueOf(_id),
                 "userTotalBalance",userBalance.add(poolDetails) ,

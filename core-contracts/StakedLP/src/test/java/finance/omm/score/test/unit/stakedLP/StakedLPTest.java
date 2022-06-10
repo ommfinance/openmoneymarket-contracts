@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
 import finance.omm.libs.structs.TotalStaked;
@@ -165,6 +166,82 @@ public class StakedLPTest extends AbstractStakedLPTest {
 
         assertEquals(BigInteger.valueOf(10),totalStaked.totalStaked);
         assertEquals(expectedDecimals,totalStaked.decimals);
+    }
+
+    @Test
+    public void getPoolBalanceByUser(){
+        stake();
+        List<Map<String, BigInteger>> totalStaked = (List<Map<String, BigInteger>>) score.call("getPoolBalanceByUser", owner.getAddress());
+
+
+
+
+    }
+
+    @Test
+    public void balanceOf(){
+        stake();
+        int  _id = 1;
+        doReturn(BigInteger.valueOf(100)).when(scoreSpy).call(BigInteger.class,Contracts.DEX,"balanceOf",owner.getAddress(), _id);
+        Map<String, BigInteger> balance = (Map<String, BigInteger>) score.call("balanceOf",owner.getAddress(), 1);
+//        assertEquals(balance.get("poolID"),1);
+
+    }
+
+    @Test
+    public void getBalanceByPool(){
+        addPool();
+        List result = (List) score.call("getBalanceByPool");
+
+
+
+    }
+
+    @Test
+    public void getPoolById(){
+        addPool();
+        Address poolAd = (Address) score.call("getPoolById",1);
+        Address expected = addresses[0];
+        assertEquals(poolAd,expected);
+    }
+
+    @Test
+    public void unstake(){
+        int falseId = 6;
+        int id = 1;
+        BigInteger lessvalue = ONE;
+        BigInteger value = TEN;
+        BigInteger highvalue = BigInteger.valueOf(11);
+        stake();
+
+        Executable notSupportedCall = () ->score.call("unstake",falseId,value);
+        String expectedErrorMessage= "pool with id: " + falseId + "is not supported";
+        expectErrorMessage(notSupportedCall,expectedErrorMessage);
+
+        BigInteger negativevalue = NEGATIVE;
+        Executable lessthanZero = () ->score.call("unstake",id,negativevalue);
+        expectedErrorMessage= "Cannot unstake less than zero value to stake" + negativevalue;
+        expectErrorMessage(lessthanZero,expectedErrorMessage);
+
+
+        Executable moreThanStaked = () ->score.invoke(owner,"unstake",id,highvalue);
+        expectedErrorMessage= "Cannot unstake,user dont have enough staked balance" +
+                "amount to unstake " + highvalue +
+                "staked balance of user:" + owner.getAddress()  + "is" + ONE;
+        expectErrorMessage(moreThanStaked,expectedErrorMessage);
+
+        score.invoke(owner,"unstake",id,ONE);
+
+
+
+    }
+
+    @Test
+    public void getLPStakedSupply(){
+        stake();
+
+
+
     }
 
 }

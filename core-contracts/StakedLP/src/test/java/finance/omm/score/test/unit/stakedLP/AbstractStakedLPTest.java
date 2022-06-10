@@ -29,8 +29,11 @@ public class AbstractStakedLPTest extends TestBase {
     public StakedLPImpl scoreSpy;
 
     public static final BigInteger ONE = BigInteger.ONE;
+    public static final BigInteger TEN = BigInteger.TEN;
     public static final BigInteger ZERO = BigInteger.ZERO;
     public static final BigInteger THOUSAND = BigInteger.valueOf(1000L);
+
+    public static final BigInteger NEGATIVE = BigInteger.ONE.negate();
 
 
     protected Address[] addresses = new Address[]{
