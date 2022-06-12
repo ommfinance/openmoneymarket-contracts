@@ -2,6 +2,7 @@ package finance.omm.score.tokens;
 
 import java.math.BigInteger;
 
+import finance.omm.core.score.interfaces.DToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
@@ -14,6 +15,7 @@ import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Optional;
 
 import static finance.omm.utils.math.MathUtils.*;
 import finance.omm.libs.address.Contracts;
@@ -22,17 +24,18 @@ import finance.omm.libs.address.Contracts;
 /**
 Implementation of IRC2
 **/
-public class DTokenImpl extends AddressProvider{
+public class DTokenImpl extends AddressProvider implements DToken {
 
     public static final String TAG = "DToken";
-    
+    public static final BigInteger ZERO = new BigInteger("0");
+
     private static final String NAME = "token_name";
     private static final String SYMBOL = "token_symbol";
     private static final String DECIMALS = "decimals";
     private static final String TOTAL_SUPPLY = "total_supply";
     private static final String BALANCES = "balances";
     private static final String USER_INDEXES = "user_indexes";
-    
+
     /**
     Variable Definition
     **/
@@ -42,7 +45,7 @@ public class DTokenImpl extends AddressProvider{
     private final VarDB<BigInteger> _totalSupply = Context.newVarDB(TOTAL_SUPPLY, BigInteger.class);
     private final DictDB<Address, BigInteger> _balances = Context.newDictDB(BALANCES, BigInteger.class);
     private final DictDB<Address, BigInteger> _userIndexes = Context.newDictDB(USER_INDEXES, BigInteger.class); 
-    
+
     /***
     Variable Initialization.
     :param _addressProvider: the address of addressProvider
@@ -53,6 +56,10 @@ public class DTokenImpl extends AddressProvider{
     public DTokenImpl(Address _addressProvider, String _name, String _symbol, BigInteger _decimals, boolean _update) {
         super(_addressProvider, _update);
 
+        if(_update) {
+            onUpdate();
+            return;
+        }
         if (_symbol.isEmpty()) {
             Context.revert("Invalid Symbol name");
         }
@@ -61,32 +68,36 @@ public class DTokenImpl extends AddressProvider{
             Context.revert("Invalid Token Name");
         }
 
-        if (_decimals.compareTo(BigInteger.ZERO) < 0) {
+        if (_decimals.compareTo(ZERO) < 0) {
             Context.revert("Decimals cannot be less than zero");
         }
 
         this._name.set(_name);
         this._symbol.set(_symbol);
         this._decimals.set(_decimals);
-        this._totalSupply.set(BigInteger.ZERO);
+        this._totalSupply.set(ZERO);
     }
-    
+
+    public void onUpdate() {
+        Context.println(TAG + "| updating dtoken");
+    }
+
     @EventLog(indexed = 3)
     public void Transfer(Address _from, Address _to, BigInteger _value, byte[] _data) {        
     }
-    
+
     @EventLog(indexed=3)
     public void MintOnBorrow(Address _from, BigInteger _value, BigInteger  _fromBalanceIncrease, BigInteger _fromIndex) {        
     }
-    
+
     @EventLog(indexed=3)
     public void BurnOnRepay(Address _from, BigInteger _value, BigInteger _fromBalanceIncrease,BigInteger _fromIndex){        
     }
-    
+
     @EventLog(indexed=3)
     public void  BurnOnLiquidation(Address _from, BigInteger _value, BigInteger _fromBalanceIncrease,BigInteger _fromIndex){        
     }
-        
+
     /**
     Returns the name of the token
     **/
@@ -94,7 +105,7 @@ public class DTokenImpl extends AddressProvider{
     public String name() {
         return this._name.get();
     }
-   
+
     /**
     Returns the symbol of the token
     **/
@@ -103,7 +114,6 @@ public class DTokenImpl extends AddressProvider{
         return this._symbol.get();
     }
 
-   
     /***
     Returns the number of decimals
     For example, if the decimals = 2, a balance of 25 tokens
@@ -114,31 +124,30 @@ public class DTokenImpl extends AddressProvider{
     ***/
     @External(readonly = true)
     public BigInteger decimals() {
-        return this._decimals.getOrDefault(BigInteger.ZERO);
+        return this._decimals.getOrDefault(ZERO);
     }
     
 
     @External(readonly = true)
     public BigInteger getUserBorrowCumulativeIndex(Address _user) {
-        return this._userIndexes.getOrDefault(_user, BigInteger.ZERO);
+        return this._userIndexes.getOrDefault(_user, ZERO);
     }
-      
-    
+
     public BigInteger _calculateCumulatedBalanceInternal(Address _user, BigInteger _balance) {
        Address lendingPoolCoreAddress = this._addresses.get(Contracts.LENDING_POOL_CORE.getKey());
        Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
 
-       
-       BigInteger userIndex = this._userIndexes.getOrDefault(_user, BigInteger.ZERO);
-       if (userIndex.equals(BigInteger.ZERO)) {
+       BigInteger userIndex = this._userIndexes.getOrDefault(_user, ZERO);
+       if (userIndex.equals(ZERO)) {
            return _balance;
        }else {
-           BigInteger decimals = this._decimals.getOrDefault(BigInteger.ZERO);
+           BigInteger decimals = this._decimals.getOrDefault(ZERO);
 
-           BigInteger balance = exaDivide(exaMultiply(convertToExa(_balance,decimals),  Context.call(BigInteger.class,
-                   lendingPoolCoreAddress,
-                   "getNormalizedDebt",
-                   reserveAddress)),
+           BigInteger balance = exaDivide(exaMultiply(convertToExa(_balance, decimals),
+                   Context.call(BigInteger.class,
+                           lendingPoolCoreAddress,
+                           "getNormalizedDebt",
+                           reserveAddress)),
                    userIndex);
            return convertExaToOther(balance, decimals.intValue());
        }
@@ -149,7 +158,7 @@ public class DTokenImpl extends AddressProvider{
      ***/
     @External(readonly = true)
     public BigInteger principalBalanceOf(Address _user) {
-        return this._balances.getOrDefault(_user, BigInteger.ZERO);
+        return this._balances.getOrDefault(_user, ZERO);
     }
     
 
@@ -160,16 +169,15 @@ public class DTokenImpl extends AddressProvider{
     public BigInteger balanceOf(Address _owner) {
         BigInteger currentPrincipalBalance = principalBalanceOf(_owner);
         BigInteger balance = this._calculateCumulatedBalanceInternal(_owner, currentPrincipalBalance);
-        
+
         return balance;
     }
-    
+
     @External(readonly = true)
     public BigInteger principalTotalSupply() {
-        return this._totalSupply.getOrDefault(BigInteger.ZERO);
+        return this._totalSupply.getOrDefault(ZERO);
     }
-    
-    
+
     @External(readonly = true)
     public SupplyDetails getPrincipalSupply(Address _user) {
         SupplyDetails supplyDetails = new SupplyDetails();
@@ -186,37 +194,36 @@ public class DTokenImpl extends AddressProvider{
     public BigInteger totalSupply() {
         Address lendingPoolCoreAddress = this._addresses.get(Contracts.LENDING_POOL_CORE.getKey());
         Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
-        
+
         BigInteger borrowIndex  = Context.call(BigInteger.class,
                 lendingPoolCoreAddress,
                 "getReserveBorrowCumulativeIndex",
                 reserveAddress);
         BigInteger principalTotalSupply = this.principalTotalSupply();
-        
-        if (borrowIndex == null || borrowIndex.equals(BigInteger.ZERO)) {
-            return this._totalSupply.getOrDefault(BigInteger.ZERO);
-        }else {
-            BigInteger decimals = this._decimals.getOrDefault(BigInteger.ZERO);
-            BigInteger balance =  exaDivide( exaMultiply( convertToExa(principalTotalSupply,decimals),Context.call(BigInteger.class,
-                    lendingPoolCoreAddress,
-                    "getNormalizedDebt",
-                    reserveAddress)), 
-                    borrowIndex );
-            return  convertExaToOther(balance, decimals.intValue());
+
+        if (borrowIndex == null || borrowIndex.equals(ZERO)) {
+            return this._totalSupply.getOrDefault(ZERO);
         }
+
+        BigInteger decimals = this._decimals.getOrDefault(ZERO);
+        BigInteger balance =  exaDivide( exaMultiply( convertToExa(principalTotalSupply,decimals),Context.call(BigInteger.class,
+                lendingPoolCoreAddress,
+                "getNormalizedDebt",
+                reserveAddress)), 
+                borrowIndex );
+        return  convertExaToOther(balance, decimals.intValue());
+
     }
-    
 
     public void _resetDataOnZeroBalanceInternal(Address _user) {
-        this._userIndexes.set(_user, BigInteger.ZERO);
+        this._userIndexes.set(_user, ZERO);
     }
 
-    
     public void _mintInterestAndUpdateIndex(Address _user, BigInteger _balanceIncrease) {
         Address lendingPoolCoreAddress = this._addresses.get(Contracts.LENDING_POOL_CORE.getKey());
         Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
 
-        if (_balanceIncrease!= null && _balanceIncrease.compareTo(BigInteger.ZERO)>0) {
+        if (_balanceIncrease!= null && _balanceIncrease.compareTo(ZERO)>0) {
             this._mint(_user, _balanceIncrease, null);
         }
         BigInteger userIndex = Context.call(BigInteger.class,
@@ -226,20 +233,19 @@ public class DTokenImpl extends AddressProvider{
         this._userIndexes.set(_user, userIndex);
 
     }
-    
-    @External(readonly = true)
+
+    @External
     public void mintOnBorrow(Address _user, BigInteger _amount, BigInteger _balanceIncrease) {
         onlyLendingPool();
-        
+
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
         this._mintInterestAndUpdateIndex(_user, _balanceIncrease);
         this._mint(_user, _amount, null);
         this._handleAction(_user, beforeUserSupply, beforeTotalSupply);
-        this.MintOnBorrow(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, BigInteger.ZERO));        
+        this.MintOnBorrow(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, ZERO));
     }
-    
-    
+
     public void _handleAction(Address _user,BigInteger _user_balance, BigInteger _total_supply) {
         Address rewardsAddress = this._addresses.get(Contracts.REWARDS.getKey());
 
@@ -248,44 +254,43 @@ public class DTokenImpl extends AddressProvider{
         userDetails._totalSupply = _total_supply;
         userDetails._decimals = this.decimals();
 
-        Context.call(rewardsAddress, "handleAction", userDetails);        
+        Context.call(rewardsAddress, "handleAction", userDetails);
     }
-    
+
     @External
     public void burnOnRepay(Address _user, BigInteger _amount, BigInteger _balanceIncrease ) {
         onlyLendingPool();
-        
+
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
         this._mintInterestAndUpdateIndex(_user, _balanceIncrease);
         this._burn(_user, _amount, "loanRepaid".getBytes());
-        
+
         this._handleAction(_user, beforeUserSupply, beforeTotalSupply);
-        
-        if(this.principalBalanceOf(_user).compareTo(BigInteger.ZERO) == 0) {
+
+        if(this.principalBalanceOf(_user).equals(ZERO)) {
             this._resetDataOnZeroBalanceInternal(_user);
         }
-        this.BurnOnRepay(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, BigInteger.ZERO));
+        this.BurnOnRepay(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, ZERO));
 
     }
-    
+
     @External
     public void burnOnLiquidation(Address _user, BigInteger _amount, BigInteger _balanceIncrease) {
         onlyLendingPool();
-        
+
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
         this._mintInterestAndUpdateIndex(_user, _balanceIncrease);
         this._burn(_user, _amount, "userLiquidated".getBytes());
-        
+
         this._handleAction(_user, beforeUserSupply, beforeTotalSupply);
-        if(this.principalBalanceOf(_user).compareTo(BigInteger.ZERO) == 0) {
+        if(this.principalBalanceOf(_user).equals(ZERO)) {
             this._resetDataOnZeroBalanceInternal(_user);
         }
-        
-        this.BurnOnLiquidation(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, BigInteger.ZERO));
+
+        this.BurnOnLiquidation(_user, _amount, _balanceIncrease, this._userIndexes.getOrDefault(_user, ZERO));
     }
-    
 
     /***
     Transfers certain amount of tokens from sender to the receiver.
@@ -293,8 +298,9 @@ public class DTokenImpl extends AddressProvider{
     :param _value: The no. of tokens to be transferred.
     :param _data: Any information or message
     ***/
-    public void transfer(Address _to, BigInteger _value, byte[] _data) {
-        Context.revert(TAG +"Transfer not allowed in debt token ");
+    @External
+    public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
+        Context.revert(TAG +"Transfer not allowed in debt token");
     }
 
     /***
@@ -308,18 +314,18 @@ public class DTokenImpl extends AddressProvider{
         if (_data == null || _data.length == 0 ) {
             _data = "mint".getBytes();
         }
-        
-        if (_amount!= null && _amount.compareTo(BigInteger.ZERO)<0) {
+
+        if (_amount == null || _amount.compareTo(ZERO)<0) {
             Context.revert(TAG +": Invalid value:" + _amount +" to mint");
         }
-        
+
         this._totalSupply.set(this._totalSupply.get().add(_amount));
-        this._balances.set(_account, this._balances.getOrDefault(_account, BigInteger.ZERO).add(_amount));
+        this._balances.set(_account, this._balances.getOrDefault(_account, ZERO).add(_amount));
         //Emits an event log Mint
         this.Transfer(AddressConstant.ZERO_ADDRESS, _account, _amount, _data);
 
     }
-    
+
     /***
     Destroys `amount` number of tokens from `account`
     Decreases the balance of that `account` and total supply.
@@ -331,27 +337,32 @@ public class DTokenImpl extends AddressProvider{
         if (_data == null || _data.length == 0 ) {
             _data = "burn".getBytes();
         }
-        
-        if (_amount!= null && _amount.compareTo(BigInteger.ZERO)<0) {
+
+        if(_amount == null || _amount.equals(ZERO)) {
+            Context.println("amount must be grather than zero");
+            return;
+        }
+
+        if (_amount.compareTo(ZERO)<0) {
             Context.revert(TAG +": Invalid value:" + _amount +" to burn");
         }
-        BigInteger  totalSupply = this._totalSupply.getOrDefault(BigInteger.ZERO);
-        
+        BigInteger  totalSupply = this._totalSupply.getOrDefault(ZERO);
+
         if (_amount.compareTo(totalSupply)>=1) {
             Context.revert(TAG +" "+  _amount  +" is greater than total supply :" + totalSupply);
         }
-        
-        BigInteger userBalance = this._balances.getOrDefault(_account, BigInteger.ZERO);
+
+        BigInteger userBalance = this._balances.getOrDefault(_account, ZERO);
         if(_amount.compareTo(userBalance)>=1) {
             Context.revert(TAG +": Cannot burn more than user balance. Amount to burn: " + _amount +" User Balance: "+userBalance);
         }
-        
+
         this._totalSupply.set(totalSupply.subtract(_amount));
-        this._balances.set(_account, this._balances.getOrDefault(_account, BigInteger.ZERO).subtract(_amount));
+        this._balances.set(_account, this._balances.getOrDefault(_account, ZERO).subtract(_amount));
         // Emits an event log Burn
         this.Transfer(AddressConstant.ZERO_ADDRESS, _account, _amount, _data);
     }
-    
+
     /***
     return total supply for reward distribution
     :return: total supply
@@ -370,6 +381,5 @@ public class DTokenImpl extends AddressProvider{
                         + ":  SenderNotAuthorized: (sender)" + Context.getCaller() 
                         + " (lendingPool)" + this._addresses.get(Contracts.LENDING_POOL.getKey()) + "}" ));
     }
-    
-    
+
 }

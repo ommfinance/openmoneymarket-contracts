@@ -35,10 +35,11 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('_addressProvider', rootProject.findProperty("contracts.address-provider"))
-        arg('_name', 'Boosted OMM token')
-        arg('_symbol', 'bOMM')
-        arg('_decimals', '18')
+        arg('_addressProvider', 'cxa755b2ef6eb46c1e817c636be3c21d26c81fe6cc')
+        arg('_name', 'Distribuition token')
+        arg('_symbol', 'dToken')
+        arg('_decimals', '0x12')
+        arg('_update', '0x0')
     }
 }
 
@@ -47,3 +48,37 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+configurations {
+    itestImplementation.extendsFrom implementation
+    itestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        systemProperty 'keyStore', scoreTest.keystoreName
+        systemProperty 'keyPassword', scoreTest.keystorePass
+
+        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+
+        systemProperty '_addressProvider', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
+        systemProperty '_name', "Distribution Token"
+        systemProperty '_symbol', "dToken"
+        systemProperty '_decimals', "18"
+        systemProperty '_update', "false"
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+    }
+}

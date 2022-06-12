@@ -5,6 +5,7 @@ import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.SupplyDetails;
+import finance.omm.libs.structs.TotalStaked;
 import score.Address;
 import score.Context;
 
@@ -14,8 +15,8 @@ import com.iconloop.score.test.ServiceManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
 import java.util.Map;
@@ -29,10 +30,10 @@ import org.mockito.Mockito;
 public class DTokenTest  extends TestBase {
     private static ServiceManager sm = getServiceManager();
     private static Account owner = sm.createAccount();
-        
+
     private BigInteger decimals = BigInteger.valueOf(10);
     private static BigInteger totalSupply = BigInteger.valueOf(50000000000L);
-    
+
     private AddressDetails lendingPoolDetails;
     private Account lendingPoolAccount = sm.createAccount();
 
@@ -47,21 +48,20 @@ public class DTokenTest  extends TestBase {
 
     private AddressDetails liquidationManagerDetails;
     private Account liquidationManagerAccount = sm.createAccount();
-    
+
     private AddressDetails lendingPoolCoreDetails;
     private Account lendingPoolCoreAccount = sm.createAccount();
 
     private Account addressProviderAccount = sm.createAccount();
     private Address reserveAddress = reserveAccount.getAddress();
+    private Address lendingPoolCoreAddress = lendingPoolCoreAccount.getAddress();
 
-    
     private Score dToken;
-    
+
     @BeforeAll
     public static void init() {
         owner.addBalance(Contracts.DTOKEN.getKey(), totalSupply);
     }
-    
 
     @BeforeEach
     public void setup() throws Exception {
@@ -88,11 +88,10 @@ public class DTokenTest  extends TestBase {
         liquidationManagerDetails = new AddressDetails();
         liquidationManagerDetails.name = Contracts.LIQUIDATION_MANAGER.getKey();
         liquidationManagerDetails.address = liquidationManagerAccount.getAddress();
-        
+
         dToken = sm.deploy(owner, DTokenImpl.class, addressProviderAccount.getAddress(),DTokenImpl.TAG,Contracts.DTOKEN.getKey(),decimals,false);
     }
 
-    
     @Test
     void testSetAddresses() {
 
@@ -106,7 +105,7 @@ public class DTokenTest  extends TestBase {
         assertFalse(addresses.isEmpty());
         assertNotNull(addresses.get(lendingPoolDetails.name));
     }
-    
+
     private void setAddressDetails() {
         AddressDetails[] addressDetails = {
                 lendingPoolDetails,
@@ -117,7 +116,7 @@ public class DTokenTest  extends TestBase {
                 rewardsDetails};
         dToken.invoke(addressProviderAccount, "setAddresses", (Object) addressDetails);
     }
-    
+
     @Test
     void ShouldGetZeroTotalSupply() {
         setAddressDetails();
@@ -131,7 +130,7 @@ public class DTokenTest  extends TestBase {
             assertEquals(BigInteger.ZERO, totalSupply);
         }
     }
-    
+
     @Test
     void ShouldGetPrincipalSupply() {
         Account userAccount = sm.createAccount();
@@ -146,33 +145,217 @@ public class DTokenTest  extends TestBase {
         assertNotNull(balances);
         assertEquals(BigInteger.ZERO,balances);
     }
-    
+
     @Test
     void getUserBorrowCumulativeIndexTest() {
         BigInteger userBorrowIndex = (BigInteger)dToken.call("getUserBorrowCumulativeIndex", lendingPoolCoreAccount.getAddress());
         assertNotNull(userBorrowIndex);
         assertEquals(BigInteger.ZERO, userBorrowIndex);
     }
-    
+
     @Test
     void nameTest() {
         String name = (String) dToken.call("name");
         assertNotNull(name); 
         assertEquals(DTokenImpl.TAG, name);
     }
-    
+
     @Test
     void symbolTest() {
         String symbol = (String)dToken.call("symbol");
         assertNotNull(symbol);
         assertEquals(Contracts.DTOKEN.getKey(), symbol);
     }
-    
+
     @Test
     void decimalsTest() {
         BigInteger decimals = (BigInteger)dToken.call("decimals");
         assertNotNull(decimals);
         assertEquals(BigInteger.TEN, decimals);
     }
-    
+
+    @Test
+    void ShouldMintOnBorrow() {
+        Account userAccount = sm.createAccount();
+        BigInteger amountToBorrow = BigInteger.TEN.multiply(BigInteger.TWO);
+        BigInteger balanceIncrease = BigInteger.ZERO;
+        setAddressDetails();
+
+        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+
+            theMock
+            .when(() -> Context.getCaller() )
+            .thenReturn(lendingPoolAccount.getAddress());
+
+            theMock
+            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
+                    "getReserveBorrowCumulativeIndex",
+                    reserveAddress))
+            .thenReturn(BigInteger.ZERO);
+
+            dToken.invoke(lendingPoolAccount, "mintOnBorrow",
+                    userAccount.getAddress(),
+                    amountToBorrow,
+                    balanceIncrease);
+
+            BigInteger userBalance = (BigInteger) dToken.call("principalBalanceOf", userAccount.getAddress());
+            assertNotNull(userBalance);
+            assertEquals(amountToBorrow, userBalance);
+
+            BigInteger totalSupply = (BigInteger) dToken.call("principalTotalSupply");
+            assertNotNull(totalSupply);
+            assertEquals(amountToBorrow, totalSupply);
+        }
+    }
+
+    @Test
+    void ShouldBurnOnRepay() {
+        Account userAccount = sm.createAccount();
+        BigInteger amountToBorrow = BigInteger.TEN.multiply(BigInteger.TWO);
+        BigInteger balanceIncrease = BigInteger.ZERO;
+        setAddressDetails();
+
+        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+
+            theMock
+            .when(() -> Context.getCaller() )
+            .thenReturn(lendingPoolAccount.getAddress());
+
+            theMock
+            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
+                    "getReserveBorrowCumulativeIndex",
+                    reserveAddress))
+            .thenReturn(BigInteger.ZERO);
+
+            dToken.invoke(lendingPoolAccount, "mintOnBorrow",
+                    userAccount.getAddress(),
+                    amountToBorrow,
+                    balanceIncrease);
+
+            BigInteger userBalance = (BigInteger) dToken.call("principalBalanceOf", userAccount.getAddress());
+            assertNotNull(userBalance);
+            assertEquals(amountToBorrow, userBalance);
+
+            BigInteger totalSupply = (BigInteger) dToken.call("principalTotalSupply");
+            assertNotNull(totalSupply);
+            assertEquals(amountToBorrow, totalSupply);
+
+            dToken.invoke(lendingPoolAccount, "burnOnRepay",
+                    userAccount.getAddress(),
+                    amountToBorrow,
+                    balanceIncrease);
+
+            userBalance = (BigInteger) dToken.call("principalBalanceOf", userAccount.getAddress());
+            assertNotNull(userBalance);
+            assertEquals(BigInteger.ZERO, userBalance);
+
+            totalSupply = (BigInteger) dToken.call("principalTotalSupply");
+            assertNotNull(totalSupply);
+            assertEquals(BigInteger.ZERO, totalSupply);
+        }
+    }
+
+    @Test
+    void ShouldBurnOnLiquidation() {
+        Account userAccount = sm.createAccount();
+        BigInteger amountToBorrow = BigInteger.TEN.multiply(BigInteger.TWO);
+        BigInteger balanceIncrease = BigInteger.ZERO;
+        setAddressDetails();
+
+        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+
+            theMock
+            .when(() -> Context.getCaller() )
+            .thenReturn(lendingPoolAccount.getAddress());
+
+            theMock
+            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
+                    "getReserveBorrowCumulativeIndex",
+                    reserveAddress))
+            .thenReturn(BigInteger.ZERO);
+
+            dToken.invoke(lendingPoolAccount, "mintOnBorrow",
+                    userAccount.getAddress(),
+                    amountToBorrow,
+                    balanceIncrease);
+
+            BigInteger userBalance = (BigInteger) dToken.call("principalBalanceOf", userAccount.getAddress());
+            assertNotNull(userBalance);
+            assertEquals(amountToBorrow, userBalance);
+
+            BigInteger totalSupply = (BigInteger) dToken.call("principalTotalSupply");
+            assertNotNull(totalSupply);
+            assertEquals(amountToBorrow, totalSupply);
+
+            dToken.invoke(lendingPoolAccount, "burnOnLiquidation",
+                    userAccount.getAddress(),
+                    amountToBorrow,
+                    balanceIncrease);
+
+            userBalance = (BigInteger) dToken.call("principalBalanceOf", userAccount.getAddress());
+            assertNotNull(userBalance);
+            assertEquals(BigInteger.ZERO, userBalance);
+
+            totalSupply = (BigInteger) dToken.call("principalTotalSupply");
+            assertNotNull(totalSupply);
+            assertEquals(BigInteger.ZERO, totalSupply);
+        }
+    }
+
+    @Test
+    void ShouldGetBalanceOfUserWithBorrowedAmount() {
+        Account userAccount = sm.createAccount();
+        BigInteger amountToBorrow = BigInteger.valueOf(50000000000l);
+        BigInteger balanceIncrease = BigInteger.valueOf(25000000000l);
+        setAddressDetails();
+
+        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+
+            theMock
+            .when(() -> Context.getCaller() )
+            .thenReturn(lendingPoolAccount.getAddress());
+
+            theMock
+            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
+                    "getReserveBorrowCumulativeIndex",
+                    reserveAddress))
+            .thenReturn(BigInteger.ONE);
+
+            dToken.invoke(lendingPoolAccount, "mintOnBorrow",
+                    userAccount.getAddress(),
+                    amountToBorrow,
+                    balanceIncrease);
+
+            theMock
+            .when(() -> Context.call(BigInteger.class,
+                    lendingPoolCoreAccount.getAddress(),
+                    "getNormalizedDebt",
+                    reserveAddress) )
+            .thenReturn(BigInteger.ONE);
+
+            BigInteger userBalance = (BigInteger) dToken.call("balanceOf", userAccount.getAddress());
+            assertNotNull(userBalance);
+            assertTrue(userBalance.compareTo(amountToBorrow) > 0);
+
+            BigInteger totalSupply = (BigInteger) dToken.call("principalTotalSupply");
+            assertNotNull(totalSupply);
+            assertEquals(amountToBorrow.add(balanceIncrease), totalSupply);
+
+            TotalStaked ts = (TotalStaked)dToken.call("getTotalStaked");
+            assertNotNull(ts);
+            assertEquals(BigInteger.valueOf(80000000000l), ts.totalStaked);
+            assertEquals(decimals, ts.decimals);
+        }
+    }
+
+    @Test
+    void ShouldFailToTransfer() {
+        Account userAccount = sm.createAccount();
+        Account userAccountTo = sm.createAccount();
+        try {
+            dToken.invoke(userAccount, "transfer", userAccountTo.getAddress(), BigInteger.TEN, "tacos".getBytes());
+        }catch (AssertionError e) {
+            assertEquals("Reverted(0): DTokenTransfer not allowed in debt token", e.getMessage());
+        }
+    }
 }
