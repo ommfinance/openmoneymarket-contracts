@@ -1,0 +1,71 @@
+version = '0.1.0'
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.FeeProviderImpl'
+    dependsOn(':AddressProvider:build')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        local {
+            uri = 'http://localhost:9082/api/v3'
+            nid = 0x3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+	parameters {
+		arg('_addressProvider', 'cxa755b2ef6eb46c1e817c636be3c21d26c81fe6cc')
+	}
+}
+
+test {
+    useJUnitPlatform()
+}
+
+configurations {
+    itestImplementation.extendsFrom implementation
+    itestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':Score')
+    implementation project(':ScoreUtils')
+
+    // test dependencies
+    testImplementation project(':TestUtils')
+}
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        systemProperty 'keyStore', scoreTest.keystoreName
+        systemProperty 'keyPassword', scoreTest.keystorePass
+
+        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+
+        systemProperty '_addressProvider', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
+        systemProperty '_update', "false"
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+    }
+
+}
