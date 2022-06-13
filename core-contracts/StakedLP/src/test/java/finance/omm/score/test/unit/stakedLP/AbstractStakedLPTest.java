@@ -38,7 +38,8 @@ public class AbstractStakedLPTest extends TestBase {
 
     protected Address[] addresses = new Address[]{
             Account.newScoreAccount(201).getAddress(),
-            Account.newScoreAccount(202).getAddress()
+            Account.newScoreAccount(202).getAddress(),
+            Account.newScoreAccount(203).getAddress()
     };
 
 

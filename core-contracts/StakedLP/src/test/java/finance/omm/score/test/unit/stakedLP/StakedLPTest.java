@@ -12,7 +12,6 @@ import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
 
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -172,7 +171,6 @@ public class StakedLPTest extends AbstractStakedLPTest {
         verify(scoreSpy).call(eq(Map.class),eq(Contracts.DEX),eq("getPoolStats"),any(BigInteger.class));
         verify(scoreSpy).call(eq(Contracts.REWARDS),eq("handleLPAction"),any(),any());
 
-        // balanceOF
     }
 
     @Test
@@ -201,7 +199,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
 
         Account from = sm.createAccount(100);
         Account operator = sm.createAccount(100);
-        int[] id = {1,2,3};
+        BigInteger[] id = {BigInteger.ONE,BigInteger.TWO,BigInteger.valueOf(3)};
 
         doReturn(BigInteger.valueOf(100)).when(scoreSpy).call(eq(BigInteger.class),eq(Contracts.DEX), eq("balanceOf"),any(),eq(id[0]));
         doReturn(BigInteger.valueOf(50)).when(scoreSpy).call(eq(BigInteger.class),eq(Contracts.DEX), eq("balanceOf"),any(),eq(id[1]));
@@ -212,22 +210,20 @@ public class StakedLPTest extends AbstractStakedLPTest {
         String methodName = "stake";
         byte[] data = createByteArray(methodName);
 
-        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id[0],addresses[0]);
-        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id[1],addresses[1]);
-        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id[2],addresses[2]);
+        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id[0].intValue(),addresses[0]);
+        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id[1].intValue(),addresses[1]);
+        _addPool(GOVERNANCE_TOKEN_ACCOUNT,id[2].intValue(),addresses[2]);
 
-        _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id[0],amount[0],data);
-        _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id[1],amount[1],data);
-        _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id[2],amount[2],data);
+        _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id[0].intValue(),amount[0],data);
+        _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id[1].intValue(),amount[1],data);
+        _stake(DEX_ACCOUNT,operator.getAddress(),from.getAddress(),id[2].intValue(),amount[2],data);
+
+        List<Map<String,BigInteger>> expected = (List<Map<String, BigInteger>>) score.call("getBalanceByPool");
+        System.out.println(expected);
 
         for (int i = 0; i < 3; i++) {
-
-            List<Map<String,BigInteger>> expected = (List<Map<String, BigInteger>>) score.call("getBalanceByPool");
-
-            assertEquals(expected.get(i).get("poolID"),BigInteger.valueOf(id[i]));
+            assertEquals(expected.get(i).get("poolID"),id[i]);
             assertEquals(expected.get(i).get("totalStakedBalance"),amount[i]);
-
-
         }
     }
 
@@ -250,7 +246,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
         _addPool(GOVERNANCE_TOKEN_ACCOUNT,id[2],addresses[0]);
 
         doReturn(BigInteger.valueOf(90)).when(scoreSpy).call(eq(BigInteger.class), eq(Contracts.DEX),
-                eq("balanceOf"),any(Address.class),any(Integer.class));
+                eq("balanceOf"),any(Address.class),any(BigInteger.class));
         List<Map<String, BigInteger>> expected = (List<Map<String, BigInteger>>) score.call("getPoolBalanceByUser", owner.getAddress());
 
         System.out.println(expected.get(0).get("poolID"));
@@ -272,7 +268,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
     public void balanceOf(){
         int id = 1;
         doReturn(BigInteger.valueOf(100)).when(scoreSpy).call(eq(BigInteger.class), eq(Contracts.DEX),
-                eq("balanceOf"),any(Address.class),any(Integer.class));
+                eq("balanceOf"),any(Address.class),any(BigInteger.class));
         Map<String,BigInteger> expected = (Map<String, BigInteger>) score.call("balanceOf",owner.getAddress(),id);
         BigInteger totalStakeBalance = (BigInteger) score.call("totalStaked", id);
 
@@ -292,7 +288,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
         _stake(DEX_ACCOUNT,operator.getAddress(),owner.getAddress(),id,value,data);
 
         doReturn(BigInteger.valueOf(90)).when(scoreSpy).call(eq(BigInteger.class), eq(Contracts.DEX),
-                eq("balanceOf"),any(Address.class),any(Integer.class));
+                eq("balanceOf"),any(Address.class),any(BigInteger.class));
 
         expected = (Map<String, BigInteger>) score.call("balanceOf",owner.getAddress(),id);
 
@@ -303,9 +299,6 @@ public class StakedLPTest extends AbstractStakedLPTest {
         assertEquals(expected.get("totalStakedBalance"),totalStakeBalance.add(value));
 
     }
-
-
-
 
     @Test
     public void unstake(){
@@ -367,7 +360,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
         _stake(DEX_ACCOUNT,operator.getAddress(),owner.getAddress(),id,value,data);
 
         doReturn(BigInteger.valueOf(100)).when(scoreSpy).call(eq(BigInteger.class), eq(Contracts.DEX),
-                eq("balanceOf"),any(Address.class),any(Integer.class));
+                eq("balanceOf"),any(Address.class),any(BigInteger.class));
         SupplyDetails supplyDetails = (SupplyDetails) score.call("getLPStakedSupply",id,owner.getAddress());
 
         BigInteger totalStakeBalance = (BigInteger) score.call("totalStaked", id);
