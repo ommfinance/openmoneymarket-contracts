@@ -42,4 +42,7 @@ findProject(":Governance").projectDir = file("core-contracts/Governance")
 include(":OMMToken")
 findProject(":OMMToken").projectDir = file("token-contracts/OMMToken")
 
+include(':PriceOracle')
+findProject(":PriceOracle").projectDir = file("core-contracts/PriceOracle")
+
 
