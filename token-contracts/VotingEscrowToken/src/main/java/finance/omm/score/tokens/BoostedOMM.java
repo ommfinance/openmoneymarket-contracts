@@ -610,7 +610,12 @@ public class BoostedOMM extends AbstractBoostedOMM {
         response.principalTotalSupply = totalSupply(BigInteger.ZERO);
 
         return response;
+    }
 
+    @External
+    public void kick(Address _user) {
+        call(Contracts.DELEGATION, "kick", _user);
+        call(Contracts.REWARDS, "kick", _user);
     }
 
     @External(readonly = true)
