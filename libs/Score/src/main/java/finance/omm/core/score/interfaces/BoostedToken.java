@@ -61,6 +61,9 @@ public interface BoostedToken {
     BigInteger totalSupplyAt(BigInteger block);
 
 
+    void kick(Address _user);
+
+
     Address admin();
 
 
