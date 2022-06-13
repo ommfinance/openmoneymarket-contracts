@@ -433,6 +433,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
             updateWorkingBalance(workingBalance);
         }
+        UserKicked(userAddr);
     }
 
     @Override
@@ -553,6 +554,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     @External(readonly = true)
     public Map<String, Map<String, BigInteger>> getUserAllLegacyIndexes(Address _user) {
         return this.legacyRewards.getUserAllIndexes(_user);
+    }
+
+    @EventLog(indexed = 1)
+    public void UserKicked(Address _user) {
     }
 
     @EventLog(indexed = 1)
