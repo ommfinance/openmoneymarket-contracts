@@ -2,6 +2,7 @@ package finance.omm.score.core;
 
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
+import static finance.omm.utils.math.MathUtils.pow;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -9,6 +10,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
@@ -242,6 +244,56 @@ public class DelegationTest extends TestBase {
         // check for default delegations
         assertArrayEquals(scoreDelegations, defDelegations);
         assertEquals(true, delegationScore.call("userDefaultDelegation", user1.getAddress()));
+    }
+
+    @DisplayName("kick user after voting period")
+    @Test
+    void kick() {
+        Account user = sm.createAccount();
+        initialize();
+
+        // shouldn't be able to kick if boosted omm balance > 0
+        doReturn(BigInteger.ONE).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user.getAddress());
+
+        Executable call = () -> delegationScore.invoke(owner, "kick", user.getAddress());
+        expectErrorMessage(call, "Delegation : OMM locking has not expired");
+
+
+        // should be kicked if boosted omm balance = 0
+        doReturn(ICX).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user.getAddress());
+
+        Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
+
+        doReturn(prepDetails).when(scoreSpy)
+                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any());
+
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
+        delegationScore.invoke(user, "updateDelegations", new PrepDelegations[0], user.getAddress());
+
+        // prep delegations should be zero
+        doReturn(BigInteger.ZERO).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user.getAddress());
+
+        delegationScore.invoke(user, "kick", user.getAddress());
+        verify(scoreSpy).UserKicked(user.getAddress());
+
+        PrepDelegations[] scoreDelegations = (PrepDelegations[]) delegationScore
+                .call("getUserDelegationDetails", user.getAddress());
+        // percentageDelegations should be preserved
+        for(PrepDelegations pd: scoreDelegations) {
+            assertEquals(pd._votes_in_per, BigInteger.valueOf(50).multiply(pow(
+                    BigInteger.valueOf(10), 16)));
+        }
+
+        Map<String, BigInteger> prepVotes = (Map<String, BigInteger>)
+                delegationScore.call("userPrepVotes", user.getAddress());
+        // userPrepVotes should be equal to zero.
+        for (Map.Entry<String, BigInteger> entry : prepVotes.entrySet()) {
+            assertEquals(BigInteger.ZERO, entry.getValue());
+        }
     }
 
     @DisplayName("users delegate to default delegation")
