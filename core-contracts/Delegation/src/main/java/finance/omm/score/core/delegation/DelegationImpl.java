@@ -244,6 +244,15 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External
+    public void kick(Address _user) {
+        BigInteger bommBalance = call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", _user);
+        if (! bommBalance.equals(BigInteger.ZERO)) {
+            throw DelegationException.unknown(TAG + " : OMM locking has not expired");
+        }
+        updateDelegations(null, _user);
+    }
+
+    @External
     public void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user) {
         Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
         Address currentUser;
