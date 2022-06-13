@@ -60,11 +60,11 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public Map<String, BigInteger> balanceOf(Address _owner, int _id) {
-        BigInteger userBalance=call(BigInteger.class,Contracts.DEX,"balanceOf",_owner, _id);
-        // integer or int?
+        BigInteger id = BigInteger.valueOf(_id);
+        BigInteger userBalance=call(BigInteger.class,Contracts.DEX,"balanceOf",_owner, id);
         BigInteger poolDetails = poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,ZERO);
         return Map.of(
-                "poolID",BigInteger.valueOf(_id),
+                "poolID",id,
                 "userTotalBalance",userBalance.add(poolDetails) ,
                 "userAvailableBalance",userBalance,
                 "userStakedBalance", poolDetails,
@@ -75,10 +75,11 @@ public class StakedLPImpl extends AbstractStakedLP {
     public List<Map<String, BigInteger>> getBalanceByPool() {
         List<Map<String,BigInteger>> result = new ArrayList<>();
         for (int i = 0; i < supportedPools.size(); i++) {
-            Integer id = supportedPools.get(i);
-            BigInteger totalBalance = call(BigInteger.class, Contracts.DEX,"balanceOf", Context.getCaller(), id);
+            BigInteger id = BigInteger.valueOf(supportedPools.get(i));
+            BigInteger totalBalance = call(BigInteger.class, Contracts.DEX,"balanceOf",
+                    Context.getAddress(), id);
             Map<String, BigInteger> poolDetails = Map.of(
-                    "poolID",BigInteger.valueOf(id),
+                    "poolID",id,
                     "totalStakedBalance",totalBalance);
             result.add(poolDetails);
         }
