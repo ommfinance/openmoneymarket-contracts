@@ -22,6 +22,7 @@ import score.BranchDB;
 import score.Context;
 import score.DictDB;
 import score.VarDB;
+import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import scorex.util.ArrayList;
@@ -250,6 +251,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             throw DelegationException.unknown(TAG + " : OMM locking has not expired");
         }
         updateDelegations(null, _user);
+        UserKicked(_user);
     }
 
     @External
@@ -520,4 +522,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public <K> K call(Class<K> kClass, Address contract, String method, Object... params) {
         return Context.call(kClass, contract, method, params);
     }
+    
+    @EventLog(indexed = 1)
+    public void UserKicked(Address _user) {}
 }
