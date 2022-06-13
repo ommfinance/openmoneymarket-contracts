@@ -273,16 +273,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
         Deposit(address, value, locked.getEnd(), type, blockTimestamp);
         Supply(supplyBefore, supplyBefore.add(value));
 
-        //calling update delegation
-        call(Contracts.DELEGATION, "updateDelegations", null, address);
-        // calling handle action for rewards
-        Map<String, Object> userDetails = new HashMap<>();
-        userDetails.put("_user", address);
-        userDetails.put("_userBalance", balanceOf(address, BigInteger.ZERO));
-        userDetails.put("_totalSupply", totalSupply(BigInteger.ZERO));
-        userDetails.put("_decimals", decimals());
-
-        call(Contracts.REWARDS, "handleAction", userDetails);
+        updateDelegationAndHandleAction(address);
     }
 
     @External
@@ -433,7 +424,22 @@ public class BoostedOMM extends AbstractBoostedOMM {
         users.remove(sender);
         Withdraw(sender, value, blockTimestamp);
         Supply(supplyBefore, supplyBefore.subtract(value));
+
+        updateDelegationAndHandleAction(sender);
         this.nonReentrant.updateLock(false);
+    }
+
+    private void updateDelegationAndHandleAction(Address sender) {
+        //calling update delegation
+        call(Contracts.DELEGATION, "updateDelegations", null, sender);
+        // calling handle action for rewards
+        Map<String, Object> userDetails = new HashMap<>();
+        userDetails.put("_user", sender);
+        userDetails.put("_userBalance", balanceOf(sender, BigInteger.ZERO));
+        userDetails.put("_totalSupply", totalSupply(BigInteger.ZERO));
+        userDetails.put("_decimals", decimals());
+
+        call(Contracts.REWARDS, "handleAction", userDetails);
     }
 
     private BigInteger findBlockEpoch(BigInteger block, BigInteger maxEpoch) {
@@ -601,7 +607,6 @@ public class BoostedOMM extends AbstractBoostedOMM {
         SupplyDetails response = new SupplyDetails();
         response.decimals = BigInteger.valueOf(decimals());
         response.principalUserBalance = balanceOf(_user, BigInteger.ZERO);
-        response.principalTotalSupply = totalSupply(BigInteger.ZERO);
         response.principalTotalSupply = totalSupply(BigInteger.ZERO);
 
         return response;
