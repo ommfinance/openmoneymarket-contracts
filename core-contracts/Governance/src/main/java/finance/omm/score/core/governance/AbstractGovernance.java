@@ -8,6 +8,7 @@ import finance.omm.core.score.interfaces.FeeProviderClient;
 import finance.omm.core.score.interfaces.Governance;
 import finance.omm.core.score.interfaces.LendingPoolCoreClient;
 import finance.omm.core.score.interfaces.OMMTokenClient;
+import finance.omm.core.score.interfaces.RewardWeightControllerClient;
 import finance.omm.core.score.interfaces.StakedLPClient;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Authorization;
@@ -125,6 +126,9 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
                         this.getAddress(contract.getKey())));
             case REWARDS:
                 return clazz.cast(new RewardDistributionImplClient(
+                        this.getAddress(contract.getKey())));
+            case REWARD_WEIGHT_CONTROLLER:
+                return clazz.cast(new RewardWeightControllerClient(
                         this.getAddress(contract.getKey())));
             case OMM_TOKEN:
                 return clazz.cast(new OMMTokenClient(
