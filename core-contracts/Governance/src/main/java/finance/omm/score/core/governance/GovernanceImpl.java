@@ -633,17 +633,17 @@ public class GovernanceImpl extends AbstractGovernance {
     @External
     public void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        RewardWeightController rewardDistribution = getInstance(RewardWeightController.class,
+        RewardWeightController weightController = getInstance(RewardWeightController.class,
                 Contracts.REWARD_WEIGHT_CONTROLLER);
-        rewardDistribution.setAssetWeight(type, weights, timestamp);
+        weightController.setAssetWeight(type, weights, timestamp);
     }
 
-    @Override
-    public void setTypeWeight(TypeWeightStruct[] weights, BigInteger timestamp) {
+    @External
+    public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        RewardWeightController rewardDistribution = getInstance(RewardWeightController.class,
+        RewardWeightController weightController = getInstance(RewardWeightController.class,
                 Contracts.REWARD_WEIGHT_CONTROLLER);
-        rewardDistribution.setTypeWeight(weights, timestamp);
+        weightController.setTypeWeight(weights, timestamp);
     }
 
 
