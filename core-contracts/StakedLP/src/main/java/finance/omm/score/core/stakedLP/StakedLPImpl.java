@@ -131,10 +131,7 @@ public class StakedLPImpl extends AbstractStakedLP {
             throw StakedLPException.unknown(TAG + ": " + _poolID + " is not in address map");
         }
         this.addressMap.set(_poolID,null);
-        Integer top = this.supportedPools.pop(); // wrapper class or int
-        // check the logic
-
-        // optimized
+        Integer top = this.supportedPools.pop();
         boolean isRemoved = top.equals(_poolID);
 
         if (!isRemoved){
@@ -153,7 +150,6 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public Map<String, Address> getSupportedPools() {
-        // cast poolId to string
         Map<String,Address> supportedPool = new HashMap<>();
         for (int i = 0; i < this.supportedPools.size(); i++) {
             int poolId = this.supportedPools.get(i);

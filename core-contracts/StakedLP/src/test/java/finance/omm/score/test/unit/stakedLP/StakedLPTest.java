@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
@@ -149,7 +152,6 @@ public class StakedLPTest extends AbstractStakedLPTest {
         expectErrorMessage(invalidStakeAmount,expectedErrorMessage);
 
         // stake amount less than minimum stake
-        // minimum stake is set to 1
         setMinimumStake();
         Executable lessStakeAmount = () -> _stake(DEX_ACCOUNT,
                 operator.getAddress(),from.getAddress(),id,ZERO,data);
@@ -172,7 +174,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
     }
 
     @Test
-    public void getTotalStaked(){ // check
+    public void getTotalStaked(){
         Account from = sm.createAccount(100);
         Account operator = sm.createAccount(100);
         int id = 1;
