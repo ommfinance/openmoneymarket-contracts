@@ -1,13 +1,14 @@
 package finance.omm.score.core.reward;
 
+import static finance.omm.utils.constants.TimeConstants.DAYS_PER_YEAR;
 import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.DAY_IN_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.MONTH_IN_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.SECOND;
 import static finance.omm.utils.constants.TimeConstants.YEAR_IN_SECONDS;
 import static finance.omm.utils.constants.TimeConstants.getBlockTimestampInSecond;
+import static finance.omm.utils.math.MathUtils.HUNDRED_PERCENT;
 import static finance.omm.utils.math.MathUtils.HUNDRED_THOUSAND;
-import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.MILLION;
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
@@ -40,7 +41,7 @@ import scorex.util.HashMap;
 public class RewardWeightControllerImpl extends AddressProvider implements RewardWeightController {
 
     public static final String TAG = "Reward Weight Controller";
-    public static final BigInteger DAYS_PER_YEAR = BigInteger.valueOf(365L);
+
     public static final String TIMESTAMP_AT_START = "timestampAtStart";
 
     public final TypeWeightDB typeWeightDB = new TypeWeightDB("types");
@@ -63,16 +64,22 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External
     public void addType(String key, boolean isPlatformRecipient, @Optional Address address) {
-        checkRewardDistribution();
+        onlyOrElseThrow(Contracts.REWARDS,
+                RewardWeightException.notAuthorized("Only Reward distribution contract can call add type method"));
         typeWeightDB.add(key, isPlatformRecipient);
 
         if (isPlatformRecipient) {
             if (address == null) {
                 throw RewardWeightException.unknown("asset address can't be null");
             }
+
+            if (!address.isContract()) {
+                throw RewardWeightException.unknown("asset address is not valid contract address");
+            }
+
             assetWeightDB.addAsset(key, address, key);
             WeightStruct weightStruct = new WeightStruct();
-            weightStruct.weight = ICX;
+            weightStruct.weight = HUNDRED_PERCENT;
             weightStruct.address = address;
             _setAssetWeight(key, new WeightStruct[]{weightStruct}, BigInteger.ZERO);
         }
@@ -81,7 +88,8 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External
     public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp) {
-        checkOwner();
+        onlyOrElseThrow(Contracts.GOVERNANCE,
+                RewardWeightException.notAuthorized("Only Governance contract can call set type method"));
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = getBlockTimestampInSecond();
         }
@@ -107,18 +115,18 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         return this.typeWeightDB.weightOfAllTypes(timestamp);
     }
 
-
-    @Override
     @External
     public void addAsset(String type, Address address, String name) {
-        checkRewardDistribution();
+        onlyOrElseThrow(Contracts.REWARDS,
+                RewardWeightException.notAuthorized("Only Reward distribution contract can call add asset method"));
         checkType(type);
         assetWeightDB.addAsset(type, address, name);
     }
 
     @External
     public void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp) {
-        checkOwner();
+        onlyOrElseThrow(Contracts.GOVERNANCE,
+                RewardWeightException.notAuthorized("Only Governance contract can call set asset weight method"));
         _setAssetWeight(type, weights, timestamp);
     }
 
@@ -134,7 +142,6 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External(readonly = true)
     public BigInteger tokenDistributionPerDay(BigInteger _day) {
-
         if (MathUtils.isLessThan(_day, BigInteger.ZERO)) {
             return BigInteger.ZERO;
         } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(30L))) {
@@ -181,7 +188,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (tInSeconds.compareTo(rateChangedOn) <= 0) {
             return Map.of(
                     "rateChangedOn", rateChangedOn,
-                    "rate", getInflationRate(BigInteger.ZERO)
+                    "ratePerSecond", getInflationRate(BigInteger.ZERO)
             );
         }
 
@@ -194,12 +201,11 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         }
         rateChangedOn = rateChangedOn.add(numberOfYears.multiply(YEAR_IN_SECONDS));
 
-        BigInteger delta = rateChangedOn.subtract(startTimestampInSeconds);
+        BigInteger numberOfDay = tInSeconds.subtract(startTimestampInSeconds).divide(DAY_IN_SECONDS);
 
-        BigInteger numberOfDay = delta.divide(DAY_IN_SECONDS);
         return Map.of(
                 "rateChangedOn", rateChangedOn,
-                "rate", getInflationRate(numberOfDay)
+                "ratePerSecond", getInflationRate(numberOfDay)
         );
     }
 
@@ -214,7 +220,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         }
         List<String> types = this.typeWeightDB.getTypes();
         Map<String, BigInteger> response = new HashMap<>();
-        BigInteger inflationRate = getInflationRateByTimestamp(timestamp).get("rate");
+        BigInteger inflationRate = getInflationRateByTimestamp(timestamp).get("ratePerSecond");
         for (String type : types) {
             Map<String, BigInteger> typeWeight = typeWeightDB.searchTypeWeight(type, timestamp);
             BigInteger tWeight = typeWeight.get("value");
@@ -241,14 +247,14 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             return BigInteger.ZERO;
         }
 
+        if (fromInSeconds.compareTo(toInSeconds) >= 0) {
+            return BigInteger.ZERO;
+        }
+
         TimeConstants.checkIsValidTimestamp(fromInSeconds, Timestamp.SECONDS);
         TimeConstants.checkIsValidTimestamp(toInSeconds, Timestamp.SECONDS);
 
         toInSeconds = toInSeconds.subtract(BigInteger.ONE);
-
-        if (fromInSeconds.compareTo(toInSeconds) >= 0) {
-            return BigInteger.ZERO;
-        }
 
         BigInteger integrateIndex = BigInteger.ZERO;
         Asset asset = assetWeightDB.getAsset(assetAddr);
@@ -285,34 +291,20 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
         BigInteger maximum = aTimestamp.max(tTimestamp).max(inflationRate.get("rateChangedOn")).max(fromTimestamp);
 
-        if (maximum.equals(toTimestamp.add(BigInteger.ONE))) {
-            return Map.of("totalRewards", BigInteger.ZERO, "timestamp", toTimestamp);
-        }
-        BigInteger rate = exaMultiply(exaMultiply(inflationRate.get("rate"), tWeight), aWeight);
+        BigInteger rate = exaMultiply(exaMultiply(inflationRate.get("ratePerSecond"), tWeight), aWeight);
         BigInteger timeDeltaInSeconds = toTimestamp.add(BigInteger.ONE).subtract(maximum);
         BigInteger totalReward = rate.multiply(timeDeltaInSeconds);
         return Map.of("totalRewards", totalReward, "timestamp", maximum);
     }
 
-    private void checkRewardDistribution() {
-        if (!Context.getCaller().equals(getAddress(Contracts.REWARDS.getKey()))) {
-            throw RewardWeightException.notAuthorized("require reward distribution contract access");
-        }
-    }
-
-    private void checkOwner() {
-        if (!Context.getOwner().equals(Context.getCaller())) {
-            throw RewardWeightException.notOwner();
-        }
-    }
 
     private void checkType(String type) {
         if (!typeWeightDB.isTypeExists(type)) {
             throw RewardWeightException.typeNotExist(type);
         }
 
-        if (typeWeightDB.isContractType(type)) {
-            throw RewardWeightException.unknown("Contract type can't have child assets");
+        if (typeWeightDB.isPlatformRecipient(type)) {
+            throw RewardWeightException.unknown("Platform Recipient type can't have child assets");
         }
     }
 
@@ -337,7 +329,10 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     @External(readonly = true)
-    public Map<String, BigInteger> getTypeWeightByTimestamp(BigInteger timestamp) {
+    public Map<String, BigInteger> getTypeWeightByTimestamp(@Optional BigInteger timestamp) {
+        if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
+            timestamp = getBlockTimestampInSecond();
+        }
         return this.typeWeightDB.getWeightByTimestamp(timestamp);
     }
 
@@ -346,8 +341,8 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         if (timestamp == null || timestamp.equals(BigInteger.ZERO)) {
             timestamp = getBlockTimestampInSecond();
         }
-        BigInteger typeWeight = getTypeWeight(type, timestamp);
-        var result = this.assetWeightDB.getAggregatedWeight(type, typeWeight, timestamp);
+
+        var result = this.assetWeightDB.getAggregatedWeight(type, HUNDRED_PERCENT, timestamp);
         result.remove("total");
         return result;
     }

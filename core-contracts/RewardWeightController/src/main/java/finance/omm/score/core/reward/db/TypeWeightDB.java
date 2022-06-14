@@ -156,7 +156,7 @@ public class TypeWeightDB implements Searchable {
         return result;
     }
 
-    public boolean isContractType(String typeId) {
+    public boolean isPlatformRecipient(String typeId) {
         return this.types.getOrDefault(typeId, Boolean.FALSE);
     }
 }

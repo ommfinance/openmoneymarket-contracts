@@ -41,7 +41,7 @@ public interface RewardWeightController {
 
     BigInteger getTypeTimestampAtCheckpoint(int checkpointId);
 
-    Map<String, BigInteger> getTypeWeightByTimestamp(BigInteger timestamp);
+    Map<String, BigInteger> getTypeWeightByTimestamp(@Optional BigInteger timestamp);
 
     Map<String, BigInteger> getAssetWeightByTimestamp(String type, @Optional BigInteger timestamp);
 
