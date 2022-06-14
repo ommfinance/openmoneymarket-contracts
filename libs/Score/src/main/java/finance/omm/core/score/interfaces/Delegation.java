@@ -12,6 +12,8 @@ public interface Delegation {
 
     String name();
 
+    void initializeVoteToContributors();
+
     void setVoteThreshold(BigInteger _vote);
 
     BigInteger getVoteThreshold();
