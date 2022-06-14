@@ -85,6 +85,7 @@ public interface Governance extends AddressProvider {
 
     void updateVoteForum(int vote_index, String forum);
 
+    void updateTotalVotingWeight(int vote_index, BigInteger weight);
 
     void castVote(int vote_index, boolean vote);
 
