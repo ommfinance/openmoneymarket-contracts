@@ -11,6 +11,7 @@ import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.PrepDelegations;
 import finance.omm.libs.structs.PrepICXDelegations;
+import finance.omm.score.core.delegation.db.PREPEnumerableSet;
 import finance.omm.score.core.delegation.exception.DelegationException;
 import finance.omm.utils.db.EnumerableSet;
 import java.math.BigInteger;
@@ -45,7 +46,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public static final String LOCKED_PREP_VOTES = "lockedPrepVotes";
     public static final String CALLED_BEFORE = "calledBefore";
 
-    private final EnumerableSet<Address> _preps = new EnumerableSet<>(LOCKED_PREPS, Address.class);
+    private final EnumerableSet<Address> _preps = new PREPEnumerableSet(LOCKED_PREPS, Address.class);
     private final BranchDB<Address, DictDB<Integer, Address>> _userPreps = Context.newBranchDB(
             USER_PREPS, Address.class);
     private final BranchDB<Address, DictDB<Integer, BigInteger>> _percentageDelegations = Context.newBranchDB(
@@ -70,8 +71,8 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     /**
-     * This method should be called only once after bOMM upgrade
-     * calledBefore flag used to prevent calling it multiple times
+     * This method should be called only once after bOMM upgrade calledBefore flag used to prevent calling it multiple
+     * times
      */
     @External
     public void initializeVoteToContributors() {
@@ -187,38 +188,25 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         return true;
     }
 
-    private void resetUser(Address _user) {
-        Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
-        Address caller = Context.getCaller();
-        if (caller.equals(_user) || caller.equals(bOMMAddress)) {
-            BigInteger prepVotes = BigInteger.ZERO;
-            BigInteger userWorkingBalance = workingBalance.getOrDefault(_user, BigInteger.ZERO);
+    private void resetUserVotes(Address _user) {
+        BigInteger userWorkingBalance = workingBalance.getOrDefault(_user, BigInteger.ZERO);
 
-            DictDB<Integer, Address> userPrep = _userPreps.at(_user);
-            DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
+        DictDB<Integer, Address> userPrep = _userPreps.at(_user);
+        DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
 
-            for (int i = 0; i < 5; i++) {
-                BigInteger prepVote = exaMultiply(percentageDelegationsOfUser
-                        .getOrDefault(i, BigInteger.ZERO), userWorkingBalance);
+        for (int i = 0; i < 5; i++) {
+            BigInteger prepVote = exaMultiply(percentageDelegationsOfUser
+                    .getOrDefault(i, BigInteger.ZERO), userWorkingBalance);
 
-                if (prepVote.compareTo(BigInteger.ZERO) > 0) {
-                    Address currentPrep = userPrep.get(i);
+            if (prepVote.compareTo(BigInteger.ZERO) > 0) {
+                Address currentPrep = userPrep.get(i);
 
-                    BigInteger currentPrepVote = _prepVotes.getOrDefault(currentPrep, BigInteger.ZERO);
-                    BigInteger newPrepVote = currentPrepVote.subtract(prepVote);
-                    _prepVotes.set(currentPrep, newPrepVote);
-                }
-                userPrep.set(i, null);
-                percentageDelegationsOfUser.set(i, null);
+                BigInteger currentPrepVote = _prepVotes.getOrDefault(currentPrep, BigInteger.ZERO);
+                BigInteger newPrepVote = currentPrepVote.subtract(prepVote);
+                _prepVotes.set(currentPrep, newPrepVote);
             }
-        }
-    }
-
-    private void validatePrep(Address _address) {
-        Map<String, ?> prepDetails = call(Map.class, ZERO_SCORE_ADDRESS, "getPRep", _address);
-        boolean isActive = prepDetails.get("status").equals(BigInteger.ZERO);
-        if (!isActive) {
-            throw DelegationException.unknown(TAG + ": Invalid prep: " + _address);
+            userPrep.set(i, null);
+            percentageDelegationsOfUser.set(i, null);
         }
     }
 
@@ -233,42 +221,50 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         return prepList;
     }
 
-    private BigInteger updateWorkingBalance(Address user) {
-        BigInteger newWorkingBalance = call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user);
+    private void updateWorkingBalance(Address user, BigInteger bOMMBalance) {
         BigInteger currentWorkingTotal = getWorkingTotalSupply();
         BigInteger currentWorkingBalance = getWorkingBalance(user);
 
-        workingBalance.set(user, newWorkingBalance);
-        BigInteger newWorkingTotal = currentWorkingTotal.subtract(currentWorkingBalance).add(newWorkingBalance);
+        workingBalance.set(user, bOMMBalance);
+        BigInteger newWorkingTotal = currentWorkingTotal.subtract(currentWorkingBalance).add(bOMMBalance);
         workingTotalSupply.set(newWorkingTotal);
-        return  newWorkingBalance;
     }
 
     @External
-    public void kick(Address _user) {
-        BigInteger bommBalance = call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", _user);
-        if (! bommBalance.equals(BigInteger.ZERO)) {
-            throw DelegationException.unknown(TAG + " : OMM locking has not expired");
+    public void onKick(Address user, BigInteger bOMMUserBalance, @Optional byte[] data) {
+        onlyOrElseThrow(Contracts.BOOSTED_OMM,
+                DelegationException.unauthorized("Only bOMM contract is allowed to call onKick method"));
+        if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
+            throw DelegationException.unknown(user + " OMM locking has not expired");
         }
-        updateDelegations(null, _user);
-        UserKicked(_user);
+        updateUserDelegations(null, user, bOMMUserBalance);
+        UserKicked(user, data);
+    }
+
+    @External
+    public void onBalanceUpdate(Address user) {
+        onlyOrElseThrow(Contracts.BOOSTED_OMM,
+                DelegationException.unauthorized("Only bOMM contract is allowed to call onBalanceUpdate method"));
+        updateUserDelegations(null, user, null);
     }
 
     @External
     public void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user) {
         Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
         Address currentUser;
-        Address caller = Context.getCaller();
+        Address caller = currentUser = Context.getCaller();
         if (_user != null && caller.equals(bOMMAddress)) {
             currentUser = _user;
-        } else {
-            currentUser = caller;
         }
+        updateUserDelegations(_delegations, currentUser, null);
+    }
+
+    private void updateUserDelegations(PrepDelegations[] _delegations, Address _user, BigInteger bOMMUserBalance) {
 
         PrepDelegations[] userDelegations;
 
         if (_delegations == null || _delegations.length == 0) {
-            userDelegations = getUserDelegationDetails(currentUser);
+            userDelegations = getUserDelegationDetails(_user);
         } else {
             int delegationsLength = _delegations.length;
             if (delegationsLength > 5) {
@@ -283,44 +279,50 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             userDelegations = distributeVoteToContributors();
         }
 
-        handleCalculation(userDelegations, currentUser);
+        calculatePREPDelegation(userDelegations, _user, bOMMUserBalance);
     }
 
-    private void handleCalculation(PrepDelegations[] userDelegations, Address user) {
+    private void calculatePREPDelegation(PrepDelegations[] userDelegations, Address user, BigInteger bOMMUserBalance) {
         BigInteger totalPercentage = BigInteger.ZERO;
 
-        resetUser(user);
-        BigInteger userWorkingBalance = updateWorkingBalance(user);
+        resetUserVotes(user);
+        if (bOMMUserBalance == null) {
+            bOMMUserBalance = call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user);
+        }
 
-        DictDB<Integer, Address> userPreps = _userPreps.at(user);
-        DictDB<Integer, BigInteger> percentageDelegations = _percentageDelegations.at(user);
+        updateWorkingBalance(user, bOMMUserBalance);
 
-        for (int i = 0; i < userDelegations.length; i++) {
-            PrepDelegations userDelegation = userDelegations[i];
-            Address address = userDelegation._address;
-            BigInteger votes = userDelegation._votes_in_per;
+        if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
+            DictDB<Integer, Address> userPreps = _userPreps.at(user);
+            DictDB<Integer, BigInteger> percentageDelegations = _percentageDelegations.at(user);
 
-            if (!_preps.contains(address)) {
-                validatePrep(address);
+            for (int i = 0; i < userDelegations.length; i++) {
+                PrepDelegations userDelegation = userDelegations[i];
+                Address address = userDelegation._address;
+                BigInteger votes = userDelegation._votes_in_per;
+
                 _preps.add(address);
+
+                BigInteger prepVote = exaMultiply(votes, bOMMUserBalance);
+                BigInteger newPrepVote = _prepVotes.getOrDefault(address, BigInteger.ZERO).add(prepVote);
+                _prepVotes.set(address, newPrepVote);
+
+                userPreps.set(i, address);
+                percentageDelegations.set(i, votes);
+
+                totalPercentage = totalPercentage.add(votes);
             }
-
-            BigInteger prepVote = exaMultiply(votes, userWorkingBalance);
-            BigInteger newPrepVote = _prepVotes.getOrDefault(address, BigInteger.ZERO).add(prepVote);
-            _prepVotes.set(address, newPrepVote);
-
-            userPreps.set(i, address);
-            percentageDelegations.set(i, votes);
-
-            totalPercentage = totalPercentage.add(votes);
+            if (!totalPercentage.equals(ICX)) {
+                throw DelegationException.unknown(TAG +
+                        ": updating delegation unsuccessful,sum of percentages not equal to 100 " +
+                        "sum total of percentages " + totalPercentage +
+                        " delegation preferences " + userDelegations.length);
+            }
         }
-        if (!totalPercentage.equals(ICX)) {
-            throw DelegationException.unknown(TAG +
-                    ": updating delegation unsuccessful,sum of percentages not equal to 100 " +
-                    "sum total of percentages " + totalPercentage +
-                    " delegation preferences " + userDelegations.length);
-        }
+        updatePREPDelegations();
+    }
 
+    private void updatePREPDelegations() {
         PrepDelegations[] updatedDelegation = computeDelegationPercentages();
 
         Object[] params = new Object[]{
@@ -519,10 +521,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         return Context.call(kClass, getAddress(contract.getKey()), method, params);
     }
 
-    public <K> K call(Class<K> kClass, Address contract, String method, Object... params) {
-        return Context.call(kClass, contract, method, params);
-    }
-    
+
     @EventLog(indexed = 1)
-    public void UserKicked(Address _user) {}
+    public void UserKicked(Address user, byte[] _data) {}
 }
