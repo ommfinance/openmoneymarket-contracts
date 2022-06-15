@@ -24,13 +24,13 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public String name() {
-        return "OMM " + TAG;
+        return "Omm " + TAG;
     }
 
     @External
     public void setMinimumStake(BigInteger _value) {
         onlyOwnerOrElseThrow(StakedLPException.notOwner());
-        if (_value.compareTo(ZERO) <= 0) {
+        if (_value.compareTo(ZERO) < 0) {
             throw StakedLPException.unknown("Minimum stake value must be positive, " + _value);
         }
         minimumStake.set(_value);
@@ -62,12 +62,12 @@ public class StakedLPImpl extends AbstractStakedLP {
     public Map<String, BigInteger> balanceOf(Address _owner, int _id) {
         BigInteger id = BigInteger.valueOf(_id);
         BigInteger userBalance=call(BigInteger.class,Contracts.DEX,"balanceOf",_owner, id);
-        BigInteger poolDetails = poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,ZERO);
+        BigInteger stakedBalance = poolStakeDetails.at(_owner).at(_id).getOrDefault(STAKED,ZERO);
         return Map.of(
                 "poolID",id,
-                "userTotalBalance",userBalance.add(poolDetails) ,
+                "userTotalBalance",userBalance.add(stakedBalance) ,
                 "userAvailableBalance",userBalance,
-                "userStakedBalance", poolDetails,
+                "userStakedBalance", stakedBalance,
                 "totalStakedBalance",totalStaked(_id));
     }
 
@@ -78,10 +78,10 @@ public class StakedLPImpl extends AbstractStakedLP {
             BigInteger id = BigInteger.valueOf(supportedPools.get(i));
             BigInteger totalBalance = call(BigInteger.class, Contracts.DEX,"balanceOf",
                     Context.getAddress(), id);
-            Map<String, BigInteger> poolDetails = Map.of(
+            Map<String, BigInteger> stakedBalance = Map.of(
                     "poolID",id,
                     "totalStakedBalance",totalBalance);
-            result.add(poolDetails);
+            result.add(stakedBalance);
         }
         return result;
     }
@@ -131,10 +131,7 @@ public class StakedLPImpl extends AbstractStakedLP {
             throw StakedLPException.unknown(TAG + ": " + _poolID + " is not in address map");
         }
         this.addressMap.set(_poolID,null);
-        Integer top = this.supportedPools.pop(); // wrapper class or int
-        // check the logic
-
-        // optimized
+        Integer top = this.supportedPools.pop();
         boolean isRemoved = top.equals(_poolID);
 
         if (!isRemoved){
@@ -153,7 +150,6 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public Map<String, Address> getSupportedPools() {
-        // cast poolId to string
         Map<String,Address> supportedPool = new HashMap<>();
         for (int i = 0; i < this.supportedPools.size(); i++) {
             int poolId = this.supportedPools.get(i);
@@ -171,12 +167,12 @@ public class StakedLPImpl extends AbstractStakedLP {
             throw StakedLPException.unknown("pool with id: " + _id + "is not supported");
         }
 
-        if(_value.compareTo(ZERO)<0){
+        if(_value.compareTo(ZERO)<=0){
             throw StakedLPException.unknown("Cannot unstake less than zero value to stake" + _value);
         }
 
         Address _user = Context.getCaller();
-        BigInteger previousUserStaked = this.poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED,BigInteger.ONE);
+        BigInteger previousUserStaked = this.poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED,ONE);
         BigInteger previousTotalStaked = totalStaked(_id);
 
         if (previousUserStaked.compareTo(_value) < 0){

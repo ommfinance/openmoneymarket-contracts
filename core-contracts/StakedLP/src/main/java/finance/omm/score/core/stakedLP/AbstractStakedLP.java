@@ -43,8 +43,7 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
         Map<String, ?> poolStats  = call(Map.class, Contracts.DEX,"getPoolStats", BigInteger.valueOf(_id));
         BigInteger quoteDecimals = (BigInteger) poolStats.get("quote_decimals");
         BigInteger baseDecimals = (BigInteger) poolStats.get("base_decimals");
-        BigInteger averageDecimals = (quoteDecimals.add(baseDecimals)).divide(BigInteger.valueOf(2));
-        return averageDecimals;
+        return (quoteDecimals.add(baseDecimals)).divide(BigInteger.valueOf(2));
     }
 
     protected boolean inSupportedPools(int poolId) {
@@ -63,7 +62,7 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
             throw StakedLPException.unknown("pool with id: " + _id + " is not supported");
         }
 
-        if (_value.compareTo(ZERO) < 0 ){
+        if (_value.compareTo(ZERO) <= 0 ){
             throw StakedLPException.unknown("Cannot stake less than zero ,value to stake " + _value);
         }
         if (_value.compareTo(minimumStake.get()) < 0 ){
@@ -72,10 +71,9 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
 
         }
 
-        // getORDefault is okay or not
         BigInteger previousUserStaked = poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED, ZERO);
 
-        BigInteger previousTotalStaked = this.totalStaked.getOrDefault(_id,ZERO); // getORdefault ??
+        BigInteger previousTotalStaked = this.totalStaked.getOrDefault(_id,ZERO);
 
         BigInteger afterUserStaked = previousUserStaked.add(_value);
         BigInteger afterTotalStaked = previousTotalStaked.add(_value);

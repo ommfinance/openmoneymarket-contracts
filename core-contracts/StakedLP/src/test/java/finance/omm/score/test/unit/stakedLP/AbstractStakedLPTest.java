@@ -17,7 +17,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import score.Address;
 
@@ -111,13 +110,6 @@ public class AbstractStakedLPTest extends TestBase {
         return data;
     }
 
-    @Test
-    public void testTransfer() {
-
-//        doNothing().when(daoFund).transferOmm(TestBase.ICX, addresses[0]);
-//
-//        score.invoke(owner, "transferOmmFromDaoFund", TestBase.ICX, addresses[0]);
-    }
 }
 
 
