@@ -17,6 +17,7 @@ public class OMMException extends UserRevertException {
         AddressManager(35),
         Governance(40),
         OMMToken(50),
+        PriceOracle(65),
         RESERVED(80);
 
         int offset;
@@ -192,6 +193,17 @@ public class OMMException extends UserRevertException {
         }
 
         public OMMToken(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class PriceOracleException extends OMMException {
+
+        public PriceOracleException(int code, String message) {
+            super(Type.PriceOracle, code, message);
+        }
+
+        public PriceOracleException(Coded code, String message) {
             this(code.code(), message);
         }
     }
