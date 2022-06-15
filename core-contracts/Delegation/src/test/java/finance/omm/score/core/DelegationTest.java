@@ -28,12 +28,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import score.Address;
+import score.Context;
 
 public class DelegationTest extends TestBase {
 
@@ -45,6 +48,13 @@ public class DelegationTest extends TestBase {
 
     static Address contributor1;
     static Address contributor2;
+
+    static MockedStatic<Context> contextMock;
+
+    @BeforeAll
+    protected static void init() {
+        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
+    }
 
 
     @BeforeEach
@@ -216,10 +226,10 @@ public class DelegationTest extends TestBase {
         assertEquals(BigInteger.ZERO, balance);
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
-
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -252,13 +262,9 @@ public class DelegationTest extends TestBase {
         Account user = sm.createAccount();
         initialize();
 
-        // shouldn't be able to kick if boosted omm balance > 0
-        doReturn(BigInteger.ONE).when(scoreSpy)
-                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user.getAddress());
-
-        Executable call = () -> delegationScore.invoke(owner, "kick", user.getAddress());
-        expectErrorMessage(call, "Delegation : OMM locking has not expired");
-
+        Executable call = () -> delegationScore.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.BOOSTED_OMM), "onKick",
+                user.getAddress(), BigInteger.ONE, "temp".getBytes());
+        expectErrorMessage(call, user.getAddress() + " OMM locking has not expired");
 
         // should be kicked if boosted omm balance = 0
         doReturn(ICX).when(scoreSpy)
@@ -266,24 +272,24 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
         delegationScore.invoke(user, "updateDelegations", new PrepDelegations[0], user.getAddress());
 
         // prep delegations should be zero
-        doReturn(BigInteger.ZERO).when(scoreSpy)
-                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user.getAddress());
 
-        delegationScore.invoke(user, "kick", user.getAddress());
-        verify(scoreSpy).UserKicked(user.getAddress());
+        delegationScore.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.BOOSTED_OMM), "onKick",
+                user.getAddress(), BigInteger.ZERO, "temp".getBytes());
+        verify(scoreSpy).UserKicked(user.getAddress(), "temp".getBytes());
 
         PrepDelegations[] scoreDelegations = (PrepDelegations[]) delegationScore
                 .call("getUserDelegationDetails", user.getAddress());
         // percentageDelegations should be preserved
-        for(PrepDelegations pd: scoreDelegations) {
+        for (PrepDelegations pd : scoreDelegations) {
             assertEquals(pd._votes_in_per, BigInteger.valueOf(50).multiply(pow(
                     BigInteger.valueOf(10), 16)));
         }
@@ -313,9 +319,10 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -357,9 +364,10 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -410,9 +418,10 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -498,9 +507,10 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -580,9 +590,10 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -617,9 +628,10 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -650,9 +662,10 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -695,9 +708,10 @@ public class DelegationTest extends TestBase {
                 .call(eq(BigInteger.class), eq(Contracts.BOOSTED_OMM), eq("balanceOf"), any());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -803,9 +817,10 @@ public class DelegationTest extends TestBase {
                 .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user5.getAddress());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -977,9 +992,10 @@ public class DelegationTest extends TestBase {
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
 
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
@@ -1035,9 +1051,10 @@ public class DelegationTest extends TestBase {
                 call(eq(BigInteger.class), eq(Contracts.sICX), eq("balanceOf"), any());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
         delegationScore.invoke(user1, "updateDelegations", delegations1, user1.getAddress());
@@ -1110,9 +1127,11 @@ public class DelegationTest extends TestBase {
                 call(eq(BigInteger.class), eq(Contracts.sICX), eq("balanceOf"), any());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
-        doReturn(prepDetails).when(scoreSpy)
-                .call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
-                        eq("getPRep"), any());
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
+
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
 
         delegationScore.invoke(user1, "updateDelegations", delegations1, user1.getAddress());
