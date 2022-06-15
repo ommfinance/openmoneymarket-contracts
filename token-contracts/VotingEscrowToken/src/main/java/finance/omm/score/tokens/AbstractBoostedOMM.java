@@ -4,6 +4,7 @@ import static finance.omm.utils.math.MathUtils.ICX;
 
 import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.libs.address.AddressProvider;
+import finance.omm.libs.address.Contracts;
 import finance.omm.score.tokens.model.LockedBalance;
 import finance.omm.score.tokens.model.Point;
 import finance.omm.utils.constants.TimeConstants;
@@ -62,36 +63,30 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
 
     public AbstractBoostedOMM(Address addressProvider, Address tokenAddress, String name, String symbol) {
         super(addressProvider, false);
+        onInstall(tokenAddress, name, symbol);
+    }
 
+    private void onInstall(Address tokenAddress, String name, String symbol) {
+        if (this.tokenAddress.get() != null) {
+            return;
+        }
         this.tokenAddress.set(tokenAddress);
 
-        if (this.name.get() == null) {
-            int decimals = ((BigInteger) callToken("decimals")).intValue();
-            this.decimals.set(decimals);
-            this.name.set(name);
-            this.symbol.set(symbol);
-        }
+        int decimals = ((BigInteger) callToken("decimals")).intValue();
+        this.decimals.set(decimals);
+        this.name.set(name);
+        this.symbol.set(symbol);
+
         this.admin.set(Context.getCaller());
 
-        if (this.pointHistory.get(BigInteger.ZERO) == null) {
-            Point point = new Point();
-            point.block = UnsignedBigInteger.valueOf(Context.getBlockHeight());
-            point.timestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
-            this.pointHistory.set(BigInteger.ZERO, point);
-        }
+        Point point = new Point();
+        point.block = UnsignedBigInteger.valueOf(Context.getBlockHeight());
+        point.timestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
+        this.pointHistory.set(BigInteger.ZERO, point);
 
-        if (this.supply.get() == null) {
-            this.supply.set(BigInteger.ZERO);
-        }
-
-        if (this.epoch.get() == null) {
-            this.epoch.set(BigInteger.ZERO);
-        }
-
-        if (this.minimumLockingAmount.get() == null) {
-            this.minimumLockingAmount.set(ICX);
-        }
-
+        this.supply.set(BigInteger.ZERO);
+        this.epoch.set(BigInteger.ZERO);
+        this.minimumLockingAmount.set(ICX);
     }
 
     @EventLog
@@ -128,6 +123,17 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     @External(readonly = true)
     public String symbol() {
         return this.symbol.get();
+    }
+
+
+    protected void onKick(Address user, BigInteger bOMMBalance, byte[] data) {
+        call(Contracts.DELEGATION, "onKick", user, bOMMBalance, data);
+        call(Contracts.REWARDS, "onKick", user, bOMMBalance, data);
+    }
+
+    protected void onBalanceUpdate(Address user) {
+        call(Contracts.DELEGATION, "onBalanceUpdate", user);
+        call(Contracts.REWARDS, "onBalanceUpdate", user);
     }
 
     public Object callToken(String method, Object... params) {

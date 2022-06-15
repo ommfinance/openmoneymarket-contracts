@@ -148,6 +148,13 @@ public class VotingPowerTest extends AbstractBOMMTest {
         alice_balance = (BigInteger) bBALNScore.call("balanceOf", alice.getAddress(), BigInteger.ZERO);
         assertEquals(BigInteger.ZERO, alice_balance);
 
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.DELEGATION), eq("onKick"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.REWARDS), eq("onKick"), ArgumentMatchers.<Object>argThat(matcher));
+
         bBALNScore.invoke(alice, "withdraw");
         states.put("alice_withdraw", getState());
         alice_balance = (BigInteger) bBALNScore.call("balanceOf", alice.getAddress(), BigInteger.ZERO);
@@ -413,10 +420,10 @@ public class VotingPowerTest extends AbstractBOMMTest {
     private void createLock(Account account, BigInteger lockUntil, BigInteger amount) {
         VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
         doNothing().when(scoreSpy)
-                .call(eq(Contracts.DELEGATION), eq("updateDelegations"),
+                .call(eq(Contracts.DELEGATION), eq("onBalanceUpdate"),
                         ArgumentMatchers.<Object>argThat(matcher));
         doNothing().when(scoreSpy)
-                .call(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
+                .call(eq(Contracts.REWARDS), eq("onBalanceUpdate"), ArgumentMatchers.<Object>argThat(matcher));
 
         Map<String, Object> map = new HashMap<>();
         map.put("method", "createLock");

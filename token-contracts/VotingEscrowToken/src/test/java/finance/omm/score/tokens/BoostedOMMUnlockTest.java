@@ -84,6 +84,13 @@ public class BoostedOMMUnlockTest extends AbstractBOMMTest {
         long timestamp = sm.getBlock().getTimestamp();
         long expectedUnlock = unlockTime + timestamp;
 
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.DELEGATION), eq("onBalanceUpdate"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.REWARDS), eq("onBalanceUpdate"), ArgumentMatchers.<Object>argThat(matcher));
+
         Map<String, Object> map = new HashMap<>();
         map.put("method", "createLock");
         map.put("params", Map.of("unlockTime", expectedUnlock));
@@ -114,6 +121,13 @@ public class BoostedOMMUnlockTest extends AbstractBOMMTest {
 
         long timestamp = sm.getBlock().getTimestamp();
         long expectedUnlock = unlockTime + timestamp;
+
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.DELEGATION), eq("onBalanceUpdate"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.REWARDS), eq("onBalanceUpdate"), ArgumentMatchers.<Object>argThat(matcher));
 
         Map<String, Object> map = new HashMap<>();
         map.put("method", "createLock");

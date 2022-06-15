@@ -58,7 +58,6 @@ public class StateMachineTest extends AbstractBOMMTest {
     private BoostedOMM scoreSpy;
 
 
-
     private static class VotingBalance {
 
         public BigInteger value;
@@ -123,10 +122,10 @@ public class StateMachineTest extends AbstractBOMMTest {
         VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
 
         doNothing().when(scoreSpy)
-                .call(eq(Contracts.DELEGATION), eq("updateDelegations"),
+                .call(eq(Contracts.DELEGATION), eq("onBalanceUpdate"),
                         ArgumentMatchers.<Object>argThat(matcher));
         doNothing().when(scoreSpy)
-                .call(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
+                .call(eq(Contracts.REWARDS), eq("onBalanceUpdate"), ArgumentMatchers.<Object>argThat(matcher));
 
         VotingBalance vote = votingBalances.getOrDefault(account, new VotingBalance());
         vote.value = vote.value.add(value);
@@ -444,6 +443,13 @@ public class StateMachineTest extends AbstractBOMMTest {
         void unlockAfterExpiry() {
             long deltaBlock = (addWeeksToCurrentTimestamp(lockedWeeks) - sm.getBlock().getTimestamp()) / BLOCK_TIME + 1;
             sm.getBlock().increase(deltaBlock);
+            VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+            doNothing().when(scoreSpy)
+                    .call(eq(Contracts.DELEGATION), eq("onKick"),
+                            ArgumentMatchers.<Object>argThat(matcher));
+            doNothing().when(scoreSpy)
+                    .call(eq(Contracts.REWARDS), eq("onKick"), ArgumentMatchers.<Object>argThat(matcher));
+
             // Check if the lock time has expired
             assertEquals(BigInteger.ZERO, bOmmScore.call("balanceOf", accounts.get(0).getAddress(), BigInteger.ZERO));
 
