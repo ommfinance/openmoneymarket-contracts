@@ -31,7 +31,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
     @Test
     public void name() {
         String actual = (String) score.call("name");
-        String expected = "OMM Staked Lp";
+        String expected = "Omm Staked Lp";
         assertEquals(expected, actual);
     }
 
@@ -47,8 +47,8 @@ public class StakedLPTest extends AbstractStakedLPTest {
         expectedErrorMessage = "Minimum stake value must be positive, " + _value;
         expectErrorMessage(negativeStake, expectedErrorMessage);
 
-        score.invoke(owner,"setMinimumStake",ONE);
-        assertEquals(ONE,score.call("getMinimumStake"));
+        score.invoke(owner,"setMinimumStake",BigInteger.valueOf(2));
+        assertEquals(BigInteger.valueOf(2),score.call("getMinimumStake"));
     }
 
     @Test
@@ -154,8 +154,8 @@ public class StakedLPTest extends AbstractStakedLPTest {
         // stake amount less than minimum stake
         setMinimumStake();
         Executable lessStakeAmount = () -> _stake(DEX_ACCOUNT,
-                operator.getAddress(),from.getAddress(),id,ZERO,data);
-        expectedErrorMessage= "Amount to stake: " +ZERO + " is smaller the minimum stake: 1";
+                operator.getAddress(),from.getAddress(),id,ONE,data);
+        expectedErrorMessage= "Amount to stake: " +ONE + " is smaller the minimum stake: 2";
         expectErrorMessage(lessStakeAmount,expectedErrorMessage);
 
         doReturn(Map.of(
