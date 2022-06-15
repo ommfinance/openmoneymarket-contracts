@@ -207,6 +207,36 @@ public class DelegationTest extends TestBase {
         return delegations;
     }
 
+    @DisplayName("invalid preps")
+    @Test
+    void invalidPreps() {
+        initialize();
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", owner.getAddress());
+
+        Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
+
+        prepDetails = Map.of("status", BigInteger.ONE);
+
+        PrepDelegations[] prepDelegations = getPrepDelegations1(4);
+
+        contextMock
+                .when(() -> Context.call(Map.class, AddressConstant.ZERO_SCORE_ADDRESS,
+                        "getPRep", prepDelegations[0]._address))
+                .thenReturn(prepDetails);
+
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
+
+        Executable call = () -> delegationScore.invoke(owner, "updateDelegations", prepDelegations, owner.getAddress());
+        String expectedErrorMessage = "Delegation" + ": Invalid prep: " + prepDelegations[0]._address;
+        expectErrorMessage(call, expectedErrorMessage);
+    }
+
 
     @DisplayName("clear previous delegation preference of user")
     @Test
