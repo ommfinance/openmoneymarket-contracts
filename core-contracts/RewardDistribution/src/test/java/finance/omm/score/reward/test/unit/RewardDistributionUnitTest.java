@@ -327,8 +327,6 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
                 reset(scoreSpy);
                 reset(scoreSpy.assets);
                 Address user = users.get(userIndex).getAddress();
-                doReturn(BigInteger.ZERO).when(scoreSpy)
-                        .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user);
 
                 doReturn(BigInteger.ONE).when(scoreSpy)
                         .call(BigInteger.class, Contracts.BOOSTED_OMM, "totalSupply");
@@ -342,7 +340,8 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
 
                 doReturn(details).when(scoreSpy).fetchUserBalance(any(), any(), any());
 
-                score.invoke(owner, "kick", user);
+                score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.BOOSTED_OMM), "onKick", user, BigInteger.ZERO,
+                        "message".getBytes());
                 Map<String, ?> result = (Map<String, ?>) score.call("getRewards", user);
 
                 verifyGetRewards(result, weight);
