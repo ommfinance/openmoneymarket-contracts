@@ -2,8 +2,11 @@ package finance.omm.score.core.liquidation.manager;
 
 import finance.omm.core.score.interfaces.LiquidationManager;
 import finance.omm.libs.address.AddressProvider;
+import finance.omm.libs.address.Authorization;
 import finance.omm.libs.address.Contracts;
+import finance.omm.score.core.liquidation.manager.exception.LiquidationManagerException;
 import score.Address;
+import score.Context;
 import score.annotation.EventLog;
 import score.annotation.External;
 
@@ -17,7 +20,7 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static java.math.BigInteger.ZERO;
 
-public class LiquidationManagerImpl extends AddressProvider implements LiquidationManager {
+public class LiquidationManagerImpl extends AddressProvider implements LiquidationManager, Authorization<LiquidationManagerException> {
 
     public static final String TAG = "Liquidation Manager";
     public static final BigInteger ZERO = BigInteger.ZERO;
@@ -115,6 +118,10 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
 
     @External
     public Map<String, BigInteger> liquidationCall(Address _collateral, Address _reserve, Address _user, BigInteger _purchaseAmount) {
+
+        onlyContractOrElseThrow(Contracts.LENDING_POOL,
+                LiquidationManagerException.unauthorized(TAG+ ": SenderNotLendingPoolError: (sender)" + Context.getCaller() + " (lending pool)"+ Contracts.LENDING_POOL));
+
         String principalBase = call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",_reserve);
         BigInteger principalPrice = call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",principalBase,"USD");
         Map<String, BigInteger> userAccountData = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getUserAccountData",_user);
