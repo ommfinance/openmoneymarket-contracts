@@ -20,9 +20,13 @@ public class DelegationException extends OMMException.DelegationException {
         return new DelegationException(Code.NotOwner, "require owner access");
     }
 
+    public static DelegationException unauthorized(String message) {
+        return new DelegationException(Code.Unauthorized, message);
+    }
+
     //OMMException.DelegationException => 30~
     public enum Code implements Coded {
-        Unknown(0), NotOwner(1);
+        Unknown(0), NotOwner(1), Unauthorized(2);
 
         final int code;
 
