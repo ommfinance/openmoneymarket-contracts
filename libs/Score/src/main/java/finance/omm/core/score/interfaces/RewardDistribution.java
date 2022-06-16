@@ -172,4 +172,6 @@ public interface RewardDistribution extends AddressProvider, BoostedOMMCallback 
     void migrateUserRewards(Address[] userAddresses);
 
     Map<String, BigInteger> getUserDailyReward(Address user);
+
+    void setRewardCalculatedFlag(boolean value);
 }
