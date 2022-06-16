@@ -646,7 +646,6 @@ public class GovernanceImpl extends AbstractGovernance {
         weightController.setTypeWeight(weights, timestamp);
     }
 
-
     @Override
     public void addType(String key, boolean isPlatformRecipient) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
