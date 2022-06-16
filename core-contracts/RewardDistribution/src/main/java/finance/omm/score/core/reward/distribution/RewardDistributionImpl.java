@@ -1,7 +1,7 @@
 package finance.omm.score.core.reward.distribution;
 
 import static finance.omm.utils.constants.TimeConstants.SECOND;
-import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.HUNDRED_PERCENT;
 import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
@@ -17,7 +17,6 @@ import finance.omm.score.core.reward.distribution.exception.RewardDistributionEx
 import finance.omm.score.core.reward.distribution.model.Asset;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.constants.TimeConstants.Timestamp;
-import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -45,15 +44,19 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public final VarDB<Boolean> IS_ASSET_INDEX_UPDATED = Context.newVarDB("bOMM-migration-is-asset-index-updated",
             Boolean.class);
 
+    public final VarDB<Boolean> IS_LEGACY_REWARD_CALCULATED = Context.newVarDB(
+            "bOMM-migration-is-legacy-reward-calculated",
+            Boolean.class);
+
 
     public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate) {
         super(addressProvider);
         if (this.bOMMRewardStartDate.get() == null) {
             TimeConstants.checkIsValidTimestamp(bOMMRewardStartDate, Timestamp.SECONDS);
             this.bOMMRewardStartDate.set(bOMMRewardStartDate);
+            isHandleActionEnabled.set(Boolean.FALSE);
+            isRewardClaimEnabled.set(Boolean.FALSE);
         }
-        isHandleActionEnabled.set(Boolean.FALSE);
-        isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
     @External(readonly = true)
@@ -253,25 +256,25 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @External()
     public void disableRewardClaim() {
-        checkGovernance();
+        checkGovernance("disableRewardClaim");
         isRewardClaimEnabled.set(Boolean.FALSE);
     }
 
     @External()
     public void enableRewardClaim() {
-        checkGovernance();
+        checkGovernance("enableRewardClaim");
         isRewardClaimEnabled.set(Boolean.TRUE);
     }
 
     @External()
     public void disableHandleActions() {
-        checkGovernance();
+        checkGovernance("disableHandleActions");
         isHandleActionEnabled.set(Boolean.FALSE);
     }
 
     @External()
     public void enableHandleActions() {
-        checkGovernance();
+        checkGovernance("enableHandleActions");
         isHandleActionEnabled.set(Boolean.TRUE);
     }
 
@@ -297,45 +300,51 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     }
 
 
-    @Override
+    @External
     public void distribute() {
-        BigInteger day = distributedDay.getOrDefault(BigInteger.ZERO);  //0
+        BigInteger day = distributedDay.getOrDefault(BigInteger.ZERO);
 
         @SuppressWarnings("unchecked")
         Class<Map<String, ?>> clazz = (Class) Map.class;
-        Map<String, ?> distributionDetails = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "getDistributionDetails",
+        Map<String, ?> precomputeInfo = call(clazz, Contracts.REWARD_WEIGHT_CONTROLLER, "precompute",
                 day);
-        Boolean isValid = (Boolean) distributionDetails.get("isValid");
+        Boolean isValid = (Boolean) precomputeInfo.get("isValid");
 
         if (!isValid) {
-            return;
+            throw RewardDistributionException.unknown("invalid day to distribute rewards " + day);
         }
-        BigInteger tokenDistribution = (BigInteger) distributionDetails.get("distribution");
-        BigInteger newDay = (BigInteger) distributionDetails.get("day");
-        if (tokenDistribution.equals(BigInteger.ZERO)) {
-            return;
+        BigInteger amountToMint = (BigInteger) precomputeInfo.get("amountToMint");
+
+        if (amountToMint.equals(BigInteger.ZERO)) {
+            throw RewardDistributionException.unknown("no token to mint " + amountToMint);
         }
+
+        BigInteger newDay = (BigInteger) precomputeInfo.get("day");
+
+        BigInteger toTimestamp = (BigInteger) precomputeInfo.get("timestamp");
+
         distributedDay.set(newDay);
-        call(Contracts.OMM_TOKEN, "mint", tokenDistribution);
-        OmmTokenMinted(newDay, tokenDistribution, newDay.subtract(day));
+        call(Contracts.OMM_TOKEN, "mint", amountToMint);
+        OmmTokenMinted(newDay, amountToMint, newDay.subtract(day));
 
         BigInteger transferToContract = BigInteger.ZERO;
 
-        for (Address key : this.transferToContractMap.keySet()) {
+        for (Address key : this.platformRecipientMap.keySet()) {
             BigInteger oldIndex = this.assets.getAssetIndex(key);
-            BigInteger newIndex = this.getAssetIndex(key, ICX, false);
-            BigInteger accruedRewards = calculateReward(ICX, newIndex, oldIndex);
+            BigInteger newIndex = this.getAssetIndex(key, HUNDRED_PERCENT, toTimestamp, false);
+            BigInteger accruedRewards = calculateReward(HUNDRED_PERCENT, newIndex, oldIndex);
             transferToContract = transferToContract.add(accruedRewards);
 
-            if (Contracts.WORKER_TOKEN.getKey().equals(transferToContractMap.get(key))) {
+            if (Contracts.WORKER_TOKEN.getKey().equals(platformRecipientMap.get(key))) {
                 distributeWorkerToken(accruedRewards);
-            } else if (Contracts.DAO_FUND.getKey().equals(transferToContractMap.get(key))) {
-                call(Contracts.OMM_TOKEN, "transfer", Contracts.DAO_FUND, accruedRewards);
-                Distribution("daoFund", getAddress(Contracts.DAO_FUND.toString()), accruedRewards);
+            } else if (Contracts.DAO_FUND.getKey().equals(platformRecipientMap.get(key))) {
+                Address daoFundAddress = getAddress(Contracts.DAO_FUND.getKey());
+                call(Contracts.OMM_TOKEN, "transfer", daoFundAddress, accruedRewards);
+                Distribution("daoFund", daoFundAddress, accruedRewards);
             }
         }
 
-        if (transferToContract.compareTo(tokenDistribution) > 0) {
+        if (transferToContract.compareTo(amountToMint) > 0) {
             throw RewardDistributionException.unknown("transfer to contract exceed total distribution");
         }
 
@@ -349,42 +358,47 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     private void distributeWorkerToken(BigInteger reward) {
         Address[] walletHolders = call(Address[].class, Contracts.WORKER_TOKEN, "getWallets");
         BigInteger totalSupply = call(BigInteger.class, Contracts.WORKER_TOKEN, "totalSupply");
-        BigInteger total = BigInteger.ZERO;
+
+        BigInteger remaining = reward;
+
         for (Address user : walletHolders) {
-            BigInteger userWorkerTokenBalance = call(BigInteger.class, Contracts.WORKER_TOKEN, "balanceOf", user);
-            BigInteger amount = MathUtils.exaMultiply(MathUtils.exaDivide(userWorkerTokenBalance, totalSupply), reward);
-            Distribution("worker", user, amount);
-            call(Contracts.OMM_TOKEN, "transfer", user, amount);
-            totalSupply = totalSupply.subtract(userWorkerTokenBalance);
-            total = total.add(amount);
-        }
-        if (total.compareTo(reward) > 0) {
-            throw RewardDistributionException.unknown("worker token distribution exceed accrued reward");
+            BigInteger balanceOf = call(BigInteger.class, Contracts.WORKER_TOKEN, "balanceOf", user);
+
+            BigInteger share = balanceOf.multiply(remaining).divide(totalSupply);
+
+            call(Contracts.OMM_TOKEN, "transfer", user, share);
+            Distribution("worker", user, share);
+
+            remaining = remaining.subtract(share);
+            totalSupply = totalSupply.subtract(balanceOf);
+
+            if (totalSupply.equals(BigInteger.ZERO) || remaining.equals(BigInteger.ZERO)) {
+                break;
+            }
         }
     }
 
 
-    @Override
     @External(readonly = true)
     public BigInteger getDistributedDay() {
         return this.distributedDay.get();
     }
 
-    @Override
+    @External
     public void transferOmmToDaoFund(BigInteger _value) {
-        checkGovernance();
+        checkGovernance("transferOmmToDaoFund");
         Address daoFundAddress = this.getAddress(Contracts.DAO_FUND.getKey());
         call(Contracts.OMM_TOKEN, "transfer", daoFundAddress, _value);
     }
 
-    @Override
+    @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
 
     }
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserDailyReward(Address user) {
-        Map<String, String> assets = this.assets.getAssetName(this.transferToContractMap.keySet());
+        Map<String, String> assets = this.assets.getAssetName(this.platformRecipientMap.keySet());
 
         Map<String, BigInteger> dailyRewards = call(Map.class, Contracts.REWARD_WEIGHT_CONTROLLER,
                 "getAssetDailyRewards");
@@ -398,7 +412,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             BigInteger assetWorkingTotal = workingTotal.getOrDefault(assetAddr, BigInteger.ZERO);
             BigInteger dailyReward = dailyRewards.get(name);
             if (!assetWorkingTotal.equals(BigInteger.ZERO)) {
-                response.put(name, exaMultiply(dailyReward, exaDivide(userWorkingBalance, assetWorkingTotal)));
+                response.put(name, exaDivide(exaMultiply(dailyReward, userWorkingBalance), assetWorkingTotal));
             } else {
                 response.put(name, BigInteger.ZERO);
             }
@@ -408,42 +422,58 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
 
     @External
-    public void kick(Address userAddr) {
-        Map<String, BigInteger> bOMMBalances = getBoostedBalance(userAddr);
-        if (!bOMMBalances.get("bOMMUserBalance").equals(BigInteger.ZERO)) {
-            throw RewardDistributionException.unknown(userAddr + " OMM locking is not expired");
+    public void onKick(Address user, BigInteger bOMMUserBalance, @Optional byte[] data) {
+        onlyOrElseThrow(Contracts.BOOSTED_OMM,
+                RewardDistributionException.unauthorized("Only bOMM contract is allowed to call onKick method"));
+
+        if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
+            throw RewardDistributionException.unknown(user + " OMM locking has not expired");
         }
-        List<Address> assets = this.assets.keySet(this.transferToContractMap.keySet());
+        BigInteger bOMMTotalSupply = getBOMMTotalSupply();
+
+        List<Address> assets = this.assets.keySet(this.platformRecipientMap.keySet());
+        BigInteger toTimestampInSeconds = TimeConstants.getBlockTimestampInSecond();
         for (Address assetAddr : assets) {
             Asset asset = this.assets.get(assetAddr);
             if (asset == null) {
                 continue;
             }
-            updateIndexes(assetAddr, userAddr);
+            updateIndexes(assetAddr, user, toTimestampInSeconds);
 
-            WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, asset.lpID);
-            workingBalance.bOMMUserBalance = bOMMBalances.get("bOMMUserBalance");
-            workingBalance.bOMMTotalSupply = bOMMBalances.get("bOMMTotalSupply");
+            WorkingBalance workingBalance = getUserBalance(user, assetAddr, asset.lpID);
+            workingBalance.bOMMUserBalance = bOMMUserBalance;
+            workingBalance.bOMMTotalSupply = bOMMTotalSupply;
 
             updateWorkingBalance(workingBalance);
         }
+        UserKicked(user, data);
+    }
+
+
+    @External
+    public void onBalanceUpdate(Address user) {
+        onlyOrElseThrow(Contracts.BOOSTED_OMM,
+                RewardDistributionException.unauthorized(
+                        "Only bOMM contract is allowed to call onBalanceUpdate method"));
+        _handleAction(Context.getCaller(), user);
     }
 
     @Override
-    @External()
+    @External
     public void handleAction(UserDetails _userAssetDetails) {
         Address _asset = Context.getCaller();
-        _handleAction(_asset, _userAssetDetails);
+        _handleAction(_asset, _userAssetDetails._user);
     }
 
     @Override
     @External
     public void handleLPAction(Address _asset, UserDetails _userDetails) {
-        checkStakeLp();
-        _handleAction(_asset, _userDetails);
+        onlyOrElseThrow(Contracts.STAKED_LP, RewardDistributionException.unauthorized(
+                "Only StakeLP contract is allowed to call handleLPAction method"));
+        _handleAction(_asset, _userDetails._user);
     }
 
-    private void _handleAction(Address assetAddr, UserDetails _userDetails) {
+    private void _handleAction(Address assetAddr, Address userAddr) {
         if (!isHandleActionEnabled()) {
             throw RewardDistributionException.handleActionDisabled();
         }
@@ -453,9 +483,8 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             throw RewardDistributionException.invalidAsset("Asset is null (" + assetAddr + ")");
         }
 
-        Address userAddr = _userDetails._user;
-
-        updateIndexes(assetAddr, userAddr);
+        BigInteger toTimestampInSeconds = TimeConstants.getBlockTimestampInSecond();
+        updateIndexes(assetAddr, userAddr, toTimestampInSeconds);
 
         Map<String, BigInteger> boostedBalance = getBoostedBalance(userAddr);
         WorkingBalance balance = getUserBalance(userAddr, assetAddr, asset.lpID);
@@ -514,26 +543,38 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             throw RewardDistributionException.unknown(
                     "Asset indexes are not migrated, Please migrate asset index first");
         }
+        if (IS_LEGACY_REWARD_CALCULATED.getOrDefault(false)) {
+            throw RewardDistributionException.unknown(
+                    "User's reward migration completed");
+        }
         List<Address> assetAddrs = this.legacyRewards.getAssets();
         Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
         for (Address assetAddr : assetAddrs) {
             Integer poolId = this.legacyRewards.getPoolID(assetAddr);
             for (Address userAddr : userAddresses) {
-                WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, BigInteger.valueOf(poolId));
-                workingBalance.bOMMUserBalance = BigInteger.ZERO;
-                workingBalance.bOMMTotalSupply = BigInteger.ZERO;
+                if (this.assets.getAccruedRewards(userAddr, assetAddr).equals(BigInteger.ZERO)) {
+                    WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, BigInteger.valueOf(poolId));
+                    workingBalance.bOMMUserBalance = BigInteger.ZERO;
+                    workingBalance.bOMMTotalSupply = BigInteger.ZERO;
 
-                BigInteger totalReward = legacyRewards.accumulateUserRewards(workingBalance);
+                    BigInteger totalReward = legacyRewards.accumulateUserRewards(workingBalance);
 
-                if (assetAddr.equals(getAddress(Contracts.OMM_TOKEN.getKey()))) {
-                    this.assets.setAccruedRewards(userAddr, bOMMAddress, totalReward);
-                } else {
-                    this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
-                    updateWorkingBalance(workingBalance);
+                    if (assetAddr.equals(getAddress(Contracts.OMM_TOKEN.getKey()))) {
+                        this.assets.setAccruedRewards(userAddr, bOMMAddress, totalReward);
+                    } else {
+                        this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
+                        updateWorkingBalance(workingBalance);
+                    }
+                    LegacyUserIndexUpdated(userAddr, assetAddr);
                 }
-                LegacyUserIndexUpdated(userAddr, assetAddr);
             }
         }
+    }
+
+    @External
+    public void setRewardCalculatedFlag(boolean value) {
+        checkOwner();
+        IS_LEGACY_REWARD_CALCULATED.set(value);
     }
 
     @External(readonly = true)
@@ -544,7 +585,11 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
 
     @External(readonly = true)
     public Map<String, Map<String, BigInteger>> getUserAllLegacyIndexes(Address _user) {
-        return this.legacyRewards.getUserAllIndexes(_user);
+        return this.legacyRewards.getUserLegacyRewardAndIndex(_user);
+    }
+
+    @EventLog(indexed = 1)
+    public void UserKicked(Address user, byte[] data) {
     }
 
     @EventLog(indexed = 1)

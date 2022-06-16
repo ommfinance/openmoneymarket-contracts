@@ -7,7 +7,7 @@ import java.math.BigInteger;
 public class MathUtils {
 
     public static BigInteger ICX = pow10(18);
-    public static BigInteger HUNDRED = BigInteger.valueOf(100L);
+    public static BigInteger HUNDRED_PERCENT = ICX;
     public static BigInteger HALF_ICX = ICX.divide(BigInteger.TWO);
     public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(ICX);
     public static BigInteger HUNDRED_THOUSAND = BigInteger.valueOf(100_000L).multiply(ICX);
@@ -17,7 +17,7 @@ public class MathUtils {
         return first.compareTo(second) < 0;
     }
 
-    public static boolean isLesThanEqual(BigInteger first, BigInteger second) {
+    public static boolean isLessThanEqual(BigInteger first, BigInteger second) {
         return first.compareTo(second) <= 0;
     }
 
@@ -93,13 +93,18 @@ public class MathUtils {
         return _amount;
     }
 
-    public static BigInteger percentageInHundred(BigInteger value) {
-        return value.multiply(HUNDRED).divide(ICX);
+    public static double percentageInHundred(BigInteger value) {
+        return 100*value.doubleValue()/ICX.doubleValue();
     }
 
     public static BigInteger convertToNumber(JsonValue value) {
+        return convertToNumber(value, null);
+    }
+
+
+    public static BigInteger convertToNumber(JsonValue value, BigInteger defaultValue) {
         if (value == null) {
-            return null;
+            return defaultValue;
         }
         if (value.isString()) {
             String number = value.asString();
@@ -115,6 +120,6 @@ public class MathUtils {
         } else if (value.isNumber()) {
             return new BigInteger(value.toString());
         }
-        throw OMMException.unknown("Invalid value format for minimum receive amount: " + value.toString());
+        throw OMMException.unknown("Invalid value format for minimum receive amount: " + value);
     }
 }

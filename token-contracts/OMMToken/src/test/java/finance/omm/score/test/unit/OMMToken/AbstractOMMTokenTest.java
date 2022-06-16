@@ -1,6 +1,7 @@
 package finance.omm.score.test.unit.OMMToken;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
@@ -9,14 +10,15 @@ import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.core.score.interfaces.DAOFund;
-import finance.omm.core.score.interfaces.RewardDistribution;
 import finance.omm.core.score.interfaces.FeeProvider;
 import finance.omm.core.score.interfaces.LendingPoolCore;
 import finance.omm.core.score.interfaces.OMMToken;
+import finance.omm.core.score.interfaces.RewardDistribution;
 import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.score.token.OMMTokenImpl;
+import finance.omm.score.token.enums.Status;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +34,7 @@ import score.Context;
 import score.DictDB;
 
 public class AbstractOMMTokenTest extends TestBase {
+
     public static final ServiceManager sm = getServiceManager();
     public Account owner;
     public Score score;
@@ -56,7 +59,7 @@ public class AbstractOMMTokenTest extends TestBase {
         put(Contracts.WORKER_TOKEN, Account.newScoreAccount(104));
         put(Contracts.OMM_TOKEN, Account.newScoreAccount(105));
         put(Contracts.LENDING_POOL, Account.newScoreAccount(106));
-        put(Contracts.REWARDS,Account.newScoreAccount(107));
+        put(Contracts.REWARDS, Account.newScoreAccount(107));
     }};
 
     protected DAOFund daoFund;
@@ -66,19 +69,21 @@ public class AbstractOMMTokenTest extends TestBase {
     protected FeeProvider feeProvider;
     protected OMMToken ommToken;
 
+    static MockedStatic<Context> contextMock;
+
     @BeforeAll
     protected static void init() {
         long CURRENT_TIMESTAMP = System.currentTimeMillis() / 1_000L;
         sm.getBlock().increase(CURRENT_TIMESTAMP / 2);
+        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
     }
 
     public void increaseTimeBy(BigInteger increaseBy) {
         // increaseBy is in microseconds
-        long blocks = increaseBy.divide(BigInteger.valueOf(1_000_000L)).intValue()/2;
+        long blocks = increaseBy.divide(BigInteger.valueOf(1_000_000L)).intValue() / 2;
         sm.getBlock().increase(blocks);
     }
 
-    MockedStatic<Context> contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
 
     protected BranchDB<Address, DictDB<Integer, BigInteger>> stakedBalances =
             Mockito.mock(BranchDB.class);
@@ -100,8 +105,8 @@ public class AbstractOMMTokenTest extends TestBase {
         OMMTokenImpl t = (OMMTokenImpl) score.getInstance();
         scoreSpy = spy(t);
         score.setInstance(scoreSpy);
+        mockStakedBalance(ZERO, ZERO, ZERO);
     }
-
 
 
     private void setAddresses() {
@@ -122,6 +127,16 @@ public class AbstractOMMTokenTest extends TestBase {
     public void expectErrorMessage(Executable contractCall, String errorMessage) {
         AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
         assertEquals(errorMessage, e.getMessage());
+    }
+
+    protected void mockStakedBalance(BigInteger staked, BigInteger unstaking, BigInteger unstakingPeriod) {
+        Mockito.reset(stakedBalances);
+        Mockito.reset(stakedDictDB);
+
+        doReturn(stakedDictDB).when(stakedBalances).at(any());
+        doReturn(staked).when(stakedDictDB).getOrDefault(Status.STAKED.getKey(), ZERO);
+        doReturn(unstaking).when(stakedDictDB).getOrDefault(Status.UNSTAKING.getKey(), ZERO);
+        doReturn(unstakingPeriod).when(stakedDictDB).getOrDefault(Status.UNSTAKING_PERIOD.getKey(), ZERO);
     }
 
     public void expectErrorMessageIn(Executable contractCall, String errorMessage) {

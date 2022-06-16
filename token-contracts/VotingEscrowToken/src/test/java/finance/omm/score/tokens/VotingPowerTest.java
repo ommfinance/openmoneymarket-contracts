@@ -8,10 +8,8 @@ import static org.mockito.Mockito.spy;
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
-import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.test.VarargAnyMatcher;
-import finance.omm.score.tokens.utils.IRC2Token;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -26,7 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
-/**
+/*
  * Test voting power in the following scenario.
  * Alice:
  * ~~~~~~~
@@ -49,20 +47,16 @@ import org.mockito.ArgumentMatchers;
  * Checking that totalSupply is appropriate.
  * After the test is done, check all over again with balanceOfAt / totalSupplyAt
  */
-public class VotingPowerTest extends TestBase {
+public class VotingPowerTest extends AbstractBOMMTest {
 
-    private static final ServiceManager sm = getServiceManager();
-    private static final Account owner = sm.createAccount();
     private Score bBALNScore;
-    private Score tokenScore;
 
-    private static final BigInteger INITIAL_SUPPLY = BigInteger.TEN.multiply(ICX);
     private static final String BOOSTED_OMM = "Boosted OMM";
     private static final String VE_OMM_SYMBOL = "veOMM";
     private static final Account alice = sm.createAccount();
     private static final Account bob = sm.createAccount();
 
-    private VotingEscrowToken scoreSpy;
+    private BoostedOMM scoreSpy;
 
     private Account addressProvider = Account.newScoreAccount(1001);
 
@@ -76,8 +70,7 @@ public class VotingPowerTest extends TestBase {
 
     @BeforeEach
     public void setup() throws Exception {
-        tokenScore = sm.deploy(owner, IRC2Token.class, INITIAL_SUPPLY);
-        bBALNScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        bBALNScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 BOOSTED_OMM, VE_OMM_SYMBOL);
         tokenScore.invoke(owner, "mintTo", alice.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
         tokenScore.invoke(owner, "mintTo", bob.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
@@ -87,7 +80,7 @@ public class VotingPowerTest extends TestBase {
 //        Move to timing which is good for testing - beginning of a UTC week
         BigInteger timestamp = getBlockTimestamp();
         setBlockTimestamp(timestamp.divide(WEEK).add(BigInteger.ONE).multiply(WEEK).longValue());
-        scoreSpy = (VotingEscrowToken) spy(bBALNScore.getInstance());
+        scoreSpy = (BoostedOMM) spy(bBALNScore.getInstance());
         bBALNScore.setInstance(scoreSpy);
     }
 
@@ -133,7 +126,6 @@ public class VotingPowerTest extends TestBase {
         assertEquals(amount.divide(MAX_TIME).multiply(time), total_balance);
         assertEquals(BigInteger.ZERO, bob_balance);
 
-
         BigInteger t0 = getBlockTimestamp();
 
         List<State> alice_in_0 = new ArrayList<>();
@@ -155,6 +147,13 @@ public class VotingPowerTest extends TestBase {
         statesMapping.put("alice_in_0", alice_in_0);
         alice_balance = (BigInteger) bBALNScore.call("balanceOf", alice.getAddress(), BigInteger.ZERO);
         assertEquals(BigInteger.ZERO, alice_balance);
+
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.DELEGATION), eq("onKick"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.REWARDS), eq("onKick"), ArgumentMatchers.<Object>argThat(matcher));
 
         bBALNScore.invoke(alice, "withdraw");
         states.put("alice_withdraw", getState());
@@ -206,7 +205,9 @@ public class VotingPowerTest extends TestBase {
         assertEquals(amount.divide(MAX_TIME).multiply(TWO_WEEKS), alice_balance);
         assertEquals(amount.divide(MAX_TIME).multiply(ONE_WEEK), bob_balance);
         //2 transaction or 2 block minted
-        assertEquals(amount.divide(MAX_TIME).multiply(WEEK.multiply(BigInteger.valueOf(3L)).subtract(SECOND.multiply(BigInteger.valueOf(8L)))), total_balance);
+        assertEquals(amount.divide(MAX_TIME)
+                        .multiply(WEEK.multiply(BigInteger.valueOf(3L)).subtract(SECOND.multiply(BigInteger.valueOf(8L)))),
+                total_balance);
 
         t0 = getBlockTimestamp();
         addBlockHeight(HOUR);
@@ -280,7 +281,6 @@ public class VotingPowerTest extends TestBase {
         assertEquals(BigInteger.ZERO, bob_balance);
         assertEquals(BigInteger.ZERO, total_balance);
 
-
 //         Now test historical balanceOfAt and others
         State before_deposits = states.get("before_deposits");
         BigInteger before_deposits_block = BigInteger.valueOf(before_deposits.block);
@@ -290,7 +290,6 @@ public class VotingPowerTest extends TestBase {
         assertEquals(BigInteger.ZERO, alice_balance);
         assertEquals(BigInteger.ZERO, bob_balance);
         assertEquals(BigInteger.ZERO, total_balance);
-
 
         State alice_deposit = states.get("alice_deposit");
         BigInteger alice_deposit_block = BigInteger.valueOf(alice_deposit.block);
@@ -304,7 +303,6 @@ public class VotingPowerTest extends TestBase {
         assertEquals(BigInteger.ZERO, bob_balance);
         assertEquals(alice_balance, total_balance);
 
-
         int i = 0;
         for (State stage : statesMapping.get("alice_in_0")) {
             BigInteger alice_block = BigInteger.valueOf(stage.block);
@@ -313,7 +311,9 @@ public class VotingPowerTest extends TestBase {
             total_balance = (BigInteger) bBALNScore.call("totalSupplyAt", alice_block);
 
             BigInteger time_left =
-                    WEEK.multiply(BigInteger.valueOf(7 - i)).divide(BigInteger.valueOf(7L)).subtract(HOUR.add(HOUR).add(SECOND.multiply(BigInteger.valueOf(2))));
+                    WEEK.multiply(BigInteger.valueOf(7 - i))
+                            .divide(BigInteger.valueOf(7L))
+                            .subtract(HOUR.add(HOUR).add(SECOND.multiply(BigInteger.valueOf(2))));
 
             assertEquals(BigInteger.ZERO, bob_balance);
             assertEquals(amount.divide(MAX_TIME).multiply(time_left.max(BigInteger.ZERO)), alice_balance);
@@ -332,7 +332,6 @@ public class VotingPowerTest extends TestBase {
         assertEquals(BigInteger.ZERO, bob_balance);
         assertEquals(BigInteger.ZERO, total_balance);
 
-
         State alice_deposit_2 = states.get("alice_deposit_2");
         BigInteger alice_deposit_2_block = BigInteger.valueOf(alice_deposit_2.block);
 
@@ -344,7 +343,6 @@ public class VotingPowerTest extends TestBase {
         assertEquals(BigInteger.ZERO, bob_balance);
         assertEquals(alice_balance, total_balance);
 
-
         State bob_deposit_2 = states.get("bob_deposit_2");
         BigInteger bob_deposit_2_block = BigInteger.valueOf(bob_deposit_2.block);
 
@@ -352,8 +350,12 @@ public class VotingPowerTest extends TestBase {
         bob_balance = (BigInteger) bBALNScore.call("balanceOfAt", bob.getAddress(), bob_deposit_2_block);
         total_balance = (BigInteger) bBALNScore.call("totalSupplyAt", bob_deposit_2_block);
 
-        assertEquals(amount.divide(MAX_TIME).multiply(WEEK.multiply(BigInteger.TWO).subtract(SECOND.multiply(BigInteger.valueOf(4)))), alice_balance);
-        assertEquals(amount.divide(MAX_TIME).multiply(WEEK.multiply(BigInteger.valueOf(3)).subtract(SECOND.multiply(BigInteger.valueOf(8)))), total_balance);
+        assertEquals(amount.divide(MAX_TIME)
+                        .multiply(WEEK.multiply(BigInteger.TWO).subtract(SECOND.multiply(BigInteger.valueOf(4)))),
+                alice_balance);
+        assertEquals(amount.divide(MAX_TIME)
+                        .multiply(WEEK.multiply(BigInteger.valueOf(3)).subtract(SECOND.multiply(BigInteger.valueOf(8)))),
+                total_balance);
         assertEquals(alice_balance.add(bob_balance), total_balance);
 
         BigInteger t = BigInteger.valueOf(bob_deposit_2.timestamp);
@@ -368,7 +370,10 @@ public class VotingPowerTest extends TestBase {
             BigInteger delta_time = w_timestamp.subtract(t);
 
             BigInteger alice_time =
-                    WEEK.multiply(BigInteger.TWO).subtract(delta_time).subtract(SECOND.multiply(BigInteger.valueOf(4))).max(BigInteger.ZERO);
+                    WEEK.multiply(BigInteger.TWO)
+                            .subtract(delta_time)
+                            .subtract(SECOND.multiply(BigInteger.valueOf(4)))
+                            .max(BigInteger.ZERO);
 
             BigInteger bob_time =
                     WEEK.subtract(delta_time).subtract(SECOND.multiply(BigInteger.valueOf(4))).max(BigInteger.ZERO);
@@ -378,7 +383,6 @@ public class VotingPowerTest extends TestBase {
             i++;
         }
 
-
         State bob_withdraw_1 = states.get("bob_withdraw_1");
         BigInteger bob_withdraw_1_block = BigInteger.valueOf(bob_withdraw_1.block);
 
@@ -386,7 +390,9 @@ public class VotingPowerTest extends TestBase {
         bob_balance = (BigInteger) bBALNScore.call("balanceOfAt", bob.getAddress(), bob_withdraw_1_block);
         total_balance = (BigInteger) bBALNScore.call("totalSupplyAt", bob_withdraw_1_block);
 
-        assertEquals(amount.divide(MAX_TIME).multiply(WEEK.subtract(HOUR.multiply(BigInteger.TWO).add(SECOND.multiply(BigInteger.valueOf(6))))), alice_balance);
+        assertEquals(amount.divide(MAX_TIME)
+                        .multiply(WEEK.subtract(HOUR.multiply(BigInteger.TWO).add(SECOND.multiply(BigInteger.valueOf(6))))),
+                alice_balance);
         assertEquals(BigInteger.ZERO, bob_balance);
         assertEquals(alice_balance, total_balance);
 
@@ -401,7 +407,9 @@ public class VotingPowerTest extends TestBase {
             BigInteger delta_time = w_timestamp.subtract(t);
 
             BigInteger a_time =
-                    WEEK.subtract(delta_time).subtract(HOUR.multiply(BigInteger.TWO).add(SECOND.multiply(BigInteger.valueOf(6L)))).max(BigInteger.ZERO);
+                    WEEK.subtract(delta_time)
+                            .subtract(HOUR.multiply(BigInteger.TWO).add(SECOND.multiply(BigInteger.valueOf(6L))))
+                            .max(BigInteger.ZERO);
             assertEquals(amount.divide(MAX_TIME).multiply(a_time), alice_balance);
             assertEquals(BigInteger.ZERO, bob_balance);
             assertEquals(alice_balance.add(bob_balance), total_balance);
@@ -412,10 +420,10 @@ public class VotingPowerTest extends TestBase {
     private void createLock(Account account, BigInteger lockUntil, BigInteger amount) {
         VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
         doNothing().when(scoreSpy)
-                .scoreCall(eq(Contracts.DELEGATION), eq("updateDelegations"),
+                .call(eq(Contracts.DELEGATION), eq("onBalanceUpdate"),
                         ArgumentMatchers.<Object>argThat(matcher));
         doNothing().when(scoreSpy)
-                .scoreCall(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
+                .call(eq(Contracts.REWARDS), eq("onBalanceUpdate"), ArgumentMatchers.<Object>argThat(matcher));
 
         Map<String, Object> map = new HashMap<>();
         map.put("method", "createLock");
@@ -457,6 +465,7 @@ public class VotingPowerTest extends TestBase {
 
 
     static class State {
+
         long block;
         long timestamp;
 
