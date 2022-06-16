@@ -268,7 +268,7 @@ public class GovernanceImpl extends AbstractGovernance {
      * @param percentage - percent represented in basis points
      */
     @External
-    public void setBoostedVoteDefinitionCriterion(BigInteger percentage) {
+    public void setVoteDefinitionCriteria(BigInteger percentage) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         if (!isValidPercentage(percentage)) {
             throw GovernanceException.unknown("vote definition criteria must be between 0 and " + ICX + ".");
