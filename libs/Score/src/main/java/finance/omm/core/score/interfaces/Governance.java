@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import score.Address;
+import score.annotation.Optional;
 
 @ScoreInterface(suffix = "Client")
 public interface Governance extends AddressProvider {
@@ -108,5 +109,9 @@ public interface Governance extends AddressProvider {
     void enableHandleActions();
 
     void disableHandleActions();
+
+    void addType(String key, boolean isPlatformRecipient);
+
+    void addAsset(String type, String name, Address address, @Optional BigInteger poolID);
 
 }

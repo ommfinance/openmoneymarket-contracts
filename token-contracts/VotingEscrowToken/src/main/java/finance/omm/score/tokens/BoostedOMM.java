@@ -20,7 +20,6 @@ import static finance.omm.utils.math.MathUtils.convertToNumber;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.score.tokens.exception.BoostedOMMException;
 import finance.omm.score.tokens.model.LockedBalance;
@@ -34,7 +33,6 @@ import score.Address;
 import score.Context;
 import score.annotation.External;
 import score.annotation.Optional;
-import scorex.util.HashMap;
 
 public class BoostedOMM extends AbstractBoostedOMM {
 
@@ -273,7 +271,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
         Deposit(address, value, locked.getEnd(), type, blockTimestamp);
         Supply(supplyBefore, supplyBefore.add(value));
 
-        updateDelegationAndHandleAction(address);
+        onBalanceUpdate(address);
     }
 
     @External
@@ -425,21 +423,8 @@ public class BoostedOMM extends AbstractBoostedOMM {
         Withdraw(sender, value, blockTimestamp);
         Supply(supplyBefore, supplyBefore.subtract(value));
 
-        updateDelegationAndHandleAction(sender);
+        onKick(sender, BigInteger.ZERO, "User withdraw unlock OMM Token".getBytes());
         this.nonReentrant.updateLock(false);
-    }
-
-    private void updateDelegationAndHandleAction(Address sender) {
-        //calling update delegation
-        call(Contracts.DELEGATION, "updateDelegations", null, sender);
-        // calling handle action for rewards
-        Map<String, Object> userDetails = new HashMap<>();
-        userDetails.put("_user", sender);
-        userDetails.put("_userBalance", balanceOf(sender, BigInteger.ZERO));
-        userDetails.put("_totalSupply", totalSupply(BigInteger.ZERO));
-        userDetails.put("_decimals", decimals());
-
-        call(Contracts.REWARDS, "handleAction", userDetails);
     }
 
     private BigInteger findBlockEpoch(BigInteger block, BigInteger maxEpoch) {
@@ -610,7 +595,15 @@ public class BoostedOMM extends AbstractBoostedOMM {
         response.principalTotalSupply = totalSupply(BigInteger.ZERO);
 
         return response;
+    }
 
+    @External
+    public void kick(Address _user) {
+        BigInteger bOMMBalance = balanceOf(_user, BigInteger.ZERO);
+        if (!bOMMBalance.equals(BigInteger.ZERO)) {
+            throw BoostedOMMException.unknown("User's lock has not expired. (" + _user + ")");
+        }
+        onKick(_user, bOMMBalance, "User kicked".getBytes());
     }
 
     @External(readonly = true)
