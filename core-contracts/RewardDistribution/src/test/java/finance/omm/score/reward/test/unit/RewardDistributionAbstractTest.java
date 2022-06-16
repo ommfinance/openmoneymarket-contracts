@@ -61,6 +61,8 @@ public abstract class RewardDistributionAbstractTest extends TestBase {
         put(Contracts.WORKER_TOKEN, Account.newScoreAccount(104));
         put(Contracts.OMM_TOKEN, Account.newScoreAccount(105));
         put(Contracts.BOOSTED_OMM, Account.newScoreAccount(106));
+        put(Contracts.GOVERNANCE, Account.newScoreAccount(107));
+        put(Contracts.LENDING_POOL, Account.newScoreAccount(108));
     }};
 
 

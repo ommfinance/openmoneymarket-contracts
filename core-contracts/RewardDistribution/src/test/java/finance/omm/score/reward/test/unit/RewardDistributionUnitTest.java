@@ -50,7 +50,7 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
         doNothing().when(scoreSpy)
                 .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addType"),
                         ArgumentMatchers.<Object>argThat(matcher));
-        score.invoke(owner, "addType", "key-1", Boolean.FALSE);
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addType", "key-1", Boolean.FALSE);
 
         verify(scoreSpy).call(Contracts.REWARD_WEIGHT_CONTROLLER, "addType", "key-1", Boolean.FALSE);
         verify(scoreSpy).AddType("key-1", Boolean.FALSE);
@@ -64,7 +64,8 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
                 .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addAsset"),
                         ArgumentMatchers.<Object>argThat(matcher));
         Address asset = Account.newScoreAccount(11).getAddress();
-        score.invoke(owner, "addAsset", "type-1", "asset-name", asset, BigInteger.ZERO);
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addAsset", "type-1", "asset-name", asset,
+                BigInteger.ZERO);
 
         verify(scoreSpy).call(Contracts.REWARD_WEIGHT_CONTROLLER, "addAsset", "type-1", asset, "asset-name");
         verify(scoreSpy).AssetAdded("type-1", "asset-name", asset, BigInteger.ZERO);
@@ -87,19 +88,23 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
                             ArgumentMatchers.<Object>argThat(matcher));
             Account asset = Account.newScoreAccount(11);
             assets[0] = asset;
-            score.invoke(owner, "addAsset", "type-1", "asset-name-1", asset.getAddress(), BigInteger.ZERO);
+            score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addAsset", "type-1", "asset-name-1",
+                    asset.getAddress(), BigInteger.ZERO);
 
             asset = Account.newScoreAccount(12);
             assets[1] = asset;
-            score.invoke(owner, "addAsset", "type-2", "asset-name-2", asset.getAddress(), BigInteger.ZERO);
+            score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addAsset", "type-2", "asset-name-2",
+                    asset.getAddress(), BigInteger.ZERO);
 
             asset = Account.newScoreAccount(13);
             assets[2] = asset;
-            score.invoke(owner, "addAsset", "type-2", "asset-name-3", asset.getAddress(), BigInteger.ZERO);
+            score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addAsset", "type-2", "asset-name-3",
+                    asset.getAddress(), BigInteger.ZERO);
 
             asset = Account.newScoreAccount(14);
             assets[3] = asset;
-            score.invoke(owner, "addAsset", "type-3", "asset-name-4", asset.getAddress(), BigInteger.ONE);
+            score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addAsset", "type-3", "asset-name-4",
+                    asset.getAddress(), BigInteger.ONE);
 
             users.add(sm.createAccount(10));
             users.add(sm.createAccount(10));
@@ -308,7 +313,7 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
                 doNothing().when(scoreSpy)
                         .call(eq(Contracts.OMM_TOKEN), eq("transfer"), ArgumentMatchers.<Object>argThat(matcher));
 
-                score.invoke(user, "claimRewards", user.getAddress());
+                score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL), "claimRewards", user.getAddress());
                 verifyAssetIndex(ICX);
                 verifyUserIndex(ICX);
 
@@ -455,9 +460,9 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
         doNothing().when(scoreSpy)
                 .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addType"),
                         ArgumentMatchers.<Object>argThat(matcher));
-        score.invoke(owner, "addType", "workerToken", Boolean.TRUE);
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addType", "workerToken", Boolean.TRUE);
 
-        score.invoke(owner, "addType", "daoFund", Boolean.TRUE);
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addType", "daoFund", Boolean.TRUE);
 
         Class<Map<String, ?>> clazz = (Class) Map.class;
         BigInteger distribution = (BigInteger) response.get("amountToMint");
@@ -559,10 +564,12 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
                 .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addAsset"),
                         ArgumentMatchers.<Object>argThat(matcher));
         Account asset = Account.newScoreAccount(11);
-        score.invoke(owner, "addAsset", "type-1", "asset-name-1", asset.getAddress(), BigInteger.ONE);
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addAsset", "type-1", "asset-name-1",
+                asset.getAddress(), BigInteger.ONE);
 
         asset = Account.newScoreAccount(12);
-        score.invoke(owner, "addAsset", "type-2", "asset-name-2", asset.getAddress(), BigInteger.ZERO);
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addAsset", "type-2", "asset-name-2",
+                asset.getAddress(), BigInteger.ZERO);
 
         Map result = (Map) score.call("getLiquidityProviders");
         System.out.println("result = " + result);
