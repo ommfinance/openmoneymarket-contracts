@@ -98,7 +98,7 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
         BoostedToken boostedToken = getInstance(BoostedToken.class,Contracts.BOOSTED_OMM);
         BigInteger userBommBalance = boostedToken.balanceOfAt(proposer,snapshot);
         BigInteger bommTotal = boostedToken.totalSupplyAt(snapshot);
-        BigInteger bommCriterion = getVoteDefinitionCriteria();
+        BigInteger bommCriterion = getBoostedOmmVoteDefinitionCriterion();
 
         if (MathUtils.exaDivide(userBommBalance, bommTotal).compareTo(bommCriterion) < 0) {
             throw GovernanceException.insufficientbOMMBalance(bommCriterion);

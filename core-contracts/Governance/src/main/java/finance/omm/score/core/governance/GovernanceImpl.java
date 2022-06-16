@@ -277,7 +277,7 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     @External(readonly = true)
-    public BigInteger getVoteDefinitionCriteria() {
+    public BigInteger getBoostedOmmVoteDefinitionCriterion() {
         return this.boostedOmmVoteDefinitionCriterion.getOrDefault(BigInteger.ZERO);
     }
 

@@ -102,7 +102,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         assertEquals(voteDefinitionFeeExpected, score.call("getVoteDefinitionFee"));
         assertEquals(quorumExpected, score.call("getQuorum"));
-        assertEquals(ommVoteDefinitionCriterion, score.call("getVoteDefinitionCriteria"));
+        assertEquals(ommVoteDefinitionCriterion, score.call("getBoostedOmmVoteDefinitionCriterion"));
         assertEquals(voteDurationExpected, score.call("getVoteDuration"));
 
         Executable errorMsg = () -> score.invoke(notOwner, "setVoteDefinitionFee", voteDefinitionFeeExpected);
