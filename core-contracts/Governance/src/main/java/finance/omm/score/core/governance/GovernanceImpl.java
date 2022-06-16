@@ -12,9 +12,12 @@ import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.core.score.interfaces.FeeProvider;
 import finance.omm.core.score.interfaces.LendingPoolCore;
 import finance.omm.core.score.interfaces.OMMToken;
+import finance.omm.core.score.interfaces.RewardWeightController;
 import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AssetConfig;
+import finance.omm.libs.structs.TypeWeightStruct;
+import finance.omm.libs.structs.WeightStruct;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
 import finance.omm.score.core.governance.db.ProposalDB;
@@ -625,6 +628,22 @@ public class GovernanceImpl extends AbstractGovernance {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.disableHandleActions();
+    }
+
+    @External
+    public void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        RewardWeightController weightController = getInstance(RewardWeightController.class,
+                Contracts.REWARD_WEIGHT_CONTROLLER);
+        weightController.setAssetWeight(type, weights, timestamp);
+    }
+
+    @External
+    public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        RewardWeightController weightController = getInstance(RewardWeightController.class,
+                Contracts.REWARD_WEIGHT_CONTROLLER);
+        weightController.setTypeWeight(weights, timestamp);
     }
 
     @Override

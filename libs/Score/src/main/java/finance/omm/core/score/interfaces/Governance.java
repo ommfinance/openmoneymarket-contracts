@@ -1,6 +1,8 @@
 package finance.omm.core.score.interfaces;
 
 import finance.omm.libs.structs.AssetConfig;
+import finance.omm.libs.structs.TypeWeightStruct;
+import finance.omm.libs.structs.WeightStruct;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
 import foundation.icon.score.client.ScoreInterface;
@@ -109,6 +111,10 @@ public interface Governance extends AddressProvider {
     void enableHandleActions();
 
     void disableHandleActions();
+
+    void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp);
+
+    void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp);
 
     void addType(String key, boolean isPlatformRecipient);
 

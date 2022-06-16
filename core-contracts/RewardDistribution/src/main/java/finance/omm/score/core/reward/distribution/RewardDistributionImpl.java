@@ -552,19 +552,21 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         for (Address assetAddr : assetAddrs) {
             Integer poolId = this.legacyRewards.getPoolID(assetAddr);
             for (Address userAddr : userAddresses) {
-                WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, BigInteger.valueOf(poolId));
-                workingBalance.bOMMUserBalance = BigInteger.ZERO;
-                workingBalance.bOMMTotalSupply = BigInteger.ZERO;
+                if (this.assets.getAccruedRewards(userAddr, assetAddr).equals(BigInteger.ZERO)) {
+                    WorkingBalance workingBalance = getUserBalance(userAddr, assetAddr, BigInteger.valueOf(poolId));
+                    workingBalance.bOMMUserBalance = BigInteger.ZERO;
+                    workingBalance.bOMMTotalSupply = BigInteger.ZERO;
 
-                BigInteger totalReward = legacyRewards.accumulateUserRewards(workingBalance);
+                    BigInteger totalReward = legacyRewards.accumulateUserRewards(workingBalance);
 
-                if (assetAddr.equals(getAddress(Contracts.OMM_TOKEN.getKey()))) {
-                    this.assets.setAccruedRewards(userAddr, bOMMAddress, totalReward);
-                } else {
-                    this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
-                    updateWorkingBalance(workingBalance);
+                    if (assetAddr.equals(getAddress(Contracts.OMM_TOKEN.getKey()))) {
+                        this.assets.setAccruedRewards(userAddr, bOMMAddress, totalReward);
+                    } else {
+                        this.assets.setAccruedRewards(userAddr, assetAddr, totalReward);
+                        updateWorkingBalance(workingBalance);
+                    }
+                    LegacyUserIndexUpdated(userAddr, assetAddr);
                 }
-                LegacyUserIndexUpdated(userAddr, assetAddr);
             }
         }
     }

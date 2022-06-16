@@ -65,6 +65,7 @@ public class RewardControllerUnitTest extends TestBase {
     private Map<Contracts, Account> mockAddress = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
         put(Contracts.REWARDS, Account.newScoreAccount(102));
+        put(Contracts.GOVERNANCE, Account.newScoreAccount(103));
     }};
     private static BigInteger startTimestamp;
     private static long blockHeight;
@@ -141,7 +142,7 @@ public class RewardControllerUnitTest extends TestBase {
         weights[0] = struct;
 
         Object[] params = new Object[]{weights, BigInteger.ZERO};
-        Executable call = () -> score.invoke(owner, "setTypeWeight", params);
+        Executable call = () -> score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setTypeWeight", params);
         expectErrorMessage(call, "Total percentage is not equals to 100%");
     }
 
@@ -362,12 +363,12 @@ public class RewardControllerUnitTest extends TestBase {
         for (int i = 10; i > 1; i--) {
             BigInteger timestamp = snapshots.get(i);
 
-            Map<String, BigInteger> nextTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
-                    type_id,
-                    timestamp.add(BigInteger.ONE));
-            Map<String, BigInteger> prevTime = (Map<String, BigInteger>) score.call("getAssetWeightByTimestamp",
-                    type_id,
-                    timestamp);
+            Map<String, BigInteger> nextTime = ((Map<String, Map<String, BigInteger>>) score.call(
+                    "getAllAssetDistributionPercentage",
+                    timestamp.add(BigInteger.ONE))).get(type_id);
+            Map<String, BigInteger> prevTime = ((Map<String, Map<String, BigInteger>>) score.call(
+                    "getAllAssetDistributionPercentage",
+                    timestamp)).get(type_id);
 
             Map<Address, Long> value = values.get(i);
 
@@ -454,7 +455,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         doReturn(Map.of(
                 "rateChangedOn", BigInteger.ZERO,
-                "rate", mockRate.multiply(ICX)
+                "ratePerSecond", mockRate.multiply(ICX)
         )).when(scoreSpy).getInflationRateByTimestamp(any());
 
         for (int i = 10; i > 1; i--) {
@@ -696,7 +697,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         Object[] params = new Object[]{type, weights, timestamp};
 
-        score.invoke(owner, "setAssetWeight", params);
+        score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setAssetWeight", params);
     }
 
     private void initAssetWeight(BigInteger timestamp, Integer typeId, Map<Address, Long> values) {
@@ -713,7 +714,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         Object[] params = new Object[]{type, weights, timestamp};
 
-        score.invoke(owner, "setAssetWeight", params);
+        score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setAssetWeight", params);
     }
 
 
@@ -727,7 +728,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         Object[] params = new Object[]{weights, timestamp};
 
-        score.invoke(owner, "setTypeWeight", params);
+        score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setTypeWeight", params);
     }
 
     private void initTypeWeight(BigInteger timestamp, Long... values) {
@@ -743,7 +744,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         Object[] params = new Object[]{weights, timestamp};
 
-        score.invoke(owner, "setTypeWeight", params);
+        score.invoke(mockAddress.get(Contracts.GOVERNANCE), "setTypeWeight", params);
     }
 
 
