@@ -1,9 +1,7 @@
 package finance.omm.score.core.liquidation.manager.exception;
 
 import finance.omm.utils.exceptions.OMMException;
-import finance.omm.utils.math.MathUtils;
 
-import java.math.BigInteger;
 
 public class LiquidationManagerException extends OMMException.LiquidityManager {
 
@@ -15,22 +13,14 @@ public class LiquidationManagerException extends OMMException.LiquidityManager {
         super(c, message);
     }
 
-    public static LiquidationManagerException unknown(String message) {
-        return new LiquidationManagerException(Code.Unknown, message);
-    }
-
-    public static LiquidationManagerException notOwner() {
-        return new LiquidationManagerException(Code.NotOwner, "require owner access");
-    }
 
     public static LiquidationManagerException unauthorized(String msg) {
         return new LiquidationManagerException(Code.UnAuthorized, msg);
     }
 
-    //OMMException.RewardDistribution => 30 ~
+
     public enum Code implements Coded {
-        Unknown(0), NotOwner(1), UnAuthorized(2), InvalidVotingDate(3),
-        InsufficientStakingBalance(4), ProposalNotFound(5), ProposalNotActive(6), InsufficientFee(7);
+        UnAuthorized(2);
 
         final int code;
 

@@ -9,19 +9,12 @@ import static java.math.BigInteger.ZERO;
 
 public interface LiquidationManager {
 
-    public String name();
+    String name();
 
-    public BigInteger calculateBadDebt(BigInteger _totalBorrowBalanceUSD, BigInteger _totalFeesUSD, BigInteger _totalCollateralBalanceUSD, BigInteger _ltv);
+    Map<String,BigInteger> calculateAvailableCollateralToLiquidate(Address _collateral, Address _reserve, BigInteger
+            _purchaseAmount, BigInteger _userCollateralBalance, Boolean _fee);
 
-    public Map<String,BigInteger> calculateAvailableCollateralToLiquidate(Address _collateral, Address _reserve, BigInteger _purchaseAmount, BigInteger _userCollateralBalance, Boolean _fee);
-
-//    public static BigInteger calculateCurrentLiquidationThreshold(BigInteger _totalBorrowBalanceUSD, BigInteger _totalFeesUSD, BigInteger _totalCollateralBalanceUSD){
-//        if (_totalCollateralBalanceUSD.compareTo(ZERO)==0){
-//            return ZERO;
-//        }
-//        return exaDivide();
-//    }
-
-    public Map<String,BigInteger> liquidationCall(Address _collateral, Address _reserve, Address _user, BigInteger _purchaseAmount);
+    Map<String,BigInteger> liquidationCall(Address _collateral, Address _reserve, Address _user, BigInteger
+            _purchaseAmount);
 
 }

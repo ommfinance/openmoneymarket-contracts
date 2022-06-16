@@ -63,7 +63,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         }
         else {
             Map<String, BigInteger> collateralConfigs = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getReserveConfigurationData",_collateral);
-            liquidationBonus = collateralConfigs.getOrDefault("getSymbol",ZERO);
+            liquidationBonus = collateralConfigs.getOrDefault("liquidationBonus",ZERO);
         }
         String collateralBase = call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",_collateral);
         String principalBase = call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",_reserve);
@@ -71,20 +71,20 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         BigInteger collateralPrice = call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",collateralBase,"USD");
         BigInteger principalPrice = call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",principalBase,"USD");
 
-        if (collateralBase == "ICX"){
+        if (collateralBase.equals("ICX")){
             BigInteger sicxRate = call(BigInteger.class,Contracts.STAKING,"getTodayRate");
             collateralPrice = exaMultiply(collateralPrice,sicxRate);
         }
 
-        if (principalBase == "ICX"){
+        if (principalBase.equals("ICX")){
             BigInteger sicxRate = call(BigInteger.class,Contracts.STAKING,"getTodayRate");
-            collateralPrice = exaMultiply(principalPrice,sicxRate);
+            principalPrice = exaMultiply(principalPrice,sicxRate);
         }
 
-        Map<String, BigInteger> reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,"getReserveConfiguration",_reserve);
-        BigInteger reserveDecimals = reserveConfiguration.get("decimals");
+        Map<String, ?> reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,"getReserveConfiguration",_reserve);
+        BigInteger reserveDecimals = (BigInteger) reserveConfiguration.get("decimals");
         reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,"getReserveConfiguration",_collateral);
-        BigInteger collateralDecimals = reserveConfiguration.get("decimals");
+        BigInteger collateralDecimals = (BigInteger) reserveConfiguration.get("decimals");
 
         BigInteger userCollateralUSD = exaMultiply(convertToExa(_userCollateralBalance, collateralDecimals), collateralPrice);
         BigInteger purchaseAmountUSD = exaMultiply(convertToExa(_purchaseAmount, reserveDecimals), principalPrice);
@@ -110,7 +110,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
     }
 
     public static BigInteger calculateCurrentLiquidationThreshold(BigInteger _totalBorrowBalanceUSD, BigInteger _totalFeesUSD, BigInteger _totalCollateralBalanceUSD){
-        if (_totalCollateralBalanceUSD.compareTo(ZERO)==0){
+        if (_totalCollateralBalanceUSD.equals(ZERO)){
             return ZERO;
         }
         return exaDivide(_totalBorrowBalanceUSD,_totalCollateralBalanceUSD.subtract(_totalFeesUSD));
