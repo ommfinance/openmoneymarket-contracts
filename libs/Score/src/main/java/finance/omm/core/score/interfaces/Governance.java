@@ -116,4 +116,8 @@ public interface Governance extends AddressProvider {
 
     void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp);
 
+    void addType(String key, boolean isPlatformRecipient);
+
+    void addAsset(String type, String name, Address address, @Optional BigInteger poolID);
+
 }

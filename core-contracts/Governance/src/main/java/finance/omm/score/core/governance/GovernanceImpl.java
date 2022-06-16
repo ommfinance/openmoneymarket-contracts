@@ -646,4 +646,20 @@ public class GovernanceImpl extends AbstractGovernance {
         weightController.setTypeWeight(weights, timestamp);
     }
 
+
+    @Override
+    public void addType(String key, boolean isPlatformRecipient) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
+        rewardDistribution.addType(key, isPlatformRecipient);
+    }
+
+    @Override
+    public void addAsset(String type, String name, Address address, @Optional BigInteger poolID) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
+        rewardDistribution.addAsset(type, name, address, poolID);
+    }
+
+
 }

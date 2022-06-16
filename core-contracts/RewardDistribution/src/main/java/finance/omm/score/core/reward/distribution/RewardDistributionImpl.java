@@ -44,6 +44,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     public final VarDB<Boolean> IS_ASSET_INDEX_UPDATED = Context.newVarDB("bOMM-migration-is-asset-index-updated",
             Boolean.class);
 
+    public final VarDB<Boolean> IS_LEGACY_REWARD_CALCULATED = Context.newVarDB(
+            "bOMM-migration-is-legacy-reward-calculated",
+            Boolean.class);
+
 
     public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate) {
         super(addressProvider);
@@ -539,6 +543,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             throw RewardDistributionException.unknown(
                     "Asset indexes are not migrated, Please migrate asset index first");
         }
+        if (IS_LEGACY_REWARD_CALCULATED.getOrDefault(false)) {
+            throw RewardDistributionException.unknown(
+                    "User's reward migration completed");
+        }
         List<Address> assetAddrs = this.legacyRewards.getAssets();
         Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
         for (Address assetAddr : assetAddrs) {
@@ -561,6 +569,12 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
                 }
             }
         }
+    }
+
+    @External
+    public void setRewardCalculatedFlag(boolean value) {
+        checkOwner();
+        IS_LEGACY_REWARD_CALCULATED.set(value);
     }
 
     @External(readonly = true)
