@@ -42,7 +42,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         score.invoke(owner, "setVoteDefinitionFee", THOUSAND.multiply(ICX));
         score.invoke(owner, "setQuorum", quorum);
         score.invoke(owner, "setVoteDuration", duration);
-        score.invoke(owner, "setBoostedVoteDefinitionCriterion", BigInteger.ONE.multiply(PERCENT));
+        score.invoke(owner, "setVoteDefinitionCriteria", BigInteger.ONE.multiply(PERCENT));
     }
 
     private byte[] createByteArray(String name, String forum, String description,
@@ -98,11 +98,11 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         score.invoke(owner, "setVoteDefinitionFee", voteDefinitionFeeExpected);
         score.invoke(owner, "setQuorum", quorumExpected);
         score.invoke(owner, "setVoteDuration", voteDurationExpected);
-        score.invoke(owner, "setBoostedVoteDefinitionCriterion", ommVoteDefinitionCriterion);
+        score.invoke(owner, "setVoteDefinitionCriteria", ommVoteDefinitionCriterion);
 
         assertEquals(voteDefinitionFeeExpected, score.call("getVoteDefinitionFee"));
         assertEquals(quorumExpected, score.call("getQuorum"));
-        assertEquals(ommVoteDefinitionCriterion, score.call("getBoostedOmmVoteDefinitionCriterion"));
+        assertEquals(ommVoteDefinitionCriterion, score.call("getVoteDefinitionCriteria"));
         assertEquals(voteDurationExpected, score.call("getVoteDuration"));
 
         Executable errorMsg = () -> score.invoke(notOwner, "setVoteDefinitionFee", voteDefinitionFeeExpected);
@@ -111,7 +111,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         expectErrorMessage(errorMsg, "require owner access");
         errorMsg = () -> score.invoke(notOwner, "setVoteDuration", voteDefinitionFeeExpected);
         expectErrorMessage(errorMsg, "require owner access");
-        errorMsg = () -> score.invoke(notOwner, "setBoostedVoteDefinitionCriterion", voteDefinitionFeeExpected);
+        errorMsg = () -> score.invoke(notOwner, "setVoteDefinitionCriteria", voteDefinitionFeeExpected);
         expectErrorMessage(errorMsg, "require owner access");
     }
 

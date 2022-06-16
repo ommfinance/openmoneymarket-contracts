@@ -69,9 +69,9 @@ public interface Governance extends AddressProvider {
     BigInteger getVoteDefinitionFee();
 
 
-    void setBoostedVoteDefinitionCriterion(BigInteger percentage);
+    void setVoteDefinitionCriteria(BigInteger percentage);
 
-    BigInteger getBoostedOmmVoteDefinitionCriterion();
+    BigInteger getVoteDefinitionCriteria();
 
     void cancelVote(int vote_index);
 
