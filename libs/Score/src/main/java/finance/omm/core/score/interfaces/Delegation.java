@@ -12,6 +12,8 @@ public interface Delegation extends BoostedOMMCallback {
 
     String name();
 
+    void initializeVoteToContributors();
+
     void setVoteThreshold(BigInteger _vote);
 
     BigInteger getVoteThreshold();
