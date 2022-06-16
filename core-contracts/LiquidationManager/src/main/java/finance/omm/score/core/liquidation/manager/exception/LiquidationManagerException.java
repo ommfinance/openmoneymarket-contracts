@@ -1,7 +1,6 @@
 package finance.omm.score.core.liquidation.manager.exception;
 
 import finance.omm.utils.exceptions.OMMException;
-import finance.omm.utils.math.MathUtils;
 
 import java.math.BigInteger;
 
@@ -29,8 +28,7 @@ public class LiquidationManagerException extends OMMException.LiquidityManager {
 
     //OMMException.RewardDistribution => 30 ~
     public enum Code implements Coded {
-        Unknown(0), NotOwner(1), UnAuthorized(2), InvalidVotingDate(3),
-        InsufficientStakingBalance(4), ProposalNotFound(5), ProposalNotActive(6), InsufficientFee(7);
+        Unknown(0), NotOwner(1), UnAuthorized(2);
 
         final int code;
 
