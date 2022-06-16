@@ -11,10 +11,10 @@ public interface LiquidationManager {
 
     String name();
 
-    Map<String,BigInteger> calculateAvailableCollateralToLiquidate(Address _collateral, Address _reserve, BigInteger
-            _purchaseAmount, BigInteger _userCollateralBalance, Boolean _fee);
+    BigInteger calculateBadDebt(BigInteger _totalBorrowBalanceUSD, BigInteger _totalFeesUSD, BigInteger
+            _totalCollateralBalanceUSD, BigInteger _ltv);
 
-    Map<String,BigInteger> liquidationCall(Address _collateral, Address _reserve, Address _user, BigInteger
-            _purchaseAmount);
+    Map<String,BigInteger> liquidationCall(Address _collateral, Address _reserve, Address _user,
+                                           BigInteger _purchaseAmount);
 
 }

@@ -48,5 +48,12 @@ findProject(":OMMToken").projectDir = file("token-contracts/OMMToken")
 include(':LiquidationManager')
 findProject(":LiquidationManager").projectDir = file("core-contracts/LiquidationManager")
 
+include(':AddressProvider')
+findProject(":AddressProvider").projectDir = file("libs/AddressProvider")
+
+include(':LiquidationManager')
+findProject(":LiquidationManager").projectDir = file("core-contracts/LiquidationManager")
+
+
 
 
