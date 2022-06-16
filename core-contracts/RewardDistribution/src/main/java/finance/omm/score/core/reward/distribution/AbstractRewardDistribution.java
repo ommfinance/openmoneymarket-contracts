@@ -190,7 +190,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
 
     @External
     public void claimRewards(Address _user) {
-        onlyOrElseThrow(Contracts.GOVERNANCE, RewardDistributionException.unauthorized(
+        onlyOrElseThrow(Contracts.LENDING_POOL, RewardDistributionException.unauthorized(
                 "Only Lending pool contract is allowed to call claimRewards method"));
         if (!isRewardClaimEnabled()) {
             throw RewardDistributionException.rewardClaimDisabled();
