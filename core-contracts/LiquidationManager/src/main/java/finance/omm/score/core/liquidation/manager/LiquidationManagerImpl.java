@@ -148,25 +148,26 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         BigInteger feeLiquidated = ZERO;
 
         if (!(collateralData.containsKey("usageAsCollateralEnabled"))){
-            Context.revert(TAG + ": the reserve " + _collateral + " cannot be used as collateral");
+            throw LiquidationManagerException.unknown(TAG + ": the reserve " + _collateral +
+                    " cannot be used as collateral");
         }
         BigInteger userHealthFactor = userAccountData.get("healthFactor");
         if (!(userAccountData.containsKey("healthFactorBelowThreshold"))){
-            Context.revert(TAG + ": unsuccessful liquidation call,health factor of user is above 1" +
+            throw LiquidationManagerException.unknown(TAG + ": unsuccessful liquidation call,health factor of user is above 1" +
                     "health factor of user " + userHealthFactor);
         }
 
         BigInteger userCollateralBalance = call(BigInteger.class,Contracts.LENDING_POOL_CORE,
                 "getUserUnderlyingAssetBalance",_collateral,_user);
         if (userCollateralBalance == null){
-            Context.revert(TAG + ": unsuccessful liquidation call,user have no collateral balance" +
+           throw LiquidationManagerException.unknown(TAG + ": unsuccessful liquidation call,user have no collateral balance" +
                     "for collateral" + _collateral + "balance of user: " + _user + " is " + userCollateralBalance);
         }
 
         Map<String, BigInteger> userBorrowBalances = call(Map.class,Contracts.LENDING_POOL_CORE,
                 "getUserBorrowBalances",_reserve,_user);
         if (!(userBorrowBalances.containsKey("compoundedBorrowBalance"))){
-            Context.revert(TAG +": unsuccessful liquidation call,user have no borrow balance"+
+            throw LiquidationManagerException.unknown(TAG +": unsuccessful liquidation call,user have no borrow balance"+
                     "for reserve" + _reserve + "borrow balance of user: " + _user + " is " + userBorrowBalances);
         }
         BigInteger maxPrincipalAmountToLiquidateUSD = calculateBadDebt(userAccountData.get("totalBorrowBalanceUSD"),
