@@ -8,9 +8,8 @@ public class PriceOracleTest extends AbstractPriceOracleTest{
 
     @Test
     public void name() {
-        String actual = (String) score.call("name");
         String expected = "Omm Price Oracle Proxy";
-        assertEquals(expected, actual);
+        assertEquals(expected, score.call("name"));
     }
 
 
