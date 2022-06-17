@@ -17,7 +17,8 @@ public class OMMException extends UserRevertException {
         AddressManager(35),
         Governance(40),
         OMMToken(50),
-        RESERVED(80), LiquidityManager(90);
+        LiquiditionManager(70),
+        RESERVED(80);
 
         int offset;
 
@@ -185,13 +186,13 @@ public class OMMException extends UserRevertException {
         }
     }
 
-    public static class LiquidityManager extends OMMException {
+    public static class LiquidationManager extends OMMException {
 
-        public LiquidityManager(int code, String message) {
-            super(Type.LiquidityManager, code, message);
+        public LiquidationManager(int code, String message) {
+            super(Type.LiquiditionManager, code, message);
         }
 
-        public LiquidityManager(Coded code, String message) {
+        public LiquidationManager(Coded code, String message) {
             this(code.code(), message);
         }
 

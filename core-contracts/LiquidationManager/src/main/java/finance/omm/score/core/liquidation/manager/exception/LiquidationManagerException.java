@@ -2,7 +2,7 @@ package finance.omm.score.core.liquidation.manager.exception;
 
 import finance.omm.utils.exceptions.OMMException;
 
-public class LiquidationManagerException extends OMMException.LiquidityManager {
+public class LiquidationManagerException extends OMMException.LiquidationManager {
 
     public LiquidationManagerException(Code c) {
         super(c, c.name());
