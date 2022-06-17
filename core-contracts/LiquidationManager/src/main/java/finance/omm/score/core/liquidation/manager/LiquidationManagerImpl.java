@@ -121,7 +121,8 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
 
     }
 
-    public static BigInteger calculateCurrentLiquidationThreshold(BigInteger _totalBorrowBalanceUSD, BigInteger _totalFeesUSD, BigInteger _totalCollateralBalanceUSD){
+    public static BigInteger calculateCurrentLiquidationThreshold(BigInteger _totalBorrowBalanceUSD, BigInteger
+            _totalFeesUSD, BigInteger _totalCollateralBalanceUSD){
         if (_totalCollateralBalanceUSD.equals(ZERO)){
             return ZERO;
         }
@@ -139,10 +140,11 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         String principalBase = call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",_reserve);
         BigInteger principalPrice = call(BigInteger.class, Contracts.PRICE_ORACLE,
                 "get_reference_data",principalBase,"USD");
-        Map<String, BigInteger> userAccountData = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+        Map<String, Object> userAccountData = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
                 "getUserAccountData",_user);
-        Map<String, BigInteger> collateralData = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+        Map<String, Object> collateralData = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
                 "getReserveData",_collateral);
+        System.out.println("collatera;"+collateralData);
 
         BigInteger liquidatedCollateralForFee = ZERO;
         BigInteger feeLiquidated = ZERO;
@@ -150,7 +152,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         if (!(collateralData.containsKey("usageAsCollateralEnabled"))){
             Context.revert(TAG + ": the reserve " + _collateral + " cannot be used as collateral");
         }
-        BigInteger userHealthFactor = userAccountData.get("healthFactor");
+        BigInteger userHealthFactor = (BigInteger) userAccountData.get("healthFactor");
         if (!(userAccountData.containsKey("healthFactorBelowThreshold"))){
             Context.revert(TAG + ": unsuccessful liquidation call,health factor of user is above 1" +
                     "health factor of user " + userHealthFactor);
@@ -169,10 +171,10 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
             Context.revert(TAG +": unsuccessful liquidation call,user have no borrow balance"+
                     "for reserve" + _reserve + "borrow balance of user: " + _user + " is " + userBorrowBalances);
         }
-        BigInteger maxPrincipalAmountToLiquidateUSD = calculateBadDebt(userAccountData.get("totalBorrowBalanceUSD"),
-                                                                        userAccountData.get("totalFeesUSD"),
-                                                                        userAccountData.get("totalCollateralBalanceUSD"),
-                                                                        userAccountData.get("currentLtv"));
+        BigInteger maxPrincipalAmountToLiquidateUSD = calculateBadDebt((BigInteger) userAccountData.get("totalBorrowBalanceUSD"),
+                                                                        (BigInteger)userAccountData.get("totalFeesUSD"),
+                                                                        (BigInteger)userAccountData.get("totalCollateralBalanceUSD"),
+                                                                        (BigInteger)userAccountData.get("currentLtv"));
         BigInteger maxPrincipalAmountToLiquidate = exaDivide(maxPrincipalAmountToLiquidateUSD,principalPrice);
 //
         Map<String, ?> reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,
