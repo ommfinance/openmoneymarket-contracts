@@ -58,9 +58,10 @@ public class DTokenTest  extends TestBase {
 
     private Score dToken;
 
+    private static final String DTOKEN = "dToken";
     @BeforeAll
     public static void init() {
-        owner.addBalance(Contracts.DTOKEN.getKey(), totalSupply);
+        owner.addBalance(DTOKEN, totalSupply);
     }
 
     @BeforeEach
@@ -89,7 +90,7 @@ public class DTokenTest  extends TestBase {
         liquidationManagerDetails.name = Contracts.LIQUIDATION_MANAGER.getKey();
         liquidationManagerDetails.address = liquidationManagerAccount.getAddress();
 
-        dToken = sm.deploy(owner, DTokenImpl.class, addressProviderAccount.getAddress(),DTokenImpl.TAG,Contracts.DTOKEN.getKey(),decimals,false);
+        dToken = sm.deploy(owner, DTokenImpl.class, addressProviderAccount.getAddress(),DTokenImpl.TAG, DTOKEN, decimals,false);
     }
 
     @Test
@@ -164,7 +165,7 @@ public class DTokenTest  extends TestBase {
     void symbolTest() {
         String symbol = (String)dToken.call("symbol");
         assertNotNull(symbol);
-        assertEquals(Contracts.DTOKEN.getKey(), symbol);
+        assertEquals(DTOKEN, symbol);
     }
 
     @Test
@@ -185,7 +186,7 @@ public class DTokenTest  extends TestBase {
 
             theMock
             .when(() -> Context.getCaller() )
-            .thenReturn(lendingPoolAccount.getAddress());
+            .thenReturn(lendingPoolCoreAccount.getAddress());
 
             theMock
             .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
@@ -193,7 +194,7 @@ public class DTokenTest  extends TestBase {
                     reserveAddress))
             .thenReturn(BigInteger.ZERO);
 
-            dToken.invoke(lendingPoolAccount, "mintOnBorrow",
+            dToken.invoke(lendingPoolCoreAccount, "mintOnBorrow",
                     userAccount.getAddress(),
                     amountToBorrow,
                     balanceIncrease);
@@ -219,7 +220,7 @@ public class DTokenTest  extends TestBase {
 
             theMock
             .when(() -> Context.getCaller() )
-            .thenReturn(lendingPoolAccount.getAddress());
+            .thenReturn(lendingPoolCoreAccount.getAddress());
 
             theMock
             .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
@@ -227,7 +228,7 @@ public class DTokenTest  extends TestBase {
                     reserveAddress))
             .thenReturn(BigInteger.ZERO);
 
-            dToken.invoke(lendingPoolAccount, "mintOnBorrow",
+            dToken.invoke(lendingPoolCoreAccount, "mintOnBorrow",
                     userAccount.getAddress(),
                     amountToBorrow,
                     balanceIncrease);
@@ -266,7 +267,7 @@ public class DTokenTest  extends TestBase {
 
             theMock
             .when(() -> Context.getCaller() )
-            .thenReturn(lendingPoolAccount.getAddress());
+            .thenReturn(lendingPoolCoreAccount.getAddress());
 
             theMock
             .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
@@ -274,7 +275,7 @@ public class DTokenTest  extends TestBase {
                     reserveAddress))
             .thenReturn(BigInteger.ZERO);
 
-            dToken.invoke(lendingPoolAccount, "mintOnBorrow",
+            dToken.invoke(lendingPoolCoreAccount, "mintOnBorrow",
                     userAccount.getAddress(),
                     amountToBorrow,
                     balanceIncrease);
@@ -313,7 +314,7 @@ public class DTokenTest  extends TestBase {
 
             theMock
             .when(() -> Context.getCaller() )
-            .thenReturn(lendingPoolAccount.getAddress());
+            .thenReturn(lendingPoolCoreAccount.getAddress());
 
             theMock
             .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
@@ -321,7 +322,7 @@ public class DTokenTest  extends TestBase {
                     reserveAddress))
             .thenReturn(BigInteger.ONE);
 
-            dToken.invoke(lendingPoolAccount, "mintOnBorrow",
+            dToken.invoke(lendingPoolCoreAccount, "mintOnBorrow",
                     userAccount.getAddress(),
                     amountToBorrow,
                     balanceIncrease);
