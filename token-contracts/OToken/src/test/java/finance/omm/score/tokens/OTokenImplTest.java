@@ -49,10 +49,10 @@ public class OTokenImplTest extends TestBase {
     private AddressDetails liquidationManagerDetails;
     private AddressDetails reserveDetails;
     private AddressDetails rewardsDetails;
-
+    private static final String OTOKEN = "oTOKEN";
     @BeforeAll
     public static void init() {
-        owner.addBalance(Contracts.oTOKEN.getKey(), totalSupply);
+        owner.addBalance(OTOKEN, totalSupply);
     }
 
     @BeforeEach
@@ -60,7 +60,7 @@ public class OTokenImplTest extends TestBase {
         oToken = sm.deploy(owner, OTokenImpl.class, 
                 addressProviderAccount.getAddress(), 
                 OTokenImpl.TAG,
-                Contracts.oTOKEN.getKey(),
+                OTOKEN,
                 decimals,
                 false);
 
@@ -318,7 +318,7 @@ public class OTokenImplTest extends TestBase {
             theMock
             .when(() -> Context.call(BigInteger.class,
                     lendingPoolCoreAccount.getAddress(),
-                    "getNormalizedDebt",
+                    "getNormalizedIncome",
                     reserveAddress) )
             .thenReturn(BigInteger.ONE);
 
