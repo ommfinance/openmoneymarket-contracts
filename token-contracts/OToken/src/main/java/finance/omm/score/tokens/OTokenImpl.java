@@ -164,14 +164,14 @@ public class OTokenImpl extends AddressProvider implements OToken {
             return this.totalSupply.getOrDefault(ZERO);
         } else {
             BigInteger actualDecimals = this.decimals.getOrDefault(ZERO);
-            BigInteger normalizedDebt = Context.call(BigInteger.class,
+            BigInteger getNormalizedIncome = Context.call(BigInteger.class,
                     lendingPoolCoreAddress,
-                    "getNormalizedDebt",
+                    "getNormalizedIncome",
                     reserveAddress);
             BigInteger newBalance = exaDivide(
                     exaMultiply(
                             convertToExa(principalTotalSupply, actualDecimals), 
-                            normalizedDebt
+                            getNormalizedIncome
                             ),
                     borrowIndex);
             return convertExaToOther(newBalance, actualDecimals.intValue());
@@ -267,7 +267,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
         Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
 
         if (lendingPoolDataProviderAddress == null) {
-            Context.revert(Contracts.LENDING_POOL_CORE.getKey() + " is not configured");
+            Context.revert(Contracts.LENDING_POOL_DATA_PROVIDER.getKey() + " is not configured");
         }
 
         if (reserveAddress == null) {
@@ -298,7 +298,6 @@ public class OTokenImpl extends AddressProvider implements OToken {
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
 
-        //TODO:amount equals to -1 is a valid value, why?
         if (_amount.compareTo(ZERO) <= 0 &&  !_amount.equals(N_ONE)) { 
             Context.revert(TAG + ": Amount: "+ _amount + " to redeem needs to be greater than zero");
         }
@@ -530,7 +529,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
         }
 
         this.totalSupply.set(actualTotalSupply.subtract(amount));
-        this.balances.set(account, this.balances.getOrDefault(account, ZERO).subtract(amount));
+        this.balances.set(account, userBalance.subtract(amount));
 
         // Emits an event log Burn
         this.Transfer(account, AddressConstant.ZERO_ADDRESS, amount, "burn".getBytes());
