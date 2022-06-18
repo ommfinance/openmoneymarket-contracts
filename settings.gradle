@@ -9,6 +9,9 @@ findProject(":RewardWeightController").projectDir = file("core-contracts/RewardW
 include(":RewardDistribution")
 findProject(":RewardDistribution").projectDir = file("core-contracts/RewardDistribution")
 
+include(":Delegation")
+findProject(":Delegation").projectDir = file("core-contracts/Delegation")
+
 include(":AddressManager")
 findProject(":AddressManager").projectDir = file("core-contracts/AddressManager")
 
@@ -24,6 +27,9 @@ findProject(":ScoreUtils").projectDir = file("libs/ScoreUtils")
 include(':TestUtils')
 findProject(":TestUtils").projectDir = file("libs/TestUtils")
 
+include('WorkerToken')
+findProject(":WorkerToken").projectDir = file("token-contracts/WorkerToken")
+
 include(':Score')
 findProject(":Score").projectDir = file("libs/Score")
 
@@ -32,3 +38,14 @@ findProject(":OToken").projectDir = file("token-contracts/OToken")
 
 include('DaoFund')
 findProject(":DaoFund").projectDir = file("core-contracts/DaoFund")
+
+include('FeeProvider')
+findProject(":FeeProvider").projectDir = file("core-contracts/FeeProvider")
+
+include(":Governance")
+findProject(":Governance").projectDir = file("core-contracts/Governance")
+
+include(":OMMToken")
+findProject(":OMMToken").projectDir = file("token-contracts/OMMToken")
+
+

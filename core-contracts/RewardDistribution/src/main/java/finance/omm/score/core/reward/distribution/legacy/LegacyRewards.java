@@ -59,9 +59,11 @@ public class LegacyRewards {
     public BigInteger accumulateUserRewards(WorkingBalance workingBalance) {
         Address userAddr = workingBalance.userAddr;
         Address assetAddr = workingBalance.assetAddr;
+        var userIndexDictDB = this._userIndex.at(userAddr);
+
         BigInteger userIndex = this._userIndex.at(userAddr).getOrDefault(assetAddr, BigInteger.ZERO);
-        BigInteger userUnclaimedReward = this._usersUnclaimedRewards.at(userAddr)
-                .getOrDefault(assetAddr, BigInteger.ZERO);
+        DictDB<Address, BigInteger> userUnclaimedDictDB = this._usersUnclaimedRewards.at(userAddr);
+        BigInteger userUnclaimedReward = userUnclaimedDictDB.getOrDefault(assetAddr, BigInteger.ZERO);
 
         BigInteger assetIndex = this._assetIndex.getOrDefault(assetAddr, BigInteger.ZERO);
         if (userIndex.equals(assetIndex)) {
@@ -70,8 +72,8 @@ public class LegacyRewards {
         BigInteger newUserReward = getRewards(workingBalance.userBalance, assetIndex, userIndex).add(
                 userUnclaimedReward);
 
-        this._usersUnclaimedRewards.at(userAddr).set(assetAddr, newUserReward);
-        this._userIndex.at(userAddr).set(assetAddr, assetIndex);
+        userUnclaimedDictDB.set(assetAddr, newUserReward);
+        userIndexDictDB.set(assetAddr, assetIndex);
         Context.println("User::" + userAddr + "Asset::" + assetAddr + ", userIndex::" + userIndex);
 
         return newUserReward;
@@ -95,7 +97,7 @@ public class LegacyRewards {
         return assetIndexes;
     }
 
-    public Map<String, Map<String, BigInteger>> getUserAllIndexes(Address _user) {
+    public Map<String, Map<String, BigInteger>> getUserLegacyRewardAndIndex(Address _user) {
         List<Address> assets = this._rewardConfig.getAssets();
         Map<String, Map<String, BigInteger>> assetIndexes = new HashMap<>();
         DictDB<Address, BigInteger> userUnclaimedRewards = _usersUnclaimedRewards.at(_user);
@@ -109,24 +111,6 @@ public class LegacyRewards {
         }
         return assetIndexes;
     }
-
-    public Map<String, BigInteger> getLegacyUnclaimedRewards(Address _user) {
-        Map<String, BigInteger> rewards = new HashMap<>();
-        List<Address> assets = this._rewardConfig.getAssets();
-        DictDB<Address, BigInteger> userUnclaimedRewards = _usersUnclaimedRewards.at(_user);
-        BigInteger totalRewards = BigInteger.ZERO;
-        for (Address asset : assets) {
-            BigInteger reward = userUnclaimedRewards.getOrDefault(asset, BigInteger.ZERO);
-            rewards.put(this._rewardConfig.getAssetName(asset), reward);
-            totalRewards = totalRewards.add(reward);
-        }
-
-        rewards.put("total", totalRewards);
-
-        return rewards;
-
-    }
-
 
     public List<Address> getAssets() {
         return this._rewardConfig.getAssets();

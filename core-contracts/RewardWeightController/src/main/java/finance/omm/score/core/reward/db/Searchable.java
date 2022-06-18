@@ -1,5 +1,6 @@
 package finance.omm.score.core.reward.db;
 
+import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import score.DictDB;
 
@@ -7,26 +8,21 @@ public interface Searchable {
 
     default int searchCheckpoint(BigInteger timestamp, Integer checkpointCount,
             DictDB<Integer, BigInteger> timeCheckpoints) {
-        BigInteger latestTimestamp = timeCheckpoints.getOrDefault(checkpointCount, BigInteger.ZERO);
+        int compareWithLatestTimestamp = timeCheckpoints.getOrDefault(checkpointCount, BigInteger.ZERO)
+                .compareTo(timestamp);
 
-        if (latestTimestamp.compareTo(timestamp) < 0) {
+        if (compareWithLatestTimestamp < 0) {
             return checkpointCount;
         }
 
-        if (latestTimestamp.compareTo(timestamp) == 0 && checkpointCount != 1) {
+        /*
+        return previous checkpoint if latest timestamp and search timestamp is equals
+         */
+        if (compareWithLatestTimestamp == 0) {
             return checkpointCount - 1;
         }
-        if (checkpointCount == 1 && latestTimestamp.compareTo(timestamp) >= 0) {
-            return 0;
-        }
 
-        if (checkpointCount != 1) {
-            BigInteger firstTimestamp = timeCheckpoints.get(1);
-            if (firstTimestamp != null && firstTimestamp.compareTo(timestamp) >= 0) {
-                return 1;
-            }
-        }
-        int lower = 1, upper = checkpointCount;
+        int lower = 0, upper = checkpointCount;
         while (lower < upper) {
             int mid = (upper + lower + 1) / 2;
             BigInteger midTimestamp = timeCheckpoints.getOrDefault(mid, BigInteger.ZERO);
@@ -41,5 +37,9 @@ public interface Searchable {
         }
 
         return lower;
+    }
+
+    default BigInteger getBlockTimestampInSecond() {
+        return TimeConstants.getBlockTimestamp().divide(TimeConstants.SECOND);
     }
 }

@@ -1,0 +1,46 @@
+version = '0.0.1'
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':Score')
+    implementation project(':ScoreUtils')
+    implementation project(':OMMStruct')
+
+    testImplementation project(':TestUtils')
+
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.3.0'
+}
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.token.OMMTokenImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    enableDebug = false
+}
+
+deployJar {
+    endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.omm-token") as String
+            nid = 0x53
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+    }
+}
+
+test {
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
+}

@@ -20,8 +20,8 @@ public class RewardDistributionException extends OMMException.RewardDistribution
         return new RewardDistributionException(Code.NotOwner, "require owner access");
     }
 
-    public static RewardDistributionException notGovernanceContract() {
-        return new RewardDistributionException(Code.NotGovernanceContract, "require Governance contract access");
+    public static RewardDistributionException unauthorized(String message) {
+        return new RewardDistributionException(Code.Unauthorized, message);
     }
 
     public static RewardDistributionException invalidRecipient(String message) {
@@ -36,15 +36,6 @@ public class RewardDistributionException extends OMMException.RewardDistribution
         return new RewardDistributionException(Code.InvalidTotalPercentage, message);
     }
 
-    public static RewardDistributionException notStakedLp() {
-        return new RewardDistributionException(Code.NotStakedLp, "only staked lp contract can call");
-    }
-
-    public static RewardDistributionException notLendingPool() {
-        return new RewardDistributionException(Code.NotLendingPool, "only lending pool contract can call");
-
-    }
-
     public static RewardDistributionException handleActionDisabled() {
         return new RewardDistributionException(Code.HandleActionDisabled, "handle action disabled");
     }
@@ -56,7 +47,7 @@ public class RewardDistributionException extends OMMException.RewardDistribution
     //OMMException.RewardDistribution => 10 ~
     public enum Code implements OMMException.Coded {
         Unknown(0), NotOwner(1), InvalidRecipient(2), InvalidAsset(3), InvalidTotalPercentage(4),
-        NotGovernanceContract(5), NotStakedLp(6), NotLendingPool(7), HandleActionDisabled(8), RewardClaimDisabled(9);
+        Unauthorized(5), HandleActionDisabled(6), RewardClaimDisabled(7);
 
         final int code;
 

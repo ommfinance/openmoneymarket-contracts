@@ -1,11 +1,13 @@
 package finance.omm.core.score.interfaces;
 
+import foundation.icon.score.client.ScoreInterface;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.annotation.Optional;
 
+@ScoreInterface(suffix = "Client")
 public interface BoostedToken {
 
     void setMinimumLockingAmount(BigInteger value);
@@ -22,6 +24,9 @@ public interface BoostedToken {
 
     List<Address> getUsers(int start, int end);
 
+    int activeUsersCount();
+
+    boolean hasLocked(Address _owner);
 
     BigInteger getLastUserSlope(Address address);
 
@@ -44,16 +49,19 @@ public interface BoostedToken {
     void withdraw();
 
 
-    BigInteger balanceOf(Address address, @Optional BigInteger timestamp);
+    BigInteger balanceOf(Address _owner, @Optional BigInteger timestamp);
 
 
-    BigInteger balanceOfAt(Address address, BigInteger block);
+    BigInteger balanceOfAt(Address _owner, BigInteger block);
 
 
     BigInteger totalSupply(@Optional BigInteger time);
 
 
     BigInteger totalSupplyAt(BigInteger block);
+
+
+    void kick(Address _user);
 
 
     Address admin();
@@ -68,7 +76,7 @@ public interface BoostedToken {
     String symbol();
 
 
-    BigInteger userPointEpoch(Address address);
+    BigInteger userPointEpoch(Address _owner);
 
 
     int decimals();

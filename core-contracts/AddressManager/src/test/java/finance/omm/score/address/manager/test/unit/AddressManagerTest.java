@@ -57,6 +57,8 @@ public class AddressManagerTest extends TestBase {
         put(Contracts.FEE_PROVIDER, Account.newScoreAccount(218));
         put(Contracts.STAKING,Account.newScoreAccount(219));
         put(Contracts.DEX,Account.newScoreAccount(220));
+        put(Contracts.BOOSTED_OMM,Account.newScoreAccount(221));
+        put(Contracts.REWARD_WEIGHT_CONTROLLER,Account.newScoreAccount(222));
     }};
 
     @BeforeEach
@@ -172,7 +174,9 @@ public class AddressManagerTest extends TestBase {
                 Map.entry("Rewards",MOCK_CONTRACT_ADDRESS.get(Contracts.REWARDS).getAddress()),
                 Map.entry("PriceOracle",MOCK_CONTRACT_ADDRESS.get(Contracts.PRICE_ORACLE).getAddress()),
                 Map.entry("StakedLp",MOCK_CONTRACT_ADDRESS.get(Contracts.STAKED_LP).getAddress()),
-                Map.entry("DEX",MOCK_CONTRACT_ADDRESS.get(Contracts.DEX).getAddress())
+                Map.entry("DEX",MOCK_CONTRACT_ADDRESS.get(Contracts.DEX).getAddress()),
+                Map.entry("bOMM",MOCK_CONTRACT_ADDRESS.get(Contracts.BOOSTED_OMM).getAddress()),
+                Map.entry("RewardWeightController",MOCK_CONTRACT_ADDRESS.get(Contracts.REWARD_WEIGHT_CONTROLLER).getAddress())
         );
 
         Map<String,Address> oToken = Map.of("test_otoken_1",Account.newScoreAccount(3).getAddress());
@@ -183,13 +187,39 @@ public class AddressManagerTest extends TestBase {
                 "collateral",collateral,
                 "oTokens", oToken,
                 "dTokens", dToken,
-                "system", system
+                "systemContract", system
         );
         Map<String,?> expected = (Map<String, ?>) score.call("getAllAddresses");
 
-        assertEquals(actual,expected);
-        System.out.println(score.call("getAllAddresses"));
 
+        // assert each address individually
+        Map <String, String> expectedCollateral = (Map<String, String>) expected.get("collateral");
+        Map <String, String> expectedOTokens = (Map<String, String>) expected.get("oTokens");
+        Map <String, String> expectedDTokens = (Map<String, String>) expected.get("dTokens");
+        Map <String, String> expectedSystem = (Map<String, String>) expected.get("systemContract");
+
+        Map <String, String> actualCollateral = (Map<String, String>) actual.get("collateral");
+        Map <String, String> actualOTokens = (Map<String, String>) actual.get("oTokens");
+        Map <String, String> actualDTokens = (Map<String, String>) actual.get("dTokens");
+        Map <String, String> actualSystem = (Map<String, String>) actual.get("systemContract");
+
+        // asserts
+        assertEquals(expectedCollateral.get(Contracts.USDS.getKey()), actualCollateral.get(Contracts.USDS.getKey()));
+        assertEquals(expectedCollateral.get(Contracts.sICX.getKey()), actualCollateral.get(Contracts.sICX.getKey()));
+        assertEquals(expectedCollateral.get(Contracts.IUSDC.getKey()), actualCollateral.get(Contracts.IUSDC.getKey()));
+
+        assertEquals(expectedOTokens.get(Contracts.oIUSDC.getKey()), actualOTokens.get(Contracts.oIUSDC.getKey()));
+        assertEquals(expectedOTokens.get(Contracts.oICX.getKey()), actualOTokens.get(Contracts.oICX.getKey()));
+        assertEquals(expectedOTokens.get(Contracts.oUSDs.getKey()), actualOTokens.get(Contracts.oUSDs.getKey()));
+
+        assertEquals(expectedDTokens.get(Contracts.dUSDs.getKey()), actualDTokens.get(Contracts.dUSDs.getKey()));
+        assertEquals(expectedDTokens.get(Contracts.dICX.getKey()), actualDTokens.get(Contracts.dICX.getKey()));
+        assertEquals(expectedDTokens.get(Contracts.dIUSDC.getKey()), actualDTokens.get(Contracts.dIUSDC.getKey()));
+
+        assertEquals(expectedSystem, actualSystem);
+        // added 2 keys
+        assertEquals(expectedSystem.get("RewardWeightController"), actualSystem.get("RewardWeightController"));
+        assertEquals(expectedSystem.get("bOMM"), actualSystem.get("bOMM"));
     }
 
     // when params is used score not found

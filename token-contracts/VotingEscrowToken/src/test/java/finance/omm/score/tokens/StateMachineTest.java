@@ -23,9 +23,6 @@ import static org.mockito.Mockito.spy;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
-import com.iconloop.score.test.ServiceManager;
-import com.iconloop.score.test.TestBase;
-import com.iconloop.score.token.irc2.IRC2Mintable;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.test.VarargAnyMatcher;
 import java.math.BigInteger;
@@ -43,13 +40,12 @@ import org.junit.jupiter.api.function.Executable;
 import org.mockito.ArgumentMatchers;
 
 @DisplayName("Statemachine Tests")
-public class StateMachineTest extends TestBase {
+public class StateMachineTest extends AbstractBOMMTest {
 
     private static final Long WEEK = 7 * 86400L * 1000000L;
     private static final Long MAX_TIME = 4 * 365 * 86400L * 1000000L;
     private static final BigInteger MINT_AMOUNT = BigInteger.TEN.pow(40);
-    private static final ServiceManager sm = getServiceManager();
-    private static final Account owner = sm.createAccount();
+
 
     private Account addressProvider = Account.newScoreAccount(1001);
 
@@ -58,16 +54,9 @@ public class StateMachineTest extends TestBase {
     private final long BLOCK_TIME = 2 * 1000000;
 
     private Score bOmmScore;
-    private Score tokenScore;
 
-    private VotingEscrowToken scoreSpy;
+    private BoostedOMM scoreSpy;
 
-    public static class OmmToken extends IRC2Mintable {
-
-        public OmmToken(String _name, String _symbol, int _decimals) {
-            super(_name, _symbol, _decimals);
-        }
-    }
 
     private static class VotingBalance {
 
@@ -99,12 +88,12 @@ public class StateMachineTest extends TestBase {
         }
     }
 
+
     @BeforeEach
     public void setup() throws Exception {
-        tokenScore = sm.deploy(owner, OmmToken.class, "OMM Token", "OMM", 18);
-        bOmmScore = sm.deploy(owner, VotingEscrowToken.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        bOmmScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
                 "Boosted Omm", "bOMM");
-        scoreSpy = (VotingEscrowToken) spy(bOmmScore.getInstance());
+        scoreSpy = (BoostedOMM) spy(bOmmScore.getInstance());
         bOmmScore.setInstance(scoreSpy);
 
         bOmmScore.invoke(owner, "setMinimumLockingAmount", ICX);
@@ -133,10 +122,10 @@ public class StateMachineTest extends TestBase {
         VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
 
         doNothing().when(scoreSpy)
-                .scoreCall(eq(Contracts.DELEGATION), eq("updateDelegations"),
+                .call(eq(Contracts.DELEGATION), eq("onBalanceUpdate"),
                         ArgumentMatchers.<Object>argThat(matcher));
         doNothing().when(scoreSpy)
-                .scoreCall(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
+                .call(eq(Contracts.REWARDS), eq("onBalanceUpdate"), ArgumentMatchers.<Object>argThat(matcher));
 
         VotingBalance vote = votingBalances.getOrDefault(account, new VotingBalance());
         vote.value = vote.value.add(value);
@@ -454,6 +443,13 @@ public class StateMachineTest extends TestBase {
         void unlockAfterExpiry() {
             long deltaBlock = (addWeeksToCurrentTimestamp(lockedWeeks) - sm.getBlock().getTimestamp()) / BLOCK_TIME + 1;
             sm.getBlock().increase(deltaBlock);
+            VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+            doNothing().when(scoreSpy)
+                    .call(eq(Contracts.DELEGATION), eq("onKick"),
+                            ArgumentMatchers.<Object>argThat(matcher));
+            doNothing().when(scoreSpy)
+                    .call(eq(Contracts.REWARDS), eq("onKick"), ArgumentMatchers.<Object>argThat(matcher));
+
             // Check if the lock time has expired
             assertEquals(BigInteger.ZERO, bOmmScore.call("balanceOf", accounts.get(0).getAddress(), BigInteger.ZERO));
 
