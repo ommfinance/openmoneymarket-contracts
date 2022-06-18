@@ -236,7 +236,7 @@ public class DTokenImpl extends AddressProvider implements DToken {
 
     @External
     public void mintOnBorrow(Address _user, BigInteger _amount, BigInteger _balanceIncrease) {
-        onlyLendingPool();
+        onlyLendingPoolCore();
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
@@ -259,7 +259,7 @@ public class DTokenImpl extends AddressProvider implements DToken {
 
     @External
     public void burnOnRepay(Address _user, BigInteger _amount, BigInteger _balanceIncrease ) {
-        onlyLendingPool();
+        onlyLendingPoolCore();
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
@@ -277,7 +277,7 @@ public class DTokenImpl extends AddressProvider implements DToken {
 
     @External
     public void burnOnLiquidation(Address _user, BigInteger _amount, BigInteger _balanceIncrease) {
-        onlyLendingPool();
+        onlyLendingPoolCore();
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         BigInteger beforeUserSupply = this.principalBalanceOf(_user);
@@ -358,7 +358,7 @@ public class DTokenImpl extends AddressProvider implements DToken {
         }
 
         this._totalSupply.set(totalSupply.subtract(_amount));
-        this._balances.set(_account, this._balances.getOrDefault(_account, ZERO).subtract(_amount));
+        this._balances.set(_account, userBalance.subtract(_amount));
         // Emits an event log Burn
         this.Transfer(AddressConstant.ZERO_ADDRESS, _account, _amount, _data);
     }
@@ -375,11 +375,11 @@ public class DTokenImpl extends AddressProvider implements DToken {
         return totalStaked;
     }
 
-    public void onlyLendingPool() {
-        onlyOrElseThrow(Contracts.LENDING_POOL,
+    public void onlyLendingPoolCore() {
+        onlyOrElseThrow(Contracts.LENDING_POOL_CORE,
                 OMMException.unknown(TAG 
                         + ":  SenderNotAuthorized: (sender)" + Context.getCaller() 
-                        + " (lendingPool)" + this._addresses.get(Contracts.LENDING_POOL.getKey()) + "}" ));
+                        + " (lendingPool)" + this._addresses.get(Contracts.LENDING_POOL_CORE.getKey()) + "}" ));
     }
 
 }
