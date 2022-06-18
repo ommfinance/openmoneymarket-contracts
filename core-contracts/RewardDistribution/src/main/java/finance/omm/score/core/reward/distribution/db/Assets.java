@@ -58,7 +58,7 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         this.assetIndex.set(assetAddr, newIndex);
     }
 
-    public void setLastUpdateTimestamp(Address assetAddr, BigInteger currentTime) {
+    public void setIndexUpdatedTimestamp(Address assetAddr, BigInteger currentTime) {
         this.indexUpdatedTimestamp.set(assetAddr, currentTime);
     }
 
@@ -68,7 +68,7 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
         Map<String, BigInteger> result = new HashMap<>();
         for (int i = 0; i < size; i++) {
             Asset asset = getByIndex(i);
-            if (asset != null && asset.lpID != null && BigInteger.ZERO.compareTo(asset.lpID) < 0) {
+            if (asset != null && asset.lpID != null && asset.lpID.compareTo(BigInteger.ZERO) > 0) {
                 result.put(asset.address.toString(), asset.lpID);
             }
         }
@@ -101,9 +101,5 @@ public class Assets extends EnumerableDictDB<Address, Asset> {
 
     public void setAccruedRewards(Address userAddr, Address assetAddr, BigInteger value) {
         this.userAccruedRewards.at(userAddr).set(assetAddr, value);
-    }
-
-    public void clearAccruedReward(Address userAddr, Address assetAddr) {
-        setAccruedRewards(userAddr, assetAddr, null);
     }
 }
