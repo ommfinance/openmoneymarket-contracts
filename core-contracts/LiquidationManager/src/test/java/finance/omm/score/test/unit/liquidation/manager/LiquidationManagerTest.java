@@ -13,7 +13,11 @@ import java.util.Map;
 import static finance.omm.score.core.liquidation.manager.LiquidationManagerImpl.TAG;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
@@ -43,17 +47,15 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
     @Test
     public void liquidationCall(){
-        // collateral which user has
-        // reserve which is going to be liquidate
         Account notLendingPool = sm.createAccount(100);
 
         Address collateralAddr = addresses[0];
         Address reserveAddr = addresses[1];
         Address user = addresses[2];
-        BigInteger purchasAmount = BigInteger.valueOf(30);
+        BigInteger purchaseAmount = BigInteger.valueOf(30);
 
         Executable call = () -> score.invoke(notLendingPool,"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
+                purchaseAmount);
 
         expectErrorMessage(call,TAG+ ": SenderNotLendingPoolError: (sender)" +
                 notLendingPool.getAddress() + " (lending pool)"+ (MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL)).
@@ -92,11 +94,67 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
                 call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getReserveData",collateralAddr);
 
         call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
+                purchaseAmount);
 
         expectErrorMessage(call,TAG + ": the reserve " + collateralAddr + " cannot be used as collateral");
 
 
     }
 
+    @Test
+    public void calculateAvailableCollateralToLiquidate(){
+        BigInteger EXA = BigInteger.valueOf(1).multiply(BigInteger.TEN).pow(18);
+        Address collateralAddr = addresses[0];
+        Address reserveAddr = addresses[1];
+        BigInteger purchaseAmount = BigInteger.valueOf(30).multiply(EXA);
+        BigInteger colleteralBalance = BigInteger.valueOf(70).multiply(EXA);
+
+        doReturn(Map.of(
+                "liquidationBonus",BigInteger.valueOf(10))).when(scoreSpy).
+                call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getReserveConfigurationData",collateralAddr);
+
+        doReturn("ICX").when(scoreSpy).
+                call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",collateralAddr);
+
+        doReturn("USDS").when(scoreSpy).
+                call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",reserveAddr);
+
+        doReturn(BigInteger.valueOf(20).multiply(EXA)).when(scoreSpy).
+                call(BigInteger.class, Contracts.PRICE_ORACLE,
+                        "get_reference_data","ICX","USD");
+
+        doReturn(BigInteger.valueOf(30)).when(scoreSpy).
+                call(BigInteger.class, Contracts.PRICE_ORACLE,
+                        "get_reference_data","USDS","USD");
+
+        doReturn(BigInteger.valueOf(5)).when(scoreSpy).
+                call(BigInteger.class,Contracts.STAKING,"getTodayRate");
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18)
+        )).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration",reserveAddr);
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18)
+        )).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration",collateralAddr);
+
+        score.call("calculateAvailableCollateralToLiquidate",
+                collateralAddr,reserveAddr,purchaseAmount, colleteralBalance,false);
+
+        verify(scoreSpy).call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getReserveConfigurationData",collateralAddr);
+        verify(scoreSpy,times(2)).call(eq(String.class),eq(Contracts.LENDING_POOL_DATA_PROVIDER),
+                eq("getSymbol"),any(Address.class));
+        verify(scoreSpy,times(2)).call(eq(BigInteger.class),eq(Contracts.PRICE_ORACLE),
+                eq("get_reference_data"),any(String.class),eq("USD"));
+        verify(scoreSpy).call(BigInteger.class,Contracts.STAKING, "getTodayRate");
+        verify(scoreSpy).call(eq(Map.class),eq(Contracts.LENDING_POOL_CORE),
+                eq("getReserveConfiguration"),eq(reserveAddr));
+        verify(scoreSpy).call(eq(Map.class),eq(Contracts.LENDING_POOL_CORE),
+                eq("getReserveConfiguration"),eq(collateralAddr));
+
+    }
 }
