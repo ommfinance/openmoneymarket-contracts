@@ -5,8 +5,6 @@ import score.Address;
 import java.math.BigInteger;
 import java.util.Map;
 
-import static java.math.BigInteger.ZERO;
-
 public interface LiquidationManager {
 
     String name();

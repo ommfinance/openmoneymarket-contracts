@@ -60,7 +60,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
 
     public Map<String, BigInteger> calculateAvailableCollateralToLiquidate(
             Address _collateral, Address _reserve, BigInteger _purchaseAmount, BigInteger _userCollateralBalance,
-            Boolean _fee) {
+            boolean _fee) {
         BigInteger liquidationBonus;
         if (_fee){
             liquidationBonus = ZERO;
@@ -144,7 +144,6 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
                 "getUserAccountData",_user);
         Map<String, Object> collateralData = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
                 "getReserveData",_collateral);
-        System.out.println("collatera;"+collateralData);
 
         BigInteger liquidatedCollateralForFee = ZERO;
         BigInteger feeLiquidated = ZERO;
