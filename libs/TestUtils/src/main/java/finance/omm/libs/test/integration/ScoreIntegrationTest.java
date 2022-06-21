@@ -1,21 +1,6 @@
-/*
- * Copyright 2021 ICON Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package finance.omm.libs.test.integration;
 
-package finance.omm.libs.test;
-
+import static finance.omm.libs.test.integration.Environment.godClient;
 import static foundation.icon.jsonrpc.IconJsonModule.hexToBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -48,6 +33,19 @@ import score.UserRevertedException;
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 public interface ScoreIntegrationTest {
 
+    static KeyWallet createWalletWithBalance(BigInteger amount) throws Exception {
+        KeyWallet wallet = KeyWallet.create();
+
+        Address address = DefaultScoreClient.address(wallet.getAddress().toString());
+        transfer(address, amount);
+
+        return wallet;
+    }
+
+    static void transfer(Address address, BigInteger amount) {
+        godClient._transfer(address, amount, null);
+    }
+
 
     static <T> int indexOf(T[] array, T value) {
         return indexOf(array, value::equals);
@@ -71,33 +69,26 @@ public interface ScoreIntegrationTest {
     }
 
     static <T> List<T> eventLogs(TransactionResult txr,
-                                 String signature,
-                                 Address scoreAddress,
-                                 Function<TransactionResult.EventLog, T> mapperFunc,
-                                 Predicate<T> filter) {
+            String signature,
+            Address scoreAddress,
+            Function<TransactionResult.EventLog, T> mapperFunc,
+            Predicate<T> filter) {
         Predicate<TransactionResult.EventLog> predicate =
                 (el) -> el.getIndexed().get(0).equals(signature);
         if (scoreAddress != null) {
             predicate = predicate.and((el) -> el.getScoreAddress().equals(scoreAddress));
         }
         Stream<T> stream = txr.getEventLogs().stream()
-                              .filter(predicate)
-                              .map(mapperFunc);
+                .filter(predicate)
+                .map(mapperFunc);
         if (filter != null) {
             stream = stream.filter(filter);
         }
         return stream.collect(Collectors.toList());
     }
 
-    DefaultScoreClient client = new DefaultScoreClient(
-            DefaultScoreClient.url(System.getProperties()),
-            DefaultScoreClient.nid(System.getProperties()),
-            null,
-            null
-    );
-
     static void waitByNumOfBlock(long numOfBlock) {
-        waitByHeight(client._lastBlockHeight().add(BigInteger.valueOf(numOfBlock)));
+        waitByHeight(godClient._lastBlockHeight().add(BigInteger.valueOf(numOfBlock)));
     }
 
     static void waitByHeight(long waitHeight) {
@@ -105,7 +96,7 @@ public interface ScoreIntegrationTest {
     }
 
     static void waitByHeight(BigInteger waitHeight) {
-        BigInteger height = client._lastBlockHeight();
+        BigInteger height = godClient._lastBlockHeight();
         while (height.compareTo(waitHeight) < 0) {
             System.out.println("height: " + height + ", waitHeight: " + waitHeight);
             try {
@@ -113,12 +104,12 @@ public interface ScoreIntegrationTest {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            height = client._lastBlockHeight();
+            height = godClient._lastBlockHeight();
         }
     }
 
     static void balanceCheck(Address address, BigInteger value, Executable executable) {
-        BigInteger balance = client._balance(address);
+        BigInteger balance = godClient._balance(address);
         try {
             executable.execute();
         } catch (UserRevertedException | RevertedException e) {
@@ -126,11 +117,12 @@ public interface ScoreIntegrationTest {
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
-        assertEquals(balance.add(value), client._balance(address));
+        assertEquals(balance.add(value), godClient._balance(address));
     }
 
     @FunctionalInterface
     interface EventLogsSupplier<T> {
+
         List<T> apply(TransactionResult txr, Address address, Predicate<T> filter);
     }
 

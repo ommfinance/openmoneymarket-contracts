@@ -25,6 +25,7 @@ class DeployOMMContracts extends DefaultTask {
     private final Property<String> keystore;
     private final Property<String> password;
     private final Property<String> configFile;
+    private final Property<String> outputFile;
 
     private Wallet wallet;
     private Network network;
@@ -37,6 +38,7 @@ class DeployOMMContracts extends DefaultTask {
         this.keystore = objectFactory.property(String.class);
         this.password = objectFactory.property(String.class);
         this.configFile = objectFactory.property(String.class);
+        this.outputFile = objectFactory.property(String.class);
     }
 
     @Input
@@ -58,6 +60,11 @@ class DeployOMMContracts extends DefaultTask {
     @Input
     Property<String> getConfigFile() {
         return configFile;
+    }
+
+    @Input
+    Property<String> getOutputFile() {
+        return outputFile;
     }
 
     @TaskAction
@@ -90,9 +97,8 @@ class DeployOMMContracts extends DefaultTask {
             addresses.put(score.getName(), address);
         }
         setAddresses(addresses)
-        String fileName = ".deployment/addresses-" + network.name() + "-" + System.currentTimeMillis() + ".json"
-        writeFile(fileName, addresses);
-        logger.lifecycle("contract addresses :: {}", fileName)
+        writeFile(outputFile.get(), addresses);
+        logger.lifecycle("contract addresses :: {}", outputFile.get())
     }
 
 
@@ -109,7 +115,8 @@ class DeployOMMContracts extends DefaultTask {
 
 
     private Address deploy(Score score) throws URISyntaxException {
-        return _deploy(score, DefaultICONClient.ZERO_ADDRESS);
+        Address address = score.getAddress() ?: DefaultICONClient.ZERO_ADDRESS
+        return _deploy(score, address);
     }
 
     private Address _deploy(Score score, Address zeroAddress) {
@@ -117,10 +124,6 @@ class DeployOMMContracts extends DefaultTask {
         return client.deploy(wallet, zeroAddress, score.getPath(), params);
     }
 
-
-    private Address update(Score score) throws URISyntaxException {
-        return _deploy(score, score.getAddress());
-    }
 
     private List<Score> readSCOREs() throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();

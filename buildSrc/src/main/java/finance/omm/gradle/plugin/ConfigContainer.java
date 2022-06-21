@@ -10,6 +10,7 @@ public class ConfigContainer {
     private final Property<String> password;
     private final Property<String> env;
     private final Property<String> configFile;
+    private final Property<String> outputFile;
 
 
     public ConfigContainer(String name, ObjectFactory objectFactory) {
@@ -18,6 +19,8 @@ public class ConfigContainer {
         this.password = objectFactory.property(String.class);
         this.env = objectFactory.property(String.class).convention("local");
         this.configFile = objectFactory.property(String.class).convention("contracts-sample.json");
+        this.outputFile = objectFactory.property(String.class)
+                .convention(".deployment/addresses-" + this.env.get() + "-" + System.currentTimeMillis() + ".json");
     }
 
     public String getName() {
@@ -56,5 +59,13 @@ public class ConfigContainer {
 
     public void setConfigFile(String configFile) {
         this.configFile.set(configFile);
+    }
+
+    public Property<String> getOutputFile() {
+        return outputFile;
+    }
+
+    public void setOutputFile(String outputFile) {
+        this.outputFile.set(outputFile);
     }
 }
