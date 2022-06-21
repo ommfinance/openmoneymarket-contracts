@@ -129,7 +129,8 @@ subprojects {
     //remove as more contracts are added to master
     //dummy
     scoreIntegrationTest.put('sICX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/sicx.zip");
-    scoreIntegrationTest.put('Staking', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/staking.zip");
+//    scoreIntegrationTest.put('Staking', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/staking.zip");
+    scoreIntegrationTest.put('Staking', "/Users/srmaharjan/Documents/projects/ibriz/balanced-java-contracts/test-lib/python-contracts/staking.zip");
     scoreIntegrationTest.put('BandOracle', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/proxy-band-oracle.zip");
     scoreIntegrationTest.put('StableCoin', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip");
 
