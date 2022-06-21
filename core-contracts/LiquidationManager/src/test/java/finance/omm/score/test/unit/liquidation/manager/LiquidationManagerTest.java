@@ -60,14 +60,15 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
     public void liquidationCall(){
         // collateral which user has
         // reserve which is going to be liquidate
+        BigInteger EXA = BigInteger.valueOf(1).multiply(BigInteger.TEN).pow(18);
         Account notLendingPool = sm.createAccount(100);
-
         Address collateralAddr = addresses[0];
         Address reserveAddr = addresses[1];
         Address user = addresses[2];
-        BigInteger purchasAmount = BigInteger.valueOf(30);
+        BigInteger purchasAmount = BigInteger.valueOf(30).multiply(EXA);
         BigInteger userCollateralBalance = null;
 
+        //call from non lendingpool address
         Executable call = () -> score.invoke(notLendingPool,"liquidationCall",collateralAddr,reserveAddr,user,
                 purchasAmount);
 
@@ -75,26 +76,30 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
                 notLendingPool.getAddress() + " (lending pool)"+ (MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL)).
                 getAddress());
 
+
         String principalBase = "ICX";
         doReturn(principalBase).when(scoreSpy).
-                call(BigInteger.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getSymbol",reserveAddr);
-        BigInteger principalPrice = BigInteger.valueOf(100);
+                call(eq(String.class) ,eq(Contracts.LENDING_POOL_DATA_PROVIDER),eq("getSymbol"),eq(reserveAddr));
+
+
+        BigInteger principalPrice = BigInteger.valueOf(20).multiply(EXA);
         doReturn(principalPrice).when(scoreSpy).
-                call(BigInteger.class ,Contracts.PRICE_ORACLE,"get_reference_data",principalBase,"USD");
+                call(eq(BigInteger.class) ,eq(Contracts.PRICE_ORACLE),eq("get_reference_data"),eq(principalBase),any());
+
 
         Map<String, Object> userAccountData = new HashMap<>();
-        userAccountData.put("totalLiquidityBalanceUSD", BigInteger.valueOf(100));
-                userAccountData.put("totalCollateralBalanceUSD", BigInteger.valueOf(50));
-                userAccountData.put("totalBorrowBalanceUSD", BigInteger.valueOf(40));
-                userAccountData.put("totalFeesUSD", BigInteger.TEN);
+        userAccountData.put("totalLiquidityBalanceUSD", BigInteger.valueOf(40).multiply(EXA));
+                userAccountData.put("totalCollateralBalanceUSD", BigInteger.valueOf(40).multiply(EXA));
+                userAccountData.put("totalBorrowBalanceUSD", BigInteger.valueOf(40).multiply(EXA));
+                userAccountData.put("totalFeesUSD", BigInteger.valueOf(40).multiply(EXA));
                 userAccountData.put("availableBorrowsUSD", BigInteger.valueOf(80));
-                userAccountData.put("currentLtv", BigInteger.valueOf(20));
+                userAccountData.put("currentLtv", BigInteger.valueOf(40).multiply(EXA));
                 userAccountData.put("currentLiquidationThreshold", BigInteger.valueOf(30));
                 userAccountData.put("healthFactor", BigInteger.ONE);
                 userAccountData.put("borrowingPower", BigInteger.valueOf(40));
-
         doReturn(userAccountData).when(scoreSpy).
-                call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getUserAccountData",user);
+                call(eq(Map.class ),eq(Contracts.LENDING_POOL_DATA_PROVIDER),eq("getUserAccountData"),eq(user));
+
 
         Map<String, Object> collateralData = new HashMap<>();
                 collateralData.put("exchangePrice", BigInteger.valueOf(100));
@@ -106,47 +111,48 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
                 collateralData.put("borrowingPercentage", BigInteger.valueOf(30));
                 collateralData.put("oTokenAddress", BigInteger.ONE);
                 collateralData.put("rewardPercentage", BigInteger.valueOf(40));
-
         doReturn(collateralData).when(scoreSpy).
-                call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getReserveData",collateralAddr);
+                call(eq(Map.class) ,eq(Contracts.LENDING_POOL_DATA_PROVIDER),eq("getReserveData"),eq(collateralAddr));
 
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
 
+        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
+                collateralAddr,reserveAddr,user, purchasAmount);
         expectErrorMessage(call,TAG + ": the reserve " + collateralAddr + " cannot be used as collateral");
 
-        collateralData.put("usageAsCollateralEnabled",false);
 
+        collateralData.put("usageAsCollateralEnabled",false);
         doReturn(collateralData).when(scoreSpy).
                 call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getReserveData",collateralAddr);
 
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
+
+        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
+                collateralAddr,reserveAddr,user, purchasAmount);
         BigInteger userHealthFactor = (BigInteger) userAccountData.get("healthFactor");
         expectErrorMessage(call,TAG + ": unsuccessful liquidation call,health factor of user is above 1" +
                 "health factor of user " + userHealthFactor);
 
+
         userAccountData.put("healthFactorBelowThreshold", true);
         doReturn(userAccountData).when(scoreSpy).
                 call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getUserAccountData",user);
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
+
 
         doReturn(userCollateralBalance).when(scoreSpy).call(BigInteger.class,Contracts.LENDING_POOL_CORE,
                 "getUserUnderlyingAssetBalance",collateralAddr,user);
 
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
 
+        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
+                collateralAddr,reserveAddr,user, purchasAmount);
         expectErrorMessage(call,TAG + ": unsuccessful liquidation call,user have no collateral balance" +
                 "for collateral" + collateralAddr + "balance of user: " + user + " is " + userCollateralBalance);
 
-        userCollateralBalance = BigInteger.valueOf(100);
+
+        userCollateralBalance = BigInteger.valueOf(70).multiply(EXA);
         doReturn(userCollateralBalance).when(scoreSpy).call(BigInteger.class,Contracts.LENDING_POOL_CORE,
                 "getUserUnderlyingAssetBalance",collateralAddr,user);
+        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
+                collateralAddr,reserveAddr,user, purchasAmount);
 
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
 
         Map<String, BigInteger> userBorrowBalances = new HashMap<>();
         userBorrowBalances.put("principalBorrowBalance", BigInteger.valueOf(50));
@@ -154,8 +160,8 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
         doReturn(userBorrowBalances).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
                 "getUserBorrowBalances",reserveAddr,user);
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
+        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
+                collateralAddr,reserveAddr,user, purchasAmount);
 
         expectErrorMessage(call,TAG +": unsuccessful liquidation call,user have no borrow balance"+
                 "for reserve" + reserveAddr + "borrow balance of user: " + user + " is " + userBorrowBalances);
@@ -163,47 +169,35 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
         userBorrowBalances.put("compoundedBorrowBalance", BigInteger.valueOf(80));
 
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
+        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
+                collateralAddr,reserveAddr,user, purchasAmount);
 
-        BigInteger reserveDecimals = BigInteger.valueOf(20);
-
-        Map<String, Object> reserveConfiguration = new HashMap<>();
-        reserveConfiguration.put("decimals", reserveDecimals);
-        reserveConfiguration.put("baseLTVasCollateral", BigInteger.valueOf(40));
-        reserveConfiguration.put("liquidationThreshold", BigInteger.valueOf(30));
-        reserveConfiguration.put("usageAsCollateralEnabled", true);
-        reserveConfiguration.put("isActive", true);
-        reserveConfiguration.put("borrowingEnabled", true);
-        reserveConfiguration.put("liquidationBonus", BigInteger.valueOf(50));
-
-        doReturn(reserveConfiguration).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18)
+        )).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
                 "getReserveConfiguration",reserveAddr);
 
         BigInteger userOriginationFee = BigInteger.TEN;
         doReturn(userOriginationFee).when(scoreSpy).call(BigInteger.class,Contracts.LENDING_POOL_CORE,
                 "getUserOriginationFee",reserveAddr,user);
 
-        BigInteger borrowBalance = userBorrowBalances.get("borrowBalanceIncrease");
-        doNothing().when(scoreSpy).call(Contracts.LENDING_POOL_CORE,"updateStateOnLiquidation",
-                reserveAddr, collateralAddr, user, borrowBalance);
-
+        calculate(collateralAddr,reserveAddr);
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE),eq("updateStateOnLiquidation"),
+                eq(reserveAddr), eq(collateralAddr), eq(user), any(), any(), any(), any(), any());
 
 
         Address collateralOtokenAddress = addresses[3];
         doReturn(collateralOtokenAddress).when(scoreSpy).call(eq(Address.class),eq(Contracts.LENDING_POOL_CORE),
                 eq("getReserveOTokenAddress"),eq(collateralAddr));
 
+
         doNothing().when(scoreSpy).call(eq(collateralOtokenAddress),eq("burnOnLiquidation"),any(),any());
-
-        BigInteger feeLiquidated = BigInteger.valueOf(10);
-
         doNothing().when(scoreSpy).call(eq(collateralOtokenAddress),eq("burnOnLiquidation"),any(),any());
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE),eq("liquidateFee"),any(), any(),
                     any());
 
-        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,
+                reserveAddr,user, purchasAmount);
     }
 
     @Test
@@ -214,38 +208,7 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
         BigInteger purchaseAmount = BigInteger.valueOf(30).multiply(EXA);
         BigInteger colleteralBalance = BigInteger.valueOf(70).multiply(EXA);
 
-        doReturn(Map.of(
-                "liquidationBonus",BigInteger.valueOf(10))).when(scoreSpy).
-                call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
-                        "getReserveConfigurationData",collateralAddr);
-
-        doReturn("ICX").when(scoreSpy).
-                call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",collateralAddr);
-
-        doReturn("USDS").when(scoreSpy).
-                call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",reserveAddr);
-
-        doReturn(BigInteger.valueOf(20).multiply(EXA)).when(scoreSpy).
-                call(BigInteger.class, Contracts.PRICE_ORACLE,
-                        "get_reference_data","ICX","USD");
-
-        doReturn(BigInteger.valueOf(30)).when(scoreSpy).
-                call(BigInteger.class, Contracts.PRICE_ORACLE,
-                        "get_reference_data","USDS","USD");
-
-        doReturn(BigInteger.valueOf(5)).when(scoreSpy).
-                call(BigInteger.class,Contracts.STAKING,"getTodayRate");
-
-        doReturn(Map.of(
-                "decimals",BigInteger.valueOf(18)
-        )).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
-                "getReserveConfiguration",reserveAddr);
-
-        doReturn(Map.of(
-                "decimals",BigInteger.valueOf(18)
-        )).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
-                "getReserveConfiguration",collateralAddr);
-
+        calculate(collateralAddr,reserveAddr);
         score.call("calculateAvailableCollateralToLiquidate",
                 collateralAddr,reserveAddr,purchaseAmount, colleteralBalance,false);
 
@@ -261,6 +224,42 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
         verify(scoreSpy).call(eq(Map.class),eq(Contracts.LENDING_POOL_CORE),
                 eq("getReserveConfiguration"),eq(collateralAddr));
 
+    }
+
+    public void calculate(Address collateralAddr,Address reserveAddr){
+        BigInteger EXA = BigInteger.valueOf(1).multiply(BigInteger.TEN).pow(18);
+
+        doReturn(Map.of(
+                "liquidationBonus",BigInteger.valueOf(10).multiply(EXA))).when(scoreSpy).
+                call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+                        "getReserveConfigurationData",collateralAddr);
+
+        doReturn("USDS").when(scoreSpy).
+                call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",collateralAddr);
+
+        doReturn("ICX").when(scoreSpy).
+                call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",reserveAddr);
+
+        doReturn(BigInteger.valueOf(20).multiply(EXA)).when(scoreSpy).
+                call(BigInteger.class, Contracts.PRICE_ORACLE,
+                        "get_reference_data","ICX","USD");
+
+        doReturn(BigInteger.valueOf(30).multiply(EXA)).when(scoreSpy).
+                call(BigInteger.class, Contracts.PRICE_ORACLE,
+                        "get_reference_data","USDS","USD");
+
+        doReturn(BigInteger.valueOf(5).multiply(EXA)).when(scoreSpy).
+                call(BigInteger.class,Contracts.STAKING,"getTodayRate");
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18)
+        )).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration",reserveAddr);
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18)
+        )).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration",collateralAddr);
     }
 
 }
