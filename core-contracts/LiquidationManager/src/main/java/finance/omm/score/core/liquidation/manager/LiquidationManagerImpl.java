@@ -58,7 +58,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         return badDebtUSD;
     }
 
-    public Map<String, BigInteger> calculateAvailableCollateralToLiquidate(
+    protected Map<String, BigInteger> calculateAvailableCollateralToLiquidate(
             Address _collateral, Address _reserve, BigInteger _purchaseAmount, BigInteger _userCollateralBalance,
             boolean _fee) {
         BigInteger liquidationBonus;
