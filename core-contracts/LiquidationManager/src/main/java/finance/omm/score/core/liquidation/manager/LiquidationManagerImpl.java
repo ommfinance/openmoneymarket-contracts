@@ -11,6 +11,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.Map;
 
 import static finance.omm.utils.math.MathUtils.ICX;
@@ -18,6 +19,7 @@ import static finance.omm.utils.math.MathUtils.convertExaToOther;
 import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static finance.omm.utils.math.MathUtils.exaDivide;
+import static java.math.BigInteger.TEN;
 import static java.math.BigInteger.ZERO;
 
 public class LiquidationManagerImpl extends AddressProvider implements LiquidationManager,
@@ -58,7 +60,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         return badDebtUSD;
     }
 
-    protected Map<String, BigInteger> calculateAvailableCollateralToLiquidate(
+    public Map<String, BigInteger> calculateAvailableCollateralToLiquidate(
             Address _collateral, Address _reserve, BigInteger _purchaseAmount, BigInteger _userCollateralBalance,
             boolean _fee) {
         BigInteger liquidationBonus;
@@ -203,6 +205,9 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
             Map<String, BigInteger> feeLiquidationDetails = calculateAvailableCollateralToLiquidate(
                     _collateral, _reserve, userOriginationFee, userCollateralBalance.subtract(maxCollateralToLiquidate),
                     true);
+//                        Map<String, BigInteger> feeLiquidationDetails = new HashMap<>();
+//                        feeLiquidationDetails.put("collateralAmount", TEN);
+//                        feeLiquidationDetails.put("principalAmountNeeded", TEN);
            liquidatedCollateralForFee = feeLiquidationDetails.get("collateralAmount");
            feeLiquidated = feeLiquidationDetails.get("principalAmountNeeded");
         }
@@ -230,6 +235,8 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         LiquidationCall(_collateral, _reserve, _user, actualAmountToLiquidate, maxCollateralToLiquidate,
                 userBorrowBalances.get("borrowBalanceIncrease"), Context.getOrigin());
 
+        System.out.println("maxCollateralToLiquidate"+maxCollateralToLiquidate+
+                "actualAmountToLiquidate"+actualAmountToLiquidate);
         return Map.of(
                 "maxCollateralToLiquidate",maxCollateralToLiquidate,
                 "actualAmountToLiquidate",actualAmountToLiquidate );
