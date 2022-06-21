@@ -4,6 +4,8 @@ import finance.omm.core.score.interfaces.PriceOracle;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.oracle.exception.PriceOracleException;
+import finance.omm.score.core.oracle.token.BaseToken;
+import finance.omm.score.core.oracle.token.sICXToken;
 import finance.omm.score.core.oracle.token.Token;
 import score.Address;
 import score.Context;
@@ -28,9 +30,9 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
 
     private final String[] STABLE_TOKENS = {"USDS","bnUSD"};
     private static final Token[] TOKENS = new Token[] {
-            new Token("USDS","USDS"),
-            new Token("sICX","ICX"),
-            new Token("IUSDC","USDC")
+            new BaseToken("USDS", "USDS"),
+            new sICXToken("sICX","ICX"),
+            new BaseToken("IUSDC","USDC")
     };
 
 
@@ -97,8 +99,8 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
         Address dex = getAddress(Contracts.DEX.getKey());
 
         for (Token token: TOKENS ) {
-            String name = token.name;
-            String priceOracleKey = token.priceOracleKey;
+            String name = token.getName();
+            String priceOracleKey = token.getPriceOracleKey();
 
             String _name = getOMMPool() + "/" + name;
             BigInteger poolId = call(BigInteger.class, Contracts.DEX,"lookupPid", _name);
