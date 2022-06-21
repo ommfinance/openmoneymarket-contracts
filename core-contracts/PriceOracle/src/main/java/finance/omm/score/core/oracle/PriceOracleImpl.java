@@ -78,7 +78,7 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
         } else {
             Map<String, BigInteger> price = call(Map.class, Contracts.BAND_ORACLE,
                     "get_reference_data",_base,_quote);
-            return price.getOrDefault("rate", BigInteger.ZERO);
+            return price.get("rate");
         }
     }
 
