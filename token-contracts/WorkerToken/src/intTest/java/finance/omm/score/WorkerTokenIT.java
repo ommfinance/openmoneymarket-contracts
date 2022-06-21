@@ -3,16 +3,13 @@ package finance.omm.score;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.math.BigInteger;
-
-import org.junit.jupiter.api.Test;
-
 import finance.omm.core.score.interfaces.WorkerToken;
 import finance.omm.core.score.interfaces.WorkerTokenScoreClient;
-import finance.omm.libs.test.ScoreIntegrationTest;
+import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.ScoreClient;
-import score.Address;
+import java.math.BigInteger;
+import org.junit.jupiter.api.Test;
 
 public class WorkerTokenIT implements ScoreIntegrationTest {
 
