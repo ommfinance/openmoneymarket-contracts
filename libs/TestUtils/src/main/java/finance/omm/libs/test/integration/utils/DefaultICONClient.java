@@ -40,9 +40,9 @@ public class DefaultICONClient {
 
     public static final Address ZERO_ADDRESS = new Address("cx0000000000000000000000000000000000000000");
     public static final BigInteger DEFAULT_STEP_LIMIT = new BigInteger("9502f900", 16);
-    public static final long BLOCK_INTERVAL = 1000;
-    public static final long DEFAULT_RESULT_RETRY_WAIT = 1000;
-    public static final long DEFAULT_RESULT_TIMEOUT = 10000;
+    public static final long BLOCK_INTERVAL = 200;
+    public static final long DEFAULT_RESULT_RETRY_WAIT = 200;
+    public static final long DEFAULT_RESULT_TIMEOUT = 200;
 
     private final JsonrpcClient client;
     private final BigInteger nid;
