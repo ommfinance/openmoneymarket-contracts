@@ -61,6 +61,7 @@ public class ScoreDeployer {
                 } catch (InterruptedException | ExecutionException e) {
                     System.out.println("futureEntry = " + futureEntry.getKey());
                     e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
             }
         }
