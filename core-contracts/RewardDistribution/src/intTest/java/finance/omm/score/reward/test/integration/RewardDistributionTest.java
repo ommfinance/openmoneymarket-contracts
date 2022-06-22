@@ -303,7 +303,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                                 getAssetWeightByTimestamp("daoFund", AFTER_11_SEC);
 
                         System.out.println("type_B_Weights = " + type_B_Weights);
-                        // type daoFund is not split, so 100% 
+                        // type daoFund is not split, so 100%
                         assertEquals(ICX, type_B_Weights.get("daoFund"));
 
                     }
