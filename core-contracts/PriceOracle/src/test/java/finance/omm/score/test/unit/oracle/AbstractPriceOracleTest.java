@@ -14,7 +14,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.function.Executable;
-import score.Address;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import score.Context;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.spy;
@@ -26,17 +28,6 @@ public class AbstractPriceOracleTest extends TestBase{
     public Account owner;
     public Score score;
     public PriceOracleImpl scoreSpy;
-
-    public static final BigInteger ONE = BigInteger.ONE;
-    public static final BigInteger ZERO = BigInteger.ZERO;
-
-
-    protected Address[] addresses = new Address[]{
-            Account.newScoreAccount(201).getAddress(),
-            Account.newScoreAccount(202).getAddress(),
-            Account.newScoreAccount(203).getAddress()
-    };
-
 
     public static final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
@@ -56,6 +47,7 @@ public class AbstractPriceOracleTest extends TestBase{
         sm.getBlock().increase(blocks);
     }
 
+    MockedStatic<Context> contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
     @BeforeEach
     void setup() throws Exception {
 

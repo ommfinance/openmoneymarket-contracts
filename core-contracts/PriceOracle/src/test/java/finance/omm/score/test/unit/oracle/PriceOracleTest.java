@@ -49,6 +49,10 @@ public class PriceOracleTest extends AbstractPriceOracleTest{
                 "rate",BigInteger.valueOf(3)
         )).when(scoreSpy).call(eq(Map.class), eq(Contracts.BAND_ORACLE), eq("get_reference_data"),any(),any());
 
+        contextMock
+                .when(() -> Context.call(BigInteger.class, MOCK_CONTRACT_ADDRESS.get(Contracts.DEX).getAddress(),
+                        "getPriceByName" ,"sICX/ICX"))
+                .thenReturn(BigInteger.valueOf(2));
         doReturn(BigInteger.valueOf(10)).when(scoreSpy).call(BigInteger.class, Contracts.DEX,"getBalnPrice");
 
         score.call("get_reference_data","OMM","USDS");
