@@ -46,7 +46,7 @@ public class OMM {
         this.addresses = new ScoreDeployer(this, contracts).deployContracts();
 
         ownerClient = new OMMClient(this, owner);
-        testClient = new OMMClient(this, createWalletWithBalance(BigInteger.TEN.pow(19)));
+        testClient = new OMMClient(this, createWalletWithBalance(BigInteger.TEN.pow(24)));
     }
 
     public void runConfig(Config config) {
