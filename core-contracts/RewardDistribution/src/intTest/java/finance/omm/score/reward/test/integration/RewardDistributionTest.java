@@ -109,13 +109,13 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
             }
             should_add_type_transfer_to_contract_false();
 
-            ownerClient.reward.addType("DaoFund", true);
+            ownerClient.governance.addType("daoFund", true);
 
             Map<String, BigInteger> allWeightType = ownerClient.rewardWeightController.getAllTypeWeight(null);
             Assertions.assertEquals(2, allWeightType.size());
 
             assertEquals(allWeightType.get("reserve"), BigInteger.ZERO);
-            assertEquals(allWeightType.get("DaoFund"), BigInteger.ZERO);
+            assertEquals(allWeightType.get("daoFund"), BigInteger.ZERO);
 
             STATES.put("should_add_type_contract_true", true);
         }
@@ -123,6 +123,9 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
         @DisplayName("setTypeWeight")
         @Nested
         class TestSetTypeWeight {
+
+            BigInteger CURRENT_TIME =  BigInteger.valueOf(System.currentTimeMillis() / 1_000L);
+            BigInteger AFTER_10_SEC;
 
             @BeforeEach
             void before() {
@@ -134,10 +137,10 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
             @Order(30)
             void should_throw_unauthorized_setTypeWeight() {
 
-                assertUserRevert(RewardWeightException.notOwner(),
+                assertUserRevert(RewardWeightException.notAuthorized("Only Governance contract can call set type method"),
                         () -> testClient.rewardWeightController.setTypeWeight(new TypeWeightStruct[]{
                                 new TypeWeightStruct("reserve", ICX.divide(BigInteger.TWO)),
-                                new TypeWeightStruct("DaoFund", ICX.divide(BigInteger.TWO)),
+                                new TypeWeightStruct("daoFund", ICX.divide(BigInteger.TWO)),
                         }, null), null);
 
             }
@@ -149,16 +152,18 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                 if (STATES.getOrDefault("should_able_to_set_weight_by_owner", false)) {
                     return;
                 }
-                ownerClient.rewardWeightController.setTypeWeight(new TypeWeightStruct[]{
+                AFTER_10_SEC = CURRENT_TIME.add(BigInteger.TEN);
+                ownerClient.governance.setTypeWeight(new TypeWeightStruct[]{
                         new TypeWeightStruct("reserve", ICX.divide(BigInteger.TWO)),
-                        new TypeWeightStruct("DaoFund", ICX.divide(BigInteger.TWO)),
-                }, BigInteger.TEN);
+                        new TypeWeightStruct("daoFund", ICX.divide(BigInteger.TWO)),
+                }, AFTER_10_SEC);
 
-                Map<String, BigInteger> allWeightType = ownerClient.rewardWeightController.getAllTypeWeight(null);
+                Map<String, BigInteger> allWeightType = ownerClient.rewardWeightController.
+                        getAllTypeWeight(AFTER_10_SEC.add(BigInteger.ONE));
                 Assertions.assertFalse(allWeightType.isEmpty());
 
                 assertEquals(allWeightType.get("reserve"), ICX.divide(BigInteger.TWO));
-                assertEquals(allWeightType.get("DaoFund"), ICX.divide(BigInteger.TWO));
+                assertEquals(allWeightType.get("daoFund"), ICX.divide(BigInteger.TWO));
                 STATES.put("should_able_to_set_weight_by_owner", true);
             }
 
@@ -170,23 +175,26 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                     return;
                 }
                 should_able_to_set_weight_by_owner();
-                BigInteger weight = ownerClient.rewardWeightController.getTypeWeight("reserve", null);
+                BigInteger weight = ownerClient.rewardWeightController
+                        .getTypeWeight("reserve", CURRENT_TIME.add(BigInteger.valueOf(11)));
                 assertEquals(weight, ICX.divide(BigInteger.TWO));
 
                 BigInteger aValue = ICX.divide(BigInteger.valueOf(4L));
                 BigInteger bValue = ICX.subtract(aValue);
 
-                ownerClient.rewardWeightController.setTypeWeight(new TypeWeightStruct[]{
+                BigInteger AFTER_1000_SEC = CURRENT_TIME.add(BigInteger.valueOf(1_000L));
+
+                ownerClient.governance.setTypeWeight(new TypeWeightStruct[]{
                         new TypeWeightStruct("reserve", aValue),
-                        new TypeWeightStruct("DaoFund", bValue),
-                }, BigInteger.valueOf(1000L));
+                        new TypeWeightStruct("daoFund", bValue),
+                }, AFTER_1000_SEC);
 
                 BigInteger aActualValue = ownerClient.rewardWeightController.getTypeWeight("reserve",
-                        BigInteger.valueOf(1001));
+                        AFTER_1000_SEC.add(BigInteger.ONE));
 
                 assertEquals(aValue, aActualValue);
 
-                aActualValue = ownerClient.rewardWeightController.getTypeWeight("reserve", BigInteger.valueOf(999));
+                aActualValue = ownerClient.rewardWeightController.getTypeWeight("reserve", AFTER_1000_SEC);
 
                 assertEquals(ICX.divide(BigInteger.TWO), aActualValue);
 
@@ -197,18 +205,19 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
             @Test
             @Order(50)
             void should_not_able_set_old_timestamp() {
-                should_able_to_set_weight();
-
+                should_able_to_set_weight_by_owner();
                 BigInteger aValue = ICX.divide(BigInteger.valueOf(4L));
                 BigInteger bValue = ICX.subtract(aValue);
 
-                assertUserRevert(RewardWeightException.unknown("latest " + 1000L + " checkpoint exists than " + 999L),
-                        () -> ownerClient.rewardWeightController.setTypeWeight(new TypeWeightStruct[]{
+                BigInteger before10Sec = AFTER_10_SEC.subtract(BigInteger.valueOf(20L));
+
+                String expectedError = "latest " + AFTER_10_SEC + " checkpoint exists than " + before10Sec;
+
+                assertUserRevert(RewardWeightException.unknown(expectedError),
+                        () -> ownerClient.governance.setTypeWeight(new TypeWeightStruct[]{
                                 new TypeWeightStruct("reserve", aValue),
-                                new TypeWeightStruct("DaoFund", bValue),
-                        }, BigInteger.valueOf(999)), null);
-
-
+                                new TypeWeightStruct("daoFund", bValue),
+                        }, before10Sec), null);
             }
 
 
@@ -227,7 +236,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                 @Order(60)
                 void should_throw_unauthorized() {
 
-                    assertUserRevert(RewardDistributionException.notOwner(),
+                    assertUserRevert(RewardDistributionException.unauthorized("Only Governance contract is allowed to call addAsset method"),
                             () -> testClient.reward.addAsset("reserve", "oICX", assets.get("asset-1"),
                                     BigInteger.ZERO),
                             null);
@@ -243,9 +252,9 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                     }
                     List<score.Address> addresses = ownerClient.reward.getAssets();
                     assertEquals(1, addresses.size());
-                    ownerClient.reward.addAsset("reserve", "asset-1", assets.get("asset-1"), BigInteger.ZERO);
-                    ownerClient.reward.addAsset("reserve", "asset-2", assets.get("asset-2"), BigInteger.ZERO);
-                    ownerClient.reward.addAsset("reserve", "asset-3", assets.get("asset-3"), BigInteger.ZERO);
+                    ownerClient.governance.addAsset("reserve", "asset-1", assets.get("asset-1"), BigInteger.ZERO);
+                    ownerClient.governance.addAsset("reserve", "asset-2", assets.get("asset-2"), BigInteger.ZERO);
+                    ownerClient.governance.addAsset("reserve", "asset-3", assets.get("asset-3"), BigInteger.ZERO);
 
                     addresses = ownerClient.reward.getAssets();
                     assertEquals(4, addresses.size());
@@ -260,7 +269,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                     @BeforeEach
                     void before() {
                         should_add_type_transfer_to_contract_true();
-                        should_able_to_set_weight_by_owner();
+                        should_able_to_set_weight();
                         should_able_to_add_asset();
                     }
 
@@ -269,7 +278,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                     @Order(80)
                     void should_throw_unauthorized() {
 
-                        assertUserRevert(RewardWeightException.notOwner(),
+                        assertUserRevert(RewardWeightException.notAuthorized("Only Governance contract can call set asset weight method"),
                                 () -> testClient.rewardWeightController.setAssetWeight("reserve", new WeightStruct[]{
                                         new WeightStruct(assets.get("asset-1"), ICX.divide(BigInteger.TWO)),
                                         new WeightStruct(assets.get("asset-2"), ICX.divide(BigInteger.valueOf(4L))),
@@ -283,15 +292,14 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                     @Order(90)
                     void verifyWeightOfTransferredToContract() {
 
-                        Map<String, BigInteger> type_B_Weights = ownerClient.rewardWeightController.getAssetWeightByTimestamp(
-                                "DaoFund",
-                                BigInteger.valueOf(System.currentTimeMillis() * 1000));
+                        BigInteger AFTER_11_SEC = CURRENT_TIME.add(BigInteger.valueOf(11));
 
-                        long type_B_Weight = 75 * 100; //type weight * asset weight
+                        Map<String, BigInteger> type_B_Weights = ownerClient.rewardWeightController.
+                                getAssetWeightByTimestamp("daoFund", AFTER_11_SEC);
+
                         System.out.println("type_B_Weights = " + type_B_Weights);
-                        assertEquals(
-                                ICX.multiply(BigInteger.valueOf(type_B_Weight)).divide(BigInteger.valueOf(10000L)),
-                                type_B_Weights.get(assets.get("DaoFund").toString()));
+                        // type daoFund is not split, so 100% 
+                        assertEquals(ICX,type_B_Weights.get("daoFund"));
 
                     }
 
@@ -302,59 +310,63 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                         if (STATES.getOrDefault("should_able_to_set_asset_weight_by_owner", false)) {
                             return;
                         }
-                        ownerClient.rewardWeightController.setAssetWeight("reserve", new WeightStruct[]{
+                        /*
+                            For reserve type
+                            50 % : 10 sec - 1000 sec
+                            25 % : 1000 sec and later
+                         */
+                        // set asset weight after 10 seconds
+                        BigInteger AFTER_10_SEC = CURRENT_TIME.add(BigInteger.valueOf(10L));
+                        ownerClient.governance.setAssetWeight("reserve", new WeightStruct[]{
                                 new WeightStruct(assets.get("asset-1"), ICX.divide(BigInteger.TWO)),
                                 new WeightStruct(assets.get("asset-2"), ICX.divide(BigInteger.valueOf(4L))),
                                 new WeightStruct(assets.get("asset-3"), ICX.divide(BigInteger.valueOf(4L))),
-                        }, BigInteger.valueOf(1000L));
+                        }, AFTER_10_SEC);
 
+                        // should be zero before 10 sec
                         BigInteger assetWeight = ownerClient.rewardWeightController.getAssetWeight(
-                                assets.get("asset-1"),
-                                BigInteger.valueOf(999L));
+                                assets.get("asset-1"),AFTER_10_SEC.subtract(BigInteger.ONE));
                         assertEquals(BigInteger.ZERO, assetWeight);
 
+                        // after 10th second
+                        long assetAWeight = 50 * 50; //type weight * asset weight
                         assetWeight = ownerClient.rewardWeightController.getAssetWeight(assets.get("asset-1"),
-                                BigInteger.valueOf(1001L));//todo 1000L or 1001L
-
-                        long assetAWeight = 25 * 50; //type weight * asset weight
-
+                                CURRENT_TIME.add(BigInteger.valueOf(11L)));
                         assertEquals(ICX.multiply(BigInteger.valueOf(assetAWeight)).divide(BigInteger.valueOf(10000L)),
                                 assetWeight);
-                        assetWeight = ownerClient.rewardWeightController.getAssetWeight(assets.get("asset-1"),
-                                null);
 
+                        // after 1001 th second
+                        assetAWeight = 25 * 50; //type weight * asset weight
+                        BigInteger AFTER_1001_SEC = CURRENT_TIME.add(BigInteger.valueOf(1001L));
+                        assetWeight = ownerClient.rewardWeightController.getAssetWeight(assets.get("asset-1"),
+                                AFTER_1001_SEC);
                         assertEquals(ICX.multiply(BigInteger.valueOf(assetAWeight)).divide(BigInteger.valueOf(10000L)),
                                 assetWeight);
+
 
                         Map<String, BigInteger> type_A_Weights = ownerClient.rewardWeightController.getAssetWeightByTimestamp(
                                 "reserve",
-                                BigInteger.valueOf(1001L));
+                                 AFTER_1001_SEC);
 
-                        long asset_1_Weight = 25 * 50; //type weight * asset weight
+                        long asset_1_Weight = 50; // asset weight
                         assertEquals(
-                                ICX.multiply(BigInteger.valueOf(asset_1_Weight)).divide(BigInteger.valueOf(10000L)),
-                                type_A_Weights.get(assets.get("asset-1").toString()));
+                                ICX.multiply(BigInteger.valueOf(asset_1_Weight)).divide(BigInteger.valueOf(100L)),
+                                type_A_Weights.get("asset-1"));
 
-                        long asset_2_Weight = 25 * 25; //type weight * asset weight
+                        long asset_2_Weight = 25; // asset weight
                         assertEquals(
-                                ICX.multiply(BigInteger.valueOf(asset_2_Weight)).divide(BigInteger.valueOf(10000L)),
-                                type_A_Weights.get(assets.get("asset-2").toString()));
+                                ICX.multiply(BigInteger.valueOf(asset_2_Weight)).divide(BigInteger.valueOf(100L)),
+                                type_A_Weights.get("asset-2"));
 
-                        long asset_3_Weight = 25 * 25; //type weight * asset weight
+                        long asset_3_Weight = 25; // asset weight
                         assertEquals(
-                                ICX.multiply(BigInteger.valueOf(asset_3_Weight)).divide(BigInteger.valueOf(10000L)),
-                                type_A_Weights.get(assets.get("asset-3").toString()));
+                                ICX.multiply(BigInteger.valueOf(asset_3_Weight)).divide(BigInteger.valueOf(100L)),
+                                type_A_Weights.get("asset-3"));
 
                         STATES.put("should_able_to_set_asset_weight_by_owner", true);
                     }
                 }
-
             }
-
         }
-
-
     }
-
-
 }
