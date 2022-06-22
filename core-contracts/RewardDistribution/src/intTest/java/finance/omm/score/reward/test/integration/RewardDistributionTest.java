@@ -72,7 +72,9 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
         @Test
         @Order(10)
         void should_throw_unauthorized_addType() {
-            assertUserRevert(RewardDistributionException.notOwner(),
+
+            assertUserRevert(RewardDistributionException.unauthorized("Only Governance contract is allowed to call " +
+                            "addType" + " method"),
                     () -> testClient.reward.addType("key", false), null);
 
         }
@@ -87,7 +89,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
             Map<String, BigInteger> allWeightType = ownerClient.rewardWeightController.getAllTypeWeight(null);
             Assertions.assertTrue(allWeightType.isEmpty());
 
-            ownerClient.reward.addType("reserve", false);
+            ownerClient.governance.addType("reserve", false);
             allWeightType = ownerClient.rewardWeightController.getAllTypeWeight(null);
             Assertions.assertFalse(allWeightType.isEmpty());
             Assertions.assertEquals(1, allWeightType.size());
