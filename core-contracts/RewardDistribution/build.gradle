@@ -44,47 +44,21 @@ test {
     useJUnitPlatform()
 }
 
-task integrationTest(type: Test, dependsOn: optimizedJar) {
+task integrationTest(type: Test) {
     useJUnitPlatform()
+
+    rootProject.allprojects {
+        if (it.getTasks().findByName('optimizedJar')) {
+            dependsOn(it.getTasks().getByName('optimizedJar'))
+        }
+    }
+
     options {
         testLogging.showStandardStreams = true
         description = 'Runs integration tests.'
         group = 'verification'
         testClassesDirs = sourceSets.intTest.output.classesDirs
         classpath = sourceSets.intTest.runtimeClasspath
-
-        systemProperty 'url', scoreTest.url
-        systemProperty 'nid', scoreTest.nid
-
-        systemProperty 'keyStore', scoreTest.keystoreName
-        systemProperty 'keyPassword', scoreTest.keystorePass
-
-        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
-        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
-
-//        systemProperty 'address', "cxecae13f554df1495b9104b44a43613df009fb4f0"
-//        systemProperty 'isUpdate', "false"
-        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
-        systemProperty 'params.bOMMRewardStartDate', "1646438400"
-
-
-        dependsOn(":RewardWeightController:optimizedJar")
-        systemProperty 'rewardWeight.keyStore', scoreTest.keystoreName
-        systemProperty 'rewardWeight.keyPassword', scoreTest.keystorePass
-        systemProperty 'rewardWeight.url', scoreTest.url
-        systemProperty 'rewardWeight.nid', scoreTest.nid
-        systemProperty 'rewardWeight.scoreFilePath', project.tasks.getByPath(":RewardWeightController:optimizedJar").outputJarName
-//        systemProperty 'rewardWeight.scoreFilePath', project(":RewardWeightController").tasks.optimizedJar.outputJarName.replace("-optimized.jar", "-${project(":RewardWeightController").version}-optimized.jar")
-        systemProperty 'rewardWeight.params.startTimestamp', "1581724800000000"
-
-
-        systemProperty 'addressProvider.keyStore', scoreTest.keystoreName
-        systemProperty 'addressProvider.keyPassword', scoreTest.keystorePass
-        systemProperty 'addressProvider.url', scoreTest.url
-        systemProperty 'addressProvider.nid', scoreTest.nid
-        systemProperty 'addressProvider.scoreFilePath', "$rootDir/scores/address-provider.zip"
-
-
     }
 
 //
