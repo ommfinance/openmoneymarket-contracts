@@ -141,8 +141,8 @@ subprojects {
     scoreIntegrationTest.put('LendingPoolDataProvider', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lending-pool-data-provider.zip");
     scoreIntegrationTest.put('LendingPoolCore', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPoolCore.zip");
     scoreIntegrationTest.put('LendingPool', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPool.zip");
-    scoreIntegrationTest.put('OToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/o-token.zip");
-    scoreIntegrationTest.put('DToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/d-token.zip");
+//    scoreIntegrationTest.put('OToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/o-token.zip");
+//    scoreIntegrationTest.put('DToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/d-token.zip");
 
 
     afterEvaluate {
