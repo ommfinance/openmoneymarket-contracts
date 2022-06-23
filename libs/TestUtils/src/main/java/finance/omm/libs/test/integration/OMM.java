@@ -2,8 +2,10 @@ package finance.omm.libs.test.integration;
 
 import static finance.omm.libs.test.integration.Environment.SYSTEM_INTERFACE;
 import static finance.omm.libs.test.integration.Environment.chain;
+import static finance.omm.libs.test.integration.Environment.godClient;
 import static finance.omm.libs.test.integration.Environment.preps;
 import static finance.omm.libs.test.integration.ScoreIntegrationTest.createWalletWithBalance;
+import static finance.omm.libs.test.integration.ScoreIntegrationTest.transfer;
 
 import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.model.Score;
@@ -14,6 +16,7 @@ import foundation.icon.icx.data.Bytes;
 import foundation.icon.score.client.DefaultScoreClient;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
@@ -88,10 +91,29 @@ public class OMM {
         return iconClient.deploy(owner, DefaultICONClient.ZERO_ADDRESS, score.getPath(), score.getParams());
     }
 
-    public void deployPrep() {
+    public boolean isPRepRegistered() {
         try {
+            SYSTEM_INTERFACE = new SystemInterfaceScoreClient(godClient);
+            Map<String, Object> result = SYSTEM_INTERFACE.getPReps(BigInteger.ONE, BigInteger.TWO);
+            List<Object> registeredPReps = (List<Object>) result.get("preps");
+            if (registeredPReps.size() > 0) {
+                return true;
+            }
+        } catch (Exception e) {
+
+        }
+        return false;
+    }
+
+    public void deployPrep() {
+        if (isPRepRegistered()) {
+            return;
+        }
+        try {
+
             for (Entry<Address, String> prep : preps.entrySet()) {
                 KeyWallet wallet = KeyWallet.load(new Bytes(prep.getValue()));
+                transfer(foundation.icon.jsonrpc.Address.of(wallet), BigInteger.TEN.pow(24));
                 var client = new DefaultScoreClient(
                         chain.getEndpointURL(),
                         chain.networkId,
@@ -107,7 +129,7 @@ public class OMM {
                         "localhost:9082");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+
         }
     }
 
