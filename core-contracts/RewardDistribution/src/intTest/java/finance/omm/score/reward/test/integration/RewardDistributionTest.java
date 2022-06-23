@@ -1,5 +1,6 @@
 package finance.omm.score.reward.test.integration;
 
+import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,6 +16,7 @@ import finance.omm.score.core.reward.distribution.exception.RewardDistributionEx
 import finance.omm.score.core.reward.exception.RewardWeightException;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.Address.Type;
+import foundation.icon.score.client.RevertedException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
@@ -124,7 +126,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
         @Nested
         class TestSetTypeWeight {
 
-            BigInteger CURRENT_TIME =  BigInteger.valueOf(System.currentTimeMillis() / 1_000L);
+            BigInteger CURRENT_TIME = BigInteger.valueOf(System.currentTimeMillis() / 1_000L);
             BigInteger AFTER_10_SEC;
 
             @BeforeEach
@@ -137,7 +139,8 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
             @Order(30)
             void should_throw_unauthorized_setTypeWeight() {
 
-                assertUserRevert(RewardWeightException.notAuthorized("Only Governance contract can call set type method"),
+                assertUserRevert(
+                        RewardWeightException.notAuthorized("Only Governance contract can call set type method"),
                         () -> testClient.rewardWeightController.setTypeWeight(new TypeWeightStruct[]{
                                 new TypeWeightStruct("reserve", ICX.divide(BigInteger.TWO)),
                                 new TypeWeightStruct("daoFund", ICX.divide(BigInteger.TWO)),
@@ -213,11 +216,11 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
 
                 String expectedError = "latest " + AFTER_10_SEC + " checkpoint exists than " + before10Sec;
 
-                assertUserRevert(RewardWeightException.unknown(expectedError),
+                assertReverted(new RevertedException(1, "UnknownFailure"),
                         () -> ownerClient.governance.setTypeWeight(new TypeWeightStruct[]{
                                 new TypeWeightStruct("reserve", aValue),
                                 new TypeWeightStruct("daoFund", bValue),
-                        }, before10Sec), null);
+                        }, before10Sec));
             }
 
 
@@ -236,7 +239,8 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                 @Order(60)
                 void should_throw_unauthorized() {
 
-                    assertUserRevert(RewardDistributionException.unauthorized("Only Governance contract is allowed to call addAsset method"),
+                    assertUserRevert(RewardDistributionException.unauthorized(
+                                    "Only Governance contract is allowed to call addAsset method"),
                             () -> testClient.reward.addAsset("reserve", "oICX", assets.get("asset-1"),
                                     BigInteger.ZERO),
                             null);
@@ -278,7 +282,8 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                     @Order(80)
                     void should_throw_unauthorized() {
 
-                        assertUserRevert(RewardWeightException.notAuthorized("Only Governance contract can call set asset weight method"),
+                        assertUserRevert(RewardWeightException.notAuthorized(
+                                        "Only Governance contract can call set asset weight method"),
                                 () -> testClient.rewardWeightController.setAssetWeight("reserve", new WeightStruct[]{
                                         new WeightStruct(assets.get("asset-1"), ICX.divide(BigInteger.TWO)),
                                         new WeightStruct(assets.get("asset-2"), ICX.divide(BigInteger.valueOf(4L))),
@@ -299,7 +304,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
 
                         System.out.println("type_B_Weights = " + type_B_Weights);
                         // type daoFund is not split, so 100% 
-                        assertEquals(ICX,type_B_Weights.get("daoFund"));
+                        assertEquals(ICX, type_B_Weights.get("daoFund"));
 
                     }
 
@@ -325,7 +330,7 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
 
                         // should be zero before 10 sec
                         BigInteger assetWeight = ownerClient.rewardWeightController.getAssetWeight(
-                                assets.get("asset-1"),AFTER_10_SEC.subtract(BigInteger.ONE));
+                                assets.get("asset-1"), AFTER_10_SEC.subtract(BigInteger.ONE));
                         assertEquals(BigInteger.ZERO, assetWeight);
 
                         // after 10th second
@@ -343,10 +348,9 @@ public class RewardDistributionTest implements ScoreIntegrationTest {
                         assertEquals(ICX.multiply(BigInteger.valueOf(assetAWeight)).divide(BigInteger.valueOf(10000L)),
                                 assetWeight);
 
-
                         Map<String, BigInteger> type_A_Weights = ownerClient.rewardWeightController.getAssetWeightByTimestamp(
                                 "reserve",
-                                 AFTER_1001_SEC);
+                                AFTER_1001_SEC);
 
                         long asset_1_Weight = 50; // asset weight
                         assertEquals(
