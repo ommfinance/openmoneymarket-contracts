@@ -5,17 +5,13 @@ import finance.omm.libs.address.Contracts;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import score.Address;
-import score.Context;
 import scorex.util.HashMap;
 
 import java.math.BigInteger;
 import java.util.Map;
 
 import static finance.omm.score.core.liquidation.manager.LiquidationManagerImpl.TAG;
-import static finance.omm.utils.math.MathUtils.convertExaToOther;
-import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
-import static java.math.BigInteger.ZERO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -49,7 +45,7 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
         assertEquals(actual,expected);
     }
 
-    public BigInteger _calculateBadDebt(BigInteger borrowed, BigInteger feeUsd,
+    private BigInteger _calculateBadDebt(BigInteger borrowed, BigInteger feeUsd,
                                         BigInteger collateral, BigInteger ltv){
 
         BigInteger actual = (BigInteger) score.call("calculateBadDebt",borrowed,feeUsd,collateral,ltv);
@@ -58,19 +54,16 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
     @Test
     public void liquidationCall(){
-        // collateral which user has
-        // reserve which is going to be liquidate
         BigInteger EXA = BigInteger.valueOf(1).multiply(BigInteger.TEN).pow(18);
         Account notLendingPool = sm.createAccount(100);
         Address collateralAddr = addresses[0];
         Address reserveAddr = addresses[1];
-        Address user = addresses[2];
-        BigInteger purchasAmount = BigInteger.valueOf(30).multiply(EXA);
+        BigInteger purchaseAmount = BigInteger.valueOf(30).multiply(EXA);
         BigInteger userCollateralBalance = null;
 
         //call from non lendingpool address
         Executable call = () -> score.invoke(notLendingPool,"liquidationCall",collateralAddr,reserveAddr,user,
-                purchasAmount);
+                purchaseAmount);
 
         expectErrorMessage(call,TAG+ ": SenderNotLendingPoolError: (sender)" +
                 notLendingPool.getAddress() + " (lending pool)"+ (MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL)).
@@ -88,48 +81,30 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
 
         Map<String, Object> userAccountData = new HashMap<>();
-        userAccountData.put("totalLiquidityBalanceUSD", BigInteger.valueOf(40).multiply(EXA));
                 userAccountData.put("totalCollateralBalanceUSD", BigInteger.valueOf(40).multiply(EXA));
                 userAccountData.put("totalBorrowBalanceUSD", BigInteger.valueOf(40).multiply(EXA));
                 userAccountData.put("totalFeesUSD", BigInteger.valueOf(40).multiply(EXA));
-                userAccountData.put("availableBorrowsUSD", BigInteger.valueOf(80));
                 userAccountData.put("currentLtv", BigInteger.valueOf(40).multiply(EXA));
-                userAccountData.put("currentLiquidationThreshold", BigInteger.valueOf(30));
                 userAccountData.put("healthFactor", BigInteger.ONE);
-                userAccountData.put("borrowingPower", BigInteger.valueOf(40));
         doReturn(userAccountData).when(scoreSpy).
                 call(eq(Map.class ),eq(Contracts.LENDING_POOL_DATA_PROVIDER),eq("getUserAccountData"),eq(user));
 
+        doReturn(
+                Map.of("usageAsCollateralEnabled",false)
+        ).when(scoreSpy).call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getReserveData",collateralAddr);
 
-        Map<String, Object> collateralData = new HashMap<>();
-                collateralData.put("exchangePrice", BigInteger.valueOf(100));
-                collateralData.put("decimals", BigInteger.valueOf(50));
-                collateralData.put("totalLiquidityUSD", BigInteger.valueOf(40));
-                collateralData.put("availableLiquidityUSD", BigInteger.TEN);
-                collateralData.put("totalBorrowsUSD", BigInteger.valueOf(80));
-                collateralData.put("lendingPercentage", BigInteger.valueOf(20));
-                collateralData.put("borrowingPercentage", BigInteger.valueOf(30));
-                collateralData.put("oTokenAddress", BigInteger.ONE);
-                collateralData.put("rewardPercentage", BigInteger.valueOf(40));
-        doReturn(collateralData).when(scoreSpy).
-                call(eq(Map.class) ,eq(Contracts.LENDING_POOL_DATA_PROVIDER),eq("getReserveData"),eq(collateralAddr));
-
-
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
-                collateralAddr,reserveAddr,user, purchasAmount);
+        call = () -> score.invoke(LENDING_POOL,"liquidationCall", collateralAddr,reserveAddr,user, purchaseAmount);
         expectErrorMessage(call,TAG + ": the reserve " + collateralAddr + " cannot be used as collateral");
 
+        doReturn(
+                Map.of("usageAsCollateralEnabled",true)
+        ).when(scoreSpy).call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getReserveData",collateralAddr);
 
-        collateralData.put("usageAsCollateralEnabled",false);
-        doReturn(collateralData).when(scoreSpy).
-                call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,"getReserveData",collateralAddr);
 
-
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
-                collateralAddr,reserveAddr,user, purchasAmount);
-        BigInteger userHealthFactor = (BigInteger) userAccountData.get("healthFactor");
+        call = () -> score.invoke(LENDING_POOL,"liquidationCall",
+                collateralAddr,reserveAddr,user, purchaseAmount);
         expectErrorMessage(call,TAG + ": unsuccessful liquidation call,health factor of user is above 1" +
-                "health factor of user " + userHealthFactor);
+                "health factor of user " + BigInteger.ONE);
 
 
         userAccountData.put("healthFactorBelowThreshold", true);
@@ -141,8 +116,8 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
                 "getUserUnderlyingAssetBalance",collateralAddr,user);
 
 
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
-                collateralAddr,reserveAddr,user, purchasAmount);
+        call = () -> score.invoke(LENDING_POOL,"liquidationCall",
+                collateralAddr,reserveAddr,user, purchaseAmount);
         expectErrorMessage(call,TAG + ": unsuccessful liquidation call,user have no collateral balance" +
                 "for collateral" + collateralAddr + "balance of user: " + user + " is " + userCollateralBalance);
 
@@ -150,8 +125,8 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
         userCollateralBalance = BigInteger.valueOf(70).multiply(EXA);
         doReturn(userCollateralBalance).when(scoreSpy).call(BigInteger.class,Contracts.LENDING_POOL_CORE,
                 "getUserUnderlyingAssetBalance",collateralAddr,user);
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
-                collateralAddr,reserveAddr,user, purchasAmount);
+        call = () -> score.invoke(LENDING_POOL,"liquidationCall",
+                collateralAddr,reserveAddr,user, purchaseAmount);
 
 
         Map<String, BigInteger> userBorrowBalances = new HashMap<>();
@@ -160,8 +135,8 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
         doReturn(userBorrowBalances).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
                 "getUserBorrowBalances",reserveAddr,user);
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
-                collateralAddr,reserveAddr,user, purchasAmount);
+        call = () -> score.invoke(LENDING_POOL,"liquidationCall",
+                collateralAddr,reserveAddr,user, purchaseAmount);
 
         expectErrorMessage(call,TAG +": unsuccessful liquidation call,user have no borrow balance"+
                 "for reserve" + reserveAddr + "borrow balance of user: " + user + " is " + userBorrowBalances);
@@ -169,16 +144,15 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
         userBorrowBalances.put("compoundedBorrowBalance", BigInteger.valueOf(80));
 
-        call = () -> score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",
-                collateralAddr,reserveAddr,user, purchasAmount);
+        call = () -> score.invoke(LENDING_POOL,"liquidationCall",
+                collateralAddr,reserveAddr,user, purchaseAmount);
 
         doReturn(Map.of(
                 "decimals",BigInteger.valueOf(18)
         )).when(scoreSpy).call(Map.class,Contracts.LENDING_POOL_CORE,
                 "getReserveConfiguration",reserveAddr);
 
-        BigInteger userOriginationFee = BigInteger.TEN;
-        doReturn(userOriginationFee).when(scoreSpy).call(BigInteger.class,Contracts.LENDING_POOL_CORE,
+        doReturn(BigInteger.TEN).when(scoreSpy).call(BigInteger.class,Contracts.LENDING_POOL_CORE,
                 "getUserOriginationFee",reserveAddr,user);
 
         calculate(collateralAddr,reserveAddr);
@@ -196,8 +170,8 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE),eq("liquidateFee"),any(), any(),
                     any());
 
-        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL),"liquidationCall",collateralAddr,
-                reserveAddr,user, purchasAmount);
+        score.invoke(LENDING_POOL,"liquidationCall",collateralAddr,
+                reserveAddr,user, purchaseAmount);
     }
 
     @Test
