@@ -29,6 +29,8 @@ public class AbstractPriceOracleTest extends TestBase{
     public Score score;
     public PriceOracleImpl scoreSpy;
 
+    protected static MockedStatic<Context> contextMock;
+
     public static final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
         put(Contracts.BAND_ORACLE, Account.newScoreAccount(102));
@@ -36,7 +38,9 @@ public class AbstractPriceOracleTest extends TestBase{
     }};
 
     @BeforeAll
-    protected static void init() {
+    public static void init() {
+        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
+
         long CURRENT_TIMESTAMP = System.currentTimeMillis() / 1_000L;
         sm.getBlock().increase(CURRENT_TIMESTAMP / 2);
     }
@@ -47,7 +51,6 @@ public class AbstractPriceOracleTest extends TestBase{
         sm.getBlock().increase(blocks);
     }
 
-    MockedStatic<Context> contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
     @BeforeEach
     void setup() throws Exception {
 
