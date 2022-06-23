@@ -11,7 +11,6 @@ import score.annotation.EventLog;
 import score.annotation.External;
 
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.Map;
 
 import static finance.omm.utils.math.MathUtils.ICX;
@@ -19,7 +18,6 @@ import static finance.omm.utils.math.MathUtils.convertExaToOther;
 import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static finance.omm.utils.math.MathUtils.exaDivide;
-import static java.math.BigInteger.TEN;
 import static java.math.BigInteger.ZERO;
 
 public class LiquidationManagerImpl extends AddressProvider implements LiquidationManager,

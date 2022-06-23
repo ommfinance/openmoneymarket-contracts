@@ -26,6 +26,8 @@ public class AbstractLiquidationManagerTest extends TestBase {
 
     public static final ServiceManager sm = getServiceManager();
     public Account owner;
+
+    public Address user = sm.createAccount().getAddress();
     public Score score;
     public LiquidationManagerImpl scoreSpy;
 
