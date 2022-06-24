@@ -172,6 +172,33 @@ public class LiquidationManagerTest extends AbstractLiquidationManagerTest {
 
         score.invoke(LENDING_POOL,"liquidationCall",collateralAddr,
                 reserveAddr,user, purchaseAmount);
+
+        verify(scoreSpy,times(1)).call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getReserveConfigurationData",collateralAddr);
+        verify(scoreSpy,times(9)).call(eq(String.class),eq(Contracts.LENDING_POOL_DATA_PROVIDER),
+                eq("getSymbol"),any(Address.class));
+        verify(scoreSpy,times(9)).call(eq(BigInteger.class),eq(Contracts.PRICE_ORACLE),
+                eq("get_reference_data"),any(String.class),eq("USD"));
+        verify(scoreSpy,times(2)).call(BigInteger.class,Contracts.STAKING, "getTodayRate");
+        verify(scoreSpy,times(3)).call(eq(Map.class),eq(Contracts.LENDING_POOL_CORE),
+                eq("getReserveConfiguration"),eq(reserveAddr));
+        verify(scoreSpy,times(2)).call(eq(Map.class),eq(Contracts.LENDING_POOL_CORE),
+                eq("getReserveConfiguration"),eq(collateralAddr));
+        verify(scoreSpy).call(eq(Address.class),eq(Contracts.LENDING_POOL_CORE),eq("getReserveOTokenAddress"),
+                eq(collateralAddr));
+        verify(scoreSpy).call(BigInteger.class,Contracts.LENDING_POOL_CORE, "getUserOriginationFee",
+                reserveAddr,user);
+        verify(scoreSpy,times(2)).call(Map.class,Contracts.LENDING_POOL_CORE,
+                "getUserBorrowBalances",reserveAddr,user);
+        verify(scoreSpy,times(3)).call(BigInteger.class,Contracts.LENDING_POOL_CORE,
+                "getUserUnderlyingAssetBalance",
+                collateralAddr,user);
+        verify(scoreSpy,times(5)).call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getUserAccountData",user);
+
+        verify(scoreSpy,times(5)).call(Map.class ,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getReserveData",collateralAddr);
+
     }
 
     @Test

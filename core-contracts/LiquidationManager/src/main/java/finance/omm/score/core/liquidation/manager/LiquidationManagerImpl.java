@@ -151,9 +151,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         BigInteger liquidatedCollateralForFee = ZERO;
         BigInteger feeLiquidated = ZERO;
 
-        System.out.println(principalBase+principalPrice);
-        System.out.println(userAccountData);
-        System.out.println(collateralData);
+
         boolean isCollateral = (boolean) collateralData.get("usageAsCollateralEnabled");
         if (!isCollateral){
             throw LiquidationManagerException.unknown(TAG + ": the reserve " + _collateral +
