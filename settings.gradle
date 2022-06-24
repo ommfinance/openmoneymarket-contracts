@@ -39,6 +39,10 @@ findProject(":Score").projectDir = file("libs/Score")
 include('DToken')
 findProject(":DToken").projectDir = file("token-contracts/DToken")
 
+
+include('OToken')
+findProject(":OToken").projectDir = file("token-contracts/OToken")
+
 include('DaoFund')
 findProject(":DaoFund").projectDir = file("core-contracts/DaoFund")
 
