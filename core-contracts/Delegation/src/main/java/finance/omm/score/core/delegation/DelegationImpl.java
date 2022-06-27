@@ -125,6 +125,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     @External
     public void removeContributor(Address _prep) {
+        checkOwner();
         boolean isContributor = isContributor(_prep);
         if (!isContributor) {
             throw DelegationException.unknown(TAG + ": " + _prep + " is not in contributor list");
