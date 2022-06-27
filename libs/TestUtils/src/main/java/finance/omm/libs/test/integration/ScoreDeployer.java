@@ -34,7 +34,10 @@ public class ScoreDeployer {
 
         Map<String, foundation.icon.jsonrpc.Address> addresses = new HashMap<>();
 
+
+
         addresses.put("addressProvider", omm.deployAddressManager());
+
 
         for (Entry<Float, List<Score>> entry : scores.entrySet()) {
             Map<String, Future<Address>> result = new HashMap<>();

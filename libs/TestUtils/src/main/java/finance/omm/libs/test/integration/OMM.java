@@ -47,7 +47,7 @@ public class OMM {
     public void setupOMM() throws Exception {
         deployPrep();
         this.addresses = new ScoreDeployer(this, contracts).deployContracts();
-
+        System.out.println("this.addresses"+this.addresses);
         ownerClient = new OMMClient(this, owner);
         testClient = new OMMClient(this, createWalletWithBalance(BigInteger.TEN.pow(24)));
     }

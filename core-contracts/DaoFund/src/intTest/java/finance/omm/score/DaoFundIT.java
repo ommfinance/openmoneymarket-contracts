@@ -28,4 +28,5 @@ public class DaoFundIT implements ScoreIntegrationTest {
         assertEquals(addressProvider, address);
 
     }
+
 }

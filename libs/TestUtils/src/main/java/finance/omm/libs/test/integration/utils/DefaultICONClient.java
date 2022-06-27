@@ -97,7 +97,6 @@ public class DefaultICONClient {
         return txr.getScoreAddress();
     }
 
-
     public TransactionResult send(Wallet wallet, Address address,
             BigInteger valueForPayable, String method, Map<String, Object> params,
             long timeout) {
@@ -154,7 +153,6 @@ public class DefaultICONClient {
         }
         return txr;
     }
-
 
     static Hash sendTransaction(JsonrpcClient client, Wallet wallet, SendTransactionParam sendTransactionParam) {
         Objects.requireNonNull(client, "client required not null");
