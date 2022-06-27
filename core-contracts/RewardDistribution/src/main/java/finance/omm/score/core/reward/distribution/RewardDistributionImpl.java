@@ -48,6 +48,10 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             "bOMM-migration-is-legacy-reward-calculated",
             Boolean.class);
 
+    @Deprecated
+    public final DictDB<String, BigInteger> tokenDistTracker = Context.newDictDB("tokenDistTracker",
+            BigInteger.class);
+
 
     public RewardDistributionImpl(Address addressProvider, BigInteger bOMMRewardStartDate) {
         super(addressProvider);
@@ -530,7 +534,26 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             this.legacyRewards.updateAssetIndex(assetAddr, totalSupply, bOMMCutOffTimestamp);
             LegacyAssetIndexUpdated(assetAddr);
         }
+        // distribute
+        distributeToWorkerAndDaoFund();
         IS_ASSET_INDEX_UPDATED.set(Boolean.TRUE);
+    }
+
+    private void distributeToWorkerAndDaoFund() {
+
+        // daoFundRewards
+        BigInteger daoFundRewards = tokenDistTracker("daoFund");
+        Address daoFundAddress = getAddress(Contracts.DAO_FUND.getKey());
+        call(Contracts.OMM_TOKEN, "transfer", daoFundAddress, daoFundRewards);
+        Distribution("daoFund", daoFundAddress, daoFundRewards);
+
+        // workerTokenRewards
+        BigInteger workerRewards = tokenDistTracker("worker");
+        distributeWorkerToken(workerRewards);
+    }
+
+    private BigInteger tokenDistTracker(String key) {
+        return tokenDistTracker.getOrDefault(key, BigInteger.ZERO);
     }
 
     /**
