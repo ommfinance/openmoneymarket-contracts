@@ -1,10 +1,20 @@
 package finance.omm.score.reward.test.unit;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+
 import com.iconloop.score.test.Account;
+import finance.omm.libs.address.Contracts;
+import finance.omm.libs.test.VarargAnyMatcher;
+import java.math.BigInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.ArgumentMatchers;
+import score.Address;
 
 
 public class RewardMigrationUnitTest extends RewardDistributionAbstractTest {
@@ -49,6 +59,25 @@ public class RewardMigrationUnitTest extends RewardDistributionAbstractTest {
         @DisplayName("should update index")
         @Test
         void should_update_index() {
+            Address[] addressList = new Address[]{
+                    sm.createAccount().getAddress(),
+                    sm.createAccount().getAddress(),
+            };
+
+            VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+
+            doReturn(addressList).when(scoreSpy).call(eq(Address[].class),eq(Contracts.WORKER_TOKEN),
+                    eq("getWallets"));
+            doReturn(BigInteger.valueOf(50)).when(scoreSpy).call(eq(BigInteger.class),eq(Contracts.WORKER_TOKEN),
+                    eq("balanceOf"), any());
+            doReturn(BigInteger.valueOf(100)).when(scoreSpy).call(eq(BigInteger.class),eq(Contracts.WORKER_TOKEN),
+                    eq("totalSupply"));
+
+            doNothing().when(scoreSpy)
+                    .call(eq(Contracts.OMM_TOKEN), eq("transfer"),
+                            ArgumentMatchers.<Object>argThat(matcher));
+            doNothing().when(scoreSpy).call(eq(Contracts.OMM_TOKEN), eq("transfer"), any());
+
             score.invoke(owner, "updateAssetIndexes");
             Object[] params = new Object[]{
                     addresses
