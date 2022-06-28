@@ -42,7 +42,8 @@ test {
     useJUnitPlatform()
 }
 
-task integrationTest(type: Test)  {
+
+task integrationTest(type: Test) {
     useJUnitPlatform()
 
 
@@ -60,4 +61,8 @@ task integrationTest(type: Test)  {
         testClassesDirs = sourceSets.intTest.output.classesDirs
         classpath = sourceSets.intTest.runtimeClasspath
     }
+
 }
+
+
+

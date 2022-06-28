@@ -13,6 +13,7 @@ import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.configs.GovernanceConfig;
 import finance.omm.score.core.governance.exception.GovernanceException;
+import foundation.icon.score.client.RevertedException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
+import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -36,13 +38,11 @@ public class GovernanceIntegrationTest implements ScoreIntegrationTest {
     @BeforeAll
     static void setup() throws Exception {
         OMM omm = new OMM("governance/scores.json");
-        System.out.println("a"+omm.getAddresses());
         omm.setupOMM();
-        System.out.println("b"+omm.getAddresses());
+
         Config config = new GovernanceConfig(omm.getAddresses());
-        System.out.println("c"+omm.getAddresses());
         omm.runConfig(config);
-        System.out.println("d"+omm.getAddresses());
+
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
 
@@ -89,7 +89,22 @@ public class GovernanceIntegrationTest implements ScoreIntegrationTest {
     @Test
     void initializeReserve(){
         ReserveAttributes reserve = new ReserveAttributes();
-        BigInteger baseltv = BigInteger.TEN;
+        reserve.reserveAddress = addresses.get(0);
+        reserve.oTokenAddress = addresses.get(1);
+        reserve.dTokenAddress = addresses.get(2);
+        reserve.lastUpdateTimestamp = BigInteger.ZERO;
+        reserve.liquidityRate = BigInteger.ZERO;
+        reserve.borrowRate = BigInteger.ZERO;
+        reserve.liquidityCumulativeIndex = BigInteger.ZERO;
+        reserve.borrowCumulativeIndex = BigInteger.ZERO;
+        reserve.baseLTVasCollateral = BigInteger.ZERO;
+        reserve.liquidationThreshold = BigInteger.ZERO;
+        reserve.liquidationBonus = BigInteger.ZERO;
+        reserve.decimals = 18;
+        reserve.borrowingEnabled = true;
+        reserve.usageAsCollateralEnabled = true;
+        reserve.isFreezed = true;
+        reserve.isActive = true;
         assertUserRevert(GovernanceException.notOwner(),
                 () -> testClient.governance.initializeReserve(reserve), null);
 
@@ -153,11 +168,11 @@ public class GovernanceIntegrationTest implements ScoreIntegrationTest {
     @Test
     void addPools(){
         AssetConfig assetconfig = new AssetConfig();
-//        constant.poolID = addresses.get(0);
-//        constant.asset = BigInteger.ONE;
-//        constant.distPercentage = BigInteger.TWO;
-//        constant.assetName = BigInteger.ONE;
-//        constant.rewardEntity = BigInteger.TEN;
+        assetconfig.poolID = 1;
+        assetconfig.asset = addresses.get(0);
+        assetconfig.distPercentage = BigInteger.TWO;
+        assetconfig.assetName = "";
+        assetconfig.rewardEntity ="";
         AssetConfig[] assetconfigs = new AssetConfig[]{
                 assetconfig
         };
@@ -169,11 +184,11 @@ public class GovernanceIntegrationTest implements ScoreIntegrationTest {
     @Test
     void addPool(){
         AssetConfig assetconfig = new AssetConfig();
-//        constant.poolID = addresses.get(0);
-//        constant.asset = BigInteger.ONE;
-//        constant.distPercentage = BigInteger.TWO;
-//        constant.assetName = BigInteger.ONE;
-//        constant.rewardEntity = BigInteger.TEN;
+        assetconfig.poolID = 1;
+        assetconfig.asset = addresses.get(0);
+        assetconfig.distPercentage = BigInteger.TWO;
+        assetconfig.assetName = "";
+        assetconfig.rewardEntity ="";
 
         Address reserve = (Address) addresses.get(0);
         assertUserRevert(GovernanceException.notOwner(),
@@ -212,10 +227,7 @@ public class GovernanceIntegrationTest implements ScoreIntegrationTest {
 
     @Test
     void getVotersCount(){
-        int vote_index = 1;
-        assertUserRevert(GovernanceException.notOwner(),
-                () -> testClient.governance.getVotersCount(vote_index), null);
-    }
+   }
 
     @Test
     void setVoteDuration(){
@@ -295,11 +307,11 @@ public class GovernanceIntegrationTest implements ScoreIntegrationTest {
         assertUserRevert(GovernanceException.notOwner(),
                 () -> testClient.governance.setProposalStatus(vote_index,"Pending"), null);
 
-        assertUserRevert(GovernanceException.unknown("invalid proposal status " + null),
-                () -> ommClient.governance.setProposalStatus(vote_index,null), null);
+        assertUserRevert(GovernanceException.unknown("invalid proposal status " + "abcd"),
+                () -> ommClient.governance.setProposalStatus(vote_index,"abcd"), null);
 
         assertUserRevert(GovernanceException.proposalNotFound(vote_index),
-                () -> ommClient.governance.setProposalStatus(vote_index,"pending"), null);
+                () -> ommClient.governance.setProposalStatus(vote_index,"Pending"), null);
     }
 
     @Test
