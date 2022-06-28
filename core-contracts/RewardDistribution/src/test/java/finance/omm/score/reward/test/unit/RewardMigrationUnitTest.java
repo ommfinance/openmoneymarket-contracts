@@ -4,6 +4,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
@@ -79,6 +81,9 @@ public class RewardMigrationUnitTest extends RewardDistributionAbstractTest {
             doNothing().when(scoreSpy).call(eq(Contracts.OMM_TOKEN), eq("transfer"), any());
 
             score.invoke(owner, "updateAssetIndexes");
+            Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
+            verify(scoreSpy).Distribution("daoFund", daoFund, BigInteger.ZERO);
+            verify(scoreSpy).Distribution("worker", addressList[0], BigInteger.ZERO);
             Object[] params = new Object[]{
                     addresses
             };
