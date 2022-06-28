@@ -552,6 +552,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         distributeWorkerToken(workerRewards);
     }
 
+    @Deprecated
     private BigInteger tokenDistTracker(String key) {
         return tokenDistTracker.getOrDefault(key, BigInteger.ZERO);
     }
