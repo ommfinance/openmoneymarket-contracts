@@ -6,15 +6,14 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
 import finance.omm.score.core.stakedLP.exception.StakedLPException;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
 import score.Address;
 import score.Context;
 import score.annotation.External;
 import scorex.util.ArrayList;
-
-import java.math.BigInteger;
 import scorex.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class StakedLPImpl extends AbstractStakedLP {
 
@@ -24,7 +23,7 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public String name() {
-        return "Omm " + TAG;
+        return "OMM " + TAG;
     }
 
     @External

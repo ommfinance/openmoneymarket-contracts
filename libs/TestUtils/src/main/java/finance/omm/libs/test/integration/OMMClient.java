@@ -27,9 +27,10 @@ import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.core.score.interfaces.StakedLPScoreClient;
 import finance.omm.core.score.interfaces.WorkerToken;
 import finance.omm.core.score.interfaces.WorkerTokenScoreClient;
-import finance.omm.libs.address.Contracts;
 import finance.omm.libs.test.integration.scores.DToken;
 import finance.omm.libs.test.integration.scores.DTokenScoreClient;
+import finance.omm.libs.test.integration.scores.DummyDEX;
+import finance.omm.libs.test.integration.scores.DummyDEXScoreClient;
 import finance.omm.libs.test.integration.scores.DummyPriceOracle;
 import finance.omm.libs.test.integration.scores.DummyPriceOracleScoreClient;
 import finance.omm.libs.test.integration.scores.LendingPool;
@@ -42,6 +43,8 @@ import finance.omm.libs.test.integration.scores.OToken;
 import finance.omm.libs.test.integration.scores.OTokenScoreClient;
 import finance.omm.libs.test.integration.scores.PriceOracle;
 import finance.omm.libs.test.integration.scores.PriceOracleScoreClient;
+import finance.omm.libs.test.integration.scores.StableCoin;
+import finance.omm.libs.test.integration.scores.StableCoinScoreClient;
 import finance.omm.libs.test.integration.scores.Staking;
 import finance.omm.libs.test.integration.scores.StakingScoreClient;
 import finance.omm.libs.test.integration.scores.SystemInterface;
@@ -51,13 +54,17 @@ import finance.omm.libs.test.integration.scores.sICXScoreClient;
 import foundation.icon.icx.KeyWallet;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.client.ScoreClient;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 public class OMMClient {
 
     private OMM omm;
     private KeyWallet wallet;
+
+    private Map<String, score.Address> addresses;
 
     //
     @ScoreClient
@@ -108,7 +115,11 @@ public class OMMClient {
 
     //dummy
     @ScoreClient
+    public StableCoin iUSDC;
+    @ScoreClient
     public sICX sICX;
+    @ScoreClient
+    public DummyDEX dex;
     @ScoreClient
     public Staking staking;
     @ScoreClient
@@ -204,7 +215,7 @@ public class OMMClient {
                     oICX = new OTokenScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
                             entry.getValue());
                     break;
-                case "oUSDC":
+                case "oIUSDC":
                     oUSDC = new OTokenScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
                             entry.getValue());
                     break;
@@ -213,8 +224,12 @@ public class OMMClient {
                             wallet,
                             entry.getValue());
                     break;
-                case "dUSDC":
+                case "dIUSDC":
                     dUSDC = new DTokenScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
+                            entry.getValue());
+                    break;
+                case "IUSDC":
+                    iUSDC = new StableCoinScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
                             entry.getValue());
                     break;
                 case "priceOracle":
@@ -226,6 +241,12 @@ public class OMMClient {
                             entry.getValue());
                     break;
 
+                case "dex":
+                    dex = new DummyDEXScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
+                            entry.getValue());
+                    break;
+                case "owner":
+                    break;
                 default:
                     throw new NoSuchElementException(entry.getKey() + " score not found!!");
 
@@ -234,11 +255,17 @@ public class OMMClient {
         }
     }
 
-    public score.Address getAddress() {
-        return score.Address.fromString(wallet.getAddress().toString());
+    public Map<String, score.Address> getContractAddresses() {
+        if (addresses == null) {
+            addresses = this.omm.getAddresses().entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(Entry::getKey,
+                            entry -> score.Address.fromString(entry.getValue().toString())));
+        }
+        return addresses;
     }
 
-    public score.Address getAddress(Contracts contract) {
+    public score.Address getAddress() {
         return score.Address.fromString(wallet.getAddress().toString());
     }
 

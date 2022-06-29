@@ -34,6 +34,7 @@ dependencies {
 
     implementation project(':OMMStruct')
     implementation project(':Score')
+    implementation project(':ScoreUtils')
     implementation project(':AddressProvider')
 }
 
