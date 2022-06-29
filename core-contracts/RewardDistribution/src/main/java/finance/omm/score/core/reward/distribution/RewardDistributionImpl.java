@@ -542,19 +542,18 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
     private void distributeToWorkerAndDaoFund() {
 
         // daoFundRewards
-        BigInteger daoFundRewards = tokenDistTracker("daoFund");
+        BigInteger daoFundRewards = tokenDistTracker.getOrDefault("daoFund", BigInteger.ZERO);
         Address daoFundAddress = getAddress(Contracts.DAO_FUND.getKey());
         call(Contracts.OMM_TOKEN, "transfer", daoFundAddress, daoFundRewards);
         Distribution("daoFund", daoFundAddress, daoFundRewards);
 
         // workerTokenRewards
-        BigInteger workerRewards = tokenDistTracker("worker");
+        BigInteger workerRewards = tokenDistTracker.getOrDefault("worker", BigInteger.ZERO);
         distributeWorkerToken(workerRewards);
-    }
 
-    @Deprecated
-    private BigInteger tokenDistTracker(String key) {
-        return tokenDistTracker.getOrDefault(key, BigInteger.ZERO);
+        // set token dist tracker to null
+        tokenDistTracker.set("worker", null);
+        tokenDistTracker.set("daoFund", null);
     }
 
     /**
