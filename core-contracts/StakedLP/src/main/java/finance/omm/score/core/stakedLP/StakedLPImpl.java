@@ -196,7 +196,7 @@ public class StakedLPImpl extends AbstractStakedLP {
 
         call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id),userDetails);
         BigInteger id = BigInteger.valueOf(_id);
-        call(Contracts.DEX, "transfer", _user,_value,id,"transferBackToUser".getBytes());
+        call(Contracts.DEX, "transfer", _user, id, _value, "transferBackToUser".getBytes());
     }
 
     @External
