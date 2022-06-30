@@ -36,7 +36,7 @@ public interface StakedLP {
 
     void unstake(int _id, BigInteger _value);
 
-    void onIRC31Received(Address _operator, Address _from, int _id, BigInteger _value, byte[] data); //balance bata biginteger
+    void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] data); //balance bata biginteger
 
     SupplyDetails getLPStakedSupply(int _id, Address _user);
 

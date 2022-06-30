@@ -200,7 +200,7 @@ public class StakedLPImpl extends AbstractStakedLP {
     }
 
     @External
-    public void onIRC31Received(Address _operator, Address _from, int _id, BigInteger _value, byte[] _data) {
+    public void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data) {
         onlyContractOrElseThrow(Contracts.DEX,StakedLPException.unauthorized(
                 "Sender not score dex error: (sender) " +
                         Context.getCaller()+ " dex " + getAddress(Contracts.DEX.getKey())));
@@ -211,7 +211,7 @@ public class StakedLPImpl extends AbstractStakedLP {
         String method = json.get("method").asString();
 
         if(method.equals("stake")){
-            this.stake(_from, _id, _value);
+            this.stake(_from, _id.intValue(), _value);
         }else {
             throw StakedLPException.unknown("No valid method called :: " + data);
         }
