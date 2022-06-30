@@ -413,7 +413,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
                 any(BigInteger.class));
 
         doNothing().when(scoreSpy).call(eq(Contracts.REWARDS),eq("handleLPAction"),any(),any());
-        score.invoke(account,"onIRC31Received", operator,from,id,amount,data);
+        score.invoke(account,"onIRC31Received", operator,from,BigInteger.valueOf(id),amount,data);
     }
 
 
