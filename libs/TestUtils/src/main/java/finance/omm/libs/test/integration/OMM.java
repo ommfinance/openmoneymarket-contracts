@@ -14,8 +14,6 @@ import finance.omm.libs.test.integration.utils.DefaultICONClient;
 import foundation.icon.icx.KeyWallet;
 import foundation.icon.icx.data.Bytes;
 import foundation.icon.score.client.DefaultScoreClient;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +37,6 @@ public class OMM {
     private Map<String, foundation.icon.jsonrpc.Address> addresses;
 
     public OMM(String contracts) throws Exception {
-
         this.contracts = contracts;
         ommClients = new HashMap<>();
         owner = createWalletWithBalance(BigInteger.TEN.pow(24));
@@ -158,16 +155,5 @@ public class OMM {
     public foundation.icon.jsonrpc.Address getAddress(String key) {
 
         return this.addresses.get(key);
-    }
-
-
-    static void updateDefaultScoreClient(Field field, long newValue) throws Exception {
-        field.setAccessible(true);
-
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-        field.set(null, newValue);
     }
 }
