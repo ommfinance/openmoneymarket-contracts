@@ -21,7 +21,8 @@ task init() {
 
 dependencies {
     implementation "foundation.icon:icon-sdk:$iconsdkVersion"
-    implementation "foundation.icon:javaee-score-client:$scoreClientVersion"
+//    implementation "foundation.icon:javaee-score-client:$scoreClientVersion"
+    implementation name: "score-client-$scoreClientVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.github.javafaker:javafaker:$javafakerVersion"
