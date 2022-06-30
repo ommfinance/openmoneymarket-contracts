@@ -81,14 +81,6 @@ subprojects {
         junitVersion = findProperty("junit.version") ?: '5.8.1'
         javafakerVersion = findProperty("javafaker.version") ?: '1.0.2'
         commonIOVersion = findProperty("common-io.version") ?: '2.11.0'
-
-        javapoetVersion = getProperty("javapoet.version")
-        javaeeVersion = getProperty("javaee.version")
-        scorexVersion = getProperty("scorex.version")
-        javaeeUnittestVersion = getProperty("javaee-unittest.version")
-        iconsdkVersion = getProperty("iconsdk.version")
-        jacksonVersion = getProperty("jackson.version")
-//        integrationTest = Boolean.parseBoolean(getProperty("integrationTest").toString())
     }
 
     dependencies {
