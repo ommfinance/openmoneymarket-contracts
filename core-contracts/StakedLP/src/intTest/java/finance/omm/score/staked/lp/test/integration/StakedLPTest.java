@@ -1,5 +1,6 @@
 package finance.omm.score.staked.lp.test.integration;
 
+import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -14,6 +15,7 @@ import finance.omm.score.core.stakedLP.exception.StakedLPException;
 import finance.omm.score.staked.lp.test.integration.config.StakedLPConfig;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.Address.Type;
+import foundation.icon.score.client.RevertedException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,8 +44,8 @@ public class StakedLPTest implements ScoreIntegrationTest {
     private Map<String, Boolean> status = new HashMap<>();
 
     private final Map<Integer, Address> POOLS = new HashMap<>() {{
-        put(1, Faker.address(Type.CONTRACT));
-        put(2, Faker.address(Type.CONTRACT));
+        put(6, Faker.address(Type.CONTRACT));
+        put(7, Faker.address(Type.CONTRACT));
     }};
 
 
@@ -93,34 +95,37 @@ public class StakedLPTest implements ScoreIntegrationTest {
 
         assertEquals(new HashMap<>(), ownerClient.stakedLP.getSupportedPools());
 
-        assertNull(ownerClient.stakedLP.getPoolById(1));
+        assertNull(ownerClient.stakedLP.getPoolById(7));
 
         assertUserRevert(StakedLPException.unauthorized("error"),
-                () -> ownerClient.stakedLP.addPool(1, POOLS.get(1)), null);
+                () -> ownerClient.stakedLP.addPool(1, POOLS.get(7)), null);
+
+        ownerClient.governance.addAsset("liquidity", "OMM/sICX", POOLS.get(7), BigInteger.valueOf(7));
+        ownerClient.governance.addAsset("liquidity", "OMM/IUSDC", POOLS.get(6), BigInteger.valueOf(6));
 
         AssetConfig pool1 = new AssetConfig();
-        pool1.poolID = 1;
-        pool1.assetName = "LP-1";
-        pool1.distPercentage = ICX;
+        pool1.poolID = 6;
+        pool1.assetName = "OMM/IUSDC";
+        pool1.distPercentage = ICX.divide(BigInteger.TWO);
         pool1.rewardEntity = "liquidity";
-        pool1.asset = POOLS.get(1);
+        pool1.asset = POOLS.get(6);;
 
         AssetConfig pool2 = new AssetConfig();
-        pool2.poolID = 2;
-        pool2.assetName = "LP-2";
-        pool2.distPercentage = ICX;
+        pool2.poolID = 7;
+        pool2.assetName = "OMM/sICX";
+        pool2.distPercentage = ICX.divide(BigInteger.TWO);
         pool2.rewardEntity = "liquidity";
-        pool2.asset = POOLS.get(2);
+        pool2.asset = POOLS.get(7);;
 
         ownerClient.governance.addPools(new AssetConfig[]{
                 pool1, pool2
         });
 
-        assertEquals(POOLS.get(1), ownerClient.stakedLP.getPoolById(1));
+        assertEquals(POOLS.get(7), ownerClient.stakedLP.getPoolById(7));
 
         assertEquals(new HashMap<>() {{
-            put("1", POOLS.get(1));
-            put("2", POOLS.get(2));
+            put("6", POOLS.get(6));
+            put("7", POOLS.get(7));
         }}, ownerClient.stakedLP.getSupportedPools());
 
         status.put("testAddPools", true);
@@ -138,39 +143,69 @@ public class StakedLPTest implements ScoreIntegrationTest {
             testAddPools();
         }
 
-        ownerClient.dex.mintTo(BigInteger.ONE, testClient.getAddress(), BigInteger.TEN.pow(19));
+        ownerClient.dex.mintTo(BigInteger.valueOf(7), testClient.getAddress(), BigInteger.TEN.pow(20));
 
-        ownerClient.dex.mintTo(BigInteger.ONE, demoClient.getAddress(), BigInteger.TEN.pow(19));
+        ownerClient.dex.mintTo(BigInteger.valueOf(7), demoClient.getAddress(), BigInteger.TEN.pow(20));
 
         Function<UserRevertedException, String> supplier = Throwable::getMessage;
 
         //stake failure as no data passed
-//        assertReverted(new RevertedException(1, "UnknownFailure"),
-//                () -> demoClient.dex.transferFrom(demoClient.getAddress(), addressMap.get("stakedLP"), BigInteger.ONE,
-//                        BigInteger.TEN.pow(19), new byte[0]));
+        assertReverted(new RevertedException(1, "UnknownFailure"),
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
+                        BigInteger.TEN.pow(19), new byte[0]));
 
         //stake BigInteger.valueOf(9).pow(19) out of BigInteger.valueOf(10).pow(19) LP token
-        demoClient.dex.transferFrom(demoClient.getAddress(), addressMap.get("stakedLP"), BigInteger.ONE,
-                BigInteger.valueOf(9).pow(19), "{\"method\":\"stake\"}".getBytes());
+        demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
+                BigInteger.TEN.pow(19), "{\"method\":\"stake\"}".getBytes());
 
-        Map<String, BigInteger> balanceOfDemo = demoClient.stakedLP.balanceOf(demoClient.getAddress(), 1);
+        Map<String, BigInteger> balanceOfDemo = demoClient.stakedLP.balanceOf(demoClient.getAddress(), 7);
 
-        assertEquals(BigInteger.ONE, balanceOfDemo.get("poolID"));
-        assertEquals(BigInteger.valueOf(10).pow(19), balanceOfDemo.get("userTotalBalance"));
-        assertEquals(BigInteger.valueOf(1).pow(19), balanceOfDemo.get("userAvailableBalance"));
-        assertEquals(BigInteger.valueOf(9).pow(19), balanceOfDemo.get("userStakedBalance"));
-        assertEquals(BigInteger.valueOf(9).pow(19), balanceOfDemo.get("totalStakedBalance"));
+        assertEquals(BigInteger.valueOf(7), balanceOfDemo.get("poolID"));
+        assertEquals(BigInteger.valueOf(10).pow(20), balanceOfDemo.get("userTotalBalance"));
+        assertEquals(BigInteger.valueOf(90).multiply(ICX), balanceOfDemo.get("userAvailableBalance"));
+        assertEquals(BigInteger.valueOf(10).pow(19), balanceOfDemo.get("userStakedBalance"));
+        assertEquals(BigInteger.valueOf(10).pow(19), balanceOfDemo.get("totalStakedBalance"));
 
         //stake BigInteger.valueOf(9).pow(19) out of BigInteger.valueOf(10).pow(19) LP token
-        testClient.dex.transferFrom(testClient.getAddress(), addressMap.get("stakedLP"), BigInteger.ONE,
-                BigInteger.valueOf(5).pow(19), "{\"method\":\"stake\"}".getBytes());
+        testClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
+                BigInteger.valueOf(50).multiply(ICX), "{\"method\":\"stake\"}".getBytes());
 
-        balanceOfDemo = testClient.stakedLP.balanceOf(testClient.getAddress(), 1);
+        Map<String, BigInteger> balanceOfTest = testClient.stakedLP.balanceOf(testClient.getAddress(), 7);
 
-        assertEquals(BigInteger.ONE, balanceOfDemo.get("poolID"));
-        assertEquals(BigInteger.valueOf(10).pow(19), balanceOfDemo.get("userTotalBalance"));
-        assertEquals(BigInteger.valueOf(5).pow(19), balanceOfDemo.get("userAvailableBalance"));
-        assertEquals(BigInteger.valueOf(5).pow(19), balanceOfDemo.get("userStakedBalance"));
-        assertEquals(BigInteger.valueOf(14).pow(19), balanceOfDemo.get("totalStakedBalance"));
+        assertEquals(BigInteger.valueOf(7), balanceOfTest.get("poolID"));
+        assertEquals(BigInteger.valueOf(10).pow(20), balanceOfTest.get("userTotalBalance"));
+        assertEquals(BigInteger.valueOf(50).multiply(ICX), balanceOfTest.get("userAvailableBalance"));
+        assertEquals(BigInteger.valueOf(50).multiply(ICX), balanceOfTest.get("userStakedBalance"));
+        assertEquals(BigInteger.valueOf(60).multiply(ICX), balanceOfTest.get("totalStakedBalance"));
+
+        status.put("testOnIRC31Recieved", true);
+    }
+
+    @DisplayName("test unstake")
+    @Test
+    @Order(30)
+    void testUnstake() {
+        if (!status.getOrDefault("testOnIRC31Recieved", false)) {
+            testOnIRC31Received();
+        }
+
+        // test and demo users have some lp tokens staked
+        Map<String, BigInteger> balanceOfTestBefore = testClient.stakedLP.balanceOf(testClient.getAddress(), 7);
+
+        assertUserRevert(StakedLPException.unknown("pool with id: " + 8 + "is not supported"),
+                () -> testClient.stakedLP.unstake(8, BigInteger.valueOf(200).multiply(ICX)), null);
+
+        // unstake
+        testClient.stakedLP.unstake(7, BigInteger.TEN.multiply(ICX));
+
+        // check balances after
+        Map<String, BigInteger> balanceOfTestAfter = testClient.stakedLP.balanceOf(testClient.getAddress(), 7);
+        assertEquals(BigInteger.valueOf(7), balanceOfTestAfter.get("poolID"));
+        assertEquals(BigInteger.valueOf(10).pow(20), balanceOfTestAfter.get("userTotalBalance"));
+        assertEquals(BigInteger.valueOf(60).multiply(ICX), balanceOfTestAfter.get("userAvailableBalance"));
+        assertEquals(BigInteger.valueOf(40).multiply(ICX), balanceOfTestAfter.get("userStakedBalance"));
+        assertEquals(BigInteger.valueOf(50).multiply(ICX), balanceOfTestAfter.get("totalStakedBalance"));
+
+        status.put("testUnstake", true);
     }
 }
