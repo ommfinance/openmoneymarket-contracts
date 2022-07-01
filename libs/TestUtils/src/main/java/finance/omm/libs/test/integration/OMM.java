@@ -156,29 +156,4 @@ public class OMM {
 
         return this.addresses.get(key);
     }
-
-
-    public void configure(OMMClient ommClient) {
-        if (ommClient.delegation != null) {
-            ommClient.addressManager.setDaoFundAddresses();
-        }
-        if (ommClient.delegation != null) {
-            ommClient.addressManager.setDelegationAddresses();
-        }
-        if (ommClient.feeProvider != null) {
-            ommClient.addressManager.setFeeProviderAddresses();
-        }
-        if (ommClient.governance != null) {
-            ommClient.addressManager.setGovernanceAddresses();
-        }
-        if (ommClient.lendingPool != null) {
-            ommClient.addressManager.setLendingPoolAddresses();
-        }
-        if (ommClient.lendingPoolCore != null) {
-            ommClient.addressManager.setLendingPoolCoreAddresses();
-        }
-        if (ommClient.lendingPoolCore != null) {
-            ommClient.addressManager.setLendingPoolCoreAddresses();
-        }
-    }
 }

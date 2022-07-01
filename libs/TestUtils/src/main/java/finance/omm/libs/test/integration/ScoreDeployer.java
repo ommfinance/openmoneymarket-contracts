@@ -35,6 +35,7 @@ public class ScoreDeployer {
         Map<String, foundation.icon.jsonrpc.Address> addresses = new HashMap<>();
 
         addresses.put("addressProvider", omm.deployAddressManager());
+        addresses.put("owner", foundation.icon.jsonrpc.Address.of(omm.owner));
 
         for (Entry<Float, List<Score>> entry : scores.entrySet()) {
             Map<String, Future<Address>> result = new HashMap<>();
@@ -59,9 +60,7 @@ public class ScoreDeployer {
                     String name = futureEntry.getKey();
                     addresses.put(name, address);
                 } catch (InterruptedException | ExecutionException e) {
-                    System.out.println("futureEntry = " + futureEntry.getKey());
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
+                    throw new RuntimeException(futureEntry.getKey() + " -- " + e.getMessage());
                 }
             }
         }
@@ -80,6 +79,11 @@ public class ScoreDeployer {
                         "name", entry.getKey(), "address", entry.getValue()
                 ));
             }
+        }
+        if (addresses.get("oIUSDC") != null) {
+            details.add(Map.of(
+                    "name", "bridgeOToken", "address", addresses.get("oIUSDC")
+            ));
         }
         Map<String, Object> params = Map.of("_addressDetails", details);
 

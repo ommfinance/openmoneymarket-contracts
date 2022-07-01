@@ -44,6 +44,9 @@ def scoreIntegrationTest = new HashMap<String, String>()
 subprojects {
     repositories {
         mavenCentral()
+        flatDir {
+            dirs "$rootProject.projectDir/libs/jars"
+        }
     }
 
 
@@ -84,12 +87,15 @@ subprojects {
         compileOnly "foundation.icon:javaee-api:$javaeeVersion"
         implementation "foundation.icon:javaee-scorex:$scorexVersion"
         implementation "com.github.sink772:minimal-json:0.9.6"
-        compileOnly "foundation.icon:javaee-score-client:$scoreClientVersion"
+//        compileOnly "foundation.icon:javaee-score-client:$scoreClientVersion"
+        compileOnly name: "score-client-$scoreClientVersion"
         annotationProcessor "foundation.icon:javaee-score-client:$scoreClientVersion"
-
+//        annotationProcessor name:"score-client-0.9.0"
         // Use JUnit Jupiter for testing.
-        testImplementation "foundation.icon:javaee-score-client:$scoreClientVersion"
+//        testImplementation "foundation.icon:javaee-score-client:$scoreClientVersion"
+        testImplementation name: "score-client-$scoreClientVersion"
         testAnnotationProcessor "foundation.icon:javaee-score-client:$scoreClientVersion"
+//        testAnnotationProcessor name:"score-client-0.9.0"
         testImplementation "foundation.icon:javaee-unittest:$javaeeUnittestVersion"
         testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
@@ -132,11 +138,12 @@ subprojects {
     scoreIntegrationTest.put('Staking', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/staking.zip");
     scoreIntegrationTest.put('BandOracle', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/proxy-band-oracle.zip");
     scoreIntegrationTest.put('StableCoin', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip");
+    scoreIntegrationTest.put('DEX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/dex.jar");
 
     //python
     scoreIntegrationTest.put('PriceOracle', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/priceOracle.zip");
     scoreIntegrationTest.put('WorkerToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/workerToken.zip");
-    scoreIntegrationTest.put('StakedLP', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/stakedLP.zip");
+//    scoreIntegrationTest.put('StakedLP', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/stakedLP.zip");
     scoreIntegrationTest.put('LiquidationManager', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/liquidation-manager.zip");
     scoreIntegrationTest.put('LendingPoolDataProvider', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lending-pool-data-provider.zip");
     scoreIntegrationTest.put('LendingPoolCore', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPoolCore.zip");
@@ -145,7 +152,7 @@ subprojects {
 //    scoreIntegrationTest.put('DToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/d-token.zip");
 
 
-    afterEvaluate {
+    afterEvaluate { project ->
         scoreIntegrationTest.put(project.name, project.getTasks().getByName("optimizedJar").outputJarName.toString())
     }
 
@@ -155,9 +162,11 @@ subprojects {
 gradle.taskGraph.beforeTask { Task task ->
     if (task.name == 'integrationTest') {
         scoreIntegrationTest.each { key, val ->
-            println "key = $key"
             task.systemProperty key, val
         }
+        task.systemProperty "DEBUG_ENABLED", false
+        task.systemProperty "BLOCK_INTERVAL", 50
+        task.systemProperty "DEFAULT_RESULT_RETRY_WAIT", 100
     }
 }
 
