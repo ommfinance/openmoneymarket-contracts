@@ -23,7 +23,7 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public String name() {
-        return "Omm " + TAG;
+        return "OMM " + TAG;
     }
 
     @External

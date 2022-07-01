@@ -108,14 +108,16 @@ public class StakedLPTest implements ScoreIntegrationTest {
         pool1.assetName = "OMM/IUSDC";
         pool1.distPercentage = ICX.divide(BigInteger.TWO);
         pool1.rewardEntity = "liquidity";
-        pool1.asset = POOLS.get(6);;
+        pool1.asset = POOLS.get(6);
+        ;
 
         AssetConfig pool2 = new AssetConfig();
         pool2.poolID = 7;
         pool2.assetName = "OMM/sICX";
         pool2.distPercentage = ICX.divide(BigInteger.TWO);
         pool2.rewardEntity = "liquidity";
-        pool2.asset = POOLS.get(7);;
+        pool2.asset = POOLS.get(7);
+        ;
 
         ownerClient.governance.addPools(new AssetConfig[]{
                 pool1, pool2
@@ -161,10 +163,10 @@ public class StakedLPTest implements ScoreIntegrationTest {
         Map<String, BigInteger> balanceOfDemo = demoClient.stakedLP.balanceOf(demoClient.getAddress(), 7);
 
         assertEquals(BigInteger.valueOf(7), balanceOfDemo.get("poolID"));
-        assertEquals(BigInteger.valueOf(10).pow(20), balanceOfDemo.get("userTotalBalance"));
         assertEquals(BigInteger.valueOf(90).multiply(ICX), balanceOfDemo.get("userAvailableBalance"));
         assertEquals(BigInteger.valueOf(10).pow(19), balanceOfDemo.get("userStakedBalance"));
         assertEquals(BigInteger.valueOf(10).pow(19), balanceOfDemo.get("totalStakedBalance"));
+        assertEquals(BigInteger.valueOf(10).pow(20), balanceOfDemo.get("userTotalBalance"));
 
         //stake BigInteger.valueOf(9).pow(19) out of BigInteger.valueOf(10).pow(19) LP token
         testClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
@@ -178,14 +180,14 @@ public class StakedLPTest implements ScoreIntegrationTest {
         assertEquals(BigInteger.valueOf(50).multiply(ICX), balanceOfTest.get("userStakedBalance"));
         assertEquals(BigInteger.valueOf(60).multiply(ICX), balanceOfTest.get("totalStakedBalance"));
 
-        status.put("testOnIRC31Recieved", true);
+        status.put("testOnIRC31Received", true);
     }
 
     @DisplayName("test unstake")
     @Test
-    @Order(30)
+    @Order(40)
     void testUnstake() {
-        if (!status.getOrDefault("testOnIRC31Recieved", false)) {
+        if (!status.getOrDefault("testOnIRC31Received", false)) {
             testOnIRC31Received();
         }
 
