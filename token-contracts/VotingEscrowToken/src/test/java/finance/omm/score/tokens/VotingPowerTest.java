@@ -70,7 +70,8 @@ public class VotingPowerTest extends AbstractBOMMTest {
 
     @BeforeEach
     public void setup() throws Exception {
-        bBALNScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        bBALNScore = sm.deploy(owner, BoostedOMM.class,
+                MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), tokenScore.getAddress(),
                 BOOSTED_OMM, VE_OMM_SYMBOL);
         tokenScore.invoke(owner, "mintTo", alice.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
         tokenScore.invoke(owner, "mintTo", bob.getAddress(), ICX.multiply(BigInteger.valueOf(100L)));
@@ -82,6 +83,8 @@ public class VotingPowerTest extends AbstractBOMMTest {
         setBlockTimestamp(timestamp.divide(WEEK).add(BigInteger.ONE).multiply(WEEK).longValue());
         scoreSpy = (BoostedOMM) spy(bBALNScore.getInstance());
         bBALNScore.setInstance(scoreSpy);
+
+        setAddresses(bBALNScore);
     }
 
     @Test
@@ -107,7 +110,7 @@ public class VotingPowerTest extends AbstractBOMMTest {
         BigInteger timestamp = getBlockTimestamp();
         states.put("before_deposits", getState());
         BigInteger lockUntil = timestamp.divide(WEEK).add(BigInteger.ONE).multiply(WEEK).add(HOUR);
-        BigInteger amount = ICX.multiply(BigInteger.TEN);
+        BigInteger amount = ICX.multiply(BigInteger.valueOf(97));
 
         addBlockHeight(HOUR);
 
@@ -121,7 +124,12 @@ public class VotingPowerTest extends AbstractBOMMTest {
         BigInteger bob_balance = (BigInteger) bBALNScore.call("balanceOf", bob.getAddress(), BigInteger.ZERO);
         BigInteger total_balance = (BigInteger) bBALNScore.call("totalSupply", BigInteger.ZERO);
         //1 block minted
-        BigInteger time = WEEK.subtract(HOUR.multiply(BigInteger.TWO).add(SECOND.multiply(BigInteger.TWO)));
+        Map<String, BigInteger> value = (Map<String, BigInteger>) bBALNScore.call("getLocked", alice.getAddress());
+        BigInteger aliceEndTime = value.get("end");
+        BigInteger time = aliceEndTime
+                .subtract(
+                        getBlockTimestamp());//WEEK.subtract(HOUR.multiply(BigInteger.TWO).add(SECOND.multiply(BigInteger.valueOf(4))));
+
         assertEquals(amount.divide(MAX_TIME).multiply(time), alice_balance);
         assertEquals(amount.divide(MAX_TIME).multiply(time), total_balance);
         assertEquals(BigInteger.ZERO, bob_balance);
@@ -176,7 +184,7 @@ public class VotingPowerTest extends AbstractBOMMTest {
         BigInteger TWO_WEEKS = WEEK.multiply(BigInteger.TWO).subtract(SECOND.multiply(BigInteger.TWO));
         timestamp = getBlockTimestamp();
         lockUntil = timestamp.divide(WEEK).add(BigInteger.TWO).multiply(WEEK);
-        amount = ICX.multiply(BigInteger.TEN);
+        amount = ICX.multiply(BigInteger.valueOf(97));
 
         createLock(alice, lockUntil, amount);
         states.put("alice_deposit_2", getState());
@@ -297,7 +305,8 @@ public class VotingPowerTest extends AbstractBOMMTest {
         bob_balance = (BigInteger) bBALNScore.call("balanceOfAt", bob.getAddress(), alice_deposit_block);
         total_balance = (BigInteger) bBALNScore.call("totalSupplyAt", alice_deposit_block);
 
-        time = WEEK.subtract(HOUR.add(SECOND.multiply(BigInteger.TWO)));
+        time = aliceEndTime.subtract(BigInteger.valueOf(
+                alice_deposit.timestamp));//WEEK.subtract(HOUR.add(SECOND.multiply(BigInteger.valueOf(4)))
 
         assertEquals(amount.divide(MAX_TIME).multiply(time), alice_balance);
         assertEquals(BigInteger.ZERO, bob_balance);
@@ -309,12 +318,8 @@ public class VotingPowerTest extends AbstractBOMMTest {
             alice_balance = (BigInteger) bBALNScore.call("balanceOfAt", alice.getAddress(), alice_block);
             bob_balance = (BigInteger) bBALNScore.call("balanceOfAt", bob.getAddress(), alice_block);
             total_balance = (BigInteger) bBALNScore.call("totalSupplyAt", alice_block);
-
-            BigInteger time_left =
-                    WEEK.multiply(BigInteger.valueOf(7 - i))
-                            .divide(BigInteger.valueOf(7L))
-                            .subtract(HOUR.add(HOUR).add(SECOND.multiply(BigInteger.valueOf(2))));
-
+            BigInteger time_left = aliceEndTime.subtract(BigInteger.valueOf(
+                    stage.timestamp));// WEEK.multiply(BigInteger.valueOf(7 - i)).divide(BigInteger.valueOf(7L)).subtract(HOUR.add(HOUR).add(SECOND.multiply(BigInteger.valueOf(4))));
             assertEquals(BigInteger.ZERO, bob_balance);
             assertEquals(amount.divide(MAX_TIME).multiply(time_left.max(BigInteger.ZERO)), alice_balance);
             assertEquals(alice_balance, total_balance);

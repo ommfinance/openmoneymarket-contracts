@@ -91,12 +91,13 @@ public class StateMachineTest extends AbstractBOMMTest {
 
     @BeforeEach
     public void setup() throws Exception {
-        bOmmScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        bOmmScore = sm.deploy(owner, BoostedOMM.class,
+                MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), tokenScore.getAddress(),
                 "Boosted Omm", "bOMM");
         scoreSpy = (BoostedOMM) spy(bOmmScore.getInstance());
         bOmmScore.setInstance(scoreSpy);
-
-        bOmmScore.invoke(owner, "setMinimumLockingAmount", ICX);
+        setAddresses(bOmmScore);
+        bOmmScore.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "setMinimumLockingAmount", ICX);
         setupAccounts();
     }
 

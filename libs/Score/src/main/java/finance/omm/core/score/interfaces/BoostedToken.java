@@ -14,10 +14,6 @@ public interface BoostedToken {
 
     BigInteger getMinimumLockingAmount();
 
-    void commitTransferOwnership(Address address);
-
-    void applyTransferOwnership();
-
     Map<String, BigInteger> getLocked(Address _owner);
 
     BigInteger getTotalLocked();
@@ -62,13 +58,6 @@ public interface BoostedToken {
 
 
     void kick(Address _user);
-
-
-    Address admin();
-
-
-    Address futureAdmin();
-
 
     String name();
 
