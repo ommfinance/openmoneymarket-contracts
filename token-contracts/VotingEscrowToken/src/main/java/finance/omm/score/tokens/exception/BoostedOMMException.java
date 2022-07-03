@@ -19,12 +19,8 @@ public class BoostedOMMException extends OMMException.BOMMException {
         return new BoostedOMMException(Code.Unknown, message);
     }
 
-    public static BoostedOMMException notOwner() {
-        return new BoostedOMMException(Code.NotOwner, "require owner access");
-    }
-
-    public static BoostedOMMException notGovernanceContract() {
-        return new BoostedOMMException(Code.NotGovernanceContract, "require Governance contract access");
+    public static BoostedOMMException unauthorized(String msg) {
+        return new BoostedOMMException(Code.Unauthorized, msg);
     }
 
     public static BoostedOMMException reentrancy(String message) {
@@ -38,7 +34,7 @@ public class BoostedOMMException extends OMMException.BOMMException {
 
     //OMMException.BOMMException => 20~
     public enum Code implements Coded {
-        Unknown(0), NotOwner(1), NotGovernanceContract(2), RE_ENTRANCY(3), MINIMUM_LOCKING_AMOUNT(3);
+        Unknown(0), Unauthorized(1), MINIMUM_LOCKING_AMOUNT(2), RE_ENTRANCY(3);
 
         final int code;
 
