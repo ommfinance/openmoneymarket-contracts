@@ -660,5 +660,25 @@ public class GovernanceImpl extends AbstractGovernance {
         rewardDistribution.addAsset(type, name, address, poolID);
     }
 
+    @External
+    public void setMinimumLockingAmount(BigInteger value) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
+        boostedToken.setMinimumLockingAmount(value);
+    }
+
+    @External
+    public void addContractToWhitelist(Address address) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
+        boostedToken.addContractToWhitelist(address);
+    }
+
+    @External
+    public void removeContractFromWhitelist(Address address) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
+        boostedToken.removeContractFromWhitelist(address);
+    }
 
 }
