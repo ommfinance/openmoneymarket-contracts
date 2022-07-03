@@ -70,4 +70,9 @@ public interface BoostedToken {
 
     int decimals();
 
+    void addContractToWhitelist(Address address);
+
+    void removeContractFromWhitelist(Address address);
+
+    List<Address> getContractWhitelist();
 }

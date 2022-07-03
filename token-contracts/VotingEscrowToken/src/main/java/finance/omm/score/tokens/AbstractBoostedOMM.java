@@ -6,6 +6,7 @@ import static finance.omm.utils.math.MathUtils.ICX;
 import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
+import finance.omm.score.tokens.exception.BoostedOMMException;
 import finance.omm.score.tokens.model.LockedBalance;
 import finance.omm.score.tokens.model.Point;
 import finance.omm.utils.constants.TimeConstants;
@@ -58,6 +59,10 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
 
     protected final VarDB<BigInteger> minimumLockingAmount = Context.newVarDB(KeyConstants.bOMM_MINIMUM_LOCKING_AMOUNT,
             BigInteger.class);
+
+
+    protected final EnumerableSet<Address> allowedContracts = new EnumerableSet<>(KeyConstants.bOMM_ALLOWED_CONTRACTS,
+            Address.class);
 
 
     public AbstractBoostedOMM(Address addressProvider, Address tokenAddress, String name, String symbol) {
@@ -386,8 +391,9 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     }
 
     protected void assertNotContract(Address address) {
-        //todo maintain whitelist of contracts
-        Context.require(!address.isContract(), "Assert Not contract: Smart contract depositors not allowed");
+        if (address.isContract() && !allowedContracts.contains(address)) {
+            throw BoostedOMMException.unknown("Only whitelisted contracts are allowed to deposit.");
+        }
     }
 
     protected void onKick(Address user, BigInteger bOMMBalance, byte[] data) {

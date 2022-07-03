@@ -34,6 +34,7 @@ import score.Address;
 import score.Context;
 import score.annotation.External;
 import score.annotation.Optional;
+import scorex.util.ArrayList;
 
 public class BoostedOMM extends AbstractBoostedOMM {
 
@@ -311,5 +312,32 @@ public class BoostedOMM extends AbstractBoostedOMM {
     @External(readonly = true)
     public BigInteger userPointEpoch(Address _owner) {
         return this.userPointEpoch.getOrDefault(_owner, BigInteger.ZERO);
+    }
+
+    @External
+    public void addContractToWhitelist(Address address) {
+        onlyOrElseThrow(Contracts.GOVERNANCE, BoostedOMMException.unauthorized(
+                "Only Governance contract is allowed to call setMinimumLockingAmount method"));
+        if (!address.isContract()) {
+            throw BoostedOMMException.unknown("Invalid contract address");
+        }
+        allowedContracts.add(address);
+    }
+
+    @External
+    public void removeContractFromWhitelist(Address address) {
+        onlyOrElseThrow(Contracts.GOVERNANCE, BoostedOMMException.unauthorized(
+                "Only Governance contract is allowed to call setMinimumLockingAmount method"));
+        allowedContracts.remove(address);
+    }
+
+    @External(readonly = true)
+    public List<Address> getContractWhitelist() {
+        List<Address> result = new ArrayList<>();
+        int end = allowedContracts.length() - 1;
+        for (int i = 0; i < end; i++) {
+            result.add(allowedContracts.at(i));
+        }
+        return result;
     }
 }
