@@ -34,7 +34,6 @@ import score.Address;
 import score.Context;
 import score.annotation.External;
 import score.annotation.Optional;
-import scorex.util.ArrayList;
 
 public class BoostedOMM extends AbstractBoostedOMM {
 
@@ -332,11 +331,6 @@ public class BoostedOMM extends AbstractBoostedOMM {
 
     @External(readonly = true)
     public List<Address> getContractWhitelist() {
-        List<Address> result = new ArrayList<>();
-        int end = allowedContracts.length() - 1;
-        for (int i = 0; i < end; i++) {
-            result.add(allowedContracts.at(i));
-        }
-        return result;
+        return allowedContracts.range(0, allowedContracts.length());
     }
 }
