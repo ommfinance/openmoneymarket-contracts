@@ -96,9 +96,9 @@ public class DelegationConfig implements Config {
 
         ommClient.delegation.addAllContributors(Environment.preps.keySet().toArray(Address[]::new));
         ommClient.staking.setSicxAddress(addressMap.get(Contracts.sICX.getKey()));
-        ommClient.staking.toggleStakingOn();
-
-        ommClient.lendingPool.setFeeSharingTxnLimit(BigInteger.valueOf(50));
+//        ommClient.staking.toggleStakingOn();
+//
+//        ommClient.lendingPool.setFeeSharingTxnLimit(BigInteger.valueOf(50));
 
         ommClient.workerToken.transfer(ommClient.getAddress(), BigInteger.valueOf(100).multiply(ICX), "None".getBytes());
     }

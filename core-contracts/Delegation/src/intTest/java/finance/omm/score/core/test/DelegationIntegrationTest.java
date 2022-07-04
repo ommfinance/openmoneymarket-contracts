@@ -16,9 +16,10 @@ import finance.omm.libs.test.integration.OMM;
 import finance.omm.libs.test.integration.OMMClient;
 import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
-import finance.omm.libs.test.integration.configs.DelegationConfig;
+//import finance.omm.libs.test.integration.configs.DelegationConfig;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
 import finance.omm.score.core.delegation.exception.DelegationException;
+import finance.omm.score.core.test.config.DelegationConfig;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -60,56 +61,18 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         omm.setupOMM();
         addressMap = omm.getAddresses();
         System.out.println("address"+addressMap);
-        Config config = new DelegationConfig(omm.getAddresses());
+        Config config = new DelegationConfig();
         omm.runConfig(config);
         ownerClient = omm.defaultClient();
         testClient = omm.testClient();
 
+        System.out.println(addressMap);
+
         ((LendingPoolScoreClient)ownerClient.lendingPool).
                 deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
 
-        ReserveAttributes reserveAttributes= reserveDetails();
-        ownerClient.governance.initializeReserve(reserveAttributes);
-        ownerClient.governance.updateBorrowThreshold(addressMap.get(Contracts.sICX.getKey()),BigInteger.valueOf(90).multiply(ICX).divide(BigInteger.valueOf(100)));
-        ownerClient.governance.setReserveConstants(reserveConstants());
 
     }
-
-    private static ReserveConstant[] reserveConstants(){
-        BigInteger hundred = BigInteger.valueOf(100);
-        ReserveConstant reserveConstants = new ReserveConstant();
-        reserveConstants.reserve = addressMap.get(Contracts.OMM_TOKEN.getKey());
-        reserveConstants.optimalUtilizationRate = BigInteger.valueOf(80).multiply(ICX).divide(hundred);
-        reserveConstants.baseBorrowRate = BigInteger.valueOf(20).multiply(ICX).divide(hundred);
-        reserveConstants.slopeRate1 = BigInteger.valueOf(60).multiply(ICX).divide(hundred);
-        reserveConstants.slopeRate2 = BigInteger.valueOf(2).multiply(ICX);
-
-        return new ReserveConstant[]{reserveConstants};
-
-    }
-
-    private static ReserveAttributes reserveDetails(){
-        ReserveAttributes attributes = new ReserveAttributes();
-        attributes.reserveAddress = addressMap.get(Contracts.sICX.getKey());
-        attributes.oTokenAddress = addressMap.get(Contracts.oICX.getKey());
-        attributes.dTokenAddress = addressMap.get(Contracts.dICX.getKey());
-        attributes.lastUpdateTimestamp = BigInteger.ZERO;
-        attributes.liquidityRate = BigInteger.ZERO;
-        attributes.borrowRate = BigInteger.ZERO;
-        attributes.liquidityCumulativeIndex = ICX;
-        attributes.borrowCumulativeIndex = ICX;
-        attributes.baseLTVasCollateral = BigInteger.valueOf(500000000000000000L) ;
-        attributes.liquidationThreshold = BigInteger.valueOf(650000000000000000L) ;
-        attributes.liquidationBonus = BigInteger.valueOf(100000000000000000L);
-        attributes.decimals = 18;
-        attributes.borrowingEnabled = true;
-        attributes.usageAsCollateralEnabled = true;
-        attributes.isFreezed = false;
-        attributes.isActive = true;
-
-        return attributes;
-    }
-
     @Test
     void testName() {
         assertEquals("OMM Delegation", ownerClient.delegation.name());
@@ -287,8 +250,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    void rewardDistribution(){ // Destination camt be null
-        addType();
+    void rewardDistribution(){
         ownerClient.reward.startDistribution();
         ownerClient.governance.enableRewardClaim();
         ownerClient.reward.distribute();
@@ -296,12 +258,12 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
 //        BigInteger subtractTime = time.subtract(BigInteger.ONE);
 //        System.out.println(ownerClient.rewardWeightController.getEmissionRate(subtractTime));
-
+//
         ownerClient.governance.transferOmmToDaoFund(BigInteger.valueOf(4000000).multiply(ICX));
         Address aad = addressMap.get(Contracts.DAO_FUND.getKey());
         System.out.println("balance of daoFund" + ownerClient.ommToken.balanceOf(aad));
 
-        ownerClient.governance.transferOmmFromDaoFund(BigInteger.valueOf(400000).multiply(ICX),ownerClient.getAddress());
+        ownerClient.governance.transferOmmFromDaoFund(BigInteger.valueOf(40000).multiply(ICX),ownerClient.getAddress());
         System.out.println("balance of owner" + ownerClient.ommToken.balanceOf(ownerClient.getAddress()));
 
 
@@ -360,21 +322,14 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
         Address to = addressMap.get(Contracts.BOOSTED_OMM.getKey());
         BigInteger value = BigInteger.valueOf(10).multiply(ICX);
-        // time in second
 
         BigInteger timeInMicro = time.multiply((BigInteger.TEN.pow(6)));
-//        BigInteger unlockTimeMicro = timeInMicro.add(BigInteger.valueOf(604800000000L));
         BigInteger unlockTimeMicro = getTimeAfter(2);
-
-//        PrepDelegations[] delegations = prepDelegations(5);
-//        ownerClient.staking.delegate(delegations);
-
 
 
         byte[] data =createByteArray("createLock",unlockTimeMicro);
         System.out.println("data "+data);
         testClient.ommToken.transfer(to,value,data);
-
     }
 
     @Test
