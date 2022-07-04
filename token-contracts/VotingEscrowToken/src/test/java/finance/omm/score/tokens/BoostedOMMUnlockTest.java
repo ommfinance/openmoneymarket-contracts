@@ -62,7 +62,8 @@ public class BoostedOMMUnlockTest extends AbstractBOMMTest {
 
     @BeforeEach
     public void setup() throws Exception {
-        veOMMScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        veOMMScore = sm.deploy(owner, BoostedOMM.class,
+                MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), tokenScore.getAddress(),
                 BOOSTED_OMM, B_OMM_SYMBOL);
         scoreSpy = (BoostedOMM) spy(veOMMScore.getInstance());
         veOMMScore.setInstance(scoreSpy);
@@ -75,6 +76,8 @@ public class BoostedOMMUnlockTest extends AbstractBOMMTest {
                 .call(eq(Contracts.REWARDS), eq("handleAction"), ArgumentMatchers.<Object>argThat(matcher));
 
         tokenScore.invoke(owner, "mintTo", user.getAddress(), BigInteger.valueOf(1000).multiply(ICX));
+
+        setAddresses(veOMMScore);
     }
 
     @ParameterizedTest

@@ -20,11 +20,11 @@
 package finance.omm.score.tokens;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
+import finance.omm.libs.address.Contracts;
 import java.math.BigInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,6 @@ class BoostedOmmTest extends AbstractBOMMTest {
     private static final Account owner = sm.createAccount();
     private Score veOmmScore;
 
-    private final Account addressProvider = Account.newScoreAccount(1001);
 
     private static final String name = "OMM Token";
     private static final String symbol = "Omm";
@@ -48,23 +47,14 @@ class BoostedOmmTest extends AbstractBOMMTest {
 
     @BeforeEach
     public void setup() throws Exception {
-        veOmmScore = sm.deploy(owner, BoostedOMM.class, addressProvider.getAddress(), tokenScore.getAddress(),
+        veOmmScore = sm.deploy(owner, BoostedOMM.class,
+                MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(), tokenScore.getAddress(),
                 bOmmName, bOmmSymbol);
     }
 
     @Test
     void name() {
         assertEquals(bOmmName, veOmmScore.call("name"));
-    }
-
-    @Test
-    void admin() {
-        assertEquals(owner.getAddress(), veOmmScore.call("admin"));
-    }
-
-    @Test
-    void futureAdmin() {
-        assertNull(veOmmScore.call("futureAdmin"));
     }
 
     @Test
