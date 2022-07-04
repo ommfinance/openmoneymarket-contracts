@@ -403,7 +403,7 @@ public class StateMachineTest extends AbstractBOMMTest {
             Account account = Account.getAccount(Account.newScoreAccount(500).getAddress());
             Executable increaseUnlockTime = () -> increaseUnlockTime(account, BigInteger.valueOf(unlockTime));
 
-            String expectedErrorMessage = "Assert Not contract: Smart contract depositors not allowed";
+            String expectedErrorMessage = "Only whitelisted contracts are allowed to deposit.";
             expectErrorMessage(increaseUnlockTime, expectedErrorMessage);
 
         }

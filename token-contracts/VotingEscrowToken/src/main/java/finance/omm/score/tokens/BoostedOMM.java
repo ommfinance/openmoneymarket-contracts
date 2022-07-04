@@ -243,8 +243,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
                     .divide(dBlock));
         }
         UnsignedBigInteger delta = blockTime.subtract(uPoint.timestamp);
-        uPoint.bias = uPoint.bias.subtract(uPoint.slope.multiply(delta.toBigInteger()));
-        return uPoint.bias.compareTo(BigInteger.ZERO) >= 0 ? uPoint.bias : BigInteger.ZERO;
+        return uPoint.bias.subtract(uPoint.slope.multiply(delta.toBigInteger())).max(BigInteger.ZERO);
     }
 
     @External(readonly = true)
