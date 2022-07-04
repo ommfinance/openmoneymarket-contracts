@@ -118,7 +118,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
 
         Context.require(_value.signum() > 0, "Token Fallback: Token value should be a positive number");
         String unpackedData = new String(_data);
-        Context.require(!unpackedData.equals(""), "Token Fallback: Data can't be empty");
+        Context.require(!unpackedData.isEmpty(), "Token Fallback: Data can't be empty");
 
         JsonObject json = Json.parse(unpackedData).asObject();
 
@@ -138,8 +138,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
                 this.createLock(_from, _value, unlockTime);
                 break;
             default:
-                Context.revert("Token fallback: Unimplemented token fallback action");
-                break;
+                throw BoostedOMMException.unknown("Token fallback: Invalid token fallback action");
         }
     }
 
@@ -159,7 +158,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
         Context.require(unlockTime.compareTo(locked.end.toBigInteger()) > 0,
                 "Increase unlock time: Can only increase lock duration");
         Context.require(unlockTime.compareTo(blockTimestamp.add(MAX_TIME)) <= 0,
-                "Increase unlock time: Voting lock " + "can be 4 years max");
+                "Increase unlock time: Voting lock can be 4 years max");
 
         this.depositFor(sender, BigInteger.ZERO, unlockTime, locked, INCREASE_UNLOCK_TIME);
         this.nonReentrant.updateLock(false);
@@ -188,7 +187,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
         Withdraw(sender, value, blockTimestamp);
         Supply(supplyBefore, supplyBefore.subtract(value));
 
-        onKick(sender, BigInteger.ZERO, "User withdraw unlock OMM Token".getBytes());
+        onKick(sender, BigInteger.ZERO, "User withdraw unlocked OMM Token".getBytes());
         this.nonReentrant.updateLock(false);
     }
 
@@ -252,7 +251,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
     @External(readonly = true)
     public BigInteger totalSupply(@Optional BigInteger time) {
         BigInteger blockTimestamp;
-        if (time.equals(BigInteger.ZERO)) {
+        if (time == null || time.equals(BigInteger.ZERO)) {
             blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
             time = blockTimestamp;
         }
