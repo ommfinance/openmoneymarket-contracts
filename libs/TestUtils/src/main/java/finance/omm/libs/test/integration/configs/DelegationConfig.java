@@ -40,7 +40,9 @@ public class DelegationConfig implements Config {
         });
         ommClient.addressManager.addAddressToScore(Contracts.LENDING_POOL_CORE.getKey(), new String[]{
                 Contracts.DELEGATION.getKey(),
-                Contracts.STAKING.getKey()
+                Contracts.STAKING.getKey(),
+                Contracts.GOVERNANCE.getKey(),
+                Contracts.LENDING_POOL.getKey()
         });
 
         ommClient.addressManager.addAddressToScore(Contracts.LENDING_POOL.getKey(), new String[]{
@@ -92,6 +94,10 @@ public class DelegationConfig implements Config {
                 Contracts.OMM_TOKEN.getKey(),
                 Contracts.BOOSTED_OMM.getKey(),
                 Contracts.GOVERNANCE.getKey(),
+        });
+
+        ommClient.addressManager.addAddressToScore(Contracts.oICX.getKey(), new String[]{
+                Contracts.LENDING_POOL.getKey()
         });
 
         ommClient.delegation.addAllContributors(Environment.preps.keySet().toArray(Address[]::new));
