@@ -317,7 +317,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
     @External
     public void addContractToWhitelist(Address address) {
         onlyOrElseThrow(Contracts.GOVERNANCE, BoostedOMMException.unauthorized(
-                "Only Governance contract is allowed to call setMinimumLockingAmount method"));
+                "Only Governance contract is allowed to call addContractToWhitelist method"));
         if (!address.isContract()) {
             throw BoostedOMMException.unknown("Invalid contract address");
         }
@@ -327,7 +327,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
     @External
     public void removeContractFromWhitelist(Address address) {
         onlyOrElseThrow(Contracts.GOVERNANCE, BoostedOMMException.unauthorized(
-                "Only Governance contract is allowed to call setMinimumLockingAmount method"));
+                "Only Governance contract is allowed to call removeContractFromWhitelist method"));
         allowedContracts.remove(address);
     }
 
