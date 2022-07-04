@@ -65,20 +65,21 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         ownerClient = omm.defaultClient();
         testClient = omm.testClient();
 
-        ((LendingPoolScoreClient)ownerClient.lendingPool).
-                deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
 
         ReserveAttributes reserveAttributes= reserveDetails();
         ownerClient.governance.initializeReserve(reserveAttributes);
         ownerClient.governance.updateBorrowThreshold(addressMap.get(Contracts.sICX.getKey()),BigInteger.valueOf(90).multiply(ICX).divide(BigInteger.valueOf(100)));
         ownerClient.governance.setReserveConstants(reserveConstants());
 
+        ((LendingPoolScoreClient)ownerClient.lendingPool).
+                deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
+
     }
 
     private static ReserveConstant[] reserveConstants(){
         BigInteger hundred = BigInteger.valueOf(100);
         ReserveConstant reserveConstants = new ReserveConstant();
-        reserveConstants.reserve = addressMap.get(Contracts.OMM_TOKEN.getKey());
+        reserveConstants.reserve = addressMap.get(Contracts.sICX.getKey());
         reserveConstants.optimalUtilizationRate = BigInteger.valueOf(80).multiply(ICX).divide(hundred);
         reserveConstants.baseBorrowRate = BigInteger.valueOf(20).multiply(ICX).divide(hundred);
         reserveConstants.slopeRate1 = BigInteger.valueOf(60).multiply(ICX).divide(hundred);
