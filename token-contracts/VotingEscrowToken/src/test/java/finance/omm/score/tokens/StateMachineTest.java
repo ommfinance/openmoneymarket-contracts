@@ -259,8 +259,10 @@ public class StateMachineTest extends AbstractBOMMTest {
         @Test
         void minimumAmount() {
             Account account = accounts.get(2);
+            assertEquals(bOmmScore.call("getTotalLocked"), BigInteger.ZERO);
             BigInteger valueMinimum = ICX;
             createLock(account, valueMinimum, unlockTime);
+            assertEquals(bOmmScore.call("getTotalLocked"),ICX);
 
             assert (((BigInteger) bOmmScore.call("balanceOf", account.getAddress(), BigInteger.ZERO)).compareTo(
                     BigInteger.ZERO) > 0);
@@ -269,9 +271,12 @@ public class StateMachineTest extends AbstractBOMMTest {
         @DisplayName("Locked balance deducted from user's account")
         @Test
         void multipleLocks() {
+            assertEquals(bOmmScore.call("getTotalLocked"), BigInteger.ZERO);
             for (Account account : accounts) {
                 createLock(account, value, unlockTime);
             }
+
+            assertEquals(bOmmScore.call("getTotalLocked"), BigInteger.valueOf(accounts.size()).multiply(value));
         }
 
 
@@ -329,7 +334,10 @@ public class StateMachineTest extends AbstractBOMMTest {
         @DisplayName("with valid data")
         @Test
         void increaseAmountWithValidData() {
+            BigInteger beforeBalance = (BigInteger) bOmmScore.call("getTotalLocked");
             increaseAmount(accounts.get(0), value);
+            BigInteger afterBalance = (BigInteger) bOmmScore.call("getTotalLocked");
+            assertEquals(beforeBalance.add(value), afterBalance);
         }
     }
 
@@ -412,7 +420,10 @@ public class StateMachineTest extends AbstractBOMMTest {
         @Test
         void increaseUnlockWithValidData() {
             long increasedUnlockTime = addWeeksToCurrentTimestamp(10);
+            BigInteger beforeBalance = (BigInteger) bOmmScore.call("getTotalLocked");
             increaseUnlockTime(accounts.get(0), BigInteger.valueOf(increasedUnlockTime));
+            BigInteger afterBalance = (BigInteger) bOmmScore.call("getTotalLocked");
+            assertEquals(beforeBalance, afterBalance);
         }
     }
 
@@ -454,7 +465,10 @@ public class StateMachineTest extends AbstractBOMMTest {
             // Check if the lock time has expired
             assertEquals(BigInteger.ZERO, bOmmScore.call("balanceOf", accounts.get(0).getAddress(), BigInteger.ZERO));
 
+            BigInteger beforeBalance = (BigInteger) bOmmScore.call("getTotalLocked");
             bOmmScore.invoke(accounts.get(0), "withdraw");
+            BigInteger afterBalance = (BigInteger) bOmmScore.call("getTotalLocked");
+            assertEquals(afterBalance, beforeBalance.subtract(BigInteger.TEN.pow(21)));
             assertEquals(MINT_AMOUNT, tokenScore.call("balanceOf", accounts.get(0).getAddress()));
             votingBalances.put(accounts.get(0), new VotingBalance());
         }

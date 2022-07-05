@@ -64,6 +64,9 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     protected final EnumerableSet<Address> allowedContracts = new EnumerableSet<>(KeyConstants.bOMM_ALLOWED_CONTRACTS,
             Address.class);
 
+    protected final VarDB<BigInteger> ommTokenBalance = Context.newVarDB(KeyConstants.bOMM_OMM_BALANCE,
+            BigInteger.class);
+
 
     public AbstractBoostedOMM(Address addressProvider, Address tokenAddress, String name, String symbol) {
         super(addressProvider, false);
@@ -86,6 +89,7 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
         point.timestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
         this.pointHistory.set(BigInteger.ZERO, point);
 
+        this.ommTokenBalance.set(BigInteger.ZERO);
         this.supply.set(BigInteger.ZERO);
         this.epoch.set(BigInteger.ZERO);
         this.minimumLockingAmount.set(ICX);
@@ -337,6 +341,9 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
         }
 
         this.locked.set(address, locked);
+        if (value.compareTo(BigInteger.ZERO) > 0) {
+            this.ommTokenBalance.set(this.ommTokenBalance.get().add(value));
+        }
         this.checkpoint(address, oldLocked, locked);
 
         Deposit(address, value, locked.getEnd(), type, blockTimestamp);
