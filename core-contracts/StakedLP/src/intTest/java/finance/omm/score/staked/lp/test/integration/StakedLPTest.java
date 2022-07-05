@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestMethodOrder;
+import score.UserRevertException;
 import score.UserRevertedException;
 
 @TestInstance(Lifecycle.PER_CLASS)
@@ -117,7 +118,13 @@ public class StakedLPTest implements ScoreIntegrationTest {
         pool2.distPercentage = ICX.divide(BigInteger.TWO);
         pool2.rewardEntity = "liquidity";
         pool2.asset = POOLS.get(7);
-        ;
+
+        assertUserRevert(StakedLPException.unauthorized("not governance"),
+                () -> ownerClient.stakedLP.removePool(6),null);
+
+//        Address pool = Faker.address(Type.CONTRACT);
+//        assertUserRevert(StakedLPException.unknown("pool null"),
+//                ()-> ownerClient.governance.removePool(pool),null);
 
         ownerClient.governance.addPools(new AssetConfig[]{
                 pool1, pool2
@@ -149,6 +156,8 @@ public class StakedLPTest implements ScoreIntegrationTest {
 
         ownerClient.dex.mintTo(BigInteger.valueOf(7), demoClient.getAddress(), BigInteger.TEN.pow(20));
 
+        ownerClient.dex.mintTo(BigInteger.valueOf(8), demoClient.getAddress(), BigInteger.TEN.pow(20));
+
         Function<UserRevertedException, String> supplier = Throwable::getMessage;
 
         //stake failure as no data passed
@@ -159,6 +168,29 @@ public class StakedLPTest implements ScoreIntegrationTest {
         //stake BigInteger.valueOf(9).pow(19) out of BigInteger.valueOf(10).pow(19) LP token
         demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
                 BigInteger.TEN.pow(19), "{\"method\":\"stake\"}".getBytes());
+
+
+        assertReverted(new RevertedException(1, "No valid method called :: " + "abcd"),
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
+                        BigInteger.TEN.pow(19), "{\"method\":\"abcd\"}".getBytes()));
+
+        assertReverted(new RevertedException(1,"pool with id: " + 8 + " is not supported"),
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(8),
+                        BigInteger.TEN.pow(19), "{\"method\":\"stake\"}".getBytes()));
+
+        assertUserRevert(new UserRevertException("Invalid amount"),
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
+                        BigInteger.ZERO.pow(19), "{\"method\":\"stake\"}".getBytes()),null);
+
+        assertUserRevert(new UserRevertException("Insufficient funds"),
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
+                        BigInteger.ONE.pow(19).negate(), "{\"method\":\"stake\"}".getBytes()),null);
+
+        BigInteger minValue = ICX.subtract(BigInteger.ONE);
+        assertReverted(new RevertedException(1,"Amount to stake: " + minValue +" is smaller the minimum stake: " +ICX),
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
+                        minValue, "{\"method\":\"stake\"}".getBytes()));
+
 
         Map<String, BigInteger> balanceOfDemo = demoClient.stakedLP.balanceOf(demoClient.getAddress(), 7);
 
@@ -196,6 +228,19 @@ public class StakedLPTest implements ScoreIntegrationTest {
 
         assertUserRevert(StakedLPException.unknown("pool with id: " + 8 + "is not supported"),
                 () -> testClient.stakedLP.unstake(8, BigInteger.valueOf(200).multiply(ICX)), null);
+
+        //unstake error when value is passed is zero or less than zero
+        assertUserRevert(StakedLPException.unknown("Cannot unstake less than zero value to stake" + 0),
+                () -> testClient.stakedLP.unstake(7, BigInteger.valueOf(0).multiply(ICX)), null);
+
+        assertUserRevert(StakedLPException.unknown("Cannot unstake less than zero value to stake" + 0),
+                () -> testClient.stakedLP.unstake(7, BigInteger.valueOf(20).multiply(ICX).negate()), null);
+
+        //wnstake error when value passed is more than staked value
+        assertUserRevert(StakedLPException.unknown("Cannot unstake,user dont have enough staked balance" +
+                        "amount to unstake " + 60 +
+                        "staked balance of user:" + testClient.getAddress()  + "is" + 50),
+                () -> testClient.stakedLP.unstake(7, BigInteger.valueOf(60).multiply(ICX)), null);
 
         // unstake
         testClient.stakedLP.unstake(7, BigInteger.TEN.multiply(ICX));
