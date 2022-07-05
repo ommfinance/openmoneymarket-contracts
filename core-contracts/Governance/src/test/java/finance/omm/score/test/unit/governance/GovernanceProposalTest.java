@@ -63,6 +63,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     }
 
     private void successfulProposalCreationMocks() {
+        score.invoke(owner, "enableProposalCreation");
         BigInteger userStaked = HUNDRED.multiply(ICX);
         BigInteger totalStaked = TWO.multiply(HUNDRED.multiply(ICX));
 
@@ -115,6 +116,28 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         expectErrorMessage(errorMsg, "require owner access");
     }
 
+    @Test
+    public void proposalCreationEnabledTests() {
+        initialize();
+        assertEquals(false, score.call("isProposalCreationEnabled"));
+
+        score.invoke(owner, "enableProposalCreation");
+        assertEquals(true, score.call("isProposalCreationEnabled"));
+
+        score.invoke(owner, "disableProposalCreation");
+        assertEquals(false, score.call("isProposalCreationEnabled"));
+
+        Account notOwner = sm.createAccount(10);
+
+        Executable errorMsg = () -> score.invoke(notOwner, "enableProposalCreation");
+        expectErrorMessage(errorMsg, "require owner access");
+        assertEquals(false, score.call("isProposalCreationEnabled"));
+        errorMsg = () -> score.invoke(notOwner, "disableProposalCreation");
+        expectErrorMessage(errorMsg, "require owner access");
+        assertEquals(false, score.call("isProposalCreationEnabled"));
+
+    }
+
 
     @Test
     public void defineVote() {
@@ -122,7 +145,11 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         byte[] data = createByteArray(name, forum, description, voteStart, methodName);
 
-        // general case of proposal creation
+        // proposal creation before enabling proposal creation
+        Executable proposalDisabled = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
+        expectErrorMessage(proposalDisabled, "Proposal creation has been disabled");
+
+        //enable proposal creation again
         successfulProposalCreationMocks();
         score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
         verify(scoreSpy).ProposalCreated(ONE, name, from);
@@ -137,20 +164,20 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         Account notOMM = Account.newScoreAccount(10);
         Executable notOMMToken = () -> score.invoke(notOMM, "tokenFallback", from, value, data);
         expectErrorMessage(notOMMToken, "invalid token sent");
-//
+
         // insufficient fee check
         BigInteger insufficientValue = HUNDRED.multiply(ICX);
         Executable insufficientFeeSent = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from,
                 insufficientValue, data);
         expectErrorMessage(insufficientFeeSent, "Insufficient fee to create proposal");
-//
+
         // method not named defineVote
         String invalidMethodName = "notDefineVote";
         byte[] invalidData1 = createByteArray(name, forum, description, voteStart, invalidMethodName);
         Executable wrongMethodName = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, invalidData1);
         expectErrorMessageIn(wrongMethodName, "No valid method called :: ");
 
-//        // length of description over 500
+        // length of description over 500
         String invalidDescription = "Invalid Description".repeat(200);
         byte[] invalidData2 = createByteArray(methodName, forum, invalidDescription, voteStart, methodName);
         Executable invalidDescriptionLength = () -> score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value,
@@ -285,6 +312,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     @Test
     public void cancelVote() {
         initialize();
+        score.invoke(owner, "enableProposalCreation");
 
         // try to cancel a proposal which does not exist
         Executable errorMsg = () -> score.invoke(owner, "cancelVote", 10);
@@ -331,6 +359,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     /* Cast Vote and execute proposal tests */
     public void castVote() {
         initialize();
+        score.invoke(owner, "enableProposalCreation");
 
         Account user1 = sm.createAccount(1);
         Account user2 = sm.createAccount(1);
@@ -438,6 +467,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     @Test
     public void differentProposalsStatus() {
         initialize();
+        score.invoke(owner, "enableProposalCreation");
 
         Account user1 = sm.createAccount(1);
         Account user2 = sm.createAccount(1);
