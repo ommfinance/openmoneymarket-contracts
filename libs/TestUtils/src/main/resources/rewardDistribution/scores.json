@@ -1,0 +1,132 @@
+[
+  {
+    "name": "staking",
+    "contract": "Staking",
+    "params": {
+    },
+    "order": 1.0
+  },
+  {
+    "name": "rewards",
+    "contract": "RewardDistribution",
+    "params": {
+      "bOMMRewardStartDate": 1646438400
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "delegation",
+    "contract": "Delegation",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "lendingPoolCore",
+    "contract": "LendingPoolCore",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "ommToken",
+    "contract": "OMMToken",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "rewardWeightController",
+    "contract": "RewardWeightController",
+    "params": {
+      "startTimestamp": 1581724800000000
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "daoFund",
+    "contract": "DaoFund",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "dICX",
+    "contract": "DToken",
+    "params": {
+      "_name": "SICX Debt Token",
+      "_symbol": "dICX",
+      "_decimals": 18,
+      "_update": 0
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "governance",
+    "contract": "Governance",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "oICX",
+    "contract": "OToken",
+    "params": {
+      "_name": "SICX Interest Token",
+      "_symbol": "oICX",
+      "_decimals": 18,
+      "_update": 0
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "bOMM",
+    "contract": "VotingEscrowToken",
+    "params": {
+      "name": "Boosted OMM token",
+      "symbol": "bOMM"
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider",
+      "tokenAddress": "ommToken"
+    },
+    "order": 2.0
+  },
+  {
+    "name": "sICX",
+    "contract": "sICX",
+    "params": {
+    },
+    "addressParams": {
+      "_admin": "staking"
+    },
+    "order": 2.0
+  }
+]

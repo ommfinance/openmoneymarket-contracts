@@ -29,6 +29,7 @@ public class ConfigurationExtension {
                 task.getPassword().set(container.getPassword());
                 task.getEnv().set(container.getEnv());
                 task.getConfigFile().set(container.getConfigFile());
+                task.getOutputFile().set(container.getOutputFile());
             });
             var deployTask = project.getTasks().getByName(taskName);
             deployTask.setGroup("Configuration");

@@ -6,15 +6,14 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
 import finance.omm.score.core.stakedLP.exception.StakedLPException;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
 import score.Address;
 import score.Context;
 import score.annotation.External;
 import scorex.util.ArrayList;
-
-import java.math.BigInteger;
 import scorex.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class StakedLPImpl extends AbstractStakedLP {
 
@@ -24,7 +23,7 @@ public class StakedLPImpl extends AbstractStakedLP {
 
     @External(readonly = true)
     public String name() {
-        return "Omm " + TAG;
+        return "OMM " + TAG;
     }
 
     @External
@@ -197,11 +196,11 @@ public class StakedLPImpl extends AbstractStakedLP {
 
         call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id),userDetails);
         BigInteger id = BigInteger.valueOf(_id);
-        call(Contracts.DEX, "transfer", _user,_value,id,"transferBackToUser".getBytes());
+        call(Contracts.DEX, "transfer", _user, id, _value, "transferBackToUser".getBytes());
     }
 
     @External
-    public void onIRC31Received(Address _operator, Address _from, int _id, BigInteger _value, byte[] _data) {
+    public void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data) {
         onlyContractOrElseThrow(Contracts.DEX,StakedLPException.unauthorized(
                 "Sender not score dex error: (sender) " +
                         Context.getCaller()+ " dex " + getAddress(Contracts.DEX.getKey())));
@@ -212,7 +211,7 @@ public class StakedLPImpl extends AbstractStakedLP {
         String method = json.get("method").asString();
 
         if(method.equals("stake")){
-            this.stake(_from, _id, _value);
+            this.stake(_from, _id.intValue(), _value);
         }else {
             throw StakedLPException.unknown("No valid method called :: " + data);
         }

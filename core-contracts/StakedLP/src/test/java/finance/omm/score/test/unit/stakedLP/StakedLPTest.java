@@ -11,13 +11,11 @@ import static org.mockito.Mockito.verify;
 
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
-
+import finance.omm.libs.structs.SupplyDetails;
+import finance.omm.libs.structs.TotalStaked;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-
-import finance.omm.libs.structs.SupplyDetails;
-import finance.omm.libs.structs.TotalStaked;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import score.Address;
@@ -31,7 +29,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
     @Test
     public void name() {
         String actual = (String) score.call("name");
-        String expected = "Omm Staked Lp";
+        String expected = "OMM Staked Lp";
         assertEquals(expected, actual);
     }
 
@@ -413,7 +411,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
                 any(BigInteger.class));
 
         doNothing().when(scoreSpy).call(eq(Contracts.REWARDS),eq("handleLPAction"),any(),any());
-        score.invoke(account,"onIRC31Received", operator,from,id,amount,data);
+        score.invoke(account,"onIRC31Received", operator,from,BigInteger.valueOf(id),amount,data);
     }
 
 
