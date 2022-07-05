@@ -1,9 +1,8 @@
 package finance.omm.score.tokens.utils;
 
 import com.iconloop.score.token.irc2.IRC2Mintable;
-import score.Context;
-
 import java.math.BigInteger;
+import score.Context;
 
 public class IRC2Token extends IRC2Mintable {
 
