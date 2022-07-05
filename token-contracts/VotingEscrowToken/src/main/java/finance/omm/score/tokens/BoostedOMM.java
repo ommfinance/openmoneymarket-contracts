@@ -67,7 +67,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
 
     @External(readonly = true)
     public BigInteger getTotalLocked() {
-        return this.ommTokenBalance.get();
+        return this.ommTokenBalance.getOrDefault(BigInteger.ZERO);
     }
 
     @External(readonly = true)
