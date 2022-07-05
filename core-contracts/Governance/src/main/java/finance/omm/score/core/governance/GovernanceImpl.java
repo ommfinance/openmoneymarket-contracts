@@ -202,6 +202,23 @@ public class GovernanceImpl extends AbstractGovernance {
         feeProvider.transferFund(_token, _value, _to);
     }
 
+    @External
+    public void enableProposalCreation() {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        this.proposalCreationEnabled.set(true);
+    }
+
+    @External
+    public void disableProposalCreation() {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        this.proposalCreationEnabled.set(false);
+    }
+
+    @External(readonly = true)
+    public boolean isProposalCreationEnabled() {
+        return this.proposalCreationEnabled.getOrDefault(false);
+    }
+
     @External(readonly = true)
     public Map<String, BigInteger> getVotersCount(int vote_index) {
         ProposalDB proposal = ProposalDB.getByVoteIndex(vote_index);

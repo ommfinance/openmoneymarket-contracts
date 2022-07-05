@@ -37,12 +37,15 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     public final VarDB<BigInteger> boostedOmmVoteDefinitionCriterion = Context.newVarDB("min_boosted_omm", BigInteger.class);
     public final VarDB<BigInteger> voteDefinitionFee = Context.newVarDB("definition_fee", BigInteger.class);
     public final VarDB<BigInteger> quorum = Context.newVarDB("quorum", BigInteger.class);
+    public final VarDB<Boolean> proposalCreationEnabled = Context.newVarDB("proposal_creation_enabled", Boolean.class);
 
 
 
     public AbstractGovernance(Address addressProvider, boolean _update) {
         super(addressProvider, _update);
-
+        if (proposalCreationEnabled.get() == null) {
+            proposalCreationEnabled.set(false);
+        }
     }
 
     @EventLog(indexed = 2)
@@ -75,6 +78,9 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
      * @param forum
      */
     protected void defineVote(String name, String description, BigInteger voteStart, Address proposer, String forum) {
+        if (! proposalCreationEnabled.get()) {
+            throw GovernanceException.unknown("Proposal creation has been disabled");
+        }
         if (description.length() > 500) {
             throw GovernanceException.invalidVoteParams("Description must be less than or equal to 500 characters.");
         }
