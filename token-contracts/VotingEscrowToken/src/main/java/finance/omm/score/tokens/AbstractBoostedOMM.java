@@ -341,7 +341,9 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
         }
 
         this.locked.set(address, locked);
-        this.ommTokenBalance.set(this.ommTokenBalance.get().add(value));
+        if (value.compareTo(BigInteger.ZERO) > 0) {
+            this.ommTokenBalance.set(this.ommTokenBalance.get().add(value));
+        }
         this.checkpoint(address, oldLocked, locked);
 
         Deposit(address, value, locked.getEnd(), type, blockTimestamp);
