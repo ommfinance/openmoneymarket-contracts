@@ -21,10 +21,6 @@ findProject(":AddressProvider").projectDir = file("libs/AddressProvider")
 include(':StakedLP')
 findProject(":StakedLP").projectDir = file("core-contracts/StakedLP")
 
-include(":LiquidationManager")
-findProject(":LiquidationManager").projectDir = file("core-contracts/LiquidationManager")
-
-
 include(':OMMStruct')
 findProject(":OMMStruct").projectDir = file("libs/OMMStruct")
 
