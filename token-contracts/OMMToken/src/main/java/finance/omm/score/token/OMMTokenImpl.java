@@ -205,26 +205,7 @@ public class OMMTokenImpl extends AbstractOMMToken {
     @External
     public void addToLockList(Address user) {
         onlyOwnerOrElseThrow(OMMTokenException.notOwner());
-
         this.lockList.add(user);
-
-        DictDB<Integer, BigInteger> stakedInfo = this.stakedBalances.at(user);
-
-        BigInteger stakedBalance = stakedInfo.getOrDefault(Status.STAKED.getKey(), BigInteger.ZERO);
-
-        if (stakedBalance.compareTo(BigInteger.ZERO) > 0) {
-            this.makeAvailable(user);
-
-            BigInteger unstakingAmount = stakedInfo.getOrDefault(Status.UNSTAKING.getKey(), BigInteger.ZERO);
-
-            stakedInfo.set(Status.STAKED.getKey(), BigInteger.ZERO);
-            stakedInfo.set(Status.UNSTAKING.getKey(), unstakingAmount.add(stakedBalance));
-            stakedInfo.set(Status.UNSTAKING_PERIOD.getKey(),
-                    TimeConstants.getBlockTimestamp().add(getUnstakingPeriod()));
-
-            BigInteger newTotalStakedBalance = this.total_staked_balance().subtract(stakedBalance);
-            this.totalStakedBalance.set(newTotalStakedBalance);
-        }
     }
 
 
@@ -296,10 +277,10 @@ public class OMMTokenImpl extends AbstractOMMToken {
 
         BigInteger newStakedBalance = userOldStake.add(_value);
 
-        DictDB<Integer, BigInteger> statedInfo = this.stakedBalances.at(user);
+        DictDB<Integer, BigInteger> stakedInfo = this.stakedBalances.at(user);
 
-        statedInfo.set(Status.STAKED.getKey(), newStakedBalance);
-        statedInfo.set(Status.UNSTAKING.getKey(), unstakingBalance.subtract(_value));
+        stakedInfo.set(Status.STAKED.getKey(), newStakedBalance);
+        stakedInfo.set(Status.UNSTAKING.getKey(), unstakingBalance.subtract(_value));
         this.addStaker(user);
 
         BigInteger newTotalStakedBalance = this.total_staked_balance().add(_value);
@@ -353,6 +334,7 @@ public class OMMTokenImpl extends AbstractOMMToken {
     @External
     public void migrateStakedOMM(BigInteger _amount, BigInteger _lockPeriod) {
         Address user = Context.getCaller();
+        checkFeeSharing(user);
         DictDB<Integer, BigInteger> stakeInfo = this.stakedBalances.at(user);
 
         BigInteger stakedBalance = stakeInfo.getOrDefault(Status.STAKED.getKey(), BigInteger.ZERO);
@@ -381,5 +363,6 @@ public class OMMTokenImpl extends AbstractOMMToken {
             removeStaker(user);
         }
         this._transfer(user, getAddress(Contracts.BOOSTED_OMM.getKey()), _amount, data.toString().getBytes());
+        this.MigrateStakedOMM(user, _amount, _lockPeriod);
     }
 }
