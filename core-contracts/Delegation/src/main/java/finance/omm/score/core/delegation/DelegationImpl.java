@@ -81,19 +81,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         }
 
         checkOwner();
-        PrepDelegations[] defaultDelegations = distributeVoteToContributors();
-        BigInteger totalPercentage = BigInteger.ZERO;
-        int size = defaultDelegations.length;
-        for (int i = 0; i < size; i++) {
-            Address prep = defaultDelegations[i]._address;
-            BigInteger votes = defaultDelegations[i]._votes_in_per.multiply(BigInteger.valueOf(100));
-            totalPercentage = totalPercentage.add(votes);
-            defaultDelegations[i]._votes_in_per = votes;
-        }
-        BigInteger dustVotes = ICX.multiply(BigInteger.valueOf(100L)).subtract(totalPercentage);
-        if (dustVotes.compareTo(BigInteger.ZERO) > 0) {
-            defaultDelegations[0]._votes_in_per = defaultDelegations[0]._votes_in_per.add(dustVotes);
-        }
+        PrepDelegations[] defaultDelegations = computeDelegationPercentages();
         Object[] params = new Object[]{
                 defaultDelegations
         };
@@ -442,11 +430,18 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     @External(readonly = true)
     public PrepDelegations[] computeDelegationPercentages() {
         BigInteger totalVotes = getWorkingTotalSupply();
+
         if (totalVotes.equals(BigInteger.ZERO)) {
             PrepDelegations[] defaultPreference = distributeVoteToContributors();
+            BigInteger totalPercentage = BigInteger.ZERO;
             for (int i = 0; i < defaultPreference.length; i++) {
-                defaultPreference[i]._votes_in_per = defaultPreference[i]._votes_in_per.multiply(
-                        BigInteger.valueOf(100L));
+                BigInteger votes = defaultPreference[i]._votes_in_per.multiply(BigInteger.valueOf(100));
+                totalPercentage = totalPercentage.add(votes);
+                defaultPreference[i]._votes_in_per = votes;
+            }
+            BigInteger dustVotes = ICX.multiply(BigInteger.valueOf(100L)).subtract(totalPercentage);
+            if (dustVotes.compareTo(BigInteger.ZERO) > 0) {
+                defaultPreference[0]._votes_in_per = defaultPreference[0]._votes_in_per.add(dustVotes);
             }
             return defaultPreference;
         }
