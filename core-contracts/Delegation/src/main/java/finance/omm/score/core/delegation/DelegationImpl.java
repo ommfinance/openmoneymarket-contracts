@@ -281,32 +281,32 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
         updateWorkingBalance(user, bOMMUserBalance);
 
-        if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
-            DictDB<Integer, Address> userPreps = _userPreps.at(user);
-            DictDB<Integer, BigInteger> percentageDelegations = _percentageDelegations.at(user);
+        DictDB<Integer, Address> userPreps = _userPreps.at(user);
+        DictDB<Integer, BigInteger> percentageDelegations = _percentageDelegations.at(user);
 
-            for (int i = 0; i < userDelegations.length; i++) {
-                PrepDelegations userDelegation = userDelegations[i];
-                Address address = userDelegation._address;
-                BigInteger votes = userDelegation._votes_in_per;
+        for (int i = 0; i < userDelegations.length; i++) {
+            PrepDelegations userDelegation = userDelegations[i];
+            Address address = userDelegation._address;
+            BigInteger votes = userDelegation._votes_in_per;
 
-                _preps.add(address);
+            _preps.add(address);
 
+            if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
                 BigInteger prepVote = exaMultiply(votes, bOMMUserBalance);
                 BigInteger newPrepVote = _prepVotes.getOrDefault(address, BigInteger.ZERO).add(prepVote);
                 _prepVotes.set(address, newPrepVote);
-
-                userPreps.set(i, address);
-                percentageDelegations.set(i, votes);
-
-                totalPercentage = totalPercentage.add(votes);
             }
-            if (!totalPercentage.equals(ICX)) {
-                throw DelegationException.unknown(TAG +
-                        ": updating delegation unsuccessful,sum of percentages not equal to 100 " +
-                        "sum total of percentages " + totalPercentage +
-                        " delegation preferences " + userDelegations.length);
-            }
+
+            userPreps.set(i, address);
+            percentageDelegations.set(i, votes);
+
+            totalPercentage = totalPercentage.add(votes);
+        }
+        if (!totalPercentage.equals(ICX)) {
+            throw DelegationException.unknown(TAG +
+                    ": updating delegation unsuccessful,sum of percentages not equal to 100 " +
+                    "sum total of percentages " + totalPercentage +
+                    " delegation preferences " + userDelegations.length);
         }
         updatePREPDelegations();
     }
@@ -448,31 +448,31 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
         List<Address> prepList = getPrepList();
         List<PrepDelegations> prepDelegations = new ArrayList<>();
-        if (prepList.size() > 0) {
-            BigInteger totalPercentage = BigInteger.ZERO;
-            int maxVotePrepIndex = 0;
-            BigInteger maxVotes = BigInteger.ZERO;
-            BigInteger votingThreshold = getVoteThreshold();
-            for (Address prep : prepList) {
-                BigInteger votes = exaDivideFloor(prepVotes(prep), totalVotes).multiply(BigInteger.valueOf(100));
-                if (votes.compareTo(votingThreshold) > 0) {
-                    prepDelegations.add(new PrepDelegations(prep, votes));
-                    totalPercentage = totalPercentage.add(votes);
-                    if (votes.compareTo(maxVotes) > 0) {
-                        maxVotes = votes;
-                        maxVotePrepIndex = prepDelegations.size() - 1;
-                    }
+        if (prepList.size() == 0) {
+            return new PrepDelegations[0];
+        }
+        BigInteger totalPercentage = BigInteger.ZERO;
+        int maxVotePrepIndex = 0;
+        BigInteger maxVotes = BigInteger.ZERO;
+        BigInteger votingThreshold = getVoteThreshold();
+        for (Address prep : prepList) {
+            BigInteger votes = exaDivideFloor(prepVotes(prep), totalVotes).multiply(BigInteger.valueOf(100));
+            if (votes.compareTo(votingThreshold) > 0) {
+                prepDelegations.add(new PrepDelegations(prep, votes));
+                totalPercentage = totalPercentage.add(votes);
+                if (votes.compareTo(maxVotes) > 0) {
+                    maxVotes = votes;
+                    maxVotePrepIndex = prepDelegations.size() - 1;
                 }
             }
-            BigInteger dustVotes = ICX.multiply(BigInteger.valueOf(100)).subtract(totalPercentage);
-            if (dustVotes.compareTo(BigInteger.ZERO) > 0) {
-                PrepDelegations e = prepDelegations.get(maxVotePrepIndex);
-                e._votes_in_per = e._votes_in_per.add(dustVotes);
-                prepDelegations.set(maxVotePrepIndex, e);
-            }
-            return getPrepDelegations(prepDelegations);
         }
-        return new PrepDelegations[0];
+        BigInteger dustVotes = ICX.multiply(BigInteger.valueOf(100)).subtract(totalPercentage);
+        if (dustVotes.compareTo(BigInteger.ZERO) > 0) {
+            PrepDelegations e = prepDelegations.get(maxVotePrepIndex);
+            e._votes_in_per = e._votes_in_per.add(dustVotes);
+            prepDelegations.set(maxVotePrepIndex, e);
+        }
+        return getPrepDelegations(prepDelegations);
     }
 
     private PrepDelegations[] getPrepDelegations(List<PrepDelegations> userDetails) {
