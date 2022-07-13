@@ -30,10 +30,10 @@ public class GovernanceException extends OMMException.Governance {
         return new GovernanceException(Code.InvalidVotingDate, msg);
     }
 
-    public static GovernanceException insufficientStakingBalance(BigInteger value) {
-        return new GovernanceException(Code.InsufficientStakingBalance,
+    public static GovernanceException insufficientbOMMBalance(BigInteger value) {
+        return new GovernanceException(Code.InsufficientbOMMBalance,
                 "User needs at least " + MathUtils.percentageInHundred(value)
-                        + "% of total omm supply staked to define a vote.");
+                        + "% of total boosted OMM to define a vote.");
     }
 
     public static GovernanceException proposalNotFound(int voteIndex) {
@@ -54,7 +54,7 @@ public class GovernanceException extends OMMException.Governance {
     //OMMException.RewardDistribution => 30 ~
     public enum Code implements Coded {
         Unknown(0), NotOwner(1), UnAuthorized(2), InvalidVotingDate(3),
-        InsufficientStakingBalance(4), ProposalNotFound(5), ProposalNotActive(6), InsufficientFee(7);
+        InsufficientbOMMBalance(4), ProposalNotFound(5), ProposalNotActive(6), InsufficientFee(7);
 
         final int code;
 

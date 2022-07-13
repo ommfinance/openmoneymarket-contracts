@@ -14,16 +14,15 @@ public interface BoostedToken {
 
     BigInteger getMinimumLockingAmount();
 
-    void commitTransferOwnership(Address address);
-
-    void applyTransferOwnership();
-
     Map<String, BigInteger> getLocked(Address _owner);
 
     BigInteger getTotalLocked();
 
     List<Address> getUsers(int start, int end);
 
+    int activeUsersCount();
+
+    boolean hasLocked(Address _owner);
 
     BigInteger getLastUserSlope(Address address);
 
@@ -46,10 +45,10 @@ public interface BoostedToken {
     void withdraw();
 
 
-    BigInteger balanceOf(Address address, @Optional BigInteger timestamp);
+    BigInteger balanceOf(Address _owner, @Optional BigInteger timestamp);
 
 
-    BigInteger balanceOfAt(Address address, BigInteger block);
+    BigInteger balanceOfAt(Address _owner, BigInteger block);
 
 
     BigInteger totalSupply(@Optional BigInteger time);
@@ -58,11 +57,7 @@ public interface BoostedToken {
     BigInteger totalSupplyAt(BigInteger block);
 
 
-    Address admin();
-
-
-    Address futureAdmin();
-
+    void kick(Address _user);
 
     String name();
 
@@ -70,9 +65,14 @@ public interface BoostedToken {
     String symbol();
 
 
-    BigInteger userPointEpoch(Address address);
+    BigInteger userPointEpoch(Address _owner);
 
 
     int decimals();
 
+    void addContractToWhitelist(Address address);
+
+    void removeContractFromWhitelist(Address address);
+
+    List<Address> getContractWhitelist();
 }

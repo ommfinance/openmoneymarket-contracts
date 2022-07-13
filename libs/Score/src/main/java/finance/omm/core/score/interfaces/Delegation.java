@@ -8,11 +8,11 @@ import java.util.Map;
 import score.Address;
 import score.annotation.Optional;
 
-public interface Delegation {
+public interface Delegation extends BoostedOMMCallback {
 
     String name();
 
-    BigInteger getTotalVotes();
+    void initializeVoteToContributors();
 
     void setVoteThreshold(BigInteger _vote);
 
@@ -36,7 +36,11 @@ public interface Delegation {
 
     BigInteger prepVotes(Address _prep);
 
-    Map<String,BigInteger> userPrepVotes(Address _user);
+    BigInteger getWorkingBalance(Address _user);
+
+    BigInteger getWorkingTotalSupply();
+
+    Map<String, BigInteger> userPrepVotes(Address _user);
 
     PrepDelegations[] getUserDelegationDetails(Address _user);
 

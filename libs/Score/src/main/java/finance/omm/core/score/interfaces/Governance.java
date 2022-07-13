@@ -1,6 +1,8 @@
 package finance.omm.core.score.interfaces;
 
 import finance.omm.libs.structs.AssetConfig;
+import finance.omm.libs.structs.TypeWeightStruct;
+import finance.omm.libs.structs.WeightStruct;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
 import foundation.icon.score.client.ScoreInterface;
@@ -8,6 +10,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import score.Address;
+import score.annotation.Optional;
 
 @ScoreInterface(suffix = "Client")
 public interface Governance extends AddressProvider {
@@ -66,9 +69,9 @@ public interface Governance extends AddressProvider {
     BigInteger getVoteDefinitionFee();
 
 
-    void setOmmVoteDefinitionCriterion(BigInteger percentage);
+    void setVoteDefinitionCriteria(BigInteger percentage);
 
-    BigInteger getOmmVoteDefinitionCriterion();
+    BigInteger getBoostedOmmVoteDefinitionCriterion();
 
     void cancelVote(int vote_index);
 
@@ -82,6 +85,7 @@ public interface Governance extends AddressProvider {
 
     void updateVoteForum(int vote_index, String forum);
 
+    void updateTotalVotingWeight(int vote_index, BigInteger weight);
 
     void castVote(int vote_index, boolean vote);
 
@@ -104,5 +108,23 @@ public interface Governance extends AddressProvider {
 
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
+
+    void enableHandleActions();
+
+    void disableHandleActions();
+
+    void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp);
+
+    void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp);
+
+    void addType(String key, boolean isPlatformRecipient);
+
+    void addAsset(String type, String name, Address address, @Optional BigInteger poolID);
+
+    void setMinimumLockingAmount(BigInteger value);
+
+    void addContractToWhitelist(Address address);
+
+    void removeContractFromWhitelist(Address address);
 
 }
