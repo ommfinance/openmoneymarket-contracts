@@ -33,7 +33,7 @@ public class Release_1_0_0 extends Release {
         this.ommClient.lendingPoolDataProvider.setSymbol(addressMap.get("IUSDC"), "iUSDC");
         this.ommClient.lendingPoolDataProvider.setSymbol(addressMap.get("sICX"), "sICX");
 
-        ommClient.delegation.addAllContributors(Environment.preps.keySet().toArray(Address[]::new));
+        ommClient.delegation.addAllContributors(Environment.contributors.keySet().toArray(Address[]::new));
         ommClient.ommToken.setMinimumStake(Constant.MINIMUM_OMM_STAKE);
         ommClient.ommToken.setUnstakingPeriod(Constant.UNSTAKING_PERIOD);
         ommClient.staking.toggleStakingOn();
