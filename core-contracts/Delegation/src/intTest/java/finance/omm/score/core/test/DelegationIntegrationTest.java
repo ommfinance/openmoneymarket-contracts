@@ -5,13 +5,13 @@ import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static foundation.icon.jsonrpc.Address.Type;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.eclipsesource.json.JsonObject;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.PrepDelegations;
 import finance.omm.libs.structs.TypeWeightStruct;
-import finance.omm.libs.structs.governance.ReserveAttributes;
-import finance.omm.libs.structs.governance.ReserveConstant;
+import finance.omm.libs.test.integration.Environment;
 import finance.omm.libs.test.integration.OMM;
 import finance.omm.libs.test.integration.OMMClient;
 import finance.omm.libs.test.integration.ScoreIntegrationTest;
@@ -31,7 +31,7 @@ import foundation.icon.jsonrpc.Address;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -44,16 +44,14 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
     private static Map<String, Address> addressMap;
 
-    private List<Address> prep = new ArrayList<>(){{
+    private final List<Address> contributorAddr = new ArrayList<>(){{
         add(Faker.address(Type.EOA));
         add(Faker.address(Type.EOA));
         add(Faker.address(Type.EOA));
 
     }};
 
-    private BigInteger time = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
-
-
+    private final BigInteger time = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
 
     @BeforeAll
     static void setup() throws Exception {
@@ -73,18 +71,42 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
 
     }
+
     @Test
     void testName() {
         assertEquals("OMM Delegation", ownerClient.delegation.name());
     }
 
-    @Test
+    @Test // TODO: remaining
+    /*
+    user votes other than contributors
+    on calling the method the vote should be to contributors
+     */
     void initializeVoteToContributor(){
+
+        updateDelegation();
+
+//        System.out.println(testClient.delegation.userDefaultDelegation(testClient.getAddress()));
+
+//        Map<String, BigInteger> prepVotes = testClient.delegation.userPrepVotes(testClient.getAddress());
+//        System.out.println(prepVotes.entrySet());
+
+
         ownerClient.delegation.initializeVoteToContributors();
+
+//        System.out.println(testClient.delegation.userDefaultDelegation(testClient.getAddress()));
+//        System.out.println(ownerClient.delegation.userDefaultDelegation(ownerClient.getAddress()));
+
+//        System.out.println(testClient.delegation.userDefaultDelegation(testClient.getAddress()));
+//
+//        prepVotes = testClient.delegation.userPrepVotes(testClient.getAddress());
+//        System.out.println(prepVotes.entrySet());
+
+
     }
 
     @Test
-    void voteThreshold(){ // why set this vote
+    void voteThreshold(){
         assertUserRevert(DelegationException.notOwner(),
                 () -> testClient.delegation.setVoteThreshold(BigInteger.TEN),null);
 
@@ -95,15 +117,15 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    void addContributor(){ // check for more than
+    void addContributor(){
         assertUserRevert(DelegationException.notOwner(),
-                () -> testClient.delegation.addContributor(prep.get(0)),null);
+                () -> testClient.delegation.addContributor(contributorAddr.get(0)),null);
 
-        // 4 prep are added while configuring
+        // contributors are the default preps
         List<score.Address> preplist = ownerClient.delegation.getContributors();
         assertEquals(4,preplist.size());
 
-        ownerClient.delegation.addContributor(prep.get(0));
+        ownerClient.delegation.addContributor(contributorAddr.get(0));
 
         preplist = ownerClient.delegation.getContributors();
 
@@ -113,10 +135,10 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     @Test
     void addAllContributor(){
         assertUserRevert(DelegationException.notOwner(),
-                () -> testClient.delegation.addAllContributors(prep.toArray(Address[]::new)),null);
+                () -> testClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new)),null);
 
-        ownerClient.delegation.addAllContributors(prep.toArray(Address[]::new));
-        for (int i = 0; i < prep.size(); i++) {
+        ownerClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new));
+        for (int i = 0; i < contributorAddr.size(); i++) {
 
         }
         List<score.Address> preplist = ownerClient.delegation.getContributors();
@@ -126,76 +148,36 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
+    /*
+    addAllContributor() and remove of the address
+    should throw exception when trying to remove same address
+     */
     void removeContributor(){// TODO: add owner check
-        addAllContributor();
-
-//        assertUserRevert(DelegationException.notOwner(),
+        //        assertUserRevert(DelegationException.notOwner(),
 //                () -> testClient.delegation.removeContributor(prep.get(0)),null);
-
-
-        ownerClient.delegation.removeContributor(prep.get(0));
-
+        addAllContributor();
         List<score.Address> preplist = ownerClient.delegation.getContributors();
-        for (int i = 0; i < preplist.size(); i++) {
-            System.out.println(preplist.get(i));
-        }
+        assertEquals(7, preplist.size());
 
-        assertEquals(4, preplist.size());
+        ownerClient.delegation.removeContributor(contributorAddr.get(0));
 
-        assertEquals(prep.get(1),preplist.get(3));
+        preplist = ownerClient.delegation.getContributors();
+        assertEquals(6, preplist.size());
 
-        assertUserRevert(DelegationException.unknown("OMM: " + prep.get(0) +" is not in contributor list"),
-                () ->  ownerClient.delegation.removeContributor(prep.get(0)),null);
-
-    }
-
-
-
-
-
-    @Test
-    void clearPrevious(){// distributeVoteToContributors,updateDelegations
-        addContributor();
-        assertUserRevert(DelegationException.unknown(TAG+" :You are not authorized to clear others delegation preference"),
-                () -> ownerClient.delegation.clearPrevious(testClient.getAddress()),null);
-
-        ownerClient.delegation.clearPrevious(ownerClient.getAddress());
-
-
-    }
-
-    @Test
-    void userDefaultDelegation(){ // checks if that user has delegated to the particular prep or not
-        // call matra or clearPrevious testo pachi use garne?
-        testClient.delegation.userDefaultDelegation(prep.get(0));
-    }
-
-    @Test
-    void onKick(){
-
-    }
-
-    @Test
-    void prepVotes(){
-        ownerClient.delegation.prepVotes(ownerClient.getAddress());
-    }
-
-    @Test
-    void userPrepVotes(){
-        ownerClient.delegation.userPrepVotes(testClient.getAddress());
-
+        assertUserRevert(DelegationException.unknown("OMM: " + contributorAddr.get(0) +" is not in contributor list"),
+                () ->  ownerClient.delegation.removeContributor(contributorAddr.get(0)),null);
     }
 
     private PrepDelegations[] prepDelegations(int n) {
+        score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
         PrepDelegations[] delegations = new PrepDelegations[n];
         int value = 100/n;
         System.out.println("value " + value);
         BigInteger total = BigInteger.ZERO;
         for (int i = 0; i < n; i++) {
-            Address prep = Faker.address(Type.EOA);
-            System.out.println("address " + prep);
-            BigInteger votesInPer = BigInteger.valueOf(value).multiply(BigInteger.valueOf(10).pow(16));
-            System.out.println("votes " + votesInPer);
+            score.Address prep = prepSet[i +3];
+            BigInteger votesInPer = BigInteger.valueOf((long) value).multiply(BigInteger.valueOf(10).pow(16));
+            System.out.println("votes: " + votesInPer);
             total = total.add(votesInPer);
             System.out.println("total " +total);
             PrepDelegations prepDelegation = new PrepDelegations(prep, votesInPer);
@@ -255,42 +237,19 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         ownerClient.governance.enableRewardClaim();
         ownerClient.reward.distribute();
 
-
-//        BigInteger subtractTime = time.subtract(BigInteger.ONE);
-//        System.out.println(ownerClient.rewardWeightController.getEmissionRate(subtractTime));
-//
         ownerClient.governance.transferOmmToDaoFund(BigInteger.valueOf(4000000).multiply(ICX));
-        Address aad = addressMap.get(Contracts.DAO_FUND.getKey());
-        System.out.println("balance of daoFund" + ownerClient.ommToken.balanceOf(aad));
 
         ownerClient.governance.transferOmmFromDaoFund(BigInteger.valueOf(40000).multiply(ICX),ownerClient.getAddress());
-        System.out.println("balance of owner" + ownerClient.ommToken.balanceOf(ownerClient.getAddress()));
 
 
-//        BigInteger amount =  ownerClient.ommToken.balanceOf(ownerClient.getAddress());
-//        System.out.println("THE ampunt is: "+ amount);
     }
 
     @Test
     void transferOmm(){
         rewardDistribution();
-        System.out.println("balance of owner" + ownerClient.ommToken.balanceOf(ownerClient.getAddress()));
 
-        ownerClient.ommToken.transfer(testClient.getAddress(),BigInteger.valueOf(20000).multiply(ICX),"transfer to testClient".getBytes());
-        System.out.println("balance of owner" + ownerClient.ommToken.balanceOf(testClient.getAddress()));
-
-//        BigInteger value = BigInteger.valueOf(20000).multiply(ICX);
-//        BigInteger amount =  ownerClient.ommToken.balanceOf(ownerClient.getAddress());
-//        System.out.println("THE ampunt is: "+ amount);
-//
-//        ownerClient.ommToken.transfer(testClient.getAddress(),value,"transfer to testClient".getBytes());
-//        BigInteger amount2 =  ownerClient.ommToken.balanceOf(testClient.getAddress());
-//        System.out.println("THE ampunt is: "+ amount2);
-
-//        ownerClient.governance.transferOmmFromDaoFund(value,ownerClient.getAddress());
-//        ownerClient.workesrToken.transfer(ownerClient.getAddress(),value,null);
-//        ownerClient.ommToken.transfer(testClient.getAddress(),BigInteger.valueOf(10),
-//                "transfer to test".getBytes());
+        ownerClient.ommToken.transfer(testClient.getAddress(),BigInteger.valueOf(20000).multiply(ICX),
+                "transfer to testClient".getBytes());
     }
 
     private byte[] createByteArray(String methodName, BigInteger unlockTime) {
@@ -303,14 +262,13 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
                 .add("method", methodName)
                 .add("params", internalParameters);
 
-        byte[] data = jsonData.toString().getBytes();
-        return data;
+        return jsonData.toString().getBytes();
 
     }
 
     private BigInteger getTimeAfter(int n){
         BigInteger microSeconds = BigInteger.TEN.pow(6);
-        BigInteger currentTime = BigInteger.valueOf(n * 86400 * 365).multiply(microSeconds);
+        BigInteger currentTime = BigInteger.valueOf((long) n * 86400 * 365).multiply(microSeconds);
         return time.multiply(microSeconds).add(currentTime);
 
     }
@@ -318,30 +276,123 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     @Test
     void userLockOMM(){
         transferOmm();
-        System.out.println("balance of user" + ownerClient.ommToken.balanceOf(testClient.getAddress()));
 
         Address to = addressMap.get(Contracts.BOOSTED_OMM.getKey());
         BigInteger value = BigInteger.valueOf(10).multiply(ICX);
 
-        BigInteger timeInMicro = time.multiply((BigInteger.TEN.pow(6)));
         BigInteger unlockTimeMicro = getTimeAfter(2);
 
-
         byte[] data =createByteArray("createLock",unlockTimeMicro);
-        System.out.println("data "+data);
         testClient.ommToken.transfer(to,value,data);
     }
 
     @Test
-    void onBalanceUpdate(){
+    /*
+    check if user has default delegation after locking omm
+     */
+    void checkUserDefaultDelegation(){
+        userLockOMM();
+        boolean expected = testClient.delegation.userDefaultDelegation(testClient.getAddress());
+        assertTrue(expected);
+
+        List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
+        assertEquals(4,prepDelegatedList.size());
+
+        PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
+
+//        Map<String, BigInteger> prepVotes = testClient.delegation.userPrepVotes(testClient.getAddress());
+//        System.out.println(prepVotes.entrySet());
+
+        score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
+
+        for (int i = 0; i < prepDelegatedList.size(); i++) {
+            assertEquals(prepSet[i],userDelegations[i]._address);
+        }
+
+
+    }
+
+
+    @Test
+    /*
+    after user locks OMM
+    user updates delegation to their desired prep
+     */
+    void updateDelegation(){
+        userLockOMM();
+
+        // default contributors
+        List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
+        assertEquals(4,prepDelegatedList.size());
+
+        PrepDelegations[] delegations = prepDelegations(5);
+        List<PrepDelegations> expectedList = new ArrayList<>(Arrays.asList(delegations));
+
+        testClient.delegation.updateDelegations(delegations,testClient.getAddress());
+
+        prepDelegatedList=  testClient.delegation.getPrepList();
+        assertEquals(8,prepDelegatedList.size());
+
+        PrepDelegations[] computedDelegation = testClient.delegation.computeDelegationPercentages();
+        assertEquals(expectedList.size(),computedDelegation.length);
+
+        for (int i = 0; i < expectedList.size(); i++) {
+            assertEquals(expectedList.get(i)._address,computedDelegation[i]._address);
+            assertEquals(expectedList.get(i)._votes_in_per.multiply(BigInteger.valueOf(100L)),
+                    computedDelegation[i]._votes_in_per);
+        }
+
+        PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
+        assertEquals(delegations.length,userDelegations.length);
+        for (int i = 0; i < delegations.length; i++) {
+            assertEquals(delegations[i]._address,userDelegations[i]._address);
+            assertEquals(delegations[i]._votes_in_per,userDelegations[i]._votes_in_per);
+        }
+
+//        Map<String, BigInteger> prepVotes = testClient.delegation.userPrepVotes(testClient.getAddress());
+//        System.out.println(prepVotes.entrySet());
+
+    }
+
+    @Test
+    /*
+    delegate votes to different preps
+    clearPrevious set delegation to default
+     */
+    void clearPrevious(){
+        updateDelegation();
+
+        assertUserRevert(DelegationException.unknown(TAG+" :You are not authorized to clear others delegation preference"),
+                () -> ownerClient.delegation.clearPrevious(testClient.getAddress()),null);
+
+        testClient.delegation.clearPrevious(testClient.getAddress());
+
+
+        score.Address[] contributors = Environment.contributors.keySet().toArray(score.Address[]::new);
+
+        PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
+//        for (PrepDelegations delegation: userDelegations) {
+//            System.out.println(delegation._address);
+//            System.out.println(delegation._votes_in_per);
+//        }
+//        System.out.println("user delegation length " + userDelegations.length);
+
+        assertEquals(contributors.length,userDelegations.length);
+        for (int i = 0; i < contributors.length; i++) {
+            assertEquals(contributors[i],userDelegations[i]._address);
+        }
+
+    }
+
+    @Test
+    void onBalanceUpdate(){ // done from locking omm
+        userLockOMM();
         assertUserRevert(DelegationException.unauthorized("Only bOMM contract is allowed to call onBalanceUpdate method"),
                 () -> ownerClient.delegation.onBalanceUpdate(ownerClient.getAddress()),null);
 
 
-        ownerClient.bOMM.increaseUnlockTime(BigInteger.valueOf(1000000));
     }
 
-///////////lendingPoolCCcccore ma set delegation//// staking cpntract ma delegate ko fix
 
 
 
