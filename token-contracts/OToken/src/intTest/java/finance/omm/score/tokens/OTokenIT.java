@@ -1,32 +1,38 @@
 package finance.omm.score.tokens;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import finance.omm.core.score.interfaces.OToken;
-import finance.omm.core.score.interfaces.OTokenScoreClient;
+import finance.omm.libs.test.integration.OMM;
+import finance.omm.libs.test.integration.OMMClient;
 import finance.omm.libs.test.integration.ScoreIntegrationTest;
-import foundation.icon.score.client.DefaultScoreClient;
-import foundation.icon.score.client.ScoreClient;
-import java.math.BigInteger;
-import org.junit.jupiter.api.Test;
-import score.Address;
+import finance.omm.libs.test.integration.configs.Config;
+import finance.omm.libs.test.integration.configs.oTokenConfig;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class OTokenIT implements ScoreIntegrationTest {
 
-    Address addressProvider = Address.fromString("cxa755b2ef6eb46c1e817c636be3c21d26c81fe6cc");
+    private static OMMClient ommClient;
 
-    DefaultScoreClient client = DefaultScoreClient.of(System.getProperties());
+    @BeforeAll
+    static void setup() throws Exception {
+        OMM omm = new OMM("conf/all-contracts.json");
 
-    @ScoreClient
-    OToken scoreClient = new OTokenScoreClient(client);
+        omm.setupOMM();
+        Config config = new oTokenConfig(omm.getAddresses());
+        omm.runConfig(config);
+        ommClient = omm.defaultClient();
+
+    }
 
     @Test
-    void ShouldGetDecimals() {
-
-        BigInteger decimals = scoreClient.decimals();
-        assertNotNull(decimals);
-        assertEquals(BigInteger.valueOf(6), decimals);
-
-    }   
+    void testName() {
+        assertEquals("SICX Interest Token", ommClient.oICX.name());
+    }
 }
