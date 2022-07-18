@@ -6,8 +6,8 @@ import finance.omm.libs.test.integration.OMM;
 import finance.omm.libs.test.integration.OMMClient;
 import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
-import finance.omm.libs.test.integration.configs.oTokenConfig;
 
+import finance.omm.score.tokens.config.oTokenConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ public class OTokenIT implements ScoreIntegrationTest {
         OMM omm = new OMM("conf/all-contracts.json");
 
         omm.setupOMM();
-        Config config = new oTokenConfig(omm.getAddresses());
+        Config config = new oTokenConfig();
         omm.runConfig(config);
         ommClient = omm.defaultClient();
 
