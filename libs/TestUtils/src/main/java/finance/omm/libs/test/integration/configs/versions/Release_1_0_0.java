@@ -1,5 +1,6 @@
 package finance.omm.libs.test.integration.configs.versions;
 
+import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
 import finance.omm.libs.test.integration.Environment;
@@ -29,12 +30,15 @@ public class Release_1_0_0 extends Release {
         initAddresses();
         this.ommClient.feeProvider.setLoanOriginationFeePercentage(Constant.LOAN_ORIGINATION_FEE_PERCENTAGE);
 
-        this.ommClient.lendingPoolDataProvider.setSymbol(addressMap.get("IUSDC"), "iUSDC");
-        this.ommClient.lendingPoolDataProvider.setSymbol(addressMap.get("sICX"), "sICX");
+        this.ommClient.lendingPoolDataProvider.setSymbol(addressMap.get("IUSDC"), "USDC");
+        this.ommClient.lendingPoolDataProvider.setSymbol(addressMap.get("sICX"), "ICX");
 
         ommClient.delegation.addAllContributors(Environment.preps.keySet().toArray(Address[]::new));
         ommClient.ommToken.setMinimumStake(Constant.MINIMUM_OMM_STAKE);
         ommClient.ommToken.setUnstakingPeriod(Constant.UNSTAKING_PERIOD);
+        ommClient.staking.toggleStakingOn();
+        ommClient.lendingPool.setFeeSharingTxnLimit(BigInteger.valueOf(50));
+        ommClient.staking.setSicxAddress(addressMap.get(Contracts.sICX.getKey()));
 
       /*
         initialized reserves
@@ -77,7 +81,7 @@ public class Release_1_0_0 extends Release {
         attribute.borrowingEnabled = true;
         attribute.usageAsCollateralEnabled = true;
         attribute.isFreezed = false;
-        attribute.isActive = false;
+        attribute.isActive = true;
 
         ommClient.governance.initializeReserve(attribute);
         ommClient.governance.updateBorrowThreshold(attribute.reserveAddress, Constant.BORROW_THRESHOLD);

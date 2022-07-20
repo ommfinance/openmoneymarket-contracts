@@ -18,4 +18,11 @@ public interface Staking {
     @Payable
     void stakeICX(@Optional Address _to, @Optional byte[] _data);
 
+    @External
+    void toggleStakingOn();
+
+    @External
+    void setSicxAddress(Address _address);
+
+
 }
