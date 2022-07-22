@@ -13,4 +13,6 @@ public interface LendingPool {
     void setFeeSharingTxnLimit(BigInteger _limit);
 
     void borrow(Address _reserve, BigInteger _amount);
+
+    void redeem(Address _oToken, BigInteger _amount, boolean _waitForUnstaking);
 }
