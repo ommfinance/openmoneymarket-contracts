@@ -3,6 +3,7 @@ package finance.omm.score.tokens;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.eclipsesource.json.JsonObject;
 import com.iconloop.score.test.Account;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import score.Context;
+import score.UserRevertedException;
 
 import java.math.BigInteger;
 import java.util.Map;
@@ -107,6 +109,10 @@ public class OTokenIT implements ScoreIntegrationTest {
         assertEquals(BigInteger.ZERO,ommClient.oICX.principalBalanceOf(ommClient.getAddress()));
         assertEquals(BigInteger.valueOf(100).multiply(ICX),ommClient.oICX.principalBalanceOf(testClient.getAddress()));
 
+        UserRevertedException lessThanZero = assertThrows(UserRevertedException.class, () ->
+                testClient.oICX.transfer(ommClient.getAddress(),BigInteger.ONE.multiply(ICX).negate(),"".getBytes()));
+        UserRevertedException highThanBalance = assertThrows(UserRevertedException.class, () ->
+                testClient.oICX.transfer(ommClient.getAddress(),BigInteger.valueOf(101).multiply(ICX),"".getBytes()));
         //transfers 50 ICX to omm Client
         testClient.oICX.transfer(ommClient.getAddress(),BigInteger.valueOf(50).multiply(ICX),"".getBytes());
 

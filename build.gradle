@@ -134,23 +134,40 @@ subprojects {
 
     //remove as more contracts are added to master
     //dummy
-    scoreIntegrationTest.put('sICX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/sicx.zip");
-    scoreIntegrationTest.put('Staking', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/staking.zip");
-    scoreIntegrationTest.put('BandOracle', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/proxy-band-oracle.zip");
-    scoreIntegrationTest.put('StableCoin', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip");
-    scoreIntegrationTest.put('DEX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/dex.jar");
-
-    //python
-    scoreIntegrationTest.put('PriceOracle', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/priceOracle.zip");
-    scoreIntegrationTest.put('WorkerToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/workerToken.zip");
-//    scoreIntegrationTest.put('StakedLP', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/stakedLP.zip");
-    scoreIntegrationTest.put('LiquidationManager', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/liquidation-manager.zip");
-    scoreIntegrationTest.put('LendingPoolDataProvider', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lending-pool-data-provider.zip");
-    scoreIntegrationTest.put('LendingPoolCore', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPoolCore.zip");
-    scoreIntegrationTest.put('LendingPool', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPool.zip");
+//    scoreIntegrationTest.put('sICX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/sicx.zip");
+//    scoreIntegrationTest.put('Staking', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/staking.zip");
+//    scoreIntegrationTest.put('BandOracle', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/proxy-band-oracle.zip");
+//    scoreIntegrationTest.put('StableCoin', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip");
+//    scoreIntegrationTest.put('DEX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/dex.jar");
+//
+//    //python
+//    scoreIntegrationTest.put('PriceOracle', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/priceOracle.zip");
+//    scoreIntegrationTest.put('WorkerToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/workerToken.zip");
+////    scoreIntegrationTest.put('StakedLP', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/stakedLP.zip");
+//    scoreIntegrationTest.put('LiquidationManager', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/liquidation-manager.zip");
+//    scoreIntegrationTest.put('LendingPoolDataProvider', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lending-pool-data-provider.zip");
+//    scoreIntegrationTest.put('LendingPoolCore', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPoolCore.zip");
+//    scoreIntegrationTest.put('LendingPool', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/lendingPool.zip");
 //    scoreIntegrationTest.put('OToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/o-token.zip");
 //    scoreIntegrationTest.put('DToken', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/mainnet/d-token.zip");
 
+
+    scoreIntegrationTest.put('sICX', "../../omm-scores/dummy/sicx.zip");
+    scoreIntegrationTest.put('Staking', "../../omm-scores/dummy/staking.zip");
+    scoreIntegrationTest.put('BandOracle', "../../omm-scores/dummy/proxy-band-oracle.zip");
+    scoreIntegrationTest.put('StableCoin', "../../omm-scores/dummy/stable-coin.zip");
+    scoreIntegrationTest.put('DEX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/dex.jar");
+
+    //python
+    scoreIntegrationTest.put('PriceOracle', "../../omm-scores/mainnet/priceOracle.zip");
+    scoreIntegrationTest.put('WorkerToken', "../../omm-scores/mainnet/workerToken.zip");
+//    scoreIntegrationTest.put('StakedLP', "../../omm-scores/mainnet/stakedLP.zip");
+    scoreIntegrationTest.put('LiquidationManager', "../../omm-scores/mainnet/liquidation-manager.zip");
+    scoreIntegrationTest.put('LendingPoolDataProvider', "../../omm-scores/mainnet/lending-pool-data-provider.zip");
+    scoreIntegrationTest.put('LendingPoolCore', "../../omm-scores/mainnet/lendingPoolCore.zip");
+    scoreIntegrationTest.put('LendingPool', "../../omm-scores/mainnet/lendingPool.zip");
+//    scoreIntegrationTest.put('OToken', "../../omm-scores/mainnet/o-token.zip");
+//    scoreIntegrationTest.put('DToken', "../../omm-scores/mainnet/d-token.zip");
 
     afterEvaluate { project ->
         scoreIntegrationTest.put(project.name, project.getTasks().getByName("optimizedJar").outputJarName.toString())
