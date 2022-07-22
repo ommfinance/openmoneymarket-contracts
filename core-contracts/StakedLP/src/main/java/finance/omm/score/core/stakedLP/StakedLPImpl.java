@@ -222,8 +222,8 @@ public class StakedLPImpl extends AbstractStakedLP {
         Map<String, BigInteger> balance = balanceOf(_user, _id);
         SupplyDetails supplyDetails = new SupplyDetails();
         supplyDetails.decimals = getAverageDecimals(_id);
-        supplyDetails.principalTotalSupply = balance.get("userStakedBalance");
-        supplyDetails.principalUserBalance = balance.get("totalStakedBalance");
+        supplyDetails.principalTotalSupply = balance.get("totalStakedBalance");
+        supplyDetails.principalUserBalance = balance.get("userStakedBalance");
         return supplyDetails;
     }
 }

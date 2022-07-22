@@ -388,8 +388,8 @@ public class StakedLPTest extends AbstractStakedLPTest {
         BigInteger expectedDecimals = (addedDecimals).divide(BigInteger.valueOf(2));
 
         assertEquals(supplyDetails.decimals,expectedDecimals);
-        assertEquals(supplyDetails.principalTotalSupply,value);
-        assertEquals(supplyDetails.principalUserBalance,totalStakeBalance);
+        assertEquals(supplyDetails.principalTotalSupply,totalStakeBalance);
+        assertEquals(supplyDetails.principalUserBalance,value);
 
         verify(scoreSpy).call(eq(BigInteger.class), eq(Contracts.DEX),
                 eq("balanceOf"),any(),any());
