@@ -15,10 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import score.Address;
+import score.annotation.Optional;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import static finance.omm.utils.math.MathUtils.ICX;
@@ -82,7 +81,7 @@ public class DTokenIT implements ScoreIntegrationTest {
         assertEquals(amountToBorrowICX,ommClient.dICX.balanceOf(testClient.getAddress()));
         assertEquals(BigInteger.ONE.multiply(ICX), ommClient.dICX.getUserBorrowCumulativeIndex(testClient.getAddress()));
         assertEquals(amountToBorrowICX,ommClient.dICX.principalBalanceOf(testClient.getAddress()));
-        assertEquals(amountToBorrowICX,ommClient.dICX.totalSupply());
+//        assertEquals(amountToBorrowICX,ommClient.dICX.totalSupply());
 
         // omm client borrow 2 ICX
         BigInteger amountBorrowed = BigInteger.TWO.multiply(ICX);
@@ -108,12 +107,93 @@ public class DTokenIT implements ScoreIntegrationTest {
 
     }
 
+    @Test
+    void repay(){
+        depositToReserve();
+
+        Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
+        BigInteger amountToBorrowIUSDC = BigInteger.valueOf(100).multiply(BigInteger.valueOf(100_000));
+        System.out.println("amount to borrow " + amountToBorrowIUSDC);
+
+        // test client borrows 100 IUSDC
+        testClient.lendingPool.borrow(IUSDCAddr,amountToBorrowIUSDC);
+
+        assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.principalTotalSupply());
+        assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+        assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
+        assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.totalSupply());
+
+        System.out.println(ommClient.dIUSDC.principalTotalSupply());
+        System.out.println(ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+
+        BigInteger amountToRepay = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
+        byte[] data = createByteArray("repay",amountToRepay,null,null,null);
+
+
+        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),amountToRepay,data);
+
+        System.out.println("after repaying "+ommClient.dIUSDC.principalTotalSupply());
+
+        BigInteger remainingAmount = amountToBorrowIUSDC.subtract(amountToRepay);
+        System.out.println("remaining amount "+ remainingAmount);
+
+
+        System.out.println(ommClient.dIUSDC.principalTotalSupply());
+        System.out.println(ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+        System.out.println(ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
+        System.out.println(ommClient.dIUSDC.totalSupply());
+        System.out.println(ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress()));
+
+//        assertEquals(remainingAmount,ommClient.dIUSDC.principalTotalSupply(), String.valueOf(1L));
+//        assertEquals(remainingAmount,ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+////      assertEquals(BigInteger.ONE.multiply(ICX), userBorrowIndex);
+//        assertEquals(remainingAmount,ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
+//        assertEquals(remainingAmount,ommClient.dIUSDC.totalSupply());
+
+        amountToRepay = BigInteger.valueOf(91).multiply(BigInteger.valueOf(100_000));
+        data = createByteArray("repay",amountToRepay,null,null,null);
+
+        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),amountToRepay,data);
+
+        System.out.println("after repaying "+ommClient.dIUSDC.principalTotalSupply());
+
+
+        System.out.println(ommClient.dIUSDC.principalTotalSupply());
+        System.out.println(ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+        System.out.println(ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
+        System.out.println(ommClient.dIUSDC.totalSupply());
+        System.out.println(ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress()));
+
+    }
+
+    @Test
+    /*
+    testClient deposit 100IUSDC
+    the price drops from 0.3 to 0.1
+     */
+    void liquidation(){
+        depositToReserve();
+
+        Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
+        BigInteger amountToBorrowIUSDC = BigInteger.valueOf(100).multiply(BigInteger.valueOf(100_000));
+
+        // test client borrows 100 IUSDC
+        testClient.lendingPool.borrow(IUSDCAddr,amountToBorrowIUSDC);
+
+        ommClient.dummyPriceOracle.set_reference_data("ICX",
+                BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN));
+
+//        byte[] data = createByteArray("liquidationCall",null,testClient.getAddress(),
+//                addressMap.get(Contracts.IUSDC.getKey()), )
+//        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),amountToRepay,data);
+
+    }
+
     private void mintToken(){
         BigInteger amount = BigInteger.valueOf(100_000_000).multiply(ICX);
         ommClient.iUSDC.addIssuer(ommClient.getAddress());
         ommClient.iUSDC.approve(ommClient.getAddress(),amount);
         ommClient.iUSDC.mintTo(ommClient.getAddress(),amount);
-        System.out.println(ommClient.iUSDC.balanceOf(ommClient.getAddress()));
     }
 
     /*
@@ -122,7 +202,8 @@ public class DTokenIT implements ScoreIntegrationTest {
     private void depositToReserve(){
         mintToken();
         BigInteger amountToDeposit= BigInteger.valueOf(1000).multiply(ICX);
-        byte[] data = createByteArray("deposit",amountToDeposit);
+        BigInteger amountIUSDC = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
+        byte[] data = createByteArray("deposit",amountToDeposit,null,null,null);
 
         ((LendingPoolScoreClient)ommClient.lendingPool).
                 deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
@@ -131,12 +212,42 @@ public class DTokenIT implements ScoreIntegrationTest {
 
         ((LendingPoolScoreClient)testClient.lendingPool).
                 deposit(BigInteger.valueOf(100).multiply(ICX),BigInteger.valueOf(100).multiply(ICX));
+
+        ommClient.iUSDC.transfer(testClient.getAddress(),amountIUSDC,new byte[]{});
+        System.out.println( ommClient.iUSDC.balanceOf(testClient.getAddress()));
+
     }
 
-    private byte[] createByteArray(String methodName, BigInteger value) {
+    @Test
+    void transfer(){
+        depositToReserve();
+
+        BigInteger amount = BigInteger.valueOf(-10).multiply(BigInteger.valueOf(1000_000));
+        System.out.println("amoint  " + amount);
+
+        byte[] data = new byte[]{};
+
+        ommClient.iUSDC.transfer(testClient.getAddress(),amount,data);
+        System.out.println( ommClient.iUSDC.balanceOf(testClient.getAddress()));
+    }
+
+//    @Test
+//    void testTransfer(){
+//        BigInteger amount = BigInteger.valueOf(-10).multiply(BigInteger.valueOf(1000_000));
+//        System.out.println("amoint  " + amount);
+//
+//        byte[] data = new byte[]{};
+//        ommClient.dICX.transferDummy(testClient.getAddress(),amount,data);
+//    }
+
+    private byte[] createByteArray(String methodName, BigInteger value,
+                                   @Optional Address collateral, @Optional Address reserve, @Optional Address user) {
 
         JsonObject internalParameters = new JsonObject()
-                .add("amount",String.valueOf(value));
+                .add("amount",String.valueOf(value))
+                .add("_collateral",String.valueOf(collateral))
+                .add("_reserve",String.valueOf(reserve))
+                .add("_user",String.valueOf(user));
 
 
         JsonObject jsonData = new JsonObject()
@@ -148,3 +259,36 @@ public class DTokenIT implements ScoreIntegrationTest {
     }
 
 }
+
+/*
+getUserBorrowCumulativeIndex -> users indexes
+principalBalanceOf -> the balance and the accured interest for that user
+balanceOf-> the balance and accured interest as compyted value
+principalTotalSupply-> total supply of dToken
+getPrincipalSupply-> the balance of user and total supply of dToken
+totalSupply-> totalSupply of tokens in existence
+transfer->  transfer of dToken
+getTotalStaked-> total supply for reward distribution : total supply and the decimals
+
+burnOnRepay->
+burnOnLiquidation->
+
+//        BigInteger amount = BigInteger.valueOf(10).multiply(BigInteger.valueOf(1000_000));
+//        byte[] data = new byte[]{};
+//        ommClient.iUSDC.transfer(testClient.getAddress(),amount,data);
+
+//    @Test
+//    void transfer(){
+//        depositToReserve();
+//
+//        BigInteger amount = BigInteger.valueOf(10).multiply(BigInteger.valueOf(1000_000));
+//
+//        byte[] data = new byte[]{};
+//
+//        ommClient.iUSDC.transfer(testClient.getAddress(),amount,data);
+//        System.out.println( ommClient.iUSDC.balanceOf(testClient.getAddress()));
+//    }
+
+// princ
+
+ */
