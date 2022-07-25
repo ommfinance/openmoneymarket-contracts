@@ -250,6 +250,7 @@ public class DTokenImpl extends AddressProvider implements DToken {
         Address rewardsAddress = this._addresses.get(Contracts.REWARDS.getKey());
 
         UserDetails userDetails = new UserDetails();
+        userDetails._user = _user;
         userDetails._userBalance = _user_balance;
         userDetails._totalSupply = _total_supply;
         userDetails._decimals = this.decimals();
