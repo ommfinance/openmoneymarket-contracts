@@ -18,7 +18,7 @@ import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
 import finance.omm.score.core.delegation.exception.DelegationException;
 import finance.omm.score.core.test.config.DelegationConfig;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -50,8 +50,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
     private final BigInteger time = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
 
-    @BeforeAll
-    static void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         OMM omm = new OMM("conf/all-contracts.json");
         omm.setupOMM();
         addressMap = omm.getAddresses();
@@ -72,20 +72,6 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    /*
-    user votes other than contributors
-    on calling initializeVoteToContributor the vote should be to contributors
-     */
-    void initializeVoteToContributor(){
-        updateDelegation();
-
-        assertUserRevert(DelegationException.notOwner(),
-                () -> testClient.delegation.initializeVoteToContributors(),null);
-        ownerClient.delegation.initializeVoteToContributors();
-
-    }
-
-    @Test
     void voteThreshold(){
         assertUserRevert(DelegationException.notOwner(),
                 () -> testClient.delegation.setVoteThreshold(BigInteger.TEN),null);
@@ -98,33 +84,52 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
     @Test
     void addContributor(){
-        assertUserRevert(DelegationException.notOwner(),
-                () -> testClient.delegation.addContributor(contributorAddr.get(0)),null);
-
         // contributors are the default preps
+        score.Address[] contributorSet = Environment.contributors.keySet().toArray(score.Address[]::new);
+        List<score.Address> contributors = new ArrayList<>(Arrays.asList(contributorSet));
+
         List<score.Address> preplist = ownerClient.delegation.getContributors();
         assertEquals(4,preplist.size());
 
         ownerClient.delegation.addContributor(contributorAddr.get(0));
 
+        contributors.add(contributorAddr.get(0));
+
         preplist = ownerClient.delegation.getContributors();
 
         assertEquals(5, preplist.size());
+
+        for (int i = 0; i < preplist.size(); i++) {
+            assertEquals(contributors.get(i),preplist.get(i));
+        }
+
+        assertUserRevert(DelegationException.notOwner(),
+                () -> testClient.delegation.addContributor(contributorAddr.get(0)),null);
     }
 
     @Test
     void addAllContributor(){
+
+        score.Address[] contributorSet = Environment.contributors.keySet().toArray(score.Address[]::new);
+        List<score.Address> contributors = new ArrayList<>(Arrays.asList(contributorSet));
+
+        ownerClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new));
+
+        contributors.add(contributorAddr.get(0));
+        contributors.add(contributorAddr.get(1));
+        contributors.add(contributorAddr.get(2));
+
+        List<score.Address> preplist = ownerClient.delegation.getContributors();
+
+        assertEquals(7, preplist.size());
+
+        for (int i = 0; i < preplist.size(); i++) {
+            assertEquals(contributors.get(i),preplist.get(i));
+        }
+
         assertUserRevert(DelegationException.notOwner(),
                 () -> testClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new)),null);
 
-        ownerClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new));
-        for (int i = 0; i < contributorAddr.size(); i++) {
-
-        }
-        List<score.Address> preplist = ownerClient.delegation.getContributors();
-
-
-        assertEquals(7, preplist.size());
     }
 
     @Test
@@ -150,28 +155,6 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
     @Test
     /*
-    check if user has default delegation after locking omm
-     */
-    void checkUserDefaultDelegation(){
-        userLockOMM();
-        boolean expected = testClient.delegation.userDefaultDelegation(testClient.getAddress());
-        assertTrue(expected);
-
-        List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
-        assertEquals(4,prepDelegatedList.size());
-
-        PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
-
-        score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
-
-        for (int i = 0; i < prepDelegatedList.size(); i++) {
-            assertEquals(prepSet[i],userDelegations[i]._address);
-        }
-    }
-
-
-    @Test
-    /*
     after user locks OMM
     user updates delegation to their desired prep
      */
@@ -188,15 +171,16 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         testClient.delegation.updateDelegations(delegations,testClient.getAddress());
 
         prepDelegatedList=  testClient.delegation.getPrepList();
-        assertEquals(8,prepDelegatedList.size());
+        assertEquals(9,prepDelegatedList.size());
 
         PrepDelegations[] computedDelegation = testClient.delegation.computeDelegationPercentages();
         assertEquals(expectedList.size(),computedDelegation.length);
 
         for (int i = 0; i < expectedList.size(); i++) {
             assertEquals(expectedList.get(i)._address,computedDelegation[i]._address);
-            assertEquals(expectedList.get(i)._votes_in_per.multiply(BigInteger.valueOf(100L)),
-                    computedDelegation[i]._votes_in_per);
+            float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+            assertEquals(expectedList.get(i)._votes_in_per.multiply(BigInteger.valueOf(100L)).longValue()/ICX.longValue(),
+                    computedDelegation[i]._votes_in_per.longValue()/ICX.longValue(),delta);
         }
 
         PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
@@ -204,6 +188,73 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         for (int i = 0; i < delegations.length; i++) {
             assertEquals(delegations[i]._address,userDelegations[i]._address);
             assertEquals(delegations[i]._votes_in_per,userDelegations[i]._votes_in_per);
+        }
+    }
+
+    @Test
+    void updateDelegationShouldFail(){
+
+        userLockOMM();
+
+        score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
+
+        PrepDelegations[] delegation = new PrepDelegations[]{
+                new PrepDelegations(prepSet[0],ICX.divide(BigInteger.TWO)),
+                new PrepDelegations(prepSet[1],ICX.divide(BigInteger.valueOf(3)))
+        };
+
+        BigInteger totalVotes = ICX.divide(BigInteger.TWO).add(ICX.divide(BigInteger.valueOf(3)));
+
+        assertUserRevert(DelegationException.unknown(TAG + ": updating delegation unsuccessful,sum of percentages not equal to 100 " +
+                        "sum total of percentages " + totalVotes +
+                        " delegation preferences " + delegation.length),
+                () ->   testClient.delegation.updateDelegations(delegation,testClient.getAddress()),null);
+
+
+        PrepDelegations[] delegations = prepDelegations(6);
+
+        assertUserRevert(DelegationException.unknown(TAG + "updating delegation unsuccessful, more than 5 preps provided by user" +
+                        "delegations provided" + delegations.length),
+                () ->  testClient.delegation.updateDelegations(delegations,testClient.getAddress()),null);
+
+    }
+
+    @Test
+    /*
+    user votes other than contributors
+    on calling initializeVoteToContributor the vote should be to contributors
+     */
+    void initializeVoteToContributor(){
+
+        assertUserRevert(DelegationException.notOwner(),
+                () -> testClient.delegation.initializeVoteToContributors(),null);
+
+        updateDelegation();
+
+        ownerClient.delegation.initializeVoteToContributors();
+
+        assertUserRevert(DelegationException.unknown(TAG+" : This method cannot be called again."),
+                () -> ownerClient.delegation.initializeVoteToContributors(),null);
+    }
+
+    @Test
+    /*
+    check if user has default delegation after locking omm
+     */
+    void checkUserDefaultDelegation(){
+        userLockOMM();
+        boolean expected = testClient.delegation.userDefaultDelegation(testClient.getAddress());
+        assertTrue(expected);
+
+        List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
+        assertEquals(4,prepDelegatedList.size());
+
+        PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
+
+        score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
+
+        for (int i = 0; i < prepDelegatedList.size(); i++) {
+            assertEquals(prepSet[i],userDelegations[i]._address);
         }
     }
 
@@ -234,6 +285,18 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
     @Test
     /*
+    this method is called from Boosted OMM
+     */
+    void onKick(){
+
+        userLockOMM();
+
+        assertUserRevert(DelegationException.unauthorized(TAG+" :You are not authorized to clear others delegation preference"),
+                () -> ownerClient.delegation.onKick(testClient.getAddress(),BigInteger.ONE,new byte[]{}),null);
+
+    }
+    @Test
+    /*
     onBalanceUpdate is called on bOMM when omm is locked
      */
     void onBalanceUpdate(){
@@ -254,18 +317,12 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
             BigInteger votesInPer = ICX.divide(BigInteger.valueOf(n));
 
             total = total.add(votesInPer);
-            System.out.println("total " + total);
 
             BigInteger dustVote = ICX.subtract(total);
-            System.out.println("dustVote " + dustVote);
 
             if (dustVote.compareTo(BigInteger.ONE) <= 0){
                 votesInPer = votesInPer.add(dustVote);
-                System.out.println("votesInper " + votesInPer);
             }
-
-            System.out.println("address : " + prep);
-            System.out.println("votes : " + votesInPer);
             PrepDelegations prepDelegation = new PrepDelegations(prep, votesInPer);
             delegations[i] = prepDelegation;
         }
