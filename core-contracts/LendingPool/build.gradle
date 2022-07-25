@@ -1,0 +1,45 @@
+version = '0.0.2'
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':Score')
+    implementation project(':ScoreUtils')
+    implementation project(':OMMStruct')
+
+    testImplementation project(':TestUtils')
+}
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.core.lendingpool.LendingPoolImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    enableDebug = false
+}
+
+deployJar {
+    endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.lending-pool") as String
+            nid = 0x53
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            to = 'cxcb455f26a2c01c686fa7f30e1e3661642dd53c0d'
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+    }
+}
+
+test {
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
+}
