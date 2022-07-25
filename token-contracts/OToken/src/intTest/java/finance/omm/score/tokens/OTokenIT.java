@@ -139,11 +139,11 @@ public class OTokenIT implements ScoreIntegrationTest {
         //testClient deposits 100 ICX
         _deposit(ommClient,100);
 
-        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
+        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
         ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false);
 
-        assertEquals(BigInteger.valueOf(50).multiply(ICX),testClient.oICX.principalBalanceOf(testClient.getAddress()));
-        assertEquals(BigInteger.valueOf(50).multiply(ICX),testClient.oICX.balanceOf(testClient.getAddress()));
+        assertEquals(BigInteger.valueOf(50).multiply(ICX),ommClient.oICX.principalBalanceOf(ommClient.getAddress()));
+        assertEquals(BigInteger.valueOf(50).multiply(ICX),ommClient.oICX.balanceOf(ommClient.getAddress()));
 
     }
 
