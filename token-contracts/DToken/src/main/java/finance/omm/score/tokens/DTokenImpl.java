@@ -258,6 +258,11 @@ public class DTokenImpl extends AddressProvider implements DToken {
     }
 
     @External
+    public void test(){
+        Context.println("aaaaaaaa");
+    }
+
+    @External
     public void burnOnRepay(Address _user, BigInteger _amount, BigInteger _balanceIncrease ) {
         onlyLendingPoolCore();
 
