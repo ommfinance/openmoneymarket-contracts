@@ -274,8 +274,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
             Context.revert(Contracts.RESERVE.getKey() + " is not configured");
         }
 
-        return Context.call(boolean.class, lendingPoolDataProviderAddress, "balanceDecreaseAllowed",
-                reserveAddress, _user, _amount);
+        return Context.call(boolean.class, lendingPoolDataProviderAddress, "balanceDecreaseAllowed", reserveAddress, _user, _amount);
     }
 
     @External(readonly = true)

@@ -137,17 +137,10 @@ public class OTokenIT implements ScoreIntegrationTest {
     @Test
     void redeem(){
         //testClient deposits 100 ICX
-        _deposit(testClient,100);
+        _deposit(ommClient,100);
 
-        assertEquals(BigInteger.valueOf(100).multiply(ICX),testClient.oICX.balanceOf(testClient.getAddress()));
-
-        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
-
-        UserRevertedException lessThanZero = assertThrows(UserRevertedException.class, () ->
-                testClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(110).multiply(ICX),false));
-
-
-        testClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false);
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
+        ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false);
 
         assertEquals(BigInteger.valueOf(50).multiply(ICX),testClient.oICX.principalBalanceOf(testClient.getAddress()));
         assertEquals(BigInteger.valueOf(50).multiply(ICX),testClient.oICX.balanceOf(testClient.getAddress()));
