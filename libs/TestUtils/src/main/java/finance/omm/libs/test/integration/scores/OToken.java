@@ -24,4 +24,6 @@ public interface OToken {
     @External
     void transfer(Address _to, BigInteger _value, byte[] _data);
 
+    BigInteger getUserLiquidityCumulativeIndex(Address _user);
+
 }
