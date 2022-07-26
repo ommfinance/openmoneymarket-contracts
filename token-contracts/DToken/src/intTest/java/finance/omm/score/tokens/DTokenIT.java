@@ -15,11 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import score.Address;
+import score.UserRevertException;
 import score.annotation.Optional;
 
 import java.math.BigInteger;
 import java.util.Map;
 
+import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
+import static finance.omm.score.tokens.DTokenImpl.TAG;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -192,25 +195,13 @@ public class DTokenIT implements ScoreIntegrationTest {
 
     @Test
     void transfer(){
-        depositToReserve();
+        BigInteger amount = BigInteger.valueOf(10).multiply(ICX);
 
-        BigInteger amount = BigInteger.valueOf(-10).multiply(BigInteger.valueOf(1000_000));
-        System.out.println("amoint  " + amount);
+        assertUserRevert(new UserRevertException(TAG+"Transfer not allowed in debt token"),
+                () -> ommClient.dICX.transfer(testClient.getAddress(),amount,new byte[]{}),null);
 
-        byte[] data = new byte[]{};
-
-        ommClient.iUSDC.transfer(testClient.getAddress(),amount,data);
-        System.out.println( ommClient.iUSDC.balanceOf(testClient.getAddress()));
     }
 
-//    @Test
-//    void testTransfer(){
-//        BigInteger amount = BigInteger.valueOf(-10).multiply(BigInteger.valueOf(1000_000));
-//        System.out.println("amoint  " + amount);
-//
-//        byte[] data = new byte[]{};
-//        ommClient.dICX.transferDummy(testClient.getAddress(),amount,data);
-//    }
 
     private byte[] createByteArray(String methodName, BigInteger value,
                                    @Optional Address collateral, @Optional Address reserve, @Optional Address user) {
@@ -233,22 +224,6 @@ public class DTokenIT implements ScoreIntegrationTest {
 }
 
 /*
-getUserBorrowCumulativeIndex -> users indexes
-principalBalanceOf -> the balance and the accured interest for that user
-balanceOf-> the balance and accured interest as compyted value
-principalTotalSupply-> total supply of dToken
-getPrincipalSupply-> the balance of user and total supply of dToken
-totalSupply-> totalSupply of tokens in existence
-transfer->  transfer of dToken
-getTotalStaked-> total supply for reward distribution : total supply and the decimals
-
-burnOnRepay->
-burnOnLiquidation->
-
-//        BigInteger amount = BigInteger.valueOf(10).multiply(BigInteger.valueOf(1000_000));
-//        byte[] data = new byte[]{};
-//        ommClient.iUSDC.transfer(testClient.getAddress(),amount,data);
-
 //    @Test
 //    void transfer(){
 //        depositToReserve();
@@ -261,6 +236,5 @@ burnOnLiquidation->
 //        System.out.println( ommClient.iUSDC.balanceOf(testClient.getAddress()));
 //    }
 
-// princ
 
  */
