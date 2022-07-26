@@ -113,56 +113,28 @@ public class DTokenIT implements ScoreIntegrationTest {
 
         Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
         BigInteger amountToBorrowIUSDC = BigInteger.valueOf(100).multiply(BigInteger.valueOf(100_000));
-        System.out.println("amount to borrow " + amountToBorrowIUSDC);
 
         // test client borrows 100 IUSDC
         testClient.lendingPool.borrow(IUSDCAddr,amountToBorrowIUSDC);
 
-        assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.principalTotalSupply());
         assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.balanceOf(testClient.getAddress()));
-        assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
-        assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.totalSupply());
+        assertEquals(BigInteger.ONE.multiply(ICX),ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress()));
 
-        System.out.println(ommClient.dIUSDC.principalTotalSupply());
-        System.out.println(ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+        BigInteger repay = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
+        byte[] data = createByteArray("repay",repay,null,null,null);
 
-        BigInteger amountToRepay = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
-        byte[] data = createByteArray("repay",amountToRepay,null,null,null);
+        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),repay,data);
 
+        BigInteger remainingAmount = ommClient.dIUSDC.balanceOf(testClient.getAddress());
 
-        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),amountToRepay,data);
+        data = createByteArray("repay",remainingAmount,null,null,null);
 
-        System.out.println("after repaying "+ommClient.dIUSDC.principalTotalSupply());
+        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),remainingAmount,data);
 
-        BigInteger remainingAmount = amountToBorrowIUSDC.subtract(amountToRepay);
-        System.out.println("remaining amount "+ remainingAmount);
+        assertEquals(BigInteger.ZERO,ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress()));
+        assertEquals(BigInteger.ZERO,ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+        assertEquals(BigInteger.ZERO,ommClient.dIUSDC.totalSupply());
 
-
-        System.out.println(ommClient.dIUSDC.principalTotalSupply());
-        System.out.println(ommClient.dIUSDC.balanceOf(testClient.getAddress()));
-        System.out.println(ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
-        System.out.println(ommClient.dIUSDC.totalSupply());
-        System.out.println(ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress()));
-
-//        assertEquals(remainingAmount,ommClient.dIUSDC.principalTotalSupply(), String.valueOf(1L));
-//        assertEquals(remainingAmount,ommClient.dIUSDC.balanceOf(testClient.getAddress()));
-////      assertEquals(BigInteger.ONE.multiply(ICX), userBorrowIndex);
-//        assertEquals(remainingAmount,ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
-//        assertEquals(remainingAmount,ommClient.dIUSDC.totalSupply());
-
-        amountToRepay = BigInteger.valueOf(91).multiply(BigInteger.valueOf(100_000));
-        data = createByteArray("repay",amountToRepay,null,null,null);
-
-        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),amountToRepay,data);
-
-        System.out.println("after repaying "+ommClient.dIUSDC.principalTotalSupply());
-
-
-        System.out.println(ommClient.dIUSDC.principalTotalSupply());
-        System.out.println(ommClient.dIUSDC.balanceOf(testClient.getAddress()));
-        System.out.println(ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
-        System.out.println(ommClient.dIUSDC.totalSupply());
-        System.out.println(ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress()));
 
     }
 
