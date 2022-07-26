@@ -310,17 +310,17 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         BigInteger ONE_HOUR = FIVE_MINUTES.multiply(BigInteger.valueOf(12));
         BigInteger ONE_DAY = ONE_HOUR.multiply(BigInteger.valueOf(24L));
         voteStart = voteStart.add(ONE_DAY);
-        byte[] data1 = createByteArray(name + " abcd", forum, description, voteStart.add(ONE_DAY),
+        byte[] data1 = createByteArray(name + " abcd", forum, description, voteStart,
                 methodName);
         score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data1);
         verify(scoreSpy).ProposalCreated(TWO, name + " abcd", from);
 
-        increaseTimeBy(voteStart.add(FIVE_MINUTES));
+        increaseTimeBy(ONE_DAY.add(FIVE_MINUTES));
         Executable voteStarted = () -> score.invoke(fromWallet, "cancelVote", 2);
         expectErrorMessage(voteStarted, "Only owner can cancel a vote that has started.");
 
         BigInteger SIX_DAYS = ONE_DAY.multiply(BigInteger.valueOf(6L));
-        increaseTimeBy(voteStart.add(SIX_DAYS));
+        increaseTimeBy(SIX_DAYS);
 
         // newly created proposal cannot be cancelled
         Executable pastTime = () -> score.invoke(owner, "cancelVote", 1);
