@@ -45,6 +45,7 @@ public class DTokenIT implements ScoreIntegrationTest {
         omm.runConfig(config);
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
+        mintToken();
 
     }
 
@@ -143,8 +144,9 @@ public class DTokenIT implements ScoreIntegrationTest {
 
     @Test
     /*
-    testClient deposit 100IUSDC
-    the price drops from 0.3 to 0.1
+    testClient deposits 100 ICX and borrows 100 IUSDC
+    the price drops of ICX from 0.3 to 0.1
+    ommClient calls liquidation
      */
     void liquidation(){
         depositToReserve();
@@ -155,16 +157,32 @@ public class DTokenIT implements ScoreIntegrationTest {
         // test client borrows 100 IUSDC
         testClient.lendingPool.borrow(IUSDCAddr,amountToBorrowIUSDC);
 
+        assertEquals(amountToBorrowIUSDC,ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
+
         ommClient.dummyPriceOracle.set_reference_data("ICX",
                 BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN));
 
-//        byte[] data = createByteArray("liquidationCall",null,testClient.getAddress(),
-//                addressMap.get(Contracts.IUSDC.getKey()), )
-//        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),amountToRepay,data);
+        BigInteger balanceOfOmmClient = ommClient.iUSDC.balanceOf(ommClient.getAddress());
+
+
+        byte[] data = createByteArray("liquidationCall",null,
+                addressMap.get(Contracts.sICX.getKey()),addressMap.get(Contracts.IUSDC.getKey()),testClient.getAddress() );
+        BigInteger amountToRepay = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
+
+        ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),amountToRepay,data);
+
+        BigInteger balanceofOmmClientAfter = balanceOfOmmClient.subtract(amountToRepay);
+        BigInteger balanceofTestClientAfter = amountToBorrowIUSDC.subtract(amountToRepay);
+
+        assertEquals(balanceofTestClientAfter, ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
+
+        assertEquals(balanceofOmmClientAfter,ommClient.iUSDC.balanceOf(ommClient.getAddress()));
+
+
 
     }
 
-    private void mintToken(){
+    static void mintToken(){
         BigInteger amount = BigInteger.valueOf(100_000_000).multiply(ICX);
         ommClient.iUSDC.addIssuer(ommClient.getAddress());
         ommClient.iUSDC.approve(ommClient.getAddress(),amount);
@@ -175,7 +193,6 @@ public class DTokenIT implements ScoreIntegrationTest {
     ommClient and testClient deposit collateral
      */
     private void depositToReserve(){
-        mintToken();
         BigInteger amountToDeposit= BigInteger.valueOf(1000).multiply(ICX);
         BigInteger amountIUSDC = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
         byte[] data = createByteArray("deposit",amountToDeposit,null,null,null);
@@ -189,7 +206,6 @@ public class DTokenIT implements ScoreIntegrationTest {
                 deposit(BigInteger.valueOf(100).multiply(ICX),BigInteger.valueOf(100).multiply(ICX));
 
         ommClient.iUSDC.transfer(testClient.getAddress(),amountIUSDC,new byte[]{});
-        System.out.println( ommClient.iUSDC.balanceOf(testClient.getAddress()));
 
     }
 
