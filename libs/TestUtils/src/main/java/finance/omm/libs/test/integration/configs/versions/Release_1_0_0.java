@@ -17,6 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import score.Address;
 
+import static finance.omm.utils.math.MathUtils.ICX;
+
 public class Release_1_0_0 extends Release {
 
     public Release_1_0_0(OMMClient ommClient) {
@@ -39,6 +41,11 @@ public class Release_1_0_0 extends Release {
         ommClient.staking.toggleStakingOn();
         ommClient.lendingPool.setFeeSharingTxnLimit(BigInteger.valueOf(50));
         ommClient.staking.setSicxAddress(addressMap.get(Contracts.sICX.getKey()));
+
+        ommClient.dummyPriceOracle.set_reference_data("ICX",
+                BigInteger.valueOf(3).multiply(ICX).divide(BigInteger.TEN));
+
+        ommClient.dummyPriceOracle.set_reference_data("USDC",ICX);
 
       /*
         initialized reserves
