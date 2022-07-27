@@ -67,7 +67,7 @@
     "params": {
     },
     "addressParams": {
-      "_addressProvider": "addressProvider"
+      "addressProvider": "addressProvider"
     },
     "order": 1.0
   },
@@ -233,7 +233,7 @@
   },
   {
     "name": "bOMM",
-    "contract": "VotingEscrowToken",
+    "contract": "BoostedOMM",
     "params": {
       "name": "Boosted OMM token",
       "symbol": "bOMM"
