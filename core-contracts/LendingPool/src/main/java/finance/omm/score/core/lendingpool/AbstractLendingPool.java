@@ -111,7 +111,7 @@ public abstract class AbstractLendingPool extends AddressProvider
 
         boolean isActive = (boolean) reserveData.get("isActive");
         if (! isActive) {
-            throw LendingPoolException.unknown("Reserve is not active, deposit unsuccessful");
+            throw LendingPoolException.reserveNotActive("Reserve is not active, deposit unsuccessful");
         }
 
         boolean isFreezed = (boolean) reserveData.get("isFreezed");
@@ -148,7 +148,7 @@ public abstract class AbstractLendingPool extends AddressProvider
 
         boolean isActive = (boolean) reserveData.get("isActive");
         if (! isActive) {
-            throw LendingPoolException.unknown("Reserve is not active, withdraw unsuccessful");
+            throw LendingPoolException.reserveNotActive("Reserve is not active, withdraw unsuccessful");
         }
 
         BigInteger availableLiquidity = (BigInteger) reserveData.get("availableLiquidity");
@@ -181,7 +181,7 @@ public abstract class AbstractLendingPool extends AddressProvider
 
         boolean isActive = (boolean) reserveData.get("isActive");
         if (! isActive) {
-            throw LendingPoolException.unknown("Reserve is not active, withdraw unsuccessful");
+            throw LendingPoolException.reserveNotActive("Reserve is not active, withdraw unsuccessful");
         }
 
         Map<String, BigInteger> borrowData = call(Map.class, Contracts.LENDING_POOL_CORE,
@@ -240,12 +240,12 @@ public abstract class AbstractLendingPool extends AddressProvider
 
         boolean isReserveActive = (boolean) reserveData.get("isActive");
         if (! isReserveActive) {
-            throw LendingPoolException.unknown("Borrow reserve is not active,liquidation unsuccessful");
+            throw LendingPoolException.reserveNotActive("Borrow reserve is not active,liquidation unsuccessful");
         }
 
         boolean isCollateralActive = (boolean) collateralData.get("isActive");
         if (! isCollateralActive) {
-            throw LendingPoolException.unknown("Collateral reserve is not active,liquidation unsuccessful");
+            throw LendingPoolException.reserveNotActive("Collateral reserve is not active,liquidation unsuccessful");
         }
 
         Map<String, BigInteger> liquidation = call(Map.class, Contracts.LIQUIDATION_MANAGER, "liquidationCall",
