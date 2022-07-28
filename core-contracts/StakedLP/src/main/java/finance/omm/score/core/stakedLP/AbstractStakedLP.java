@@ -4,6 +4,7 @@ import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Authorization;
 import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.core.stakedLP.exception.StakedLPException;
 import java.math.BigInteger;
 import java.util.Map;
@@ -90,14 +91,14 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
         totalStaked.set(_id,afterTotalStaked);
 
         BigInteger decimals = getAverageDecimals(_id);
-        Map<String,Object> userDetails = new HashMap<>();
-        userDetails.put("_user",_user);
-        userDetails.put("_userBalance", previousUserStaked);
-        userDetails.put("_totalSupply", previousTotalStaked);
-        userDetails.put("_decimals", decimals);
+        UserDetails userDetails = new UserDetails();
+        userDetails._user = _user;
+        userDetails._decimals = decimals;
+        userDetails._userBalance = previousUserStaked;
+        userDetails._totalSupply = previousTotalStaked;
 
 
-        call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id),userDetails);
+        call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id), userDetails);
         LPStaked(_user, _id, _value);
     }
 

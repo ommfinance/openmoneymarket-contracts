@@ -5,6 +5,7 @@ import com.eclipsesource.json.JsonObject;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
+import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.core.stakedLP.exception.StakedLPException;
 import java.math.BigInteger;
 import java.util.List;
@@ -188,15 +189,16 @@ public class StakedLPImpl extends AbstractStakedLP {
 
 
         BigInteger decimals = getAverageDecimals(_id);
-        Map<String,Object> userDetails = new HashMap<>();
-        userDetails.put("_user",_user);
-        userDetails.put("_userBalance", previousUserStaked);
-        userDetails.put("_totalSupply", previousTotalStaked);
-        userDetails.put("_decimals", decimals);
+        UserDetails userDetails = new UserDetails();
+        userDetails._user = _user;
+        userDetails._decimals = decimals;
+        userDetails._userBalance = previousUserStaked;
+        userDetails._totalSupply = previousTotalStaked;
 
         call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id),userDetails);
         BigInteger id = BigInteger.valueOf(_id);
-        call(Contracts.DEX, "transfer", _user, id, _value, "transferBackToUser".getBytes());
+
+        call(Contracts.DEX, "transfer", _user, _value, id, "transferBackToUser".getBytes());
         LPUnstaked(_user, _id, _value);
     }
 
