@@ -80,14 +80,15 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
 
         }
 
-        BigInteger previousUserStaked = poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED, ZERO);
+        DictDB<Integer, BigInteger> userPoolDetails = poolStakeDetails.at(_user).at(_id);
 
+        BigInteger previousUserStaked = userPoolDetails.getOrDefault(STAKED, ZERO);
         BigInteger previousTotalStaked = this.totalStaked.getOrDefault(_id,ZERO);
 
         BigInteger afterUserStaked = previousUserStaked.add(_value);
         BigInteger afterTotalStaked = previousTotalStaked.add(_value);
 
-        poolStakeDetails.at(_user).at(_id).set(STAKED,afterUserStaked);
+        userPoolDetails.set(STAKED,afterUserStaked);
         totalStaked.set(_id,afterTotalStaked);
 
         BigInteger decimals = getAverageDecimals(_id);
@@ -101,7 +102,4 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
         call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id), userDetails);
         LPStaked(_user, _id, _value);
     }
-
-
-
 }
