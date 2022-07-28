@@ -14,6 +14,7 @@ import score.BranchDB;
 import score.Context;
 import score.DictDB;
 import score.VarDB;
+import score.annotation.EventLog;
 import scorex.util.HashMap;
 
 public abstract class AbstractStakedLP extends AddressProvider implements StakedLP,
@@ -38,6 +39,13 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
             minimumStake.set(ZERO);
         }
     }
+
+
+    @EventLog(indexed = 2)
+    public void LPStaked(Address user, int poolId, BigInteger value) {}
+
+    @EventLog(indexed = 2)
+    public void LPUnstaked(Address user, int poolId, BigInteger value) {}
 
     protected BigInteger getAverageDecimals(int _id){
         Map<String, ?> poolStats  = call(Map.class, Contracts.DEX,"getPoolStats", BigInteger.valueOf(_id));
@@ -90,6 +98,7 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
 
 
         call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id),userDetails);
+        LPStaked(_user, _id, _value);
     }
 
 
