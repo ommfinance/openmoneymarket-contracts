@@ -16,8 +16,19 @@ public class LendingPoolException extends OMMException.LendingPool {
         return new LendingPoolException(Code.Unknown, message);
     }
 
+    public static LendingPoolException notOwner() {
+        return new LendingPoolException(Code.NotOwner, "require owner access" );
+    }
+
+    public static LendingPoolException reserveNotActive(String msg) {
+        return new LendingPoolException(Code.ReserveNotActive, msg);
+    }
+
+
+
+
     public enum Code implements Coded {
-        Unknown(0);
+        Unknown(0),NotOwner(1),ReserveNotActive(2);
 
         final int code;
 

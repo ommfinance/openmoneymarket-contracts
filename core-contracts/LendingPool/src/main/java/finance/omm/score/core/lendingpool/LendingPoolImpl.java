@@ -28,6 +28,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
     @External
     public void setBridgeFeeThreshold(BigInteger _amount) {
+        onlyOwnerOrElseThrow(LendingPoolException.notOwner());
         bridgeFeeThreshold.set(_amount);
     }
 
@@ -38,6 +39,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
     @External
     public void setFeeSharingTxnLimit(BigInteger _limit) {
+        onlyOwnerOrElseThrow(LendingPoolException.notOwner());
         feeSharingTxnLimit.set(_limit);
     }
 
@@ -120,7 +122,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
         boolean isActive = (boolean) reserveData.get("isActive");
         if (! isActive) {
-            throw LendingPoolException.unknown("Reserve is not active, borrow unsuccessful");
+            throw LendingPoolException.reserveNotActive("Reserve is not active, borrow unsuccessful");
         }
 
         boolean isFreezed = (boolean) reserveData.get("isFreezed");
