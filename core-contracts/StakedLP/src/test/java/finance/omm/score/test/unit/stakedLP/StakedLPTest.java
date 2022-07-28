@@ -29,7 +29,7 @@ public class StakedLPTest extends AbstractStakedLPTest {
     @Test
     public void name() {
         String actual = (String) score.call("name");
-        String expected = "OMM Staked Lp";
+        String expected = "Omm Staked Lp";
         assertEquals(expected, actual);
     }
 
@@ -343,9 +343,9 @@ public class StakedLPTest extends AbstractStakedLPTest {
 
         //unstake more than staked value
         Executable moreThanStaked = () ->score.invoke(owner,"unstake",id,highvalue);
-        expectedErrorMessage= "Cannot unstake,user dont have enough staked balance" +
+        expectedErrorMessage= "Cannot unstake, user dont have enough staked balance" +
                 "amount to unstake " + highvalue +
-                "staked balance of user:" + owner.getAddress()  + "is" + value;
+                "staked balance of user: " + owner.getAddress()  + "is" + value;
         expectErrorMessage(moreThanStaked,expectedErrorMessage);
 
         BigInteger unstakedValue = BigInteger.valueOf(7);
