@@ -193,8 +193,6 @@ public class DTokenIT implements ScoreIntegrationTest {
                 BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN));
 
         BigInteger balanceOfOmmClient = ommClient.iUSDC.balanceOf(ommClient.getAddress());
-
-
         byte[] data = createByteArray("liquidationCall",null,
                 addressMap.get(Contracts.sICX.getKey()),addressMap.get(Contracts.IUSDC.getKey()),testClient.getAddress() );
         BigInteger amountToRepay = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
@@ -209,26 +207,6 @@ public class DTokenIT implements ScoreIntegrationTest {
         assertEquals(balanceofOmmClientAfter,ommClient.iUSDC.balanceOf(ommClient.getAddress()));
 
 
-
-    }
-
-    static void mintToken(){
-        BigInteger amount = BigInteger.valueOf(100_000_000).multiply(ICX);
-        ommClient.iUSDC.addIssuer(ommClient.getAddress());
-        ommClient.iUSDC.approve(ommClient.getAddress(),amount);
-        ommClient.iUSDC.mintTo(ommClient.getAddress(),amount);
-    }
-
-    /*
-    ommClient and testClient deposit collateral
-     */
-    private void depositToReserve(){
-        BigInteger amountToDeposit= BigInteger.valueOf(1000).multiply(ICX);
-        BigInteger amountIUSDC = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
-        byte[] data = createByteArray("deposit",amountToDeposit,null,null,null);
-
-        ((LendingPoolScoreClient)ommClient.lendingPool).
-                deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
 
 
     }
