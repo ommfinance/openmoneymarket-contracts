@@ -2,7 +2,13 @@ package finance.omm.score;
 
 import static java.math.BigInteger.ZERO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
@@ -35,6 +41,10 @@ public class WorkerTokenTest extends TestBase {
     private static BigInteger initialSupply = BigInteger.valueOf(100);
     private static BigInteger totalSupply = new BigInteger("50000000000");
 
+    Account OMM_TOKEN = MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN);
+
+    public WorkerTokenImpl scoreSpy;
+
     public static final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
         put(Contracts.WORKER_TOKEN, Account.newScoreAccount(102));
@@ -62,6 +72,9 @@ public class WorkerTokenTest extends TestBase {
         workerToken = sm.deploy(owner, WorkerTokenImpl.class,
                 MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(),
                 initialSupply, decimals, false);
+        WorkerTokenImpl t = (WorkerTokenImpl) workerToken.getInstance();
+        scoreSpy = spy(t);
+        workerToken.setInstance(scoreSpy);
     }
 
     @Test
@@ -166,6 +179,7 @@ public class WorkerTokenTest extends TestBase {
 
     @Test
     void tokenFallback() {
+        addWorkerWallets();
         setAddresses();
         Address rewards = MOCK_CONTRACT_ADDRESS.get(Contracts.REWARDS).getAddress();
         Address ommToken = MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN).getAddress();
@@ -176,6 +190,28 @@ public class WorkerTokenTest extends TestBase {
 
         call = () -> workerToken.invoke(owner, "tokenFallback", ommToken, ZERO, data);
         expectErrorMessageIn(call, "Only rewards");
+
+        doNothing().when(scoreSpy).call(eq(OMM_TOKEN.getAddress()),eq("transfer"), any(),any());
+
+        BigInteger value = BigInteger.valueOf(1000);
+        workerToken.invoke(OMM_TOKEN,"tokenFallback",rewards,value,data);
+
+        verify(scoreSpy,times(1)).Distribution("worker",addresses[0],BigInteger.valueOf(100));
+        verify(scoreSpy,times(1)).Distribution("worker",addresses[1],BigInteger.valueOf(60));
+        verify(scoreSpy,times(1)).Distribution("worker",addresses[2],BigInteger.valueOf(300));
+        verify(scoreSpy,times(1)).Distribution("worker",addresses[3],BigInteger.valueOf(40));
+        verify(scoreSpy,times(1)).Distribution("worker",addresses[4],BigInteger.valueOf(500));
+    }
+
+    void addWorkerWallets(){
+        BigInteger[] value = {BigInteger.valueOf(100),BigInteger.valueOf(60),BigInteger.valueOf(300),
+        BigInteger.valueOf(40),BigInteger.valueOf(500)};
+
+        workerToken.invoke(owner,"transfer",addresses[0],value[0],"worker".getBytes());
+        workerToken.invoke(owner,"transfer",addresses[1],value[1],"worker".getBytes());
+        workerToken.invoke(owner,"transfer",addresses[2],value[2],"worker".getBytes());
+        workerToken.invoke(owner,"transfer",addresses[3],value[3],"worker".getBytes());
+        workerToken.invoke(owner,"transfer",addresses[4],value[4],"worker".getBytes());
     }
 
     public void expectErrorMessageIn(Executable contractCall, String errorMessage) {
