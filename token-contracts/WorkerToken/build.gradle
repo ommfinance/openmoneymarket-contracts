@@ -21,6 +21,11 @@ optimizedJar {
 
 deployJar {
     endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.worker-token") as String
+            nid = 0x53
+        }
         local {
             uri = 'http://localhost:9082/api/v3'
             nid = 0x3
@@ -29,6 +34,7 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
 	parameters {
+        arg('_addressProvider', rootProject.findProperty("contracts.address-provider") as String)
 		arg('_initialSupply', '5000')
 		arg('_decimals', '10')
 	}
