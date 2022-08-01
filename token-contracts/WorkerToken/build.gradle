@@ -67,6 +67,7 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
         systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
         systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
 
+        systemProperty '_addressProvider', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
         systemProperty '_initialSupply', "2000"
         systemProperty '_decimals', "10"
         systemProperty '_update', "false"
