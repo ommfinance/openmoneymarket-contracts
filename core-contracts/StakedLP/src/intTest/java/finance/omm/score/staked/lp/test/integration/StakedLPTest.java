@@ -69,7 +69,7 @@ public class StakedLPTest implements ScoreIntegrationTest {
     @DisplayName("Test name")
     @Test
     void testName() {
-        assertEquals("OMM Staked Lp", ownerClient.stakedLP.name());
+        assertEquals("Omm Staked Lp", ownerClient.stakedLP.name());
     }
 
     @DisplayName("Minimum stake")
@@ -168,37 +168,38 @@ public class StakedLPTest implements ScoreIntegrationTest {
 
         //stake failure as no data passed
         assertReverted(new RevertedException(1, "UnknownFailure"),
-                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
-                        BigInteger.TEN.pow(19), new byte[0]));
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"),
+                        BigInteger.TEN.pow(19), BigInteger.valueOf(7), new byte[0]));
 
         //stake BigInteger.valueOf(9).pow(19) out of BigInteger.valueOf(10).pow(19) LP token
-        demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
-                BigInteger.TEN.pow(19), "{\"method\":\"stake\"}".getBytes());
+        demoClient.dex.transfer(addressMap.get("stakedLP"),
+                BigInteger.TEN.pow(19), BigInteger.valueOf(7),
+                "{\"method\":\"stake\"}".getBytes());
 
-        demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(6),
-                BigInteger.valueOf(20).multiply(ICX), "{\"method\":\"stake\"}".getBytes());
+        demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(20).multiply(ICX),
+                BigInteger.valueOf(6), "{\"method\":\"stake\"}".getBytes());
 
 
         assertReverted(new RevertedException(1, "No valid method called :: " + "abcd"),
-                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
-                        BigInteger.TEN.pow(19), "{\"method\":\"abcd\"}".getBytes()));
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.TEN.pow(19),
+                        BigInteger.valueOf(7), "{\"method\":\"abcd\"}".getBytes()));
 
         assertReverted(new RevertedException(1,"pool with id: " + 8 + " is not supported"),
-                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(8),
-                        BigInteger.TEN.pow(19), "{\"method\":\"stake\"}".getBytes()));
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.TEN.pow(19),
+                        BigInteger.valueOf(8), "{\"method\":\"stake\"}".getBytes()));
 
         assertUserRevert(new UserRevertException("Invalid amount"),
-                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
-                        BigInteger.ZERO.pow(19), "{\"method\":\"stake\"}".getBytes()),null);
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.ZERO.pow(19),
+                        BigInteger.valueOf(7), "{\"method\":\"stake\"}".getBytes()),null);
 
         assertUserRevert(new UserRevertException("Insufficient funds"),
-                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
-                        BigInteger.ONE.pow(19).negate(), "{\"method\":\"stake\"}".getBytes()),null);
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.ONE.pow(19).negate(),
+                        BigInteger.valueOf(7), "{\"method\":\"stake\"}".getBytes()),null);
 
         BigInteger minValue = ICX.subtract(BigInteger.ONE);
         assertReverted(new RevertedException(1,"Amount to stake: " + minValue +" is smaller the minimum stake: " +ICX),
-                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
-                        minValue, "{\"method\":\"stake\"}".getBytes()));
+                () -> demoClient.dex.transfer(addressMap.get("stakedLP"), minValue,
+                        BigInteger.valueOf(7), "{\"method\":\"stake\"}".getBytes()));
 
 
         Map<String, BigInteger> balanceOfDemo = demoClient.stakedLP.balanceOf(demoClient.getAddress(), 7);
@@ -218,11 +219,11 @@ public class StakedLPTest implements ScoreIntegrationTest {
         assertEquals(BigInteger.valueOf(50).multiply(ICX), balanceOfDemo6.get("userTotalBalance"));
 
         //stake BigInteger.valueOf(9).pow(19) out of BigInteger.valueOf(10).pow(19) LP token
-        testClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(7),
-                BigInteger.valueOf(50).multiply(ICX), "{\"method\":\"stake\"}".getBytes());
+        testClient.dex.transfer(addressMap.get("stakedLP"),BigInteger.valueOf(50).multiply(ICX),
+                BigInteger.valueOf(7), "{\"method\":\"stake\"}".getBytes());
 
-        testClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(6),
-                BigInteger.valueOf(10).multiply(ICX), "{\"method\":\"stake\"}".getBytes());
+        testClient.dex.transfer(addressMap.get("stakedLP"), BigInteger.valueOf(10).multiply(ICX),
+                BigInteger.valueOf(6),"{\"method\":\"stake\"}".getBytes());
 
         Map<String, BigInteger> balanceOfTest = testClient.stakedLP.balanceOf(testClient.getAddress(), 7);
 
