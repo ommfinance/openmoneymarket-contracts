@@ -4,6 +4,7 @@ import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Authorization;
 import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.core.stakedLP.exception.StakedLPException;
 import java.math.BigInteger;
 import java.util.Map;
@@ -14,6 +15,7 @@ import score.BranchDB;
 import score.Context;
 import score.DictDB;
 import score.VarDB;
+import score.annotation.EventLog;
 import scorex.util.HashMap;
 
 public abstract class AbstractStakedLP extends AddressProvider implements StakedLP,
@@ -38,6 +40,13 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
             minimumStake.set(ZERO);
         }
     }
+
+
+    @EventLog(indexed = 2)
+    public void LPStaked(Address user, int poolId, BigInteger value) {}
+
+    @EventLog(indexed = 2)
+    public void LPUnstaked(Address user, int poolId, BigInteger value) {}
 
     protected BigInteger getAverageDecimals(int _id){
         Map<String, ?> poolStats  = call(Map.class, Contracts.DEX,"getPoolStats", BigInteger.valueOf(_id));
@@ -71,27 +80,26 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
 
         }
 
-        BigInteger previousUserStaked = poolStakeDetails.at(_user).at(_id).getOrDefault(STAKED, ZERO);
+        DictDB<Integer, BigInteger> userPoolDetails = poolStakeDetails.at(_user).at(_id);
 
+        BigInteger previousUserStaked = userPoolDetails.getOrDefault(STAKED, ZERO);
         BigInteger previousTotalStaked = this.totalStaked.getOrDefault(_id,ZERO);
 
         BigInteger afterUserStaked = previousUserStaked.add(_value);
         BigInteger afterTotalStaked = previousTotalStaked.add(_value);
 
-        poolStakeDetails.at(_user).at(_id).set(STAKED,afterUserStaked);
+        userPoolDetails.set(STAKED,afterUserStaked);
         totalStaked.set(_id,afterTotalStaked);
 
         BigInteger decimals = getAverageDecimals(_id);
-        Map<String,Object> userDetails = new HashMap<>();
-        userDetails.put("_user",_user);
-        userDetails.put("_userBalance", previousUserStaked);
-        userDetails.put("_totalSupply", previousTotalStaked);
-        userDetails.put("_decimals", decimals);
+        UserDetails userDetails = new UserDetails();
+        userDetails._user = _user;
+        userDetails._decimals = decimals;
+        userDetails._userBalance = previousUserStaked;
+        userDetails._totalSupply = previousTotalStaked;
 
 
-        call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id),userDetails);
+        call(Contracts.REWARDS,"handleLPAction",addressMap.get(_id), userDetails);
+        LPStaked(_user, _id, _value);
     }
-
-
-
 }
