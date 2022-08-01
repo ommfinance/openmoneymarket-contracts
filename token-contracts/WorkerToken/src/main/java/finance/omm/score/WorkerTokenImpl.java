@@ -3,6 +3,8 @@ package finance.omm.score;
 import static java.math.BigInteger.TEN;
 import static java.math.BigInteger.ZERO;
 
+import finance.omm.libs.address.AddressProvider;
+import finance.omm.libs.address.Contracts;
 import java.math.BigInteger;
 import java.util.List;
 
@@ -10,7 +12,6 @@ import finance.omm.core.score.interfaces.WorkerToken;
 import finance.omm.utils.db.EnumerableSet;
 import finance.omm.utils.math.MathUtils;
 import score.Address;
-import score.ArrayDB;
 import score.Context;
 import score.DictDB;
 import score.VarDB;
@@ -18,7 +19,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
-public class WorkerTokenImpl implements WorkerToken {
+public class WorkerTokenImpl extends AddressProvider implements WorkerToken {
 
     private static final String TAG = "Worker Token";
 
@@ -33,7 +34,8 @@ public class WorkerTokenImpl implements WorkerToken {
     private DictDB<Address, BigInteger> balances = Context.newDictDB(BALANCES, BigInteger.class);
     private EnumerableSet<Address> wallets = new EnumerableSet<>(WALLETS, Address.class);
 
-    public WorkerTokenImpl(BigInteger _initialSupply, BigInteger _decimals, @Optional boolean _update) {
+    public WorkerTokenImpl(Address _addressProvider, BigInteger _initialSupply, BigInteger _decimals, @Optional boolean _update) {
+        super(_addressProvider, _update);
         if (_update) {
             onUpdate();
             return;
@@ -67,6 +69,9 @@ public class WorkerTokenImpl implements WorkerToken {
     public void Transfer(Address _from, Address _to, BigInteger _value,
             byte[] _data) {
     }
+
+    @EventLog(indexed = 2)
+    public void Distribution(String _recipient, Address _user, BigInteger _value) {}
 
     @External(readonly = true)
     public String name() {
@@ -124,17 +129,44 @@ public class WorkerTokenImpl implements WorkerToken {
             this.wallets.remove(_from);
         }
 
+        // Emits an event log `Transfer`
+        this.Transfer(_from, _to, _value, _data);
+
         if (_to.isContract()) {
             // If the recipient is SCORE,
             // then calls `tokenFallback` to hand over control.
             Context.call(_to, "tokenFallback", _from, _value, _data);
         }
-        // Emits an event log `Transfer`
-        this.Transfer(_from, _to, _value, _data);
     }
 
     @External(readonly = true)
     public List<Address> getWallets() {
     	return this.wallets.toList();
+    }
+
+    @External
+    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
+        Context.require(_from.equals(getAddress(Contracts.REWARDS.getKey())),
+                TAG + " Only rewards");
+        Context.require(Context.getCaller().equals(getAddress(Contracts.OMM_TOKEN.getKey())),
+                TAG + " Only OMM Token can be distributed to workers.");
+
+        List<Address> workers = getWallets();
+        BigInteger totalSupply = totalSupply();
+
+        BigInteger remaining = _value;
+
+        for (Address worker: workers) {
+            BigInteger balance = balanceOf(worker);
+            BigInteger share = balance.multiply(remaining).divide(totalSupply);
+            call(Contracts.OMM_TOKEN, "transfer", worker, share);
+            Distribution("worker", worker, share);
+            remaining = remaining.subtract(balance);
+            totalSupply = totalSupply.subtract(balance);
+
+            if (totalSupply.equals(BigInteger.ZERO) || remaining.equals(BigInteger.ZERO)) {
+                break;
+            }
+        }
     }
 }

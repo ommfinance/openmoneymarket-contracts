@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigInteger;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import com.iconloop.score.test.TestBase;
 
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
+import org.junit.jupiter.api.function.Executable;
 
 public class FeeProviderTest extends TestBase {
 
@@ -86,5 +88,20 @@ public class FeeProviderTest extends TestBase {
 
         actualFeePercentage = (BigInteger) feeProvider.call("getLoanOriginationFeePercentage");
         assertEquals(feePercentage, actualFeePercentage);
+
+        Executable call = () -> feeProvider.invoke(owner, "setLoanOriginationFeePercentage",
+                ICX.add(BigInteger.ONE));
+        expectErrorMessageIn(call, "_percentage should be between 0 and ICX");
+
+        Account user = sm.createAccount(10);
+        call = () -> feeProvider.invoke(user, "setLoanOriginationFeePercentage", BigInteger.ONE);
+        expectErrorMessageIn(call, "SenderNotScoreOwnerError");
+
+    }
+
+    public void expectErrorMessageIn(Executable contractCall, String errorMessage) {
+        AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
+        boolean isInString = e.getMessage().contains(errorMessage);
+        assertEquals(true, isInString);
     }
 }
