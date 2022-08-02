@@ -13,16 +13,22 @@ optimizedJar {
 
 deployJar {
     endpoints {
-        local {
-            uri = 'http://localhost:9082/api/v3'
-            nid = 0x3
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.dao-fund") as String
+            nid = 0x53
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            to = 'cx48a83a6fbdaa205a060514fd23ad6871c070f896'
+            nid = 0x1
         }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
-	parameters {
-		arg('_addressProvider', 'cxa755b2ef6eb46c1e817c636be3c21d26c81fe6cc')
-	}
+    parameters {
+        arg('_addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+    }
 }
 
 test {
