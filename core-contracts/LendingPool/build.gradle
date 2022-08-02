@@ -7,6 +7,8 @@ dependencies {
     implementation project(':OMMStruct')
 
     testImplementation project(':TestUtils')
+
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.6.1'
 }
 
 optimizedJar {
@@ -42,4 +44,8 @@ test {
     useJUnitPlatform {
         excludeTags("integration")
     }
+}
+
+repositories {
+    mavenCentral()
 }
