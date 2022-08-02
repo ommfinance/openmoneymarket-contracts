@@ -213,16 +213,17 @@ public class LendingPoolImpl extends AbstractLendingPool {
         } else if (method.equals("repay")) {
             repay(caller, _value, _from);
         } else if (method.equals("liquidationCall") && params != null) {
-            String collateral = String.valueOf(params.get("_collateral"));
-            String reserve = String.valueOf(params.get("_reserve"));
-            String user = String.valueOf(params.get("_user"));
-            if (collateral == null || reserve == null || user == null) {
-                throw LendingPoolException.unknown(TAG + " Invalid data: Collateral" + collateral +
+            String collateral = params.getString("_collateral",null);
+            String reserve = params.getString("_reserve",null);
+            String user = params.getString("_user",null);
+
+            if (collateral.equals("null") || reserve.equals("null") || user.equals("null")) {
+                throw LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: "+reserve+ " User: "+ user);
             }
             liquidationCall(Address.fromString(collateral),
-                    Address.fromString(user),
                     Address.fromString(reserve),
+                    Address.fromString(user),
                     _value, _from);
 
         } else {
