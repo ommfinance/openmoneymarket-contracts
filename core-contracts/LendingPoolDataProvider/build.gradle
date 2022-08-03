@@ -1,0 +1,35 @@
+version = '0.0.1'
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':Score')
+    implementation project(':ScoreUtils')
+    implementation project(':OMMStruct')
+
+    testImplementation project(':TestUtils')
+}
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.core.lendingpooldataprovider.LendingPoolDataProviderImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    enableDebug = false
+}
+
+deployJar {
+    endpoints {
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+    }
+}
+
+test {
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
+}
