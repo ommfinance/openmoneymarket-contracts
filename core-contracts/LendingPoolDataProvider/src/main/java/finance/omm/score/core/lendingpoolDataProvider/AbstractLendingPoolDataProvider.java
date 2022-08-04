@@ -31,8 +31,8 @@ public abstract class AbstractLendingPoolDataProvider extends AddressProvider
 
     protected BigInteger calculateHealthFactorFromBalancesInternal(BigInteger collateralBalanceUSD,BigInteger borrowBalanceUSD,
                                                   BigInteger totalFeesUSD, BigInteger liquidationThreshold){
-        if (borrowBalanceUSD.compareTo(BigInteger.ZERO) == 0){
-            return BigInteger.valueOf(-1);
+        if (borrowBalanceUSD.equals(BigInteger.ZERO)){
+            return BigInteger.ONE.negate();
         }
 
         return exaDivide(exaMultiply(collateralBalanceUSD.subtract(totalFeesUSD), liquidationThreshold), borrowBalanceUSD);
@@ -40,7 +40,7 @@ public abstract class AbstractLendingPoolDataProvider extends AddressProvider
 
     protected BigInteger calculateBorrowingPowerFromBalancesInternal(BigInteger collateralBalanceUSD,BigInteger borrowBalanceUSD,
                                                     BigInteger totalFeesUSD, BigInteger ltv) {
-        if (collateralBalanceUSD.compareTo(BigInteger.ZERO) == 0){
+        if (collateralBalanceUSD.equals(BigInteger.ZERO)){
             return BigInteger.ZERO;
         }
         return  exaDivide(borrowBalanceUSD, exaMultiply(collateralBalanceUSD.subtract(totalFeesUSD), ltv));
