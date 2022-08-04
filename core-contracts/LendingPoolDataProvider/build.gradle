@@ -10,7 +10,7 @@ dependencies {
 }
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.core.lendingpooldataprovider.LendingPoolDataProviderImpl'
+    mainClassName = 'finance.omm.score.core.lendingpoolDataProvider.LendingPoolDataProviderImpl'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
