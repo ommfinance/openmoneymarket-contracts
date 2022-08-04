@@ -24,7 +24,7 @@ public interface LendingPoolDataProvider {
 
     Map<String, BigInteger> getUserReserveData(Address _reserve, Address _user);
 
-    Boolean balanceDecreaseAllowed(Address _reserve, Address _user, BigInteger _amount);
+    boolean balanceDecreaseAllowed(Address _reserve, Address _user, BigInteger _amount);
 
     BigInteger calculateCollateralNeededUSD(Address _reserve, BigInteger _amount, BigInteger _fee,
                                             BigInteger _userCurrentBorrowBalanceUSD,

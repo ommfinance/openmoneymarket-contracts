@@ -6,7 +6,6 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 import finance.omm.core.score.interfaces.LendingPoolDataProvider;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Authorization;
-
 import java.math.BigInteger;
 
 import finance.omm.score.core.lendingpoolDataProvider.exception.LendingPoolDataProviderException;
@@ -30,23 +29,24 @@ public abstract class AbstractLendingPoolDataProvider extends AddressProvider
         super(addressProvider, _update);
     }
 
-    protected BigInteger calculateHealthFactorFromBalancesInternal(BigInteger collateralBalanceUSD, BigInteger borrowBalanceUSD,
-                                                                   BigInteger totalFeesUSD, BigInteger liquidationThreshold) {
-        if (borrowBalanceUSD.compareTo(BigInteger.ZERO) == 0) {
+    protected BigInteger calculateHealthFactorFromBalancesInternal(BigInteger collateralBalanceUSD,BigInteger borrowBalanceUSD,
+                                                  BigInteger totalFeesUSD, BigInteger liquidationThreshold){
+        if (borrowBalanceUSD.compareTo(BigInteger.ZERO) == 0){
             return BigInteger.valueOf(-1);
         }
+
         return exaDivide(exaMultiply(collateralBalanceUSD.subtract(totalFeesUSD), liquidationThreshold), borrowBalanceUSD);
     }
 
-    protected BigInteger calculateBorrowingPowerFromBalancesInternal(BigInteger collateralBalanceUSD, BigInteger borrowBalanceUSD,
-                                                                     BigInteger totalFeesUSD, BigInteger ltv) {
-        if (collateralBalanceUSD.compareTo(BigInteger.ZERO) == 0) {
+    protected BigInteger calculateBorrowingPowerFromBalancesInternal(BigInteger collateralBalanceUSD,BigInteger borrowBalanceUSD,
+                                                    BigInteger totalFeesUSD, BigInteger ltv) {
+        if (collateralBalanceUSD.compareTo(BigInteger.ZERO) == 0){
             return BigInteger.ZERO;
         }
-        return exaDivide(borrowBalanceUSD, exaMultiply(collateralBalanceUSD.subtract(totalFeesUSD), ltv));
+        return  exaDivide(borrowBalanceUSD, exaMultiply(collateralBalanceUSD.subtract(totalFeesUSD), ltv));
     }
 
-    protected <K> K call(Class<K> kClass, Address contract, String method, Object... params) {
+    protected  <K> K call(Class<K> kClass, Address contract, String method, Object... params) {
         return Context.call(kClass, contract, method, params);
     }
 }
