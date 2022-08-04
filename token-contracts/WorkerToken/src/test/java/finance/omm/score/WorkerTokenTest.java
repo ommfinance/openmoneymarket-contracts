@@ -71,7 +71,7 @@ public class WorkerTokenTest extends TestBase {
     public void setup() throws Exception {
         workerToken = sm.deploy(owner, WorkerTokenImpl.class,
                 MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress(),
-                initialSupply, decimals, false);
+                initialSupply, decimals);
         WorkerTokenImpl t = (WorkerTokenImpl) workerToken.getInstance();
         scoreSpy = spy(t);
         workerToken.setInstance(scoreSpy);

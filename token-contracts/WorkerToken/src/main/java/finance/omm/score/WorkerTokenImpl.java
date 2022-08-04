@@ -159,7 +159,7 @@ public class WorkerTokenImpl extends AddressProvider implements WorkerToken {
             BigInteger share = balance.multiply(remaining).divide(totalSupply);
             call(Contracts.OMM_TOKEN, "transfer", worker, share);
             Distribution("worker", worker, share);
-            remaining = remaining.subtract(balance);
+            remaining = remaining.subtract(share);
             totalSupply = totalSupply.subtract(balance);
 
             if (totalSupply.equals(BigInteger.ZERO) || remaining.equals(BigInteger.ZERO)) {
