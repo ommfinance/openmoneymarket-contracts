@@ -23,7 +23,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
     @External(readonly = true)
     public String name() {
-        return "OMM " + TAG;
+        return "Omm " + TAG;
     }
 
     @External
@@ -69,7 +69,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
     @Payable
     public void deposit(BigInteger _amount) {
         BigInteger icxValue = Context.getValue();
-        if (icxValue.compareTo(_amount) == 0) {
+        if (!(icxValue.equals(_amount))) {
             throw LendingPoolException.unknown(TAG + " : Amount in param " +
                     _amount + "doesnt match with the icx sent " + icxValue + " to the Lending Pool");
         }
