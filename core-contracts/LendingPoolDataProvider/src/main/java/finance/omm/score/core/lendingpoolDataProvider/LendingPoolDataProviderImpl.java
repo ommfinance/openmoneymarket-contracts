@@ -275,7 +275,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         if (decimals.compareTo(BigInteger.valueOf(18)) != 0) {
             _amount = convertToExa(_amount, decimals);
         }
-        if (borrowBalanceUSD.compareTo(BigInteger.ZERO) == 0) {
+        if (borrowBalanceUSD.equals(BigInteger.ZERO)) {
             return true;
         }
         String symbol = this.symbol.get(_reserve);
@@ -287,7 +287,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         }
         BigInteger amountToDecreaseUSD = exaMultiply(price, _amount);
         BigInteger collateralBalanceAfterDecreaseUSD = collateralBalanceUSD.subtract(amountToDecreaseUSD);
-        if (collateralBalanceAfterDecreaseUSD.compareTo(BigInteger.ZERO) == 0) {
+        if (collateralBalanceAfterDecreaseUSD.equals(BigInteger.ZERO)) {
             return false;
         }
         BigInteger liquidationThresholdAfterDecrease = exaDivide((exaMultiply(collateralBalanceUSD, currentLiquidationThreshold).subtract(exaMultiply(
