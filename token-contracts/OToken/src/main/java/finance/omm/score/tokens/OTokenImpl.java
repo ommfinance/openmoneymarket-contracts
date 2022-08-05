@@ -17,8 +17,13 @@ import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Optional;
 
-import static finance.omm.utils.math.MathUtils.*;
+import static finance.omm.utils.math.MathUtils.convertExaToOther;
+import static finance.omm.utils.math.MathUtils.convertToExa;
+import static finance.omm.utils.math.MathUtils.exaDivide;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
+
 
 /**
 Implementation of IRC2
@@ -32,8 +37,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
     private static final String TOTAL_SUPPLY = "total_supply";
     private static final String BALANCES = "balances";
     private static final String USER_INDEXES = "user_indexes";
-    private static final BigInteger ZERO = BigInteger.valueOf(0);
-    private static final BigInteger N_ONE = BigInteger.valueOf(-1);
+    private static final BigInteger ZERO = BigInteger.ZERO;
+    private static final BigInteger N_ONE = BigInteger.ONE.negate();
 
     /*
     Variable Definition
@@ -56,27 +61,23 @@ public class OTokenImpl extends AddressProvider implements OToken {
     public OTokenImpl(Address _addressProvider, String _name, String _symbol, BigInteger _decimals, boolean _update) {
         super(_addressProvider, _update);
 
-        if(_update) {
-            onUpdate();
-            return;
-        }
+        if (totalSupply.get() == null) {
+            if (_symbol.isEmpty()) {
+                Context.revert("Invalid Symbol name");
+            }
 
-        if (_symbol.isEmpty()) {
-            Context.revert("Invalid Symbol name");
-        }
+            if (_name.isEmpty()) {
+                Context.revert("Invalid Token Name");
+            }
 
-        if (_name.isEmpty()) {
-            Context.revert("Invalid Token Name");
+            if (_decimals.compareTo(ZERO) < 0) {
+                Context.revert("Decimals cannot be less than zero");
+            }
+            this.name.set(_name);
+            this.symbol.set(_symbol);
+            this.decimals.set(_decimals);
+            this.totalSupply.set(ZERO);
         }
-
-        if (_decimals.compareTo(ZERO) < 0) {
-            Context.revert("Decimals cannot be less than zero");
-        }
-
-        this.name.set(_name);
-        this.symbol.set(_symbol);
-        this.decimals.set(_decimals);
-        this.totalSupply.set(ZERO);
     }
 
     public void onUpdate() {
@@ -142,8 +143,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
     */
     @External(readonly = true)
     public BigInteger totalSupply() {
-        Address lendingPoolCoreAddress = this._addresses.get(Contracts.LENDING_POOL_CORE.getKey());
-        Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
+        Address lendingPoolCoreAddress = getAddress(Contracts.LENDING_POOL_CORE.getKey());
+        Address reserveAddress = getAddress(Contracts.RESERVE.getKey());
 
         if (lendingPoolCoreAddress == null) {
             Context.revert(Contracts.LENDING_POOL_CORE.getKey() + " is not configured");
@@ -164,14 +165,14 @@ public class OTokenImpl extends AddressProvider implements OToken {
             return this.totalSupply.getOrDefault(ZERO);
         } else {
             BigInteger actualDecimals = this.decimals.getOrDefault(ZERO);
-            BigInteger getNormalizedIncome = Context.call(BigInteger.class,
+            BigInteger normalizedIncome = Context.call(BigInteger.class,
                     lendingPoolCoreAddress,
                     "getNormalizedIncome",
                     reserveAddress);
             BigInteger newBalance = exaDivide(
                     exaMultiply(
-                            convertToExa(principalTotalSupply, actualDecimals), 
-                            getNormalizedIncome
+                            convertToExa(principalTotalSupply, actualDecimals),
+                            normalizedIncome
                             ),
                     borrowIndex);
             return convertExaToOther(newBalance, actualDecimals.intValue());
@@ -190,8 +191,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
         if (userIndex.equals(ZERO)) {
             return balance;
         } else {
-            Address lendingPoolCoreAddress = this._addresses.get(Contracts.LENDING_POOL_CORE.getKey());
-            Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
+            Address lendingPoolCoreAddress = getAddress(Contracts.LENDING_POOL_CORE.getKey());
+            Address reserveAddress = getAddress(Contracts.RESERVE.getKey());
 
             if (lendingPoolCoreAddress == null) {
                 Context.revert(Contracts.LENDING_POOL_CORE.getKey() + " is not configured");
@@ -220,8 +221,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
             this.mint(user, balanceIncrease);
         }
 
-        Address lendingPoolCoreAddress = this._addresses.get(Contracts.LENDING_POOL_CORE.getKey());
-        Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
+        Address lendingPoolCoreAddress = getAddress(Contracts.LENDING_POOL_CORE.getKey());
+        Address reserveAddress = getAddress(Contracts.RESERVE.getKey());
 
         if (lendingPoolCoreAddress == null) {
             Context.revert(Contracts.LENDING_POOL_CORE.getKey() + " is not configured");
@@ -263,8 +264,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
     * */
     @External(readonly = true)
     public boolean isTransferAllowed(Address _user, BigInteger _amount) {
-        Address lendingPoolDataProviderAddress = this._addresses.get(Contracts.LENDING_POOL_DATA_PROVIDER.getKey());
-        Address reserveAddress = this._addresses.get(Contracts.RESERVE.getKey());
+        Address lendingPoolDataProviderAddress = getAddress(Contracts.LENDING_POOL_DATA_PROVIDER.getKey());
+        Address reserveAddress = getAddress(Contracts.RESERVE.getKey());
 
         if (lendingPoolDataProviderAddress == null) {
             Context.revert(Contracts.LENDING_POOL_DATA_PROVIDER.getKey() + " is not configured");
@@ -274,7 +275,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
             Context.revert(Contracts.RESERVE.getKey() + " is not configured");
         }
 
-        return Context.call(boolean.class, lendingPoolDataProviderAddress, "balanceDecreaseAllowed", reserveAddress, _user, _amount);
+        return Context.call(Boolean.class, lendingPoolDataProviderAddress, "balanceDecreaseAllowed",
+                reserveAddress, _user, _amount);
     }
 
     @External(readonly = true)
@@ -318,7 +320,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
         }
         this.burn(_user, amountToRedeem);
 
-        if (currentBalance.subtract(amountToRedeem).equals(ZERO)) {
+        if (currentBalance.equals(amountToRedeem)) {
             this.resetDataOnZeroBalanceInternal(_user);
             index = ZERO;
         }
@@ -326,20 +328,15 @@ public class OTokenImpl extends AddressProvider implements OToken {
         this.handleAction(_user, cumulated.get("previousPrincipalBalance"), beforeTotalSupply);
 
         this.Redeem(_user, amountToRedeem, balanceIncrease, index);
-        Address reserve = this._addresses.get(Contracts.RESERVE.getKey());
-        String reserveAddress = null;
-        if(reserve != null) {
-            reserveAddress = reserve.toString();
-        }
         return Map.of(
-            "reserve", reserveAddress,
+            "reserve", getAddress(Contracts.RESERVE.getKey()),
             "amountToRedeem", amountToRedeem
         );
     }
 
     protected void handleAction(Address _user, BigInteger _userBalance, BigInteger _totalSupply) {
 
-        Address rewardsAddress = this._addresses.get(Contracts.REWARDS.getKey());
+        Address rewardsAddress = getAddress(Contracts.REWARDS.getKey());
         if (rewardsAddress == null) {
             Context.revert(Contracts.REWARDS.getKey() + " is not configured");
         }
@@ -377,7 +374,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
         onlyOrElseThrow(Contracts.LIQUIDATION_MANAGER,
                 OMMException.unknown(TAG 
                         + ":  SenderNotAuthorized: (sender)" + Context.getCaller() 
-                        + " (liquidation)" + this._addresses.get(Contracts.LIQUIDATION_MANAGER.getKey()) + "}" ));
+                        + " (liquidation)" + getAddress(Contracts.LIQUIDATION_MANAGER.getKey()) + "}" ));
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         Map<String, BigInteger> cumulated = this.cumulateBalanceInternal(_user);
@@ -386,7 +383,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
         BigInteger index = cumulated.get("index");
         this.burn(_user, _value);
         this.handleAction(_user, cumulated.get("previousPrincipalBalance"), beforeTotalSupply);
-        if (currentBalance.subtract(_value).equals(ZERO)) {
+        if (currentBalance.equals(_value)) {
             this.resetDataOnZeroBalanceInternal(_user);
             index = ZERO;
         }
@@ -403,8 +400,9 @@ public class OTokenImpl extends AddressProvider implements OToken {
         BigInteger toBalanceIncrease = toCumulated.get("balanceIncrease");
         BigInteger toIndex = toCumulated.get("index");
 
-        if (fromBalance.subtract(value).equals(ZERO)) {
+        if (fromBalance.equals(value)) {
             this.resetDataOnZeroBalanceInternal(from);
+            fromIndex = ZERO;
         }
 
         this.BalanceTransfer(from, to, value, fromBalanceIncrease, toBalanceIncrease, fromIndex, toIndex);
@@ -415,7 +413,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
         );
     }
 
-    protected void callRewards(BigInteger fromPrevious, BigInteger toPrevious, BigInteger totalPrevious, Address from, Address to) {
+    protected void callRewards(BigInteger fromPrevious, BigInteger toPrevious, BigInteger totalPrevious,
+            Address from, Address to) {
         this.handleAction(from, fromPrevious, totalPrevious);
         this.handleAction(to, toPrevious, totalPrevious);
     }
@@ -424,7 +423,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
         onlyOrElseThrow(Contracts.LENDING_POOL,
                 OMMException.unknown(TAG 
                         + ":  SenderNotAuthorized: (sender)" + Context.getCaller() 
-                        + " (lendingPool)" + this._addresses.get(Contracts.LENDING_POOL.getKey()) + "}" ));
+                        + " (lendingPool)" + getAddress(Contracts.LENDING_POOL.getKey()) + "}" ));
     }
 
     /**
@@ -435,7 +434,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
     @param _data: Any information or message
     */
     @External
-    public void transfer(Address _to, BigInteger _value, byte[] _data) {
+    public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
         if (_data == null || _data.length == 0 ) {
             _data = "None".getBytes();
         }
@@ -460,7 +459,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
             Context.revert(TAG +" : Token transfer error:Insufficient balance: " + balanceFrom );
         }
 
-        if (! this.isTransferAllowed( Context.getCaller(), value)) {
+        if (! this.isTransferAllowed( from, value)) {
             Context.revert(TAG +":  Transfer error:Transfer cannot be allowed");
         }
 
@@ -472,6 +471,9 @@ public class OTokenImpl extends AddressProvider implements OToken {
                 from,
                 to);
 
+        // Emits an event log `Transfer`
+        this.Transfer(from, to, value, data);
+
         if (to.isContract()) {
             /*
             If the recipient is SCORE,
@@ -479,9 +481,6 @@ public class OTokenImpl extends AddressProvider implements OToken {
             */
             Context.call(to, "tokenFallback", from, value, data);
         }
-
-        // Emits an event log `Transfer`
-        this.Transfer(from, to, value, data);
     }
 
     /**
