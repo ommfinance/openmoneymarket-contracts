@@ -128,6 +128,43 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
     }
 
+    @Test
+    void testTokenFallbackExceptions(){
+
+        Address collateral = addressMap.get(Contracts.sICX.getKey());
+        Address reserve = addressMap.get(Contracts.IUSDC.getKey());
+        Address user = testClient.getAddress();
+
+        byte[] data = createByteArray("abcd",null, collateral,reserve,user);
+        BigInteger value = BigInteger.TEN.multiply(ICX);
+        byte[] finalData = data;
+        assertUserRevert(LendingPoolException.unknown(TAG + " No valid method called, data: "+ data.toString()),
+                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData),null);
+
+        data = createByteArray("liquidationCall",null, null,reserve,user);
+        byte[] finalData1 = data;
+        assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
+                        " Reserve: "+reserve+ " User: "+ user),
+                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData1),null);
+
+        data = createByteArray("liquidationCall",null, collateral,null,user);
+        byte[] finalData2 = data;
+        assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
+                        " Reserve: "+reserve+ " User: "+ user),
+                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData2),null);
+
+        data = createByteArray("liquidationCall",null, collateral,reserve,null);
+        byte[] finalData3 = data;
+        assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
+                        " Reserve: "+reserve+ " User: "+ user),
+                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData3),null);
+    }
+
+    @Test
+    void deposit_IUSDC(){
+
+    }
+
 
     /*
     deposit ICX as collateral
