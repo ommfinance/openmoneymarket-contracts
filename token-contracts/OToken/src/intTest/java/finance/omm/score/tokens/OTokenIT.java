@@ -60,32 +60,24 @@ public class OTokenIT implements ScoreIntegrationTest {
     }
 
     @Test
-    void deposit_ICX() throws InterruptedException {
+    void deposit_ICX() {
         assertEquals(BigInteger.ZERO,ommClient.oICX.balanceOf(ommClient.getAddress()));
         assertEquals(BigInteger.ZERO,ommClient.oICX.principalTotalSupply());
         assertEquals(BigInteger.ZERO,ommClient.oICX.principalBalanceOf(ommClient.getAddress()));
         assertEquals(BigInteger.ZERO,ommClient.oICX.totalSupply());
 
-        assertEquals(0,ommClient.oICX.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
-        assertEquals(0,ommClient.oICX.getUserLiquidityCumulativeIndex(testClient.getAddress()));
+        assertEquals(BigInteger.ZERO,ommClient.oICX.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
+        assertEquals(BigInteger.ZERO,ommClient.oICX.getUserLiquidityCumulativeIndex(testClient.getAddress()));
 
         //omm client deposit 1000 ICX
         _deposit(ommClient,1000);
 
-        assertEquals(BigInteger.ONE,ommClient.oICX.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
+        assertEquals(BigInteger.ONE.multiply(ICX),ommClient.oICX.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
         assertEquals(BigInteger.ZERO,ommClient.oICX.getUserLiquidityCumulativeIndex(testClient.getAddress()));
 
-        //test client deposit 1000 ICX
+        //test client deposit 1000 IUSDC
         _deposit(testClient,1000);
 
-        Thread.sleep(10000L);
-
-//        BigInteger amountToBorrowICX = BigInteger.valueOf(85).multiply(ICX);
-//        score.Address icxAddr = addressMap.get(Contracts.sICX.getKey());
-//        testClient.lendingPool.borrow(icxAddr,amountToBorrowICX);
-
-        assertEquals(BigInteger.ONE,ommClient.oICX.getUserLiquidityCumulativeIndex(testClient.getAddress()));
-        assertEquals(BigInteger.ONE,ommClient.oICX.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
 
         assertEquals(BigInteger.valueOf(1000).multiply(ICX),ommClient.oICX.principalBalanceOf(ommClient.getAddress()));
         assertEquals(BigInteger.valueOf(1000).multiply(ICX),ommClient.oICX.balanceOf(ommClient.getAddress()));
@@ -93,6 +85,38 @@ public class OTokenIT implements ScoreIntegrationTest {
         assertEquals(BigInteger.valueOf(1000).multiply(ICX),ommClient.oICX.balanceOf(testClient.getAddress()));
         assertEquals(BigInteger.valueOf(2000).multiply(ICX),ommClient.oICX.principalTotalSupply());
         assertEquals(BigInteger.valueOf(2000).multiply(ICX),ommClient.oICX.totalSupply());
+    }
+
+    @Test
+    void checkLiquidityIndex() throws InterruptedException {
+        ommClient.dummyPriceOracle.set_reference_data("ICX",ICX);
+
+        mint_and_deposit(ommClient,1000);
+        BigInteger previous = ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress());
+
+        _deposit(testClient,5000);
+        System.out.println(ommClient.oICX.getUserLiquidityCumulativeIndex(testClient.getAddress()));
+
+        Thread.sleep(10000L);
+
+        score.Address icxAddr = addressMap.get(Contracts.IUSDC.getKey());
+        testClient.lendingPool.borrow(icxAddr,BigInteger.valueOf(500));
+        System.out.println(ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
+
+        Thread.sleep(10000L);
+
+        testClient.lendingPool.borrow(icxAddr,BigInteger.valueOf(300));
+        System.out.println(ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
+
+        Thread.sleep(10000L);
+
+        testClient.lendingPool.borrow(icxAddr,BigInteger.valueOf(50));
+        System.out.println(ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
+
+        Thread.sleep(10000L);
+
+        mint_and_deposit(ommClient,10);
+        assertTrue(ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()).compareTo(previous)>0);
     }
 
     @Test
@@ -237,7 +261,10 @@ public class OTokenIT implements ScoreIntegrationTest {
 
     private void mintToken(OMMClient client){
         BigInteger amount = BigInteger.valueOf(100_000_000).multiply(ICX);
-        ommClient.iUSDC.addIssuer(client.getAddress());
+        try {
+            ommClient.iUSDC.addIssuer(client.getAddress());
+        }
+        catch(Exception e) {}
         ommClient.iUSDC.approve(client.getAddress(),amount);
         client.iUSDC.mintTo(client.getAddress(),amount);
     }
