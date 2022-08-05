@@ -115,9 +115,8 @@
     "name": "workerToken",
     "contract": "WorkerToken",
     "params": {
-      "_initialSupply": "0x56bc75e2d63100000",
-      "_decimals": 18,
-      "_update": "0x0"
+      "_initialSupply": "100",
+      "_decimals": 18
     },
     "addressParams": {
       "_addressProvider": "addressProvider"
