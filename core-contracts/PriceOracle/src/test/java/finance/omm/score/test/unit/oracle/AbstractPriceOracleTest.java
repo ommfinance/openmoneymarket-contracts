@@ -10,15 +10,14 @@ import finance.omm.score.core.oracle.PriceOracleImpl;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.function.Executable;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import score.Context;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static finance.omm.utils.math.MathUtils.convertToExa;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static org.mockito.Mockito.spy;
 
 
@@ -45,11 +44,6 @@ public class AbstractPriceOracleTest extends TestBase{
         sm.getBlock().increase(CURRENT_TIMESTAMP / 2);
     }
 
-    public void increaseTimeBy(BigInteger increaseBy) {
-        // increaseBy is in microseconds
-        long blocks = increaseBy.divide(BigInteger.valueOf(1_000_000L)).intValue()/2;
-        sm.getBlock().increase(blocks);
-    }
 
     @BeforeEach
     void setup() throws Exception {
@@ -61,7 +55,6 @@ public class AbstractPriceOracleTest extends TestBase{
         setAddresses();
         PriceOracleImpl t = (PriceOracleImpl) score.getInstance();
         scoreSpy = spy(t);
-//        mockScoreClients();
         score.setInstance(scoreSpy);
     }
 
@@ -79,16 +72,38 @@ public class AbstractPriceOracleTest extends TestBase{
         score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER), "setAddresses", params);
     }
 
+    protected BigInteger getPrice(String name){
+        switch (name) {
+            case "USDS": {
+                BigInteger adjustedPrice = BigInteger.valueOf(1).multiply(ICX);
+                BigInteger convertedPrice = exaMultiply(adjustedPrice, ICX);
+                BigInteger totalSupply = BigInteger.valueOf(7600_000).multiply(ICX);
 
-    public void expectErrorMessage(Executable contractCall, String errorMessage) {
-        AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
-        assertEquals(errorMessage, e.getMessage());
-    }
+                return totalSupply.multiply(convertedPrice);
 
-    public void expectErrorMessageIn(Executable contractCall, String errorMessage) {
-        AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
-        boolean isInString = e.getMessage().contains(errorMessage);
-        assertEquals(true, isInString);
+            }
+            case "ICX": {
+                BigInteger adjustedPrice = BigInteger.valueOf(3).multiply(ICX).divide(BigInteger.valueOf(100));
+                BigInteger todayRate = BigInteger.valueOf(3).multiply(ICX);
+                BigInteger convertedPrice = exaMultiply(adjustedPrice, todayRate);
+                BigInteger totalSupply = BigInteger.valueOf(8000_000).multiply(ICX);
+
+                return totalSupply.multiply(convertedPrice);
+            }
+            case "IUSDC": {
+                BigInteger price = BigInteger.valueOf(1).multiply(ICX);
+                BigInteger adjustedPrice = convertToExa(price, BigInteger.valueOf(6));
+                BigInteger todayRate = BigInteger.valueOf(9).multiply(ICX);
+                BigInteger convertedPrice = exaMultiply(adjustedPrice, todayRate);
+
+                BigInteger totalSupply = BigInteger.valueOf(7200_000).multiply(ICX);
+
+                return totalSupply.multiply(convertedPrice);
+            }
+        }
+
+        return null;
+
     }
 
 
