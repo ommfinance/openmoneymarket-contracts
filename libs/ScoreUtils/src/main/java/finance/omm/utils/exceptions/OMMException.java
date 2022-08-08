@@ -19,7 +19,7 @@ public class OMMException extends UserRevertException {
         OMMToken(50),
         StakeLPException(60),
         LendingPool(65),
-        PriceOracle(70)
+        PriceOracle(70),
         RESERVED(80);
 
         int offset;
@@ -217,6 +217,9 @@ public class OMMException extends UserRevertException {
         }
 
         public PriceOracleException(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
 
     public static class LendingPool extends OMMException {
 
