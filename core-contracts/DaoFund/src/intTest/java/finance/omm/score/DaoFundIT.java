@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.core.score.interfaces.DAOFundScoreClient;
-import finance.omm.libs.test.ScoreIntegrationTest;
+import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.ScoreClient;
 import org.junit.jupiter.api.Test;
