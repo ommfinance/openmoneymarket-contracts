@@ -1,6 +1,7 @@
 # Openmoneymarket (OMM) Java Contracts
 
 ![Gradle](https://img.shields.io/badge/gradle-7.2-blue)
+[![build](https://github.com/openmoneymarket/openmoneymarket-contracts/actions/workflows/build.yml/badge.svg?branch=main&event=push)](https://github.com/openmoneymarket/openmoneymarket-contracts/actions/workflows/build.yml)
 
 This repository contains the smart contracts for OMM in Java.
 

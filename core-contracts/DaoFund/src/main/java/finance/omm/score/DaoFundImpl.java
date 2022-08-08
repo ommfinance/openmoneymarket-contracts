@@ -52,7 +52,7 @@ public class DaoFundImpl extends AddressProvider implements DAOFund {
     }
 
     @External
-    public void tokenFallback(Address _from, BigInteger _value, @Optional byte[] _data) {
+    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
         this.FundReceived(_value, Context.getCaller());
     }
 

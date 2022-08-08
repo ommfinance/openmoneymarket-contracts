@@ -65,9 +65,22 @@ public class EnumerableSet<V> {
 
     public List<V> range(int start, int end) {
         List<V> result = new ArrayList<>();
-        int _end = Math.min(end, length() - 1);
+        int _end = Math.min(end, length());
 
         for (int i = start; i < _end; i++) {
+            result.add(at(i));
+        }
+        return result;
+    }
+
+    public ArrayDB<V> getEntries() {
+        return this.entries;
+    }
+    
+    public List<V> toList() {
+        List<V> result = new ArrayList<>();
+        int end = length() - 1;
+        for (int i = 0; i <= end; i++) {
             result.add(at(i));
         }
         return result;

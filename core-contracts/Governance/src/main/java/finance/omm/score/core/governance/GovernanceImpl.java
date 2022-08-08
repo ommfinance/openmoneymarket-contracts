@@ -12,9 +12,12 @@ import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.core.score.interfaces.FeeProvider;
 import finance.omm.core.score.interfaces.LendingPoolCore;
 import finance.omm.core.score.interfaces.OMMToken;
+import finance.omm.core.score.interfaces.RewardWeightController;
 import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AssetConfig;
+import finance.omm.libs.structs.TypeWeightStruct;
+import finance.omm.libs.structs.WeightStruct;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
 import finance.omm.score.core.governance.db.ProposalDB;
@@ -265,7 +268,7 @@ public class GovernanceImpl extends AbstractGovernance {
      * @param percentage - percent represented in basis points
      */
     @External
-    public void setBoostedVoteDefinitionCriterion(BigInteger percentage) {
+    public void setVoteDefinitionCriteria(BigInteger percentage) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         if (!isValidPercentage(percentage)) {
             throw GovernanceException.unknown("vote definition criteria must be between 0 and " + ICX + ".");
@@ -327,12 +330,9 @@ public class GovernanceImpl extends AbstractGovernance {
         if (batch_size == 0) {
             batch_size = 20;
         }
-        if (offset == 0) {
-            offset = 1;
-        }
         List<Map<String, ?>> proposals = new ArrayList<>();
         int start = Math.max(1, offset);
-        int end = Math.min(batch_size + start, getProposalCount());
+        int end = Math.min(batch_size + start - 1, getProposalCount());
         for (int i = start; i <= end; i++) {
             proposals.add(checkVote(i));
         }
@@ -383,7 +383,7 @@ public class GovernanceImpl extends AbstractGovernance {
         Address sender = Context.getCaller();
         BigInteger snapshot = proposal.voteSnapshot.get();
 
-        BigInteger votingWeight = myVotingWeight(sender,snapshot);
+        BigInteger votingWeight = myVotingWeight(sender, snapshot);
         if (votingWeight.equals(BigInteger.ZERO)) {
             throw GovernanceException.unknown("Boosted OMM tokens needed to cast the vote.");
         }
@@ -514,7 +514,6 @@ public class GovernanceImpl extends AbstractGovernance {
         BigInteger totalForVoted = proposal.totalForVotes.getOrDefault(BigInteger.ZERO);
         BigInteger totalAgainstVotes = proposal.totalAgainstVotes.getOrDefault(BigInteger.ZERO);
 
-
         BigInteger _for = MathUtils.exaDivide(totalForVoted, totalVotingWeight);
         BigInteger _against = MathUtils.exaDivide(totalAgainstVotes, totalVotingWeight);
 
@@ -562,7 +561,7 @@ public class GovernanceImpl extends AbstractGovernance {
     public Map<String, ?> getVotesOfUser(int vote_index, Address user) {
         ProposalDB proposal = ProposalDB.getByVoteIndex(vote_index);
         if (proposal == null) {
-            return Map.of("for", BigInteger.ZERO,"against",BigInteger.ZERO);
+            return Map.of("for", BigInteger.ZERO, "against", BigInteger.ZERO);
         }
         return Map.of(
                 "for", proposal.forVotesOfUser.getOrDefault(user, BigInteger.ZERO),
@@ -573,7 +572,7 @@ public class GovernanceImpl extends AbstractGovernance {
     @External(readonly = true)
     public BigInteger myVotingWeight(Address _address, BigInteger _block) {
         BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
-        return boostedToken.balanceOfAt(_address,_block);
+        return boostedToken.balanceOfAt(_address, _block);
     }
 
     @External
@@ -601,7 +600,7 @@ public class GovernanceImpl extends AbstractGovernance {
         JsonValue vote_start = params.get("vote_start");
         BigInteger voteStart;
 
-        if (vote_start == null){
+        if (vote_start == null) {
             voteStart = TimeConstants.getBlockTimestamp();
         } else {
             voteStart = convertToNumber(vote_start);
@@ -618,16 +617,68 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     @External
-    public void enableHandleActions(){
+    public void enableHandleActions() {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.enableHandleActions();
     }
 
     @External
-    public void disableHandleActions(){
+    public void disableHandleActions() {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
         rewardDistribution.disableHandleActions();
     }
+
+    @External
+    public void setAssetWeight(String type, WeightStruct[] weights, @Optional BigInteger timestamp) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        RewardWeightController weightController = getInstance(RewardWeightController.class,
+                Contracts.REWARD_WEIGHT_CONTROLLER);
+        weightController.setAssetWeight(type, weights, timestamp);
+    }
+
+    @External
+    public void setTypeWeight(TypeWeightStruct[] weights, @Optional BigInteger timestamp) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        RewardWeightController weightController = getInstance(RewardWeightController.class,
+                Contracts.REWARD_WEIGHT_CONTROLLER);
+        weightController.setTypeWeight(weights, timestamp);
+    }
+
+    @External
+    public void addType(String key, boolean isPlatformRecipient) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
+        rewardDistribution.addType(key, isPlatformRecipient);
+    }
+
+    @External
+    public void addAsset(String type, String name, Address address, @Optional BigInteger poolID) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        RewardDistributionImpl rewardDistribution = getInstance(RewardDistributionImpl.class, Contracts.REWARDS);
+        rewardDistribution.addAsset(type, name, address, poolID);
+    }
+
+    @External
+    public void setMinimumLockingAmount(BigInteger value) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
+        boostedToken.setMinimumLockingAmount(value);
+    }
+
+    @External
+    public void addContractToWhitelist(Address address) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
+        boostedToken.addContractToWhitelist(address);
+    }
+
+    @External
+    public void removeContractFromWhitelist(Address address) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
+        boostedToken.removeContractFromWhitelist(address);
+    }
+
 }

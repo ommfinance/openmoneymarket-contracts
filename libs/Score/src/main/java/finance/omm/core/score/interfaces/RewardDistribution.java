@@ -12,7 +12,7 @@ import score.annotation.External;
 import score.annotation.Optional;
 
 @ScoreInterface(suffix = "Client")
-public interface RewardDistribution extends AddressProvider {
+public interface RewardDistribution extends AddressProvider, BoostedOMMCallback {
 
     @External(readonly = true)
     String name();
@@ -135,7 +135,7 @@ public interface RewardDistribution extends AddressProvider {
     void handleLPAction(Address _asset, UserDetails _userDetails);
 
     @External
-    void addType(String key, boolean transferToContract);
+    void addType(String key, boolean isPlatformRecipient);
 
 
     @External
@@ -166,4 +166,12 @@ public interface RewardDistribution extends AddressProvider {
     Map<String, ?> getAllAssetLegacyIndexes();
 
     Map<String, Map<String, BigInteger>> getUserAllLegacyIndexes(Address _user);
+
+    void updateAssetIndexes();
+
+    void migrateUserRewards(Address[] userAddresses);
+
+    Map<String, BigInteger> getUserDailyReward(Address user);
+
+    void setRewardCalculatedFlag(boolean value);
 }

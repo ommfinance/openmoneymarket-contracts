@@ -17,13 +17,14 @@ optimizedJar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-    enableDebug = true
+    enableDebug = false
 }
 
 deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.omm-token") as String
             nid = 0x53
         }
         mainnet {

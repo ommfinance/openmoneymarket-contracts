@@ -1,0 +1,49 @@
+[
+  {
+    "name": "staking",
+    "contract": "Staking",
+    "params": {
+    },
+    "order": 1.0
+  },
+  {
+    "name": "delegation",
+    "contract": "Delegation",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "lendingPoolCore",
+    "contract": "LendingPoolCore",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "ommToken",
+    "contract": "OMMToken",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "sICX",
+    "contract": "sICX",
+    "params": {
+    },
+    "addressParams": {
+      "_admin": "staking"
+    },
+    "order": 2.0
+  }
+]
