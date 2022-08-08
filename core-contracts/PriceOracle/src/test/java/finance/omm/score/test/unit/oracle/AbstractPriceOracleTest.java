@@ -10,14 +10,18 @@ import finance.omm.score.core.oracle.PriceOracleImpl;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import score.Context;
 
 import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.spy;
 
 
@@ -25,6 +29,8 @@ public class AbstractPriceOracleTest extends TestBase{
 
     public static final ServiceManager sm = getServiceManager();
     public Account owner;
+
+    public Account notOwner;
     public Score score;
     public PriceOracleImpl scoreSpy;
 
@@ -49,6 +55,7 @@ public class AbstractPriceOracleTest extends TestBase{
     void setup() throws Exception {
 
         owner = sm.createAccount(100);
+        notOwner =sm.createAccount(50);
 
         score = sm.deploy(owner, PriceOracleImpl.class,
                 MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress());
@@ -104,6 +111,11 @@ public class AbstractPriceOracleTest extends TestBase{
 
         return null;
 
+    }
+
+    public void expectErrorMessage(Executable contractCall, String errorMessage) {
+        AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
+        assertEquals(errorMessage, e.getMessage());
     }
 
 

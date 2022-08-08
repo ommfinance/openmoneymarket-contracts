@@ -2,6 +2,7 @@ package finance.omm.score.test.unit.oracle;
 
 import finance.omm.libs.address.Contracts;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import score.Context;
 
 import java.math.BigInteger;
@@ -25,6 +26,9 @@ public class PriceOracleTest extends AbstractPriceOracleTest{
         score.invoke(owner,"setOMMPool","OMM/USDS");
 
         assertEquals("OMM/USDS",score.call("getOMMPool"));
+
+        Executable call = () -> score.invoke(notOwner,"setOMMPool","OMM/USDS");
+        expectErrorMessage(call,"require owner access");
     }
 
     @Test
