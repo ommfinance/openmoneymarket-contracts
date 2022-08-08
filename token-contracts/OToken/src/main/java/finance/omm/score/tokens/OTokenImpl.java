@@ -37,6 +37,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
     private static final String TOTAL_SUPPLY = "total_supply";
     private static final String BALANCES = "balances";
     private static final String USER_INDEXES = "user_indexes";
+    private static final String HANDLE_ACTION_ENABLED = "handle_action_enabled";
     private static final BigInteger ZERO = BigInteger.ZERO;
     private static final BigInteger N_ONE = BigInteger.ONE.negate();
 
@@ -50,6 +51,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
     private final VarDB<BigInteger> totalSupply = Context.newVarDB(TOTAL_SUPPLY, BigInteger.class);
     private final DictDB<Address, BigInteger> balances = Context.newDictDB(BALANCES, BigInteger.class);
     private final DictDB<Address, BigInteger> userIndexes = Context.newDictDB(USER_INDEXES, BigInteger.class);
+    private final VarDB<Boolean> handleActionEnabled = Context.newVarDB(HANDLE_ACTION_ENABLED, Boolean.class);
 
     /**
     Variable Initialization.
@@ -60,6 +62,10 @@ public class OTokenImpl extends AddressProvider implements OToken {
     */
     public OTokenImpl(Address _addressProvider, String _name, String _symbol, BigInteger _decimals, boolean _update) {
         super(_addressProvider, _update);
+
+        if (handleActionEnabled.get() == null) {
+            handleActionEnabled.set(true);
+        }
 
         if (totalSupply.get() == null) {
             if (_symbol.isEmpty()) {
@@ -288,6 +294,18 @@ public class OTokenImpl extends AddressProvider implements OToken {
         return supplyDetails;
     }
 
+    @External
+    public void enableHandleAction() {
+        onlyOrElseThrow(Contracts.GOVERNANCE, OMMException.unknown("Only Governance contract can call this method"));
+        handleActionEnabled.set(true);
+    }
+
+    @External
+    public void disableHandleAction() {
+        onlyOrElseThrow(Contracts.GOVERNANCE, OMMException.unknown("Only Governance contract can call this method"));
+        handleActionEnabled.set(false);
+    }
+
     /**
     Redeems certain amount of tokens to get the equivalent amount of underlying asset.
     @param _amount: The address of user redeeming assets.
@@ -335,6 +353,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
     }
 
     protected void handleAction(Address _user, BigInteger _userBalance, BigInteger _totalSupply) {
+        Context.require(handleActionEnabled.get(), "Handle Action Disabled.");
 
         Address rewardsAddress = getAddress(Contracts.REWARDS.getKey());
         if (rewardsAddress == null) {
