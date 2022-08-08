@@ -7,9 +7,11 @@ import finance.omm.libs.test.integration.OMMClient;
 import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
 
+import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
 import finance.omm.score.core.lendingpool.exception.LendingPoolException;
 import finance.omm.score.core.lendingpool.integration.config.lendingPoolConfig;
+import foundation.icon.score.client.RevertedException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -17,16 +19,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import score.Address;
+import score.UserRevertedException;
 import score.annotation.Optional;
 
 import java.math.BigInteger;
 import java.util.Map;
 
 
+import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.score.core.lendingpool.AbstractLendingPool.TAG;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -163,6 +168,38 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     @Test
     void deposit_IUSDC(){
 
+    }
+
+    @Test
+    void redeem_reserve_inactive(){
+        depositICX(ommClient,BigInteger.valueOf(1000));
+
+        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+
+        ommClient.governance.setReserveActiveStatus(icxAddr,false);
+
+        assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, redeem unsuccessful"),
+                ()->ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false),
+                null);
+
+    }
+
+    @Test
+    void redeem_more_than_liquidity(){
+        depositICX(ommClient,BigInteger.valueOf(1000));
+
+        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+
+        ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(900).multiply(ICX),false);
+    }
+
+    @Test
+    void redeem_waitForUnstaking(){
+        depositICX(ommClient,BigInteger.valueOf(1000));
+
+        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+
+        ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),true);
     }
 
 
