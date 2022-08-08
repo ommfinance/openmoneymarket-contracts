@@ -26,6 +26,8 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
     private static final String BALN = "BALN";
     private static final String OMM = "OMM";
 
+    private static final BigInteger ONE_USD = ICX;
+
     private VarDB<String> ommPool = Context.newVarDB(OMM_POOL,String.class);
 
     private final String[] STABLE_TOKENS = {"USDS","bnUSD"};
@@ -72,7 +74,7 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
     private BigInteger getPrice(String _base, String _quote){
         for (String token : STABLE_TOKENS) {
             if (token.equals(_base)) {
-                return ICX;
+                return ONE_USD;
             }
         }
         if (_base.equals(BALN)){
