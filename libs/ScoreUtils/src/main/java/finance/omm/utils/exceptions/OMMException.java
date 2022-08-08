@@ -19,6 +19,7 @@ public class OMMException extends UserRevertException {
         OMMToken(50),
         StakeLPException(60),
         LendingPool(65),
+        LendingPoolCore(75),
         RESERVED(80);
 
         int offset;
@@ -216,6 +217,17 @@ public class OMMException extends UserRevertException {
         }
 
         public LendingPool(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class LendingPoolCore extends OMMException {
+
+        public LendingPoolCore(int code, String message) {
+            super(Type.LendingPool, code, message);
+        }
+
+        public LendingPoolCore(Coded code, String message) {
             this(code.code(), message);
         }
     }
