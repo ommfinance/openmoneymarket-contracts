@@ -55,11 +55,12 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
         mintToken();
+        reserveSetup();
     }
 
     @Test
     void testName() {
-        assertEquals("OMM Lending Pool",ommClient.lendingPool.name());
+        assertEquals("Omm Lending Pool",ommClient.lendingPool.name());
     }
     @Test
     void deposit_icx(){
@@ -74,11 +75,10 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         System.out.println("bal "+testClient.iUSDC.balanceOf(testClient.getAddress()));
         depositIUSDC(testClient,BigInteger.valueOf(10));
     }
-
-//    @Test
-//    void deposit_payble(){
-//        depositICX(ommClient,BigInteger.valueOf(10));
-//    }
+    @Test
+    void deposit_payble(){
+        depositICX(ommClient,BigInteger.valueOf(10));
+    }
 
     @Test
     void borrow_more_than_available(){
@@ -108,7 +108,6 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
     @Test
     void borrow_freeze_reserve(){
-//        depositIUSDC(ommClient,BigInteger.valueOf(10000));
         BigInteger borrowAmt = BigInteger.valueOf(100);
         Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
 
