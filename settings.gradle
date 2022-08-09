@@ -54,4 +54,7 @@ findProject(":Governance").projectDir = file("core-contracts/Governance")
 include(":OMMToken")
 findProject(":OMMToken").projectDir = file("token-contracts/OMMToken")
 
+include(":LendingPool")
+findProject(":LendingPool").projectDir = file("core-contracts/LendingPool")
+
 

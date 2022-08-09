@@ -67,7 +67,7 @@
     "params": {
     },
     "addressParams": {
-      "_addressProvider": "addressProvider"
+      "addressProvider": "addressProvider"
     },
     "order": 1.0
   },
@@ -119,6 +119,9 @@
       "_decimals": 18,
       "_update": "0x0"
     },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+  },
     "order": 1.0
   },
   {
