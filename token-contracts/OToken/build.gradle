@@ -38,7 +38,6 @@ deployJar {
         arg('_name', null)
         arg('_symbol', null)
         arg('_decimals', null)
-        arg('_update', null)
     }
 }
 

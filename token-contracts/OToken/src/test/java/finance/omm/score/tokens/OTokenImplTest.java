@@ -61,8 +61,7 @@ public class OTokenImplTest extends TestBase {
                 addressProviderAccount.getAddress(), 
                 OTokenImpl.TAG,
                 OTOKEN,
-                decimals,
-                false);
+                decimals);
 
         lendingPoolDetails = new AddressDetails();
         lendingPoolDetails.name = Contracts.LENDING_POOL.getKey();
