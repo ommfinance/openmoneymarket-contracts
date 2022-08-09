@@ -202,6 +202,25 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     }
 
 
+/*
+java -> fucntion returpns map(string,object)
+{
+'reserve': addr,
+'sth': str,
+'sth: bigint
+}
+
+function returna map
+{
+'reserve': addr.toString(),.
+..
+..
+}
+
+another contract
+
+// dToken error in borrow
+ */
     /*
     deposit ICX as collateral
     */
@@ -245,6 +264,33 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     private void reserveSetup(){
         depositICX(ommClient,BigInteger.valueOf(1000));
         depositIUSDC(ommClient,BigInteger.valueOf(1000));
+    }
+
+    @Test
+    void borrow_not_enough_liquidity(){ // not working
+        //        depositIUSDC(ommClient,BigInteger.valueOf(10000));
+        BigInteger borrowAmt = BigInteger.valueOf(100);
+        Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
+
+        testClient.lendingPool.deposit(BigInteger.valueOf(200));
+
+//        assertUserRevert(LendingPoolException.unknown("Borrow error:Not enough available liquidity in the reserve"),
+//                () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
+
+        ommClient.lendingPool.borrow(iusdc_reserve,borrowAmt);
+
+    }
+
+
+    @Test
+    void borrow_more_than_collateral(){ // not working
+        BigInteger borrowAmt = BigInteger.valueOf(100);
+        Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
+
+        testClient.lendingPool.deposit(BigInteger.valueOf(200));
+
+        ommClient.lendingPool.borrow(iusdc_reserve,borrowAmt);
+
     }
 
 
