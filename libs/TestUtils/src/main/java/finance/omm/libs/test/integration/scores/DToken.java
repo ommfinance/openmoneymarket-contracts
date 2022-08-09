@@ -29,5 +29,12 @@ public interface DToken {
 
     TotalStaked getTotalStaked();
 
+    void enableHandleAction();
+
+    void disableHandleAction();
+
+    boolean isHandleActionEnabled();
+
+
 
 }

@@ -223,6 +223,17 @@ public class DTokenIT implements ScoreIntegrationTest {
 
     }
 
+    @Test
+    void handleAction() {
+
+        assertTrue(ommClient.dICX.isHandleActionEnabled());
+
+        RevertedException handleAction = assertThrows(RevertedException.class, () ->
+                ommClient.dICX.enableHandleAction());
+
+        handleAction = assertThrows(RevertedException.class, () -> ommClient.dICX.disableHandleAction());
+    }
+
     private void mintToken() {
         BigInteger amount = BigInteger.valueOf(100_000_000).multiply(ICX);
         ommClient.iUSDC.addIssuer(ommClient.getAddress());
