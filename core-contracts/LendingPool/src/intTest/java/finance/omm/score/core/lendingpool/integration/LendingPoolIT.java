@@ -190,7 +190,14 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
         Address icxAddr = addressMap.get(Contracts.oICX.getKey());
 
+        BigInteger amount =BigInteger.valueOf(900).multiply(ICX);
+        BigInteger availableLiquidity = BigInteger.valueOf(500).multiply(ICX);
+
         ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(900).multiply(ICX),false);
+
+        assertUserRevert(LendingPoolException.unknown("Amount " + amount + " is more than available liquidity " +
+                        availableLiquidity), ()->ommClient.lendingPool.redeem(icxAddr,amount,false),
+                        null);
     }
 
     @Test
@@ -200,6 +207,10 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         Address icxAddr = addressMap.get(Contracts.oICX.getKey());
 
         ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),true);
+
+        assertUserRevert(LendingPoolException.reserveNotActive("Redeem with wait for unstaking failed: Invalid token"),
+                ()->ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false),
+                null);
     }
 
 
