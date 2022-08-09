@@ -17,7 +17,7 @@ public interface OToken extends IRC2, AddressProvider{
     SupplyDetails getPrincipalSupply(Address _user);
     void enableHandleAction();
     void disableHandleAction();
-    Map<String, Object> redeem(Address _user, BigInteger _amount);
+    Map<String, ?> redeem(Address _user, BigInteger _amount);
     void mintOnDeposit(Address _user, BigInteger _amount);
     void burnOnLiquidation(Address _user, BigInteger _value);
     TotalStaked getTotalStaked();

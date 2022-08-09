@@ -162,7 +162,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
 
         BigInteger borrowIndex = Context.call(
                 BigInteger.class,
-                lendingPoolCoreAddress, 
+                lendingPoolCoreAddress,
                 "getReserveLiquidityCumulativeIndex",
                 reserveAddress);
 
@@ -313,12 +313,12 @@ public class OTokenImpl extends AddressProvider implements OToken {
 
     */
     @External
-    public Map<String, Object> redeem(Address _user, BigInteger _amount) {
+    public Map<String, ?> redeem(Address _user, BigInteger _amount) {
         onlyLendingPool();
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
 
-        if (_amount.compareTo(ZERO) <= 0 &&  !_amount.equals(N_ONE)) { 
+        if (_amount.compareTo(ZERO) <= 0 &&  !_amount.equals(N_ONE)) {
             Context.revert(TAG + ": Amount: "+ _amount + " to redeem needs to be greater than zero");
         }
 
@@ -391,8 +391,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
     public void burnOnLiquidation(Address _user, BigInteger _value) {
 
         onlyOrElseThrow(Contracts.LIQUIDATION_MANAGER,
-                OMMException.unknown(TAG 
-                        + ":  SenderNotAuthorized: (sender)" + Context.getCaller() 
+                OMMException.unknown(TAG
+                        + ":  SenderNotAuthorized: (sender)" + Context.getCaller()
                         + " (liquidation)" + getAddress(Contracts.LIQUIDATION_MANAGER.getKey()) + "}" ));
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
@@ -440,8 +440,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
 
     public void onlyLendingPool() {
         onlyOrElseThrow(Contracts.LENDING_POOL,
-                OMMException.unknown(TAG 
-                        + ":  SenderNotAuthorized: (sender)" + Context.getCaller() 
+                OMMException.unknown(TAG
+                        + ":  SenderNotAuthorized: (sender)" + Context.getCaller()
                         + " (lendingPool)" + getAddress(Contracts.LENDING_POOL.getKey()) + "}" ));
     }
 
