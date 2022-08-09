@@ -1,8 +1,5 @@
 package finance.omm.score.tokens;
 
-import java.math.BigInteger;
-import java.util.Map;
-
 import finance.omm.core.score.interfaces.OToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
@@ -19,6 +16,9 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
+import java.math.BigInteger;
+import java.util.Map;
+
 import static finance.omm.utils.math.MathUtils.convertExaToOther;
 import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaDivide;
@@ -26,8 +26,8 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 
 /**
-Implementation of IRC2
-*/
+ * Implementation of IRC2
+ */
 public class OTokenImpl extends AddressProvider implements OToken {
 
     public static final String TAG = "Omm oToken";
@@ -54,12 +54,13 @@ public class OTokenImpl extends AddressProvider implements OToken {
     private final VarDB<Boolean> handleActionEnabled = Context.newVarDB(HANDLE_ACTION_ENABLED, Boolean.class);
 
     /**
-    Variable Initialization.
-    @param _addressProvider: The address of the addressProvider SCORE.
-    @param _name: The name of the token.
-    @param _symbol: The symbol of the token.
-    @param _decimals: The number of decimals. Set to 18 by default.
-    */
+     * Variable Initialization.
+     *
+     * @param _addressProvider: The address of the addressProvider SCORE.
+     * @param _name:            The name of the token.
+     * @param _symbol:          The symbol of the token.
+     * @param _decimals:        The number of decimals. Set to 18 by default.
+     */
     public OTokenImpl(Address _addressProvider, String _name, String _symbol, BigInteger _decimals, boolean _update) {
         super(_addressProvider, _update);
 
@@ -107,33 +108,33 @@ public class OTokenImpl extends AddressProvider implements OToken {
 
     @EventLog(indexed = 3)
     public void BalanceTransfer(Address _from, Address _to, BigInteger _value, BigInteger _fromBalanceIncrease,
-            BigInteger _toBalanceIncrease, BigInteger _fromIndex, BigInteger _toIndex) {
+                                BigInteger _toBalanceIncrease, BigInteger _fromIndex, BigInteger _toIndex) {
     }
 
     /**
-    Returns the name of the token
-    */
+     * Returns the name of the token
+     */
     @External(readonly = true)
     public String name() {
         return this.name.get();
     }
 
     /**
-    Returns the symbol of the token
-    */
+     * Returns the symbol of the token
+     */
     @External(readonly = true)
     public String symbol() {
         return this.symbol.get();
     }
 
     /**
-    Returns the number of decimals
-    For example, if the decimals = 2, a balance of 25 tokens
-    should be displayed to the user as (25 * 10 ** 2)
-    Tokens usually opt for value of 18. It is also the IRC2
-    uses by default. It can be changed by passing required
-    number of decimals during initialization.
-    */
+     * Returns the number of decimals
+     * For example, if the decimals = 2, a balance of 25 tokens
+     * should be displayed to the user as (25 * 10 ** 2)
+     * Tokens usually opt for value of 18. It is also the IRC2
+     * uses by default. It can be changed by passing required
+     * number of decimals during initialization.
+     */
     @External(readonly = true)
     public BigInteger decimals() {
         return this.decimals.getOrDefault(ZERO);
@@ -145,8 +146,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
     }
 
     /**
-    Returns the total number of tokens in existence
-    */
+     * Returns the total number of tokens in existence
+     */
     @External(readonly = true)
     public BigInteger totalSupply() {
         Address lendingPoolCoreAddress = getAddress(Contracts.LENDING_POOL_CORE.getKey());
@@ -179,7 +180,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
                     exaMultiply(
                             convertToExa(principalTotalSupply, actualDecimals),
                             normalizedIncome
-                            ),
+                    ),
                     borrowIndex);
             return convertExaToOther(newBalance, actualDecimals.intValue());
         }
@@ -241,14 +242,14 @@ public class OTokenImpl extends AddressProvider implements OToken {
         BigInteger userIndex = Context.call(BigInteger.class, lendingPoolCoreAddress, "getNormalizedIncome", reserveAddress);
         this.userIndexes.set(user, userIndex);
         return Map.of(
-            "previousPrincipalBalance", previousPrincipalBalance,
-            "principalBalance", previousPrincipalBalance.add(balanceIncrease),
-            "balanceIncrease", balanceIncrease,
-            "index", userIndex);
+                "previousPrincipalBalance", previousPrincipalBalance,
+                "principalBalance", previousPrincipalBalance.add(balanceIncrease),
+                "balanceIncrease", balanceIncrease,
+                "index", userIndex);
     }
 
-    /** This will always include accrued interest as a computed value
-     *
+    /**
+     * This will always include accrued interest as a computed value
      */
     @External(readonly = true)
     public BigInteger balanceOf(Address _owner) {
@@ -257,17 +258,19 @@ public class OTokenImpl extends AddressProvider implements OToken {
         return calculateCumulatedBalanceInternal(_owner, currentPrincipalBalance);
     }
 
-    /** This shows the state updated balance and includes the accrued interest upto the most recent computation
-    * initiated by the user transaction
-    */
+    /**
+     * This shows the state updated balance and includes the accrued interest upto the most recent computation
+     * initiated by the user transaction
+     */
     @External(readonly = true)
     public BigInteger principalBalanceOf(Address _user) {
         return this.balances.getOrDefault(_user, ZERO);
     }
 
-    /** The transfer is only allowed if transferring this amount of the underlying collateral doesn't bring the health
-    * factor below 1
-    * */
+    /**
+     * The transfer is only allowed if transferring this amount of the underlying collateral doesn't bring the health
+     * factor below 1
+     */
     @External(readonly = true)
     public boolean isTransferAllowed(Address _user, BigInteger _amount) {
         Address lendingPoolDataProviderAddress = getAddress(Contracts.LENDING_POOL_DATA_PROVIDER.getKey());
@@ -307,19 +310,19 @@ public class OTokenImpl extends AddressProvider implements OToken {
     }
 
     /**
-    Redeems certain amount of tokens to get the equivalent amount of underlying asset.
-    @param _amount: The address of user redeeming assets.
-    @param _amount: The amount of oToken.
-
-    */
+     * Redeems certain amount of tokens to get the equivalent amount of underlying asset.
+     *
+     * @param _amount: The address of user redeeming assets.
+     * @param _amount: The amount of oToken.
+     */
     @External
     public Map<String, ?> redeem(Address _user, BigInteger _amount) {
         onlyLendingPool();
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
 
-        if (_amount.compareTo(ZERO) <= 0 &&  !_amount.equals(N_ONE)) {
-            Context.revert(TAG + ": Amount: "+ _amount + " to redeem needs to be greater than zero");
+        if (_amount.compareTo(ZERO) <= 0 && !_amount.equals(N_ONE)) {
+            Context.revert(TAG + ": Amount: " + _amount + " to redeem needs to be greater than zero");
         }
 
         Map<String, BigInteger> cumulated = this.cumulateBalanceInternal(_user);
@@ -327,14 +330,14 @@ public class OTokenImpl extends AddressProvider implements OToken {
         BigInteger balanceIncrease = cumulated.get("balanceIncrease");
         BigInteger index = cumulated.get("index");
         BigInteger amountToRedeem = _amount;
-        if (_amount.equals(N_ONE) ) {
+        if (_amount.equals(N_ONE)) {
             amountToRedeem = currentBalance;
         }
         if (amountToRedeem.compareTo(currentBalance) > 0) {
-            Context.revert(TAG + ": Redeem amount: "+ amountToRedeem + " is more than user balance " + currentBalance );
+            Context.revert(TAG + ": Redeem amount: " + amountToRedeem + " is more than user balance " + currentBalance);
         }
         if (!this.isTransferAllowed(_user, amountToRedeem)) {
-            Context.revert(TAG + ": Transfer of amount "+ amountToRedeem + " to the user is not allowed");
+            Context.revert(TAG + ": Transfer of amount " + amountToRedeem + " to the user is not allowed");
         }
         this.burn(_user, amountToRedeem);
 
@@ -347,8 +350,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
 
         this.Redeem(_user, amountToRedeem, balanceIncrease, index);
         return Map.of(
-            "reserve", getAddress(Contracts.RESERVE.getKey()),
-            "amountToRedeem", amountToRedeem
+                "reserve", getAddress(Contracts.RESERVE.getKey()),
+                "amountToRedeem", amountToRedeem
         );
     }
 
@@ -393,7 +396,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
         onlyOrElseThrow(Contracts.LIQUIDATION_MANAGER,
                 OMMException.unknown(TAG
                         + ":  SenderNotAuthorized: (sender)" + Context.getCaller()
-                        + " (liquidation)" + getAddress(Contracts.LIQUIDATION_MANAGER.getKey()) + "}" ));
+                        + " (liquidation)" + getAddress(Contracts.LIQUIDATION_MANAGER.getKey()) + "}"));
 
         BigInteger beforeTotalSupply = this.principalTotalSupply();
         Map<String, BigInteger> cumulated = this.cumulateBalanceInternal(_user);
@@ -426,14 +429,14 @@ public class OTokenImpl extends AddressProvider implements OToken {
 
         this.BalanceTransfer(from, to, value, fromBalanceIncrease, toBalanceIncrease, fromIndex, toIndex);
         return Map.of(
-            "fromPreviousPrincipalBalance", fromCumulated.get("previousPrincipalBalance"),
-            "toPreviousPrincipalBalance", toCumulated.get("previousPrincipalBalance"),
-            "beforeTotalSupply", beforeTotalSupply
+                "fromPreviousPrincipalBalance", fromCumulated.get("previousPrincipalBalance"),
+                "toPreviousPrincipalBalance", toCumulated.get("previousPrincipalBalance"),
+                "beforeTotalSupply", beforeTotalSupply
         );
     }
 
     protected void callRewards(BigInteger fromPrevious, BigInteger toPrevious, BigInteger totalPrevious,
-            Address from, Address to) {
+                               Address from, Address to) {
         this.handleAction(from, fromPrevious, totalPrevious);
         this.handleAction(to, toPrevious, totalPrevious);
     }
@@ -442,49 +445,50 @@ public class OTokenImpl extends AddressProvider implements OToken {
         onlyOrElseThrow(Contracts.LENDING_POOL,
                 OMMException.unknown(TAG
                         + ":  SenderNotAuthorized: (sender)" + Context.getCaller()
-                        + " (lendingPool)" + getAddress(Contracts.LENDING_POOL.getKey()) + "}" ));
+                        + " (lendingPool)" + getAddress(Contracts.LENDING_POOL.getKey()) + "}"));
     }
 
     /**
-    Transfers certain amount of tokens from sender to the receiver.
-
-    @param _to: The account to which the token is to be transferred.
-    @param _value: The no. of tokens to be transferred.
-    @param _data: Any information or message
-    */
+     * Transfers certain amount of tokens from sender to the receiver.
+     *
+     * @param _to:    The account to which the token is to be transferred.
+     * @param _value: The no. of tokens to be transferred.
+     * @param _data:  Any information or message
+     */
     @External
     public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
-        if (_data == null || _data.length == 0 ) {
+        if (_data == null || _data.length == 0) {
             _data = "None".getBytes();
         }
         this.transfer(Context.getCaller(), _to, _value, _data);
     }
 
     /**
-    Transfers certain amount of tokens from sender to the recipient.
-    This is an internal function.
-    @param from: The account from which the token is to be transferred.
-    @param to: The account to which the token is to be transferred.
-    @param value: The no. of tokens to be transferred.
-    @param data: Any information or message
-    */
+     * Transfers certain amount of tokens from sender to the recipient.
+     * This is an internal function.
+     *
+     * @param from:  The account from which the token is to be transferred.
+     * @param to:    The account to which the token is to be transferred.
+     * @param value: The no. of tokens to be transferred.
+     * @param data:  Any information or message
+     */
     protected void transfer(Address from, Address to, BigInteger value, byte[] data) {
-        if (value.compareTo(ZERO) < 0 ) {
-            Context.revert(TAG +": Transferring value:" + value +" cannot be less than 0.");
+        if (value.compareTo(ZERO) < 0) {
+            Context.revert(TAG + ": Transferring value:" + value + " cannot be less than 0.");
         }
 
         BigInteger balanceFrom = this.balances.getOrDefault(from, ZERO);
         if (balanceFrom.compareTo(value) < 0) {
-            Context.revert(TAG +" : Token transfer error:Insufficient balance: " + balanceFrom );
+            Context.revert(TAG + " : Token transfer error:Insufficient balance: " + balanceFrom);
         }
 
-        if (! this.isTransferAllowed( from, value)) {
-            Context.revert(TAG +":  Transfer error:Transfer cannot be allowed");
+        if (!this.isTransferAllowed(from, value)) {
+            Context.revert(TAG + ":  Transfer error:Transfer cannot be allowed");
         }
 
         Map<String, BigInteger> previousBalances = this.executeTransfer(from, to, value);
-        this.balances.set(from, balanceFrom.subtract(value) );
-        this.balances.set(to, this.balances.getOrDefault(to, ZERO).add(value) );
+        this.balances.set(from, balanceFrom.subtract(value));
+        this.balances.set(to, this.balances.getOrDefault(to, ZERO).add(value));
         this.callRewards(previousBalances.get("fromPreviousPrincipalBalance"),
                 previousBalances.get("toPreviousPrincipalBalance"), previousBalances.get("beforeTotalSupply"),
                 from,
@@ -503,19 +507,20 @@ public class OTokenImpl extends AddressProvider implements OToken {
     }
 
     /**
-    Creates amount number of tokens, and assigns to account
-    Increases the balance of that account and total supply.
-    This is an internal function.
-    @param account: The account at which token is to be created.
-    @param amount: Number of tokens to be created at the `account`.
-    */
+     * Creates amount number of tokens, and assigns to account
+     * Increases the balance of that account and total supply.
+     * This is an internal function.
+     *
+     * @param account: The account at which token is to be created.
+     * @param amount:  Number of tokens to be created at the `account`.
+     */
     protected void mint(Address account, BigInteger amount) {
 
         if (amount.compareTo(ZERO) < 0) {
             Context.revert(TAG + ": Invalid value: " + amount + " to mint");
         }
 
-        this.totalSupply.set(this.totalSupply.get().add(amount) );
+        this.totalSupply.set(this.totalSupply.get().add(amount));
         this.balances.set(account, this.balances.getOrDefault(account, ZERO).add(amount));
 
         // Emits an event log Mint
@@ -523,24 +528,25 @@ public class OTokenImpl extends AddressProvider implements OToken {
     }
 
     /**
-    Destroys `amount` number of tokens from `account`
-    Decreases the balance of that `account` and total supply.
-    This is an internal function.
-    @param account: The account at which token is to be destroyed.
-    @param amount: The `amount` of tokens of `account` to be destroyed.
-    */
+     * Destroys `amount` number of tokens from `account`
+     * Decreases the balance of that `account` and total supply.
+     * This is an internal function.
+     *
+     * @param account: The account at which token is to be destroyed.
+     * @param amount:  The `amount` of tokens of `account` to be destroyed.
+     */
     protected void burn(Address account, BigInteger amount) {
         if (amount.equals(ZERO)) {
             return;
         }
 
         if (amount.compareTo(ZERO) < 0) {
-            Context.revert( TAG + ": Invalid value: "+ amount + " to burn");
+            Context.revert(TAG + ": Invalid value: " + amount + " to burn");
         }
         BigInteger actualTotalSupply = this.totalSupply.get();
         BigInteger userBalance = this.balances.getOrDefault(account, ZERO);
         if (amount.compareTo(actualTotalSupply) > 0) {
-            Context.revert( TAG + ": " + amount+ " is greater than total supply :" +actualTotalSupply );
+            Context.revert(TAG + ": " + amount + " is greater than total supply :" + actualTotalSupply);
         }
         if (amount.compareTo(userBalance) > 0) {
             Context.revert(TAG + ": Cannot burn more than user balance. Amount to burn: " + amount + ", User Balance:" + userBalance);
@@ -554,9 +560,10 @@ public class OTokenImpl extends AddressProvider implements OToken {
     }
 
     /**
-    return total supply for reward distribution
-    @return: total supply and its precision
-    */
+     * return total supply for reward distribution
+     *
+     * @return: total supply and its precision
+     */
     @External(readonly = true)
     public TotalStaked getTotalStaked() {
         TotalStaked totalStaked = new TotalStaked();
