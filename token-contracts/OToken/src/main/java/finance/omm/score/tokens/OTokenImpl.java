@@ -317,7 +317,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
     /**
      * Redeems certain amount of tokens to get the equivalent amount of underlying asset.
      *
-     * @param _amount: The address of user redeeming assets.
+     * @param _user: The address of user redeeming assets.
      * @param _amount: The amount of oToken.
      */
     @External
@@ -573,7 +573,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
     public TotalStaked getTotalStaked() {
         TotalStaked totalStaked = new TotalStaked();
         totalStaked.decimals = this.decimals();
-        totalStaked.totalStaked = this.totalSupply();
+        totalStaked.totalStaked = this.principalTotalSupply();
         return totalStaked;
     }
 }
