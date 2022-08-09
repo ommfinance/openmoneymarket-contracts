@@ -277,7 +277,7 @@ another contract
 //        assertUserRevert(LendingPoolException.unknown("Borrow error:Not enough available liquidity in the reserve"),
 //                () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
 
-        ommClient.lendingPool.borrow(iusdc_reserve,borrowAmt);
+        testClient.lendingPool.borrow(iusdc_reserve,borrowAmt);
 
     }
 
