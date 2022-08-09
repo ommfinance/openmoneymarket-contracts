@@ -82,9 +82,9 @@ public abstract class AbstractLendingPool extends AddressProvider
             if (userFeeSharing.get(START_HEIGHT) != null) {
                 userFeeSharing.set(START_HEIGHT, currentBlockHeight);
             }
-            if (userFeeSharing.get(START_HEIGHT).add(TERM_LENGTH).compareTo(currentBlockHeight) > 0) {
-                if (userFeeSharing.get(TXN_COUNT).compareTo(feeSharingTxnLimit.get()) < 0) {
-                    BigInteger count = userFeeSharing.get(TXN_COUNT);
+            if (userFeeSharing.getOrDefault(START_HEIGHT,BigInteger.ZERO).add(TERM_LENGTH).compareTo(currentBlockHeight) > 0) {
+                if (userFeeSharing.getOrDefault(TXN_COUNT,BigInteger.ZERO).compareTo(feeSharingTxnLimit.get()) < 0) {
+                    BigInteger count = userFeeSharing.getOrDefault(TXN_COUNT,BigInteger.ZERO);
                     userFeeSharing.set(TXN_COUNT, count.add(BigInteger.ONE));
                     return true;
                 }
@@ -126,12 +126,12 @@ public abstract class AbstractLendingPool extends AddressProvider
 
         call(Contracts.LENDING_POOL_CORE, "updateStateOnDeposit", reserve, sender, amount);
 
-        Address oToken = Address.fromString((String) reserveData.get("oTokenAddress"));
+        Address oToken = (Address) reserveData.get("oTokenAddress");
         call(oToken, "mintOnDeposit", sender, amount);
 
         BigInteger icxValue = Context.getValue();
         Address lendingPoolCore = getAddress(Contracts.LENDING_POOL_CORE.getKey());
-        if (reserve.equals(getAddress(Contracts.sICX.getKey())) && icxValue.equals(BigInteger.ZERO)) {
+        if (reserve.equals(getAddress(Contracts.sICX.getKey())) && !icxValue.equals(BigInteger.ZERO)) {
             amount = Context.call(BigInteger.class, icxValue, getAddress(Contracts.STAKING.getKey()),
                     "stakeICX", lendingPoolCore);
         } else {
@@ -159,14 +159,14 @@ public abstract class AbstractLendingPool extends AddressProvider
 
         call(Contracts.LENDING_POOL_CORE, "updateStateOnRedeem", reserve, user, amount);
 
-        JsonObject data = null;
+        JsonObject data = new JsonObject();
         Address to = user;
 
         if ( waitForUnstaking ) {
             if (! oToken.equals(getAddress(Contracts.oICX.getKey()))) {
                 throw LendingPoolException.unknown("Redeem with wait for unstaking failed: Invalid token");
             }
-            data = new JsonObject();
+//            data = new JsonObject();
             data.add("method","unstake");
             data.add("user", user.toString());
             to = getAddress(Contracts.STAKING.getKey());
@@ -276,7 +276,7 @@ public abstract class AbstractLendingPool extends AddressProvider
         return list;
     }
 
-    protected  <K> K call(Class<K> kClass, Address contract, String method, Object... params) {
+    public <K> K call(Class<K> kClass, Address contract, String method, Object... params) {
         return Context.call(kClass, contract, method, params);
     }
 }
