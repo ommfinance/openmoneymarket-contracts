@@ -389,7 +389,7 @@ public class DTokenImpl extends AddressProvider implements DToken {
     public TotalStaked getTotalStaked() {
         TotalStaked totalStaked = new TotalStaked();
         totalStaked.decimals = this.decimals();
-        totalStaked.totalStaked = this.totalSupply();
+        totalStaked.totalStaked = this.principalTotalSupply();
         return totalStaked;
     }
 
