@@ -218,7 +218,7 @@ public class OTokenImplTest extends TestBase {
             BigInteger amountToTransfer = BigInteger.valueOf(250);
 
             theMock
-            .when(() -> Context.call(boolean.class,
+            .when(() -> Context.call(Boolean.class,
                     lendingPoolDataProviderAccount.getAddress(),
                     "balanceDecreaseAllowed",
                     reserveAddress, userFromAccount.getAddress(), amountToTransfer) )
@@ -276,7 +276,7 @@ public class OTokenImplTest extends TestBase {
             BigInteger amountToRedeem = BigInteger.valueOf(50);
 
             theMock
-            .when(() -> Context.call(boolean.class,
+            .when(() -> Context.call(Boolean.class,
                     lendingPoolDataProviderAccount.getAddress(),
                     "balanceDecreaseAllowed",
                     reserveAddress, userAccount.getAddress(), amountToRedeem) )
