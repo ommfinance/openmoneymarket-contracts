@@ -85,7 +85,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
         checkAndEnableFeeSharing();
         Address caller = Context.getCaller();
         Map<String, Object> redeemParams = call(Map.class, _oToken, "redeem", caller, _amount);
-        Address reserve = Address.fromString((String) redeemParams.get("reserve"));
+        Address reserve = (Address) redeemParams.get("reserve");
         BigInteger amount = (BigInteger) redeemParams.get("amountToRedeem");
         redeemUnderlying(reserve, caller, _oToken, amount, _waitForUnstaking);
     }
