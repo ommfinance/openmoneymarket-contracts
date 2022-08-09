@@ -82,9 +82,9 @@ public abstract class AbstractLendingPool extends AddressProvider
             if (userFeeSharing.get(START_HEIGHT) != null) {
                 userFeeSharing.set(START_HEIGHT, currentBlockHeight);
             }
-            if (userFeeSharing.get(START_HEIGHT).add(TERM_LENGTH).compareTo(currentBlockHeight) > 0) {
-                if (userFeeSharing.get(TXN_COUNT).compareTo(feeSharingTxnLimit.get()) < 0) {
-                    BigInteger count = userFeeSharing.get(TXN_COUNT);
+            if (userFeeSharing.getOrDefault(START_HEIGHT,BigInteger.ZERO).add(TERM_LENGTH).compareTo(currentBlockHeight) > 0) {
+                if (userFeeSharing.getOrDefault(TXN_COUNT,BigInteger.ZERO).compareTo(feeSharingTxnLimit.get()) < 0) {
+                    BigInteger count = userFeeSharing.getOrDefault(TXN_COUNT,BigInteger.ZERO);
                     userFeeSharing.set(TXN_COUNT, count.add(BigInteger.ONE));
                     return true;
                 }
