@@ -216,7 +216,6 @@ public class OTokenIT implements ScoreIntegrationTest {
 
         assertEquals(true, (ommClient.oICX.balanceOf(testClient.getAddress()).compareTo(ommClient.
                 oICX.principalBalanceOf(testClient.getAddress()))) > 0);
-        System.out.println();
 
     }
 
@@ -238,6 +237,17 @@ public class OTokenIT implements ScoreIntegrationTest {
         assertEquals(BigInteger.valueOf(50).multiply(ICX), testClient.oICX.principalBalanceOf(testClient.getAddress()));
         assertEquals(BigInteger.valueOf(50).multiply(ICX), testClient.oICX.balanceOf(testClient.getAddress()));
 
+    }
+
+    @Test
+    void handleAction() {
+
+        assertTrue(ommClient.oICX.isHandleActionEnabled());
+
+        RevertedException handleAction = assertThrows(RevertedException.class, () ->
+                ommClient.oICX.enableHandleAction());
+
+        handleAction = assertThrows(RevertedException.class, () -> ommClient.oICX.disableHandleAction());
     }
 
     private void _deposit(OMMClient client, int amount) {

@@ -26,4 +26,10 @@ public interface OToken {
 
     BigInteger getUserLiquidityCumulativeIndex(Address _user);
 
+    void enableHandleAction();
+
+    void disableHandleAction();
+
+    boolean isHandleActionEnabled();
+
 }
