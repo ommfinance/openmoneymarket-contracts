@@ -61,8 +61,8 @@ public class OTokenImpl extends AddressProvider implements OToken {
      * @param _symbol:          The symbol of the token.
      * @param _decimals:        The number of decimals. Set to 18 by default.
      */
-    public OTokenImpl(Address _addressProvider, String _name, String _symbol, BigInteger _decimals, boolean _update) {
-        super(_addressProvider, _update);
+    public OTokenImpl(Address _addressProvider, String _name, String _symbol, BigInteger _decimals) {
+        super(_addressProvider, false);
 
         if (handleActionEnabled.get() == null) {
             handleActionEnabled.set(true);
@@ -307,6 +307,11 @@ public class OTokenImpl extends AddressProvider implements OToken {
     public void disableHandleAction() {
         onlyOrElseThrow(Contracts.GOVERNANCE, OMMException.unknown("Only Governance contract can call this method"));
         handleActionEnabled.set(false);
+    }
+
+    @External(readonly = true)
+    public boolean isHandleActionEnabled() {
+        return handleActionEnabled.get();
     }
 
     /**

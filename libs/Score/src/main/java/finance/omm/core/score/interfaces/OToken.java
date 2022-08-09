@@ -24,6 +24,8 @@ public interface OToken extends IRC2, AddressProvider {
 
     void disableHandleAction();
 
+    boolean isHandleActionEnabled();
+
     Map<String, ?> redeem(Address _user, BigInteger _amount);
 
     void mintOnDeposit(Address _user, BigInteger _amount);
