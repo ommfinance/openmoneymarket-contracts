@@ -1,22 +1,21 @@
 package finance.omm.score.core.oracle;
 
+import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
+
 import finance.omm.core.score.interfaces.PriceOracle;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.oracle.exception.PriceOracleException;
 import finance.omm.score.core.oracle.token.BaseToken;
-import finance.omm.score.core.oracle.token.sICXToken;
 import finance.omm.score.core.oracle.token.Token;
+import finance.omm.score.core.oracle.token.sICXToken;
+import java.math.BigInteger;
+import java.util.Map;
 import score.Address;
 import score.Context;
 import score.VarDB;
 import score.annotation.External;
-
-import java.math.BigInteger;
-import java.util.Map;
-
-import static finance.omm.utils.math.MathUtils.ICX;
-import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 public class PriceOracleImpl extends AddressProvider implements PriceOracle {
 
@@ -28,14 +27,9 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
 
     private static final BigInteger ONE_USD = ICX;
 
-    private VarDB<String> ommPool = Context.newVarDB(OMM_POOL,String.class);
+    private final VarDB<String> ommPool = Context.newVarDB(OMM_POOL, String.class);
 
-    private final String[] STABLE_TOKENS = {"USDS","bnUSD"};
-    private static final Token[] TOKENS = new Token[] {
-            new BaseToken("USDS", "USDS"),
-            new sICXToken("sICX","ICX"),
-            new BaseToken("IUSDC","USDC")
-    };
+    private final String[] STABLE_TOKENS = {"USDS", "bnUSD"};
 
 
     public PriceOracleImpl(Address addressProvider) {
@@ -63,69 +57,65 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
 
     @External(readonly = true)
     public BigInteger get_reference_data(String _base, String _quote) {
-        if (_base.equals(OMM)){
+        if (_base.equals(OMM)) {
             return getOmmPrice(_quote);
-        }
-        else {
+        } else {
             return getPrice(_base, _quote);
         }
     }
 
-    private BigInteger getPrice(String _base, String _quote){
+    private BigInteger getPrice(String _base, String _quote) {
         for (String token : STABLE_TOKENS) {
             if (token.equals(_base)) {
                 return ONE_USD;
             }
         }
-        if (_base.equals(BALN)){
-            return call(BigInteger.class, Contracts.DEX,"getBalnPrice");
+        if (_base.equals(BALN)) {
+            return call(BigInteger.class, Contracts.DEX, "getBalnPrice");
         } else {
-            Map<String, BigInteger> price = call(Map.class, Contracts.BAND_ORACLE,
-                    "get_reference_data",_base,_quote);
+            Map<String, BigInteger> price = call(Map.class, Contracts.BAND_ORACLE, "get_reference_data", _base, _quote);
             return price.get("rate");
         }
     }
 
-    private BigInteger getOmmPrice(String _quote){
+    private BigInteger getOmmPrice(String _quote) {
         BigInteger totalPrice = BigInteger.ZERO;
         BigInteger totalOmmSupply = BigInteger.ZERO;
 
-        BigInteger price;
-        BigInteger quoteDecimals;
-        BigInteger baseDecimals;
-        BigInteger averageDecimals;
-        BigInteger adjustedPrice;
-        BigInteger convertedPrice;
-        BigInteger totalSupply;
-
         Address dex = getAddress(Contracts.DEX.getKey());
 
-        for (Token token: TOKENS ) {
+        Token[] tokens = new Token[]{
+                new BaseToken("USDS", "USDS"),
+                new sICXToken("sICX", "ICX", dex),
+                new BaseToken("IUSDC", "USDC")
+        };
+
+        for (Token token : tokens) {
             String name = token.getName();
             String priceOracleKey = token.getPriceOracleKey();
 
             String _name = getOMMPool() + "/" + name;
-            BigInteger poolId = call(BigInteger.class, Contracts.DEX,"lookupPid", _name);
+            BigInteger poolId = call(BigInteger.class, Contracts.DEX, "lookupPid", _name);
             if (poolId == null) {
                 continue;
             }
-            Map<String, Object> poolStats = call(Map.class, Contracts.DEX,"getPoolStats",poolId);
+            Map<String, Object> poolStats = call(Map.class, Contracts.DEX, "getPoolStats", poolId);
 
-            price = (BigInteger) poolStats.get("price");
-            quoteDecimals = (BigInteger) poolStats.get("quote_decimals");
-            baseDecimals = (BigInteger) poolStats.get("base_decimals");
-            averageDecimals = quoteDecimals.multiply(BigInteger.valueOf(18)).divide(baseDecimals);
+            BigInteger price = (BigInteger) poolStats.get("price");
+            BigInteger quoteDecimals = (BigInteger) poolStats.get("quote_decimals");
+            BigInteger baseDecimals = (BigInteger) poolStats.get("base_decimals");
+            BigInteger averageDecimals = quoteDecimals.multiply(BigInteger.valueOf(18)).divide(baseDecimals);
 
-            adjustedPrice = token.convert(dex, price, averageDecimals);
-            convertedPrice = exaMultiply(adjustedPrice, getPrice(priceOracleKey, _quote));
+            BigInteger adjustedPrice = token.convert(price, averageDecimals);
+            BigInteger convertedPrice = exaMultiply(adjustedPrice, getPrice(priceOracleKey, _quote));
 
-            totalSupply = (BigInteger) poolStats.get("base");
+            BigInteger totalSupply = (BigInteger) poolStats.get("base");
 
             totalOmmSupply = totalOmmSupply.add(totalSupply);
             totalPrice = totalPrice.add(totalSupply.multiply(convertedPrice));
         }
 
-        if ((totalOmmSupply.compareTo(BigInteger.ZERO)) == 0){
+        if ((totalOmmSupply.compareTo(BigInteger.ZERO)) == 0) {
             return BigInteger.ONE.negate();
         }
 

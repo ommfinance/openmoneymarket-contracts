@@ -9,15 +9,18 @@ import score.Context;
 
 public class sICXToken extends BaseToken {
 
-    public sICXToken(String name, String priceOracleKey) {
+    private Address dataSource;
+
+    public sICXToken(String name, String priceOracleKey, Address dataSource) {
         super(name, priceOracleKey);
+        this.dataSource = dataSource;
     }
 
     @Override
-    public BigInteger convert(Address dataSource, BigInteger amount, BigInteger decimals) {
+    public BigInteger convert(BigInteger amount, BigInteger decimals) {
         BigInteger exaValue = convertToExa(amount, decimals);
 
-        BigInteger todayRate = Context.call(BigInteger.class, dataSource,
+        BigInteger todayRate = Context.call(BigInteger.class, this.dataSource,
                 "getPriceByName", "sICX/ICX");
         return exaMultiply(exaValue, todayRate);
 

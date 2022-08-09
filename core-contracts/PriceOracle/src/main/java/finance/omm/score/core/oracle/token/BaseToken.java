@@ -3,7 +3,6 @@ package finance.omm.score.core.oracle.token;
 import static finance.omm.utils.math.MathUtils.convertToExa;
 
 import java.math.BigInteger;
-import score.Address;
 
 public class BaseToken implements Token {
     public String name;
@@ -23,7 +22,7 @@ public class BaseToken implements Token {
     }
 
     @Override
-    public BigInteger convert(Address dataSource, BigInteger amount, BigInteger decimals) {
+    public BigInteger convert(BigInteger amount, BigInteger decimals) {
         return convertToExa(amount, decimals);
     }
 }
