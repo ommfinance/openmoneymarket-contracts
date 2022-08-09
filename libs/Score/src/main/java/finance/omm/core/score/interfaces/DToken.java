@@ -15,6 +15,7 @@ public interface DToken extends AddressProvider, IRC2{
     SupplyDetails getPrincipalSupply(Address _user);
     void enableHandleAction();
     void disableHandleAction();
+    boolean isHandleActionEnabled();
     void mintOnBorrow(Address _user, BigInteger _amount, BigInteger _balanceIncrease);
     void  burnOnRepay(Address _user, BigInteger _amount, BigInteger _balanceIncrease);
     void burnOnLiquidation(Address _user, BigInteger _amount, BigInteger _balanceIncrease);
