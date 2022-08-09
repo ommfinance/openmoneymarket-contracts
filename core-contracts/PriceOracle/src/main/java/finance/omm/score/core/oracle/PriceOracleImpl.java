@@ -55,15 +55,6 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
         return ommPool.get();
     }
 
-    @External(readonly = true)
-    public BigInteger get_reference_data(String _base, String _quote) {
-        if (_base.equals(OMM)) {
-            return getOmmPrice(_quote);
-        } else {
-            return getPrice(_base, _quote);
-        }
-    }
-
     private BigInteger getPrice(String _base, String _quote) {
         for (String token : STABLE_TOKENS) {
             if (token.equals(_base)) {
@@ -96,7 +87,7 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
 
             String _name = getOMMPool() + "/" + name;
             BigInteger poolId = call(BigInteger.class, Contracts.DEX, "lookupPid", _name);
-            if (poolId == null) {
+            if (poolId == null || poolId.equals(BigInteger.ZERO)) {
                 continue;
             }
             Map<String, Object> poolStats = call(Map.class, Contracts.DEX, "getPoolStats", poolId);
@@ -115,11 +106,20 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
             totalPrice = totalPrice.add(totalSupply.multiply(convertedPrice));
         }
 
-        if ((totalOmmSupply.compareTo(BigInteger.ZERO)) == 0) {
+        if (totalOmmSupply.equals(BigInteger.ZERO)) {
             return BigInteger.ONE.negate();
         }
 
         return totalPrice.divide(totalOmmSupply);
+    }
+
+    @External(readonly = true)
+    public BigInteger get_reference_data(String _base, String _quote) {
+        if (_base.equals(OMM)) {
+            return getOmmPrice(_quote);
+        } else {
+            return getPrice(_base, _quote);
+        }
     }
 
     private void checkOwner() {
