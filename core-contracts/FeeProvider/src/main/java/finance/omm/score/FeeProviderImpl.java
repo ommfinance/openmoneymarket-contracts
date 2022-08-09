@@ -1,6 +1,8 @@
 package finance.omm.score;
 
+import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
+import static finance.omm.utils.math.MathUtils.isValidPercentage;
 
 import java.math.BigInteger;
 
@@ -41,6 +43,7 @@ public class FeeProviderImpl extends AddressProvider implements FeeProvider {
     @External
     public void setLoanOriginationFeePercentage(BigInteger _percentage) {
         onlyOwner();
+        Context.require(isValidPercentage(_percentage), "_percentage should be between 0 and ICX");
         this._originationFeePercent.set(_percentage);
     }
 

@@ -12,7 +12,6 @@ public class UserDetails {
     public BigInteger _userBalance;
     @Keep
     public BigInteger _totalSupply;
-
     @Keep
     public BigInteger _decimals;
 }

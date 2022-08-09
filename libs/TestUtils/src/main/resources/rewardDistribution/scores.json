@@ -108,7 +108,7 @@
   },
   {
     "name": "bOMM",
-    "contract": "VotingEscrowToken",
+    "contract": "BoostedOMM",
     "params": {
       "name": "Boosted OMM token",
       "symbol": "bOMM"
