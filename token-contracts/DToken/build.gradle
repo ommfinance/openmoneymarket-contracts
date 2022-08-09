@@ -39,7 +39,6 @@ deployJar {
         arg('_name', 'Distribuition token')
         arg('_symbol', 'dToken')
         arg('_decimals', '0x12')
-        arg('_update', '0x0')
     }
 }
 

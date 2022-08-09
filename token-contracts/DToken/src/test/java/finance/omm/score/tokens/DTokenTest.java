@@ -89,7 +89,7 @@ public class DTokenTest extends TestBase {
         liquidationManagerDetails.name = Contracts.LIQUIDATION_MANAGER.getKey();
         liquidationManagerDetails.address = liquidationManagerAccount.getAddress();
 
-        dToken = sm.deploy(owner, DTokenImpl.class, addressProviderAccount.getAddress(),DTokenImpl.TAG, DTOKEN, decimals,false);
+        dToken = sm.deploy(owner, DTokenImpl.class, addressProviderAccount.getAddress(), TAG, DTOKEN, decimals);
     }
 
     @Test
