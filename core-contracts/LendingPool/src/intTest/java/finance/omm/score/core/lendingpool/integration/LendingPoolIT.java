@@ -23,12 +23,14 @@ import score.UserRevertedException;
 import score.annotation.Optional;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
 
 import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.score.core.lendingpool.AbstractLendingPool.TAG;
+import static finance.omm.utils.math.MathUtils.HALF_ICX;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -230,6 +232,26 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
     }
 
+
+    @Test
+    void stake(){
+        assertReverted(new RevertedException(1, "Staking of OMM token no longer supported."),
+                () -> ommClient.lendingPool.stake(BigInteger.valueOf(500).multiply(ICX)));
+
+    }
+
+    @Test
+    void unstake(){
+        BigInteger value = BigInteger.ONE.negate();
+        assertReverted(new RevertedException(1, "Cannot unstake less than or equals to zero value to stake " + value),
+                () -> ommClient.lendingPool.unstake(value.multiply(ICX)));
+
+        BigInteger finalValue = BigInteger.valueOf(100);
+        assertReverted(new RevertedException(1, "Cannot unstake,user dont have enough staked balance amount to unstake "
+                        + value + " staked balance of user: " + ommClient.getAddress() + " is " + BigInteger.ZERO),
+                () -> ommClient.lendingPool.unstake(finalValue.multiply(ICX)));
+
+    }
 
 /*
 java -> fucntion returpns map(string,object)

@@ -6,6 +6,7 @@ import score.annotation.Optional;
 import score.annotation.Payable;
 
 import java.math.BigInteger;
+import java.util.List;
 
 public interface LendingPool {
 
@@ -28,4 +29,8 @@ public interface LendingPool {
     void unstake(BigInteger _value);
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
+
+    List<Address> getDepositWallets(int _index);
+
+    List<Address> getBorrowWallets(int _index);
 }
