@@ -173,30 +173,30 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     void redeem_reserve_inactive(){
         depositICX(ommClient,BigInteger.valueOf(1000));
 
-        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
 
         ommClient.governance.setReserveActiveStatus(icxAddr,false);
 
         assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, redeem unsuccessful"),
-                ()->ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false),
-                null);
+                ()->ommClient.lendingPool.redeem(addressMap.get(Contracts.oICX.getKey()),BigInteger.valueOf(50).
+                        multiply(ICX),false), null);
 
     }
 
     @Test
     void redeem_more_than_liquidity(){
         depositICX(ommClient,BigInteger.valueOf(1000));
-
+        // 1000 ICX deposited in reserve setup
+        //total liquidity available = 2000
         Address icxAddr = addressMap.get(Contracts.oICX.getKey());
 
-        BigInteger amount =BigInteger.valueOf(900).multiply(ICX);
-        BigInteger availableLiquidity = BigInteger.valueOf(500).multiply(ICX);
+        BigInteger amount =BigInteger.valueOf(1000).multiply(ICX);
+        BigInteger availableLiquidity = BigInteger.valueOf(2000).multiply(ICX);
 
-        ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(900).multiply(ICX),false);
+        ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(1001).multiply(ICX),false);
 
-        assertUserRevert(LendingPoolException.unknown("Amount " + amount + " is more than available liquidity " +
-                        availableLiquidity), ()->ommClient.lendingPool.redeem(icxAddr,amount,false),
-                        null);
+        assertReverted(new RevertedException(1,"Amount " + amount + " is more than available liquidity " +
+                        availableLiquidity), ()->ommClient.lendingPool.redeem(icxAddr,amount,false));
     }
 
     @Test
@@ -207,9 +207,27 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
         ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),true);
 
-        assertUserRevert(LendingPoolException.reserveNotActive("Redeem with wait for unstaking failed: Invalid token"),
+        assertUserRevert(LendingPoolException.unknown("Redeem with wait for unstaking failed: Invalid token"),
                 ()->ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false),
                 null);
+    }
+
+    @Test
+    void redeem_success_test(){
+        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+
+        BigInteger amount =BigInteger.valueOf(500).multiply(ICX);
+
+        ommClient.lendingPool.redeem(icxAddr,amount,false);
+
+        assertEquals(ommClient.oICX.balanceOf(ommClient.getAddress()),BigInteger.valueOf(500).multiply(ICX));
+
+        depositICX(testClient,BigInteger.valueOf(1000));
+
+        testClient.lendingPool.redeem(icxAddr,amount,false);
+
+        assertEquals(ommClient.oICX.balanceOf(testClient.getAddress()),BigInteger.valueOf(500).multiply(ICX));
+
     }
 
 
