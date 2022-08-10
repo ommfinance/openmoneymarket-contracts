@@ -144,25 +144,25 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         BigInteger value = BigInteger.TEN.multiply(ICX);
         byte[] finalData = data;
         assertUserRevert(LendingPoolException.unknown(TAG + " No valid method called, data: "+ data.toString()),
-                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData),null);
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, finalData),null);
 
         data = createByteArray("liquidationCall",null, null,reserve,user);
         byte[] finalData1 = data;
         assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: "+reserve+ " User: "+ user),
-                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData1),null);
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, finalData1),null);
 
         data = createByteArray("liquidationCall",null, collateral,null,user);
         byte[] finalData2 = data;
         assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: "+reserve+ " User: "+ user),
-                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData2),null);
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, finalData2),null);
 
         data = createByteArray("liquidationCall",null, collateral,reserve,null);
         byte[] finalData3 = data;
         assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: "+reserve+ " User: "+ user),
-                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData3),null);
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, finalData3),null);
     }
 
     @Test
@@ -286,7 +286,26 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     void deposit_tokenfallback(){
         byte[] data = createByteArray("deposit",null, null,
                 null,null);
-        ommClient.lendingPool.tokenFallback(ommClient.getAddress(), BigInteger.valueOf(1000).multiply(ICX), data);
+
+        Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,false);
+
+        assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, deposit unsuccessful"),
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), BigInteger.valueOf(1000).multiply(ICX),
+                        data),null);
+
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,true);
+        ommClient.governance.setReserveFreezeStatus(iusdcAddr,true);
+
+        assertUserRevert(LendingPoolException.unknown("Reserve is frozen, deposit unsuccessful"),
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), BigInteger.valueOf(1000).multiply(ICX),
+                        data),null);
+
+        ommClient.governance.setReserveFreezeStatus(iusdcAddr,false);
+
+        ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), BigInteger.valueOf(1000).multiply(BigInteger.valueOf(1000_000)), data);
+
+        assertEquals(ommClient.oUSDC.balanceOf(ommClient.getAddress()),BigInteger.valueOf(2000).multiply(BigInteger.valueOf(1000_000)));
     }
 
     @Test
