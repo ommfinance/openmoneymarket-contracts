@@ -16,11 +16,11 @@ import score.Context;
 import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
-import scorex.util.HashMap;
 
 public abstract class AbstractStakedLP extends AddressProvider implements StakedLP,
         Authorization<StakedLPException> {
     public static final String TAG = "Staked Lp";
+    protected static final String HANDLE_ACTION_ENABLED = "handle_action_enabled";
     public static final BigInteger ZERO = BigInteger.ZERO;
     public static final BigInteger ONE = BigInteger.ONE;
     public final ArrayDB<Integer> supportedPools = Context.newArrayDB("supportedPools", Integer.class);
@@ -29,6 +29,7 @@ public abstract class AbstractStakedLP extends AddressProvider implements Staked
     public final DictDB<Integer,BigInteger> totalStaked = Context.newDictDB("totalStaked", BigInteger.class);
     public final DictDB<Integer, Address> addressMap = Context.newDictDB("addressMap", Address.class);
     public final VarDB<BigInteger> minimumStake = Context.newVarDB("minimumStake", BigInteger.class);
+    protected final VarDB<Boolean> _handleActionEnabled = Context.newVarDB(HANDLE_ACTION_ENABLED, Boolean.class);
 
     public static final Integer STAKED = 1;
 

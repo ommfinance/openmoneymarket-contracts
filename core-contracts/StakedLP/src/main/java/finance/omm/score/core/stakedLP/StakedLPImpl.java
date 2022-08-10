@@ -7,9 +7,7 @@ import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
 import finance.omm.libs.structs.UserDetails;
 import finance.omm.score.core.stakedLP.exception.StakedLPException;
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
+import finance.omm.utils.exceptions.OMMException;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -17,10 +15,19 @@ import score.annotation.External;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+
 public class StakedLPImpl extends AbstractStakedLP {
 
     public StakedLPImpl(Address addressProvider) {
         super(addressProvider, false);
+
+        if (_handleActionEnabled.get() == null) {
+            _handleActionEnabled.set(true);
+        }
+
     }
 
     @External(readonly = true)
@@ -231,4 +238,22 @@ public class StakedLPImpl extends AbstractStakedLP {
         supplyDetails.principalUserBalance = balance.get("userStakedBalance");
         return supplyDetails;
     }
+
+    @External
+    public void enableHandleAction() {
+        onlyOrElseThrow(Contracts.GOVERNANCE, OMMException.unknown("Only Governance contract can call this method"));
+        _handleActionEnabled.set(true);
+    }
+
+    @External
+    public void disableHandleAction() {
+        onlyOrElseThrow(Contracts.GOVERNANCE, OMMException.unknown("Only Governance contract can call this method"));
+        _handleActionEnabled.set(false);
+    }
+
+    @External(readonly = true)
+    public boolean isHandleActionEnabled() {
+        return _handleActionEnabled.get();
+    }
+
 }
