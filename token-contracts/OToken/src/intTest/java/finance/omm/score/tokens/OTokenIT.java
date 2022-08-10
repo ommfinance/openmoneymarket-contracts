@@ -87,31 +87,31 @@ public class OTokenIT implements ScoreIntegrationTest {
         ommClient.dummyPriceOracle.set_reference_data("ICX", ICX);
 
         mint_and_deposit(ommClient, 1000);
-        BigInteger previous = ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress());
+        BigInteger previous = ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress());
 
         _deposit(testClient, 5000);
         System.out.println(ommClient.oICX.getUserLiquidityCumulativeIndex(testClient.getAddress()));
 
-        Thread.sleep(10000L);
+        Thread.sleep(1000L);
 
         score.Address icxAddr = addressMap.get(Contracts.IUSDC.getKey());
         testClient.lendingPool.borrow(icxAddr, BigInteger.valueOf(500));
-        System.out.println(ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
+        System.out.println(ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
 
-        Thread.sleep(10000L);
+        Thread.sleep(1000L);
 
         testClient.lendingPool.borrow(icxAddr, BigInteger.valueOf(300));
-        System.out.println(ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
+        System.out.println(ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
 
-        Thread.sleep(10000L);
+        Thread.sleep(1000L);
 
         testClient.lendingPool.borrow(icxAddr, BigInteger.valueOf(50));
-        System.out.println(ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
+        System.out.println(ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
 
-        Thread.sleep(10000L);
+        Thread.sleep(1000L);
 
         mint_and_deposit(ommClient, 10);
-        assertTrue(ommClient.oUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()).compareTo(previous) > 0);
+        assertTrue(ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()).compareTo(previous) > 0);
     }
 
     @Test
@@ -163,10 +163,10 @@ public class OTokenIT implements ScoreIntegrationTest {
 
     @Test
     void deposit_iUSDC() {
-        assertEquals(BigInteger.ZERO, ommClient.oUSDC.balanceOf(ommClient.getAddress()));
-        assertEquals(BigInteger.ZERO, ommClient.oUSDC.principalTotalSupply());
-        assertEquals(BigInteger.ZERO, ommClient.oUSDC.principalBalanceOf(ommClient.getAddress()));
-        assertEquals(BigInteger.ZERO, ommClient.oUSDC.totalSupply());
+        assertEquals(BigInteger.ZERO, ommClient.oIUSDC.balanceOf(ommClient.getAddress()));
+        assertEquals(BigInteger.ZERO, ommClient.oIUSDC.principalTotalSupply());
+        assertEquals(BigInteger.ZERO, ommClient.oIUSDC.principalBalanceOf(ommClient.getAddress()));
+        assertEquals(BigInteger.ZERO, ommClient.oIUSDC.totalSupply());
 
         //omm client deposit 1000 iUSDC
         mint_and_deposit(ommClient, 1000);
@@ -175,13 +175,13 @@ public class OTokenIT implements ScoreIntegrationTest {
         mint_and_deposit(testClient, 1000);
 
         BigInteger balance = BigInteger.valueOf(1000).multiply(BigInteger.valueOf(100_0000));
-        assertEquals(balance, ommClient.oUSDC.principalBalanceOf(ommClient.getAddress()));
-        assertEquals(balance, ommClient.oUSDC.balanceOf(ommClient.getAddress()));
-        assertEquals(balance, ommClient.oUSDC.principalBalanceOf(testClient.getAddress()));
-        assertEquals(balance, ommClient.oUSDC.balanceOf(testClient.getAddress()));
+        assertEquals(balance, ommClient.oIUSDC.principalBalanceOf(ommClient.getAddress()));
+        assertEquals(balance, ommClient.oIUSDC.balanceOf(ommClient.getAddress()));
+        assertEquals(balance, ommClient.oIUSDC.principalBalanceOf(testClient.getAddress()));
+        assertEquals(balance, ommClient.oIUSDC.balanceOf(testClient.getAddress()));
         BigInteger expected = BigInteger.valueOf(2000).multiply(BigInteger.valueOf(100_0000));
-        assertEquals(expected, ommClient.oUSDC.principalTotalSupply());
-        assertEquals(expected, ommClient.oUSDC.totalSupply());
+        assertEquals(expected, ommClient.oIUSDC.principalTotalSupply());
+        assertEquals(expected, ommClient.oIUSDC.totalSupply());
     }
 
     @Test
