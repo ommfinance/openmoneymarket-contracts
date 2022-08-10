@@ -263,16 +263,20 @@ another contract
 
     private void reserveSetup(){
         depositICX(ommClient,BigInteger.valueOf(1000));
-        depositIUSDC(ommClient,BigInteger.valueOf(1000));
+        depositIUSDC(ommClient,BigInteger.valueOf(1000000000));
     }
 
     @Test
     void borrow_not_enough_liquidity(){ // not working
-        //        depositIUSDC(ommClient,BigInteger.valueOf(10000));
-        BigInteger borrowAmt = BigInteger.valueOf(100);
+
+        ((LendingPoolScoreClient)testClient.lendingPool).
+                deposit(BigInteger.valueOf(100000).multiply(ICX),BigInteger.valueOf(100000).multiply(ICX));
+
+        BigInteger borrowAmt = BigInteger.valueOf(9000000);
+
         Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
 
-        testClient.lendingPool.deposit(BigInteger.valueOf(200));
+//        testClient.lendingPool.deposit(BigInteger.valueOf(200));
 
 //        assertUserRevert(LendingPoolException.unknown("Borrow error:Not enough available liquidity in the reserve"),
 //                () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
@@ -283,13 +287,28 @@ another contract
 
 
     @Test
-    void borrow_more_than_collateral(){ // not working
+    void borrow_more_than_collateral(){
         BigInteger borrowAmt = BigInteger.valueOf(100);
         Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
 
-        testClient.lendingPool.deposit(BigInteger.valueOf(200));
+        assertUserRevert(LendingPoolException.unknown("Borrow error:The user does not have any collateral"),
+                () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
 
-        ommClient.lendingPool.borrow(iusdc_reserve,borrowAmt);
+
+    }
+
+    @Test
+    void borrow_insufficient_collateral(){
+
+        ((LendingPoolScoreClient)testClient.lendingPool).
+                deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
+
+        BigInteger borrowAmt = BigInteger.valueOf(1000000000000L);
+        Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
+
+
+        assertUserRevert(LendingPoolException.unknown("Borrow error: Insufficient collateral to cover new borrow"),
+                () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
 
     }
 
