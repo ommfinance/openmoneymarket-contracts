@@ -105,7 +105,6 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         ommClient.governance.setReserveActiveStatus(iusdc_reserve,false);
         assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, borrow unsuccessful"),
                 () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
-
     }
 
     @Test
@@ -252,6 +251,37 @@ public class LendingPoolIT implements ScoreIntegrationTest{
                 () -> ommClient.lendingPool.unstake(finalValue.multiply(ICX)));
 
     }
+
+    @Test
+    void checkDepositWallets(){
+        depositICX(testClient,BigInteger.valueOf(1000));
+
+        List<Address> list= ommClient.lendingPool.getDepositWallets(1);
+
+        assertEquals(2,list.size());
+        assertEquals(ommClient.getAddress(),list.get(0));
+        assertEquals(testClient.getAddress(),list.get(1));
+    }
+
+    @Test
+    void checkBorrowWallets(){
+        depositICX(testClient,BigInteger.valueOf(1000));
+
+        List<Address> list= ommClient.lendingPool.getBorrowWallets(1);
+        assertEquals(0,list.size());
+
+        Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
+        ommClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100));
+        testClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100));
+
+        assertEquals(2,list.size());
+        assertEquals(ommClient.getAddress(),list.get(0));
+        assertEquals(testClient.getAddress(),list.get(1));
+    }
+
+
+
+
 
 /*
 java -> fucntion returpns map(string,object)
