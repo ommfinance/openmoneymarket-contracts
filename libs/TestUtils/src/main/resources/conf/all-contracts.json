@@ -97,7 +97,7 @@
     "params": {
     },
     "addressParams": {
-      "_addressProvider": "addressProvider"
+      "addressProvider": "addressProvider"
     },
     "order": 1.0
   },
@@ -115,9 +115,8 @@
     "name": "workerToken",
     "contract": "WorkerToken",
     "params": {
-      "_initialSupply": "0x56bc75e2d63100000",
-      "_decimals": 18,
-      "_update": "0x0"
+      "_initialSupply": "100",
+      "_decimals": 18
     },
     "addressParams": {
       "_addressProvider": "addressProvider"
@@ -161,8 +160,7 @@
     "params": {
       "_name": "SICX Debt Token",
       "_symbol": "dICX",
-      "_decimals": 18,
-      "_update": 0
+      "_decimals": 18
     },
     "addressParams": {
       "_addressProvider": "addressProvider"
@@ -211,8 +209,7 @@
     "params": {
       "_name": "iUSDC Debt Token",
       "_symbol": "dUSDC",
-      "_decimals": 6,
-      "_update": 0
+      "_decimals": 6
     },
     "addressParams": {
       "_addressProvider": "addressProvider"

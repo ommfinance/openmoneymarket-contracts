@@ -1,33 +1,30 @@
 package finance.omm.score.tokens;
 
-import com.iconloop.score.test.TestBase;
-
-import finance.omm.libs.address.Contracts;
-import finance.omm.libs.structs.AddressDetails;
-import finance.omm.libs.structs.SupplyDetails;
-import finance.omm.libs.structs.TotalStaked;
-import score.Address;
-import score.Context;
-
-import com.iconloop.score.test.Account;
-import com.iconloop.score.test.Score;
-import com.iconloop.score.test.ServiceManager;
-
+import static finance.omm.score.tokens.DTokenImpl.TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.iconloop.score.test.Account;
+import com.iconloop.score.test.Score;
+import com.iconloop.score.test.ServiceManager;
+import com.iconloop.score.test.TestBase;
+import finance.omm.libs.address.Contracts;
+import finance.omm.libs.structs.AddressDetails;
+import finance.omm.libs.structs.SupplyDetails;
+import finance.omm.libs.structs.TotalStaked;
 import java.math.BigInteger;
 import java.util.Map;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import score.Address;
+import score.Context;
 
-public class DTokenTest  extends TestBase {
+public class DTokenTest extends TestBase {
     private static ServiceManager sm = getServiceManager();
     private static Account owner = sm.createAccount();
 
@@ -59,6 +56,7 @@ public class DTokenTest  extends TestBase {
     private Score dToken;
 
     private static final String DTOKEN = "dToken";
+
     @BeforeAll
     public static void init() {
         owner.addBalance(DTOKEN, totalSupply);
@@ -73,7 +71,7 @@ public class DTokenTest  extends TestBase {
         lendingPoolCoreDetails = new AddressDetails();
         lendingPoolCoreDetails.name = Contracts.LENDING_POOL_CORE.getKey();
         lendingPoolCoreDetails.address = lendingPoolCoreAccount.getAddress();
-        
+
         lendingPoolDataProviderDetails = new AddressDetails();
         lendingPoolDataProviderDetails.name = Contracts.LENDING_POOL_DATA_PROVIDER.getKey();
         lendingPoolDataProviderDetails.address = lendingPoolDataProviderAccount.getAddress();
@@ -90,7 +88,7 @@ public class DTokenTest  extends TestBase {
         liquidationManagerDetails.name = Contracts.LIQUIDATION_MANAGER.getKey();
         liquidationManagerDetails.address = liquidationManagerAccount.getAddress();
 
-        dToken = sm.deploy(owner, DTokenImpl.class, addressProviderAccount.getAddress(),DTokenImpl.TAG, DTOKEN, decimals,false);
+        dToken = sm.deploy(owner, DTokenImpl.class, addressProviderAccount.getAddress(), TAG, DTOKEN, decimals);
     }
 
     @Test
@@ -122,10 +120,11 @@ public class DTokenTest  extends TestBase {
     void ShouldGetZeroTotalSupply() {
         setAddressDetails();
 
-        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+        try (MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)) {
             theMock
-            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAccount.getAddress(),"getReserveLiquidityCumulativeIndex", reserveAddress))
-            .thenReturn(BigInteger.ZERO);
+                    .when(() -> Context.call(BigInteger.class, lendingPoolCoreAccount.getAddress(),
+                            "getReserveLiquidityCumulativeIndex", reserveAddress))
+                    .thenReturn(BigInteger.ZERO);
 
             BigInteger totalSupply = (BigInteger) dToken.call("totalSupply");
             assertEquals(BigInteger.ZERO, totalSupply);
@@ -139,17 +138,17 @@ public class DTokenTest  extends TestBase {
         SupplyDetails principalSupply = (SupplyDetails) dToken.call("getPrincipalSupply", userAccount.getAddress());
         assertEquals(BigInteger.ZERO, principalSupply.principalUserBalance);
     }
- 
+
     @Test
     void principalBalanceOfTest() {
-        BigInteger balances = (BigInteger)dToken.call("principalBalanceOf",  lendingPoolAccount.getAddress());
+        BigInteger balances = (BigInteger) dToken.call("principalBalanceOf", lendingPoolAccount.getAddress());
         assertNotNull(balances);
-        assertEquals(BigInteger.ZERO,balances);
+        assertEquals(BigInteger.ZERO, balances);
     }
 
     @Test
     void getUserBorrowCumulativeIndexTest() {
-        BigInteger userBorrowIndex = (BigInteger)dToken.call("getUserBorrowCumulativeIndex", lendingPoolCoreAccount.getAddress());
+        BigInteger userBorrowIndex = (BigInteger) dToken.call("getUserBorrowCumulativeIndex", lendingPoolCoreAccount.getAddress());
         assertNotNull(userBorrowIndex);
         assertEquals(BigInteger.ZERO, userBorrowIndex);
     }
@@ -157,20 +156,20 @@ public class DTokenTest  extends TestBase {
     @Test
     void nameTest() {
         String name = (String) dToken.call("name");
-        assertNotNull(name); 
-        assertEquals(DTokenImpl.TAG, name);
+        assertNotNull(name);
+        assertEquals(TAG, name);
     }
 
     @Test
     void symbolTest() {
-        String symbol = (String)dToken.call("symbol");
+        String symbol = (String) dToken.call("symbol");
         assertNotNull(symbol);
         assertEquals(DTOKEN, symbol);
     }
 
     @Test
     void decimalsTest() {
-        BigInteger decimals = (BigInteger)dToken.call("decimals");
+        BigInteger decimals = (BigInteger) dToken.call("decimals");
         assertNotNull(decimals);
         assertEquals(BigInteger.TEN, decimals);
     }
@@ -182,17 +181,17 @@ public class DTokenTest  extends TestBase {
         BigInteger balanceIncrease = BigInteger.ZERO;
         setAddressDetails();
 
-        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+        try (MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)) {
 
             theMock
-            .when(() -> Context.getCaller() )
-            .thenReturn(lendingPoolCoreAccount.getAddress());
+                    .when(() -> Context.getCaller())
+                    .thenReturn(lendingPoolCoreAccount.getAddress());
 
             theMock
-            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
-                    "getReserveBorrowCumulativeIndex",
-                    reserveAddress))
-            .thenReturn(BigInteger.ZERO);
+                    .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress,
+                            "getReserveBorrowCumulativeIndex",
+                            reserveAddress))
+                    .thenReturn(BigInteger.ZERO);
 
             dToken.invoke(lendingPoolCoreAccount, "mintOnBorrow",
                     userAccount.getAddress(),
@@ -216,17 +215,17 @@ public class DTokenTest  extends TestBase {
         BigInteger balanceIncrease = BigInteger.ZERO;
         setAddressDetails();
 
-        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+        try (MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)) {
 
             theMock
-            .when(() -> Context.getCaller() )
-            .thenReturn(lendingPoolCoreAccount.getAddress());
+                    .when(() -> Context.getCaller())
+                    .thenReturn(lendingPoolCoreAccount.getAddress());
 
             theMock
-            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
-                    "getReserveBorrowCumulativeIndex",
-                    reserveAddress))
-            .thenReturn(BigInteger.ZERO);
+                    .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress,
+                            "getReserveBorrowCumulativeIndex",
+                            reserveAddress))
+                    .thenReturn(BigInteger.ZERO);
 
             dToken.invoke(lendingPoolCoreAccount, "mintOnBorrow",
                     userAccount.getAddress(),
@@ -263,17 +262,17 @@ public class DTokenTest  extends TestBase {
         BigInteger balanceIncrease = BigInteger.ZERO;
         setAddressDetails();
 
-        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+        try (MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)) {
 
             theMock
-            .when(() -> Context.getCaller() )
-            .thenReturn(lendingPoolCoreAccount.getAddress());
+                    .when(() -> Context.getCaller())
+                    .thenReturn(lendingPoolCoreAccount.getAddress());
 
             theMock
-            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
-                    "getReserveBorrowCumulativeIndex",
-                    reserveAddress))
-            .thenReturn(BigInteger.ZERO);
+                    .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress,
+                            "getReserveBorrowCumulativeIndex",
+                            reserveAddress))
+                    .thenReturn(BigInteger.ZERO);
 
             dToken.invoke(lendingPoolCoreAccount, "mintOnBorrow",
                     userAccount.getAddress(),
@@ -310,17 +309,17 @@ public class DTokenTest  extends TestBase {
         BigInteger balanceIncrease = BigInteger.valueOf(25000000000l);
         setAddressDetails();
 
-        try(MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)){
+        try (MockedStatic<Context> theMock = Mockito.mockStatic(Context.class)) {
 
             theMock
-            .when(() -> Context.getCaller() )
-            .thenReturn(lendingPoolCoreAccount.getAddress());
+                    .when(() -> Context.getCaller())
+                    .thenReturn(lendingPoolCoreAccount.getAddress());
 
             theMock
-            .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress, 
-                    "getReserveBorrowCumulativeIndex",
-                    reserveAddress))
-            .thenReturn(BigInteger.ONE);
+                    .when(() -> Context.call(BigInteger.class, lendingPoolCoreAddress,
+                            "getReserveBorrowCumulativeIndex",
+                            reserveAddress))
+                    .thenReturn(BigInteger.ONE);
 
             dToken.invoke(lendingPoolCoreAccount, "mintOnBorrow",
                     userAccount.getAddress(),
@@ -328,11 +327,11 @@ public class DTokenTest  extends TestBase {
                     balanceIncrease);
 
             theMock
-            .when(() -> Context.call(BigInteger.class,
-                    lendingPoolCoreAccount.getAddress(),
-                    "getNormalizedDebt",
-                    reserveAddress) )
-            .thenReturn(BigInteger.ONE);
+                    .when(() -> Context.call(BigInteger.class,
+                            lendingPoolCoreAccount.getAddress(),
+                            "getNormalizedDebt",
+                            reserveAddress))
+                    .thenReturn(BigInteger.ONE);
 
             BigInteger userBalance = (BigInteger) dToken.call("balanceOf", userAccount.getAddress());
             assertNotNull(userBalance);
@@ -342,9 +341,9 @@ public class DTokenTest  extends TestBase {
             assertNotNull(totalSupply);
             assertEquals(amountToBorrow.add(balanceIncrease), totalSupply);
 
-            TotalStaked ts = (TotalStaked)dToken.call("getTotalStaked");
+            TotalStaked ts = (TotalStaked) dToken.call("getTotalStaked");
             assertNotNull(ts);
-            assertEquals(BigInteger.valueOf(80000000000l), ts.totalStaked);
+            assertEquals(BigInteger.valueOf(75000000000L), ts.totalStaked);
             assertEquals(decimals, ts.decimals);
         }
     }
@@ -355,8 +354,8 @@ public class DTokenTest  extends TestBase {
         Account userAccountTo = sm.createAccount();
         try {
             dToken.invoke(userAccount, "transfer", userAccountTo.getAddress(), BigInteger.TEN, "tacos".getBytes());
-        }catch (AssertionError e) {
-            assertEquals("Reverted(0): DTokenTransfer not allowed in debt token", e.getMessage());
+        } catch (AssertionError e) {
+            assertEquals("Reverted(0): Omm dToken : Transfer not allowed in debt token", e.getMessage());
         }
     }
 }
