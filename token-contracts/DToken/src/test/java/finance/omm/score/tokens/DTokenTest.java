@@ -1,5 +1,11 @@
 package finance.omm.score.tokens;
 
+import static finance.omm.score.tokens.DTokenImpl.TAG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
@@ -8,6 +14,8 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.libs.structs.SupplyDetails;
 import finance.omm.libs.structs.TotalStaked;
+import java.math.BigInteger;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,15 +23,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import score.Address;
 import score.Context;
-
-import java.math.BigInteger;
-import java.util.Map;
-
-import static finance.omm.score.tokens.DTokenImpl.TAG;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DTokenTest extends TestBase {
     private static ServiceManager sm = getServiceManager();
@@ -344,7 +343,7 @@ public class DTokenTest extends TestBase {
 
             TotalStaked ts = (TotalStaked) dToken.call("getTotalStaked");
             assertNotNull(ts);
-            assertEquals(BigInteger.valueOf(80000000000l), ts.totalStaked);
+            assertEquals(BigInteger.valueOf(75000000000L), ts.totalStaked);
             assertEquals(decimals, ts.decimals);
         }
     }
