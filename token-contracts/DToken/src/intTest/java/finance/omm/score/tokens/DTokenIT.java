@@ -64,6 +64,7 @@ public class DTokenIT implements ScoreIntegrationTest {
     void borrow() throws InterruptedException {
 
         depositICX(testClient, BigInteger.valueOf(100));
+        Thread.sleep(1000);
         Address icxAddr = addressMap.get(Contracts.sICX.getKey());
         Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
 
@@ -72,18 +73,20 @@ public class DTokenIT implements ScoreIntegrationTest {
 
         // omm client borrows 5 ICX
         ommClient.lendingPool.borrow(icxAddr, ommBorrowICX);
+        Thread.sleep(1000);
 
         BigInteger userBorrowIndexICX = ommClient.dICX.getUserBorrowCumulativeIndex(ommClient.getAddress());
 
         assertEquals(ommBorrowICX, ommClient.dICX.principalTotalSupply());
-        assertEquals(ommBorrowICX, ommClient.dICX.balanceOf(ommClient.getAddress()));
+        assertTrue(ommBorrowICX.compareTo(ommClient.dICX.balanceOf(ommClient.getAddress())) < 0);
         assertEquals(ommBorrowICX, ommClient.dICX.principalBalanceOf(ommClient.getAddress()));
-        assertEquals(ommBorrowICX, ommClient.dICX.totalSupply());
+        assertTrue(ommBorrowICX.compareTo(ommClient.dICX.totalSupply()) < 0);
         assertEquals(ICX, userBorrowIndexICX);
 
 
         // test client borrows 10 IUSDC
         testClient.lendingPool.borrow(IUSDCAddr, amountToBorrowIUSDC);
+        Thread.sleep(1000);
         BigInteger testBorrowIndexIUSDC = ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress());
 
         assertEquals(amountToBorrowIUSDC, ommClient.dIUSDC.principalTotalSupply());
@@ -96,11 +99,12 @@ public class DTokenIT implements ScoreIntegrationTest {
         BigInteger testBorrowICX = BigInteger.valueOf(5).multiply(ICX);
 
         testClient.lendingPool.borrow(icxAddr, testBorrowICX);
+        Thread.sleep(1000);
 
         assertEquals(testBorrowICX.add(ommBorrowICX), ommClient.dICX.principalTotalSupply());
-        assertEquals(testBorrowICX, ommClient.dICX.balanceOf(testClient.getAddress()));
+        assertTrue(testBorrowICX.compareTo(ommClient.dICX.balanceOf(testClient.getAddress())) < 0);
         assertEquals(testBorrowICX, ommClient.dICX.principalBalanceOf(testClient.getAddress()));
-        assertEquals(testBorrowICX.add(ommBorrowICX), ommClient.dICX.totalSupply());
+        assertTrue(testBorrowICX.add(ommBorrowICX).compareTo(ommClient.dICX.totalSupply()) < 0);
 
 
         BigInteger testIndexICX = ommClient.dICX.getUserBorrowCumulativeIndex(testClient.getAddress());
@@ -126,13 +130,16 @@ public class DTokenIT implements ScoreIntegrationTest {
 //
         // test client borrows 12 iusdc
         amountToBorrowIUSDC = BigInteger.valueOf(12).multiply(BigInteger.valueOf(100_000));
+        Thread.sleep(10000);
         testClient.lendingPool.borrow(IUSDCAddr, amountToBorrowIUSDC);
+        Thread.sleep(1000);
+        testClient.lendingPool.borrow(IUSDCAddr, amountToBorrowIUSDC);
+        Thread.sleep(1000);
 
-        BigInteger totalSupply = amountToBorrowIUSDC.add(BigInteger.TEN.multiply(BigInteger.valueOf(100_000)));
+        BigInteger totalSupply = amountToBorrowIUSDC.multiply(BigInteger.TWO).add(BigInteger.TEN.multiply(BigInteger.valueOf(100_000)));
 
         BigInteger userBorrowIndex = ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress());
 
-        Thread.sleep(10000);
 
         assertTrue(testBorrowIndexIUSDC.longValue() < userBorrowIndex.longValue());
         assertEquals(totalSupply, ommClient.dIUSDC.principalTotalSupply());
