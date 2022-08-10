@@ -97,8 +97,7 @@
     "params": {
       "_name": "SICX Interest Token",
       "_symbol": "oICX",
-      "_decimals": 18,
-      "_update": 0
+      "_decimals": 18
     },
     "addressParams": {
       "_addressProvider": "addressProvider"

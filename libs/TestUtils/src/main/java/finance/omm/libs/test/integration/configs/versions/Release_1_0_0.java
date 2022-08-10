@@ -47,7 +47,6 @@ public class Release_1_0_0 extends Release {
 
         ommClient.dummyPriceOracle.set_reference_data("USDC",ICX);
 
-
       /*
         initialized reserves
          */
