@@ -282,6 +282,56 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
 
 
+    @Test
+    void deposit_tokenfallback(){
+        byte[] data = createByteArray("deposit",null, null,
+                null,null);
+        ommClient.lendingPool.tokenFallback(ommClient.getAddress(), BigInteger.valueOf(1000).multiply(ICX), data);
+    }
+
+    @Test
+    void repay_tokenfallback(){
+        byte[] data = createByteArray("deposit",null, null,
+                null,null);
+        ommClient.lendingPool.tokenFallback(ommClient.getAddress(), BigInteger.valueOf(1000).multiply(ICX), data);
+    }
+
+    @Test
+    void liquidation_tokenfallback(){
+        Address collateral = addressMap.get(Contracts.sICX.getKey());
+        Address reserve = addressMap.get(Contracts.IUSDC.getKey());
+        Address user = testClient.getAddress();
+
+        ommClient.dummyPriceOracle.set_reference_data("ICX", ICX);
+
+        //100 deposit icx 40 borrow usdc
+        depositICX(testClient, BigInteger.valueOf(1000));
+
+        depositIUSDC(ommClient, BigInteger.valueOf(100));
+
+        Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
+        BigInteger amountToBorrowIUSDC = BigInteger.valueOf(400).multiply(BigInteger.valueOf(1000_000));
+
+        // test client borrows 40 IUSDC
+        testClient.lendingPool.borrow(IUSDCAddr, amountToBorrowIUSDC);
+
+        //0.5 icx
+        ommClient.dummyPriceOracle.set_reference_data("ICX", HALF_ICX);
+
+        byte[] data = createByteArray("liquidationCall", null, collateral, reserve, user);
+        BigInteger value = BigInteger.valueOf(50).multiply(BigInteger.valueOf(1000_000));
+        ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, data);
+
+
+//        BigInteger balanceAfterLiq = ommClient.oICX.principalBalanceOf(testClient.getAddress());
+//        BigInteger feeProvider = ommClient.sICX.balanceOf(addressMap.get("feeProvider"));
+//        BigInteger repayEq = BigInteger.TEN.multiply(ICX);
+//        BigInteger tenPercent = BigInteger.ONE.multiply(ICX);
+//
+//        assertEquals(prevBalance.subtract(feeProvider.add(repayEq).add(tenPercent)),balanceAfterLiq);
+//        //10+10% of 10 oICX + fee provider
+    }
+
 
 /*
 java -> fucntion returpns map(string,object)
