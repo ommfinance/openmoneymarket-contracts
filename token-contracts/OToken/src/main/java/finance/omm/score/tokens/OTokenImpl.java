@@ -323,17 +323,13 @@ public class OTokenImpl extends AddressProvider implements OToken {
             index = ZERO;
         }
 
+
         this.handleAction(_user, cumulated.get("previousPrincipalBalance"), beforeTotalSupply);
 
         this.Redeem(_user, amountToRedeem, balanceIncrease, index);
-        Address reserve = this._addresses.get(Contracts.RESERVE.getKey());
-        String reserveAddress = null;
-        if(reserve != null) {
-            reserveAddress = reserve.toString();
-        }
         return Map.of(
-            "reserve", reserveAddress,
-            "amountToRedeem", amountToRedeem
+                "reserve", getAddress(Contracts.RESERVE.getKey()),
+                "amountToRedeem", amountToRedeem
         );
     }
 

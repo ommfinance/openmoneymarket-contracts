@@ -23,12 +23,14 @@ import score.UserRevertedException;
 import score.annotation.Optional;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
 
 import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.score.core.lendingpool.AbstractLendingPool.TAG;
+import static finance.omm.utils.math.MathUtils.HALF_ICX;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -103,7 +105,6 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         ommClient.governance.setReserveActiveStatus(iusdc_reserve,false);
         assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, borrow unsuccessful"),
                 () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
-
     }
 
     @Test
@@ -143,25 +144,25 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         BigInteger value = BigInteger.TEN.multiply(ICX);
         byte[] finalData = data;
         assertUserRevert(LendingPoolException.unknown(TAG + " No valid method called, data: "+ data.toString()),
-                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData),null);
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, finalData),null);
 
         data = createByteArray("liquidationCall",null, null,reserve,user);
         byte[] finalData1 = data;
         assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: "+reserve+ " User: "+ user),
-                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData1),null);
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, finalData1),null);
 
         data = createByteArray("liquidationCall",null, collateral,null,user);
         byte[] finalData2 = data;
         assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: "+reserve+ " User: "+ user),
-                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData2),null);
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, finalData2),null);
 
         data = createByteArray("liquidationCall",null, collateral,reserve,null);
         byte[] finalData3 = data;
         assertUserRevert(LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: "+reserve+ " User: "+ user),
-                ()->ommClient.lendingPool.tokenFallback(ommClient.getAddress(), value, finalData3),null);
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, finalData3),null);
     }
 
     @Test
@@ -173,57 +174,219 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     void redeem_reserve_inactive(){
         depositICX(ommClient,BigInteger.valueOf(1000));
 
-        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
 
         ommClient.governance.setReserveActiveStatus(icxAddr,false);
 
         assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, redeem unsuccessful"),
-                ()->ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false),
-                null);
+                ()->ommClient.lendingPool.redeem(addressMap.get(Contracts.oICX.getKey()),BigInteger.valueOf(50).
+                        multiply(ICX),false), null);
 
     }
 
     @Test
     void redeem_more_than_liquidity(){
         depositICX(ommClient,BigInteger.valueOf(1000));
-
+        // 1000 ICX deposited in reserve setup
+        //total liquidity available = 2000
         Address icxAddr = addressMap.get(Contracts.oICX.getKey());
 
-        ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(900).multiply(ICX),false);
+        BigInteger amount =BigInteger.valueOf(1000).multiply(ICX);
+        BigInteger availableLiquidity = BigInteger.valueOf(2000).multiply(ICX);
+
+        ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(1001).multiply(ICX),false);
+
+        assertReverted(new RevertedException(1,"Amount " + amount + " is more than available liquidity " +
+                        availableLiquidity), ()->ommClient.lendingPool.redeem(icxAddr,amount,false));
     }
 
     @Test
     void redeem_waitForUnstaking(){
+        //couldn't figure out testcase
         depositICX(ommClient,BigInteger.valueOf(1000));
 
         Address icxAddr = addressMap.get(Contracts.oICX.getKey());
 
         ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),true);
+
+        assertUserRevert(LendingPoolException.unknown("Redeem with wait for unstaking failed: Invalid token"),
+                ()->ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false),
+                null);
+    }
+
+    @Test
+    void redeem_success_test(){
+        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+
+        BigInteger amount =BigInteger.valueOf(500).multiply(ICX);
+
+        ommClient.lendingPool.redeem(icxAddr,amount,false);
+
+        assertEquals(ommClient.oICX.balanceOf(ommClient.getAddress()),BigInteger.valueOf(500).multiply(ICX));
+
+        depositICX(testClient,BigInteger.valueOf(1000));
+
+        testClient.lendingPool.redeem(icxAddr,amount,false);
+
+        assertEquals(ommClient.oICX.balanceOf(testClient.getAddress()),BigInteger.valueOf(500).multiply(ICX));
+
     }
 
 
-/*
-java -> fucntion returpns map(string,object)
-{
-'reserve': addr,
-'sth': str,
-'sth: bigint
-}
+    @Test
+    void stake(){
+        assertReverted(new RevertedException(1, "Staking of OMM token no longer supported."),
+                () -> ommClient.lendingPool.stake(BigInteger.valueOf(500).multiply(ICX)));
 
-function returna map
-{
-'reserve': addr.toString(),.
-..
-..
-}
+    }
 
-another contract
+    @Test
+    void unstake(){
+        BigInteger value = BigInteger.ONE.negate();
+        assertReverted(new RevertedException(1, "Cannot unstake less than or equals to zero value to stake " + value),
+                () -> ommClient.lendingPool.unstake(value.multiply(ICX)));
 
-// dToken error in borrow
- */
-    /*
-    deposit ICX as collateral
-    */
+        BigInteger finalValue = BigInteger.valueOf(100);
+        assertReverted(new RevertedException(1, "Cannot unstake,user dont have enough staked balance amount to unstake "
+                        + value + " staked balance of user: " + ommClient.getAddress() + " is " + BigInteger.ZERO),
+                () -> ommClient.lendingPool.unstake(finalValue.multiply(ICX)));
+    }
+
+    @Test
+    void checkDepositWallets(){
+        depositICX(testClient,BigInteger.valueOf(1000));
+        List<Address> list= ommClient.lendingPool.getDepositWallets(10);
+
+        assertEquals(2,list.size());
+        assertEquals(ommClient.getAddress(),list.get(0));
+        assertEquals(testClient.getAddress(),list.get(1));
+    }
+
+    @Test
+    void checkBorrowWallets(){
+        depositICX(testClient,BigInteger.valueOf(1000));
+
+        List<Address> list= ommClient.lendingPool.getBorrowWallets(6);
+        assertEquals(0,list.size());
+
+        Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
+        ommClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100));
+        testClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100));
+
+        assertEquals(2,list.size());
+        assertEquals(ommClient.getAddress(),list.get(0));
+        assertEquals(testClient.getAddress(),list.get(1));
+    }
+
+
+    @Test
+    void deposit_tokenfallback(){
+        byte[] data = createByteArray("deposit",null, null,
+                null,null);
+
+        Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,false);
+
+        assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, deposit unsuccessful"),
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), BigInteger.valueOf(1000).multiply(ICX),
+                        data),null);
+
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,true);
+        ommClient.governance.setReserveFreezeStatus(iusdcAddr,true);
+
+        assertUserRevert(LendingPoolException.unknown("Reserve is frozen, deposit unsuccessful"),
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), BigInteger.valueOf(1000).multiply(ICX),
+                        data),null);
+
+        ommClient.governance.setReserveFreezeStatus(iusdcAddr,false);
+
+        ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), BigInteger.valueOf(1000).multiply(BigInteger.valueOf(1000_000)), data);
+
+        assertEquals(ommClient.oUSDC.balanceOf(ommClient.getAddress()),BigInteger.valueOf(2000).multiply(BigInteger.valueOf(1000_000)));
+    }
+
+    @Test
+    void repay_tokenfallback(){
+        //to configure after borrow works
+        BigInteger amount = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
+        depositICX(testClient, BigInteger.valueOf(100));
+        Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
+
+        // test client borrows 100 IUSDC
+        testClient.lendingPool.borrow(IUSDCAddr, amount);
+
+
+        BigInteger repay = BigInteger.valueOf(10).multiply(BigInteger.valueOf(1000_000));
+        byte[] data = createByteArray("repay", repay, null, null, null);
+
+        Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,false);
+
+        assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, repay unsuccessful"),
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data), null);
+
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,true);
+
+        assertUserRevert(LendingPoolException.unknown("The user does not have any borrow pending"),
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data), null);
+
+        ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data);
+
+    }
+
+    @Test
+    void liquidation_tokenfallback(){
+        //configuration after borrow case works
+        Address collateral = addressMap.get(Contracts.sICX.getKey());
+        Address reserve = addressMap.get(Contracts.IUSDC.getKey());
+        Address user = testClient.getAddress();
+
+        ommClient.dummyPriceOracle.set_reference_data("ICX", ICX);
+
+        //100 deposit icx 40 borrow usdc
+        depositICX(testClient, BigInteger.valueOf(1000));
+
+        depositIUSDC(ommClient, BigInteger.valueOf(100));
+
+        Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
+        BigInteger amountToBorrowIUSDC = BigInteger.valueOf(400).multiply(BigInteger.valueOf(1000_000));
+
+        // test client borrows 40 IUSDC
+        testClient.lendingPool.borrow(IUSDCAddr, amountToBorrowIUSDC);
+
+        //0.5 icx
+        ommClient.dummyPriceOracle.set_reference_data("ICX", HALF_ICX);
+
+        byte[] data = createByteArray("liquidationCall", null, collateral, reserve, user);
+        BigInteger value = BigInteger.valueOf(50).multiply(BigInteger.valueOf(1000_000));
+
+        Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,false);
+
+        assertUserRevert(LendingPoolException.reserveNotActive("Borrow reserve is not active,liquidation unsuccessful"),
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, data), null);
+
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,true);
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
+        ommClient.governance.setReserveActiveStatus(icxAddr,false);
+
+        assertUserRevert(LendingPoolException.reserveNotActive("Collateral reserve is not active,liquidation unsuccessful"),
+                ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, data), null);
+
+        ommClient.governance.setReserveActiveStatus(iusdcAddr,true);
+        ommClient.governance.setReserveActiveStatus(icxAddr,true);
+
+        ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, data);
+
+    }
+
+    @Test
+    void claimRewards(){
+        depositICX(ommClient, BigInteger.valueOf(1000));
+        ommClient.lendingPool.claimRewards();
+    }
+
+
     private void depositICX(OMMClient client, BigInteger amount){
         ((LendingPoolScoreClient)client.lendingPool).deposit(amount.multiply(ICX),amount.multiply(ICX));
     }
@@ -234,7 +397,7 @@ another contract
     private void depositIUSDC(OMMClient client, BigInteger amount){
         byte[] data = createByteArray("deposit",amount,null,null,null);
         client.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()),
-                amount.multiply(BigInteger.valueOf(100_000)),data);
+                amount.multiply(BigInteger.valueOf(1000_000)),data);
     }
 
     private void mintToken(){
