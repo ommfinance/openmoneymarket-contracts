@@ -132,8 +132,12 @@ public abstract class AbstractLendingPool extends AddressProvider
         BigInteger icxValue = Context.getValue();
         Address lendingPoolCore = getAddress(Contracts.LENDING_POOL_CORE.getKey());
         if (reserve.equals(getAddress(Contracts.sICX.getKey())) && !icxValue.equals(BigInteger.ZERO)) {
-            amount = Context.call(BigInteger.class, icxValue, getAddress(Contracts.STAKING.getKey()),
-                    "stakeICX", lendingPoolCore);
+//            TODO: CHECK THIS
+//            amount = Context.call(BigInteger.class, icxValue, getAddress(Contracts.STAKING.getKey()),"stakeICX",
+//                    lendingPoolCore);
+
+            amount = (BigInteger) Context.call(icxValue, getAddress(Contracts.STAKING.getKey()),"stakeICX",
+                    lendingPoolCore);
         } else {
             call(reserve, "transfer", lendingPoolCore, amount);
         }
