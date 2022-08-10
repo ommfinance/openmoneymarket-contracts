@@ -23,7 +23,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
     @External(readonly = true)
     public String name() {
-        return "OMM " + TAG;
+        return "Omm " + TAG;
     }
 
     @External
@@ -69,9 +69,10 @@ public class LendingPoolImpl extends AbstractLendingPool {
     @Payable
     public void deposit(BigInteger _amount) {
         BigInteger icxValue = Context.getValue();
-        if (icxValue.compareTo(_amount) == 0) {
+        // check this condition
+        if ( !(icxValue.equals(BigInteger.ZERO)) && !(icxValue.compareTo(_amount) == 0)) {
             throw LendingPoolException.unknown(TAG + " : Amount in param " +
-                    _amount + "doesnt match with the icx sent " + icxValue + " to the Lending Pool");
+                    _amount + " doesnt match with the icx sent " + icxValue + " to the Lending Pool");
         }
         BigInteger rate = call(BigInteger.class, Contracts.STAKING, "getTodayRate");
         BigInteger amount = exaDivide(icxValue, rate);
@@ -84,7 +85,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
         checkAndEnableFeeSharing();
         Address caller = Context.getCaller();
         Map<String, Object> redeemParams = call(Map.class, _oToken, "redeem", caller, _amount);
-        Address reserve = Address.fromString((String) redeemParams.get("reserve"));
+        Address reserve = (Address) redeemParams.get("reserve");
         BigInteger amount = (BigInteger) redeemParams.get("amountToRedeem");
         redeemUnderlying(reserve, caller, _oToken, amount, _waitForUnstaking);
     }
@@ -213,16 +214,17 @@ public class LendingPoolImpl extends AbstractLendingPool {
         } else if (method.equals("repay")) {
             repay(caller, _value, _from);
         } else if (method.equals("liquidationCall") && params != null) {
-            String collateral = String.valueOf(params.get("_collateral"));
-            String reserve = String.valueOf(params.get("_reserve"));
-            String user = String.valueOf(params.get("_user"));
-            if (collateral == null || reserve == null || user == null) {
-                throw LendingPoolException.unknown(TAG + " Invalid data: Collateral" + collateral +
+            String collateral = params.getString("_collateral",null);
+            String reserve = params.getString("_reserve",null);
+            String user = params.getString("_user",null);
+
+            if (collateral.equals("null") || reserve.equals("null") || user.equals("null")) {
+                throw LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: "+reserve+ " User: "+ user);
             }
             liquidationCall(Address.fromString(collateral),
-                    Address.fromString(user),
                     Address.fromString(reserve),
+                    Address.fromString(user),
                     _value, _from);
 
         } else {
