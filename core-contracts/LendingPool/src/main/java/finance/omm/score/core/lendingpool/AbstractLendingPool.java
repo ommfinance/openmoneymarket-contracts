@@ -119,7 +119,7 @@ public abstract class AbstractLendingPool extends AddressProvider
             throw LendingPoolException.unknown("Reserve is frozen, deposit unsuccessful");
         }
 
-        if (depositIndex.get(sender) != null) {
+        if (depositIndex.get(sender) == null) {
             depositWallets.add(sender);
             depositIndex.set(sender, BigInteger.valueOf(depositWallets.size()));
         }
