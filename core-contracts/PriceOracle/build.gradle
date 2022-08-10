@@ -1,0 +1,80 @@
+version '0.0.1'
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.core.oracle.PriceOracleImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
+
+    testImplementation project(':TestUtils')
+
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.3.0'
+}
+
+deployJar {
+    endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.price-oracle")
+            nid = 0x53
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            to = 'cx189f03875da766878c68753da7492c080bcc2dbe'
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+//task integrationTest(type: Test, dependsOn: optimizedJar) {
+//    useJUnitPlatform()
+//    options {
+//        testLogging.showStandardStreams = true
+//        description = 'Runs integration tests.'
+//        group = 'verification'
+//        testClassesDirs = sourceSets.intTest.output.classesDirs
+//        classpath = sourceSets.intTest.runtimeClasspath
+//
+//        systemProperty 'url', scoreTest.url
+//        systemProperty 'nid', scoreTest.nid
+//
+//        systemProperty 'keyStore', scoreTest.keystoreName
+//        systemProperty 'keyPassword', scoreTest.keystorePass
+//
+//        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+//        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+//
+////        systemProperty 'address', "cxecae13f554df1495b9104b44a43613df009fb4f0"
+////        systemProperty 'isUpdate', "false"
+//        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+//        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value
+//        }
+//
+//    }
+
+//
+//    testClassesDirs = sourceSets.intTest.output.classesDirs
+//    classpath = sourceSets.intTest.runtimeClasspath
+
+
+//    def prefix = 'score.path.'
+//    systemProperty(prefix + project.name, optimizedJar.outputJarName)
+
+//}
