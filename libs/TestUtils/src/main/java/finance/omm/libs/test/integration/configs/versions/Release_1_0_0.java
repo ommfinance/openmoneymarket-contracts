@@ -1,6 +1,5 @@
 package finance.omm.libs.test.integration.configs.versions;
 
-import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
 import finance.omm.libs.test.integration.Environment;
@@ -46,7 +45,6 @@ public class Release_1_0_0 extends Release {
                 BigInteger.valueOf(3).multiply(ICX).divide(BigInteger.TEN));
 
         ommClient.dummyPriceOracle.set_reference_data("USDC",ICX);
-
 
       /*
         initialized reserves

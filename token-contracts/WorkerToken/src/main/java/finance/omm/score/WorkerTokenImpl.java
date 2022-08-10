@@ -3,14 +3,13 @@ package finance.omm.score;
 import static java.math.BigInteger.TEN;
 import static java.math.BigInteger.ZERO;
 
+import finance.omm.core.score.interfaces.WorkerToken;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
-import java.math.BigInteger;
-import java.util.List;
-
-import finance.omm.core.score.interfaces.WorkerToken;
 import finance.omm.utils.db.EnumerableSet;
 import finance.omm.utils.math.MathUtils;
+import java.math.BigInteger;
+import java.util.List;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -34,30 +33,29 @@ public class WorkerTokenImpl extends AddressProvider implements WorkerToken {
     private DictDB<Address, BigInteger> balances = Context.newDictDB(BALANCES, BigInteger.class);
     private EnumerableSet<Address> wallets = new EnumerableSet<>(WALLETS, Address.class);
 
-    public WorkerTokenImpl(Address _addressProvider, BigInteger _initialSupply, BigInteger _decimals, @Optional boolean _update) {
-        super(_addressProvider, _update);
-        if (_update) {
+    public WorkerTokenImpl(Address _addressProvider, BigInteger _initialSupply, BigInteger _decimals) {
+        super(_addressProvider, false);
+        if (this.totalSupply.get() == null) {
+            Context.println(TAG + "| on install event:" + Context.getAddress());
+            if (_initialSupply == null || _initialSupply.compareTo(ZERO) < 0) {
+                Context.revert("Initial supply cannot be less than zero");
+            }
+
+            if (_decimals == null || _decimals.compareTo(ZERO) < 0) {
+                Context.revert("Decimals cannot be less than zero");
+            }
+
+            BigInteger totalSupply = _initialSupply.multiply(MathUtils.pow(TEN, _decimals.intValue()));
+            Context.println(TAG + "| total_supply " + totalSupply);
+
+            this.totalSupply.set(totalSupply);
+            this.decimals.set(_decimals);
+            this.balances.set(Context.getCaller(), totalSupply);
+
+            Context.println(TAG + "| Started Worker Token:" + Context.getAddress());
+        } else {
             onUpdate();
-            return;
         }
-
-        Context.println(TAG + "| on install event:" + Context.getAddress());
-        if (_initialSupply == null || _initialSupply.compareTo(ZERO) < 0) {
-            Context.revert("Initial supply cannot be less than zero");
-        }
-
-        if (_decimals == null || _decimals.compareTo(ZERO) < 0) {
-            Context.revert("Decimals cannot be less than zero");
-        }
-
-        BigInteger totalSupply = _initialSupply.multiply(MathUtils.pow(TEN, _decimals.intValue()));
-        Context.println(TAG + "| total_supply " + totalSupply);
-
-        this.totalSupply.set(totalSupply);
-        this.decimals.set(_decimals);
-        this.balances.set(Context.getCaller(), totalSupply);
-
-        Context.println(TAG + "| Started Worker Token:" + Context.getAddress());
 
     }
 
@@ -141,7 +139,7 @@ public class WorkerTokenImpl extends AddressProvider implements WorkerToken {
 
     @External(readonly = true)
     public List<Address> getWallets() {
-    	return this.wallets.toList();
+        return this.wallets.toList();
     }
 
     @External
@@ -156,12 +154,12 @@ public class WorkerTokenImpl extends AddressProvider implements WorkerToken {
 
         BigInteger remaining = _value;
 
-        for (Address worker: workers) {
+        for (Address worker : workers) {
             BigInteger balance = balanceOf(worker);
             BigInteger share = balance.multiply(remaining).divide(totalSupply);
             call(Contracts.OMM_TOKEN, "transfer", worker, share);
             Distribution("worker", worker, share);
-            remaining = remaining.subtract(balance);
+            remaining = remaining.subtract(share);
             totalSupply = totalSupply.subtract(balance);
 
             if (totalSupply.equals(BigInteger.ZERO) || remaining.equals(BigInteger.ZERO)) {

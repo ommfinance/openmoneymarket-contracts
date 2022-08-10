@@ -116,13 +116,13 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
         if (_amount.compareTo(availableBorrows) > 0) {
             throw LendingPoolException.unknown(TAG + "Amount requested " + _amount +
-                    " is more then the "+ availableBorrows);
+                    " is more then the " + availableBorrows);
         }
 
         checkAndEnableFeeSharing();
 
         boolean isActive = (boolean) reserveData.get("isActive");
-        if (! isActive) {
+        if (!isActive) {
             throw LendingPoolException.reserveNotActive("Reserve is not active, borrow unsuccessful");
         }
 
@@ -133,7 +133,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
         boolean isReserveBorrowEnabled = call(Boolean.class,
                 Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", _reserve);
-        if ( !isReserveBorrowEnabled ) {
+        if (!isReserveBorrowEnabled) {
             throw LendingPoolException.unknown("Borrow error:borrowing not enabled in the reserve");
         }
 
@@ -172,7 +172,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
         BigInteger borrowFee = call(BigInteger.class, Contracts.FEE_PROVIDER,
                 "calculateOriginationFee", _amount);
 
-        if (borrowFee.compareTo(BigInteger.ZERO) <= 0 ) {
+        if (borrowFee.compareTo(BigInteger.ZERO) <= 0) {
             throw LendingPoolException.unknown("Borrow error: borrow amount is very small");
         }
 
@@ -214,13 +214,13 @@ public class LendingPoolImpl extends AbstractLendingPool {
         } else if (method.equals("repay")) {
             repay(caller, _value, _from);
         } else if (method.equals("liquidationCall") && params != null) {
-            String collateral = params.getString("_collateral",null);
-            String reserve = params.getString("_reserve",null);
-            String user = params.getString("_user",null);
+            String collateral = params.getString("_collateral", null);
+            String reserve = params.getString("_reserve", null);
+            String user = params.getString("_user", null);
 
             if (collateral.equals("null") || reserve.equals("null") || user.equals("null")) {
                 throw LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
-                        " Reserve: "+reserve+ " User: "+ user);
+                        " Reserve: " + reserve + " User: " + user);
             }
             liquidationCall(Address.fromString(collateral),
                     Address.fromString(reserve),
@@ -228,7 +228,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
                     _value, _from);
 
         } else {
-            throw LendingPoolException.unknown(TAG + " No valid method called, data: "+ _data.toString());
+            throw LendingPoolException.unknown(TAG + " No valid method called, data: " + _data.toString());
         }
     }
 }

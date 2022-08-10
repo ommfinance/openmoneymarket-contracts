@@ -12,5 +12,4 @@ public interface DummyPriceOracle {
 
     @External(readonly = true)
     Map<String, BigInteger> get_reference_data(String _base, String _quote);
-
 }

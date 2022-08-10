@@ -15,4 +15,6 @@ public interface StableCoin extends IRC2 {
 
     void transfer(Address _to, BigInteger _value, byte[] _data);
 
+
+
 }
