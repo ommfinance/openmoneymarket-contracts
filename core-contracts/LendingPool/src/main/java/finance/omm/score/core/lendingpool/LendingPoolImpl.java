@@ -54,12 +54,12 @@ public class LendingPoolImpl extends AbstractLendingPool {
         return isFeeSharingEnabled(_user);
     }
 
-    @External
+    @External(readonly = true)
     public List<Address> getDepositWallets(int _index) {
         return getArrayItems(depositWallets, _index);
     }
 
-    @External
+    @External(readonly = true)
     public List<Address> getBorrowWallets(int _index) {
         return getArrayItems(borrowWallets, _index);
     }
