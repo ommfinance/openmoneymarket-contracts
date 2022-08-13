@@ -24,11 +24,16 @@ public class LendingPoolCoreException extends OMMException.LendingPoolCore {
         return new LendingPoolCoreException(Code.ReserveNotActive, msg);
     }
 
+    public static LendingPoolCoreException unauthorized(String msg) {
+        return new LendingPoolCoreException(Code.UnAuthorized, msg);
+    }
+
+
 
 
 
     public enum Code implements Coded {
-        Unknown(0),NotOwner(1),ReserveNotActive(2);
+        Unknown(0),NotOwner(1),ReserveNotActive(2), UnAuthorized(3);
 
         final int code;
 
