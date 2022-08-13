@@ -1,8 +1,6 @@
 package finance.omm.score.core.lendingpoolcore.reservedata;
 
 import finance.omm.libs.structs.governance.ReserveAttributes;
-import finance.omm.score.core.lendingpoolcore.reservedata.ReserveDataDB;
-import finance.omm.score.core.lendingpoolcore.reservedata.ReserveDataObject;
 import scorex.util.HashMap;
 
 import java.math.BigInteger;
@@ -35,7 +33,7 @@ public class AbstractReserve {
         return reserveData;
     }
 
-    public static void addDataToReserve(byte[] prefix, ReserveDataDB reserve, ReserveDataObject reserveData){
+    public static void addDataToReserve(byte[] prefix, ReserveDataDB reserve, ReserveDataObject reserveData) {
         reserve.getItem(prefix).dTokenAddress.set(reserveData.dTokenAddress);
         reserve.getItem(prefix).reserveAddress.set(reserveData.reserveAddress);
         reserve.getItem(prefix).oTokenAddress.set(reserveData.oTokenAddress);
@@ -52,13 +50,14 @@ public class AbstractReserve {
         reserve.getItem(prefix).usageAsCollateralEnabled.set(reserveData.usageAsCollateralEnabled);
         reserve.getItem(prefix).isFreezed.set(reserveData.isFreezed);
         reserve.getItem(prefix).isActive.set(reserveData.isActive);
+        reserve.getItem(prefix).borrowThreshold.set(ICX);
     }
 
     public static ReserveDataObject createReserveDataObject(ReserveAttributes reserveData) {
         Map<String, Object> reserveDataDetails = new HashMap<>();
         reserveDataDetails.put("reserveAddress", reserveData.reserveAddress);
         reserveDataDetails.put("oTokenAddress", reserveData.oTokenAddress);
-        reserveDataDetails.put("dTokenAddress", reserveData.decimals);
+        reserveDataDetails.put("dTokenAddress", reserveData.dTokenAddress);
         reserveDataDetails.put("lastUpdateTimestamp", reserveData.lastUpdateTimestamp);
         reserveDataDetails.put("liquidityRate", reserveData.liquidityRate);
         reserveDataDetails.put("borrowRate", reserveData.borrowRate);

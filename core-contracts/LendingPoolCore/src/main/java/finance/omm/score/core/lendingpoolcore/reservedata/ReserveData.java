@@ -27,7 +27,7 @@ public class ReserveData {
     public final VarDB<Boolean> isActive = Context.newVarDB("Active", Boolean.class);
 
 
-    public ReserveData(Byte prefix) {
+    public ReserveData(byte[] prefix) {
 
     }
 }
