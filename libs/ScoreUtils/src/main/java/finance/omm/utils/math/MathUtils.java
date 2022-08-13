@@ -47,6 +47,26 @@ public class MathUtils {
         return result;
     }
 
+    public static BigInteger exaPow(BigInteger x, BigInteger n) {
+        BigInteger z;
+        if(!n.mod(BigInteger.TWO).equals(BigInteger.ZERO)){
+        z = x;
+        }
+        else {
+            z = ICX;
+        }
+        n = n.divide(BigInteger.TWO);
+        while(!n.equals(BigInteger.ZERO)){
+            x = exaMultiply(x, x);
+
+            if(!n.mod(BigInteger.TWO).equals(BigInteger.ZERO)){
+                z = exaMultiply(z, x);
+            }
+            n = n.divide(BigInteger.TWO);
+        }
+        return z;
+    }
+
     public static BigInteger min(BigInteger[] list) {
         BigInteger min = list[0];
         for (BigInteger num : list) {

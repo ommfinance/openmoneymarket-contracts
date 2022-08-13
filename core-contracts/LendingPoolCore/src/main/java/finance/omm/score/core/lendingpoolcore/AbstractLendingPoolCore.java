@@ -123,7 +123,7 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
     protected BigInteger calculateCompoundedInterest(BigInteger rate, BigInteger lastUpdateTimestamp) {
         BigInteger timeDifference = (BigInteger.valueOf(Context.getBlockTimestamp()).subtract(lastUpdateTimestamp)).divide(pow10(6));
         BigInteger ratePerSecond = rate.divide(SECONDS_PER_YEAR);
-        return pow(ratePerSecond.add(ICX), timeDifference.intValue());
+        return exaPow(ratePerSecond.add(ICX), timeDifference);
     }
 
     protected void updateCumulativeIndexes(Address reserve) {
