@@ -212,10 +212,10 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         BigInteger borrowRate = (BigInteger) reserveData.get("borrowRate");
         BigInteger reserveDecimals = (BigInteger) reserveData.get("decimals");
         BigInteger liquidityRate = (BigInteger) reserveData.get("liquidityRate");
-        BigInteger originationFee =  userReserveData.get("originationFee");
+        BigInteger originationFee = userReserveData.get("originationFee");
         BigInteger userBorrowCumulativeIndex = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
                 "getUserBorrowCumulativeIndex", _user);
-        BigInteger lastUpdateTimestamp =  userReserveData.get("lastUpdateTimestamp");
+        BigInteger lastUpdateTimestamp = userReserveData.get("lastUpdateTimestamp");
         String symbol = this.symbol.get(_reserve);
         BigInteger price = call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
                 symbol, "USD");
@@ -426,13 +426,13 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         BigInteger reserveDecimals = (BigInteger) reserveData.get("decimals");
         reserveData.put("totalLiquidityUSD",
                 exaMultiply(convertToExa((BigInteger) reserveData.get("totalLiquidity")
-                                , reserveDecimals), price));
+                        , reserveDecimals), price));
         reserveData.put("availableLiquidityUSD",
                 exaMultiply(convertToExa((BigInteger) reserveData.get("availableLiquidity")
-                                , reserveDecimals), price));
+                        , reserveDecimals), price));
         reserveData.put("totalBorrowsUSD",
                 exaMultiply(convertToExa((BigInteger) reserveData.get("totalBorrows")
-                                , reserveDecimals), price));
+                        , reserveDecimals), price));
         BigInteger lendingPercentage = call(BigInteger.class, Contracts.REWARDS, "assetDistPercentage", (Address) reserveData.get("oTokenAddress"));
         BigInteger borrowingPercentage = call(BigInteger.class, Contracts.REWARDS, "assetDistPercentage", (Address) reserveData.get("dTokenAddress"));
         reserveData.put("lendingPercentage", lendingPercentage);
