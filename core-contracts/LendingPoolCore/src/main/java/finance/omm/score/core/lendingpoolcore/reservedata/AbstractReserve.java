@@ -1,5 +1,8 @@
 package finance.omm.score.core.lendingpoolcore.reservedata;
 
+import finance.omm.libs.structs.governance.ReserveAttributes;
+import finance.omm.score.core.lendingpoolcore.reservedata.ReserveDataDB;
+import finance.omm.score.core.lendingpoolcore.reservedata.ReserveDataObject;
 import scorex.util.HashMap;
 
 import java.math.BigInteger;
@@ -9,7 +12,7 @@ import static finance.omm.utils.math.MathUtils.ICX;
 
 public class AbstractReserve {
 
-    protected Map<String, Object> getDataFromUserReserve(Byte prefix, ReserveDataDB reserve) {
+    public static Map<String, Object> getDataFromReserve(byte[] prefix, ReserveDataDB reserve) {
         Map<String, Object> reserveData = new HashMap<>();
         reserveData.put("reserveAddress", reserve.getItem(prefix).reserveAddress.get());
         reserveData.put("oTokenAddress", reserve.getItem(prefix).oTokenAddress.get());
@@ -32,7 +35,7 @@ public class AbstractReserve {
         return reserveData;
     }
 
-    protected void addDataToReserve(Byte prefix, ReserveDataDB reserve, ReserveDataObject reserveData){
+    public static void addDataToReserve(byte[] prefix, ReserveDataDB reserve, ReserveDataObject reserveData){
         reserve.getItem(prefix).dTokenAddress.set(reserveData.dTokenAddress);
         reserve.getItem(prefix).reserveAddress.set(reserveData.reserveAddress);
         reserve.getItem(prefix).oTokenAddress.set(reserveData.oTokenAddress);
@@ -51,24 +54,24 @@ public class AbstractReserve {
         reserve.getItem(prefix).isActive.set(reserveData.isActive);
     }
 
-    protected ReserveDataObject createReserveDataObject(Map<String, Object> reserveData) {
+    public static ReserveDataObject createReserveDataObject(ReserveAttributes reserveData) {
         Map<String, Object> reserveDataDetails = new HashMap<>();
-        reserveDataDetails.put("reserveAddress", reserveData.get("reserveAddress"));
-        reserveDataDetails.put("oTokenAddress", reserveData.get("oTokenAddress"));
-        reserveDataDetails.put("dTokenAddress", reserveData.get("dTokenAddress"));
-        reserveDataDetails.put("lastUpdateTimestamp", reserveData.get("lastUpdateTimestamp"));
-        reserveDataDetails.put("liquidityRate", reserveData.get("liquidityRate"));
-        reserveDataDetails.put("borrowRate", reserveData.get("borrowRate"));
-        reserveDataDetails.put("liquidityCumulativeIndex", reserveData.get("liquidityCumulativeIndex"));
-        reserveDataDetails.put("borrowCumulativeIndex", reserveData.get("borrowCumulativeIndex"));
-        reserveDataDetails.put("baseLTVasCollateral", reserveData.get("baseLTVasCollateral"));
-        reserveDataDetails.put("liquidationThreshold", reserveData.get("liquidationThreshold"));
-        reserveDataDetails.put("liquidationBonus", reserveData.get("liquidationBonus"));
-        reserveDataDetails.put("decimals", reserveData.get("decimals"));
-        reserveDataDetails.put("borrowingEnabled", reserveData.get("borrowingEnabled"));
-        reserveDataDetails.put("usageAsCollateralEnabled", reserveData.get("usageAsCollateralEnabled"));
-        reserveDataDetails.put("isFreezed", reserveData.get("isFreezed"));
-        reserveDataDetails.put("isActive", reserveData.get("isActive"));
+        reserveDataDetails.put("reserveAddress", reserveData.reserveAddress);
+        reserveDataDetails.put("oTokenAddress", reserveData.oTokenAddress);
+        reserveDataDetails.put("dTokenAddress", reserveData.decimals);
+        reserveDataDetails.put("lastUpdateTimestamp", reserveData.lastUpdateTimestamp);
+        reserveDataDetails.put("liquidityRate", reserveData.liquidityRate);
+        reserveDataDetails.put("borrowRate", reserveData.borrowRate);
+        reserveDataDetails.put("liquidityCumulativeIndex", reserveData.liquidityCumulativeIndex);
+        reserveDataDetails.put("borrowCumulativeIndex", reserveData.borrowCumulativeIndex);
+        reserveDataDetails.put("baseLTVasCollateral", reserveData.baseLTVasCollateral);
+        reserveDataDetails.put("liquidationThreshold", reserveData.liquidationThreshold);
+        reserveDataDetails.put("liquidationBonus", reserveData.liquidationBonus);
+        reserveDataDetails.put("decimals", reserveData.decimals);
+        reserveDataDetails.put("borrowingEnabled", reserveData.borrowingEnabled);
+        reserveDataDetails.put("usageAsCollateralEnabled", reserveData.usageAsCollateralEnabled);
+        reserveDataDetails.put("isFreezed", reserveData.isFreezed);
+        reserveDataDetails.put("isActive", reserveData.isActive);
         reserveDataDetails.put("borrowThreshold", ICX);
 
         return new ReserveDataObject(reserveDataDetails);
