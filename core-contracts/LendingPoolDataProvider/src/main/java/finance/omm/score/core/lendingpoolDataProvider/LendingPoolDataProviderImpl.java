@@ -477,7 +477,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         List<Map<String, BigInteger>> response = new ArrayList<>();
         for (Map<String, Object> unstakedRecords : unstakeDetails) {
             Address fromAddress = (Address) unstakedRecords.get("from");
-            if (fromAddress.equals(getAddress(String.valueOf(Contracts.LENDING_POOL_CORE)))) {
+            if (fromAddress.equals(getAddress(String.valueOf(Contracts.LENDING_POOL_CORE.getKey())))) {
                 response.add(Map.of(
                         "amount", (BigInteger) unstakedRecords.get("amount"),
                         "unstakingBlockHeight", (BigInteger) unstakedRecords.get("blockHeight")
