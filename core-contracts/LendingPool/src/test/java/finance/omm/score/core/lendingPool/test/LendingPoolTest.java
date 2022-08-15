@@ -3,9 +3,11 @@ package finance.omm.score.core.lendingPool.test;
 import com.eclipsesource.json.JsonObject;
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import score.Address;
 import score.Context;
 
@@ -569,6 +571,23 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
 
         doReturn(BigInteger.ZERO.multiply(ICX)).when(scoreSpy).
                 call(eq(BigInteger.class), eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), eq(notOwner.getAddress()));
+
+        doReturn(Map.of(
+                "isActive",false
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveData", sICX); // any
+
+        call = () -> score.invoke(notOwner,"deposit",depositAmt);
+        expectErrorMessage(call,"Reserve is not active, deposit unsuccessful");
+
+        doReturn(Map.of(
+                "isActive",true,
+                "isFreezed",true
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveData", sICX); // any
+
+        call = () -> score.invoke(notOwner,"deposit",depositAmt);
+        expectErrorMessage(call,"Reserve is frozen, deposit unsuccessful");
 
         doReturn(Map.of(
                 "isActive",true,
