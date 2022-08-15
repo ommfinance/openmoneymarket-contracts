@@ -1,5 +1,6 @@
 package finance.omm.libs.test.integration.configs.versions;
 
+import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
 import finance.omm.libs.test.integration.Environment;

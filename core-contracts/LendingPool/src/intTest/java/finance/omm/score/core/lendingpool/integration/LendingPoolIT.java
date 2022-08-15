@@ -79,6 +79,19 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     }
     @Test
     void deposit_payble(){
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
+        ommClient.governance.setReserveActiveStatus(icxAddr,false);
+
+        assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, deposit unsuccessful"),
+                ()->depositICX(ommClient,BigInteger.valueOf(10)),null);
+
+        ommClient.governance.setReserveActiveStatus(icxAddr,true);
+        ommClient.governance.setReserveFreezeStatus(icxAddr,true);
+
+        assertUserRevert(LendingPoolException.unknown("Reserve is frozen, deposit unsuccessful"),
+                ()->depositICX(ommClient,BigInteger.valueOf(10)),null);
+
+        ommClient.governance.setReserveFreezeStatus(icxAddr,false);
         depositICX(ommClient,BigInteger.valueOf(10));
     }
 
@@ -309,6 +322,8 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     void repay_tokenfallback(){
         ommClient.dummyPriceOracle.set_reference_data("ICX", ICX);
 
+        transferIusdc();
+
         BigInteger amount = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
         depositICX(testClient, BigInteger.valueOf(1000));
         Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
@@ -316,7 +331,7 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         // test client borrows 100 IUSDC
         testClient.lendingPool.borrow(iusdcAddr, amount);
 
-        BigInteger repay = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
+        BigInteger repay = BigInteger.valueOf(110).multiply(BigInteger.valueOf(1000_000));
         byte[] data = createByteArray("repay", repay, null, null, null);
 
         ommClient.governance.setReserveActiveStatus(iusdcAddr,false);
@@ -331,8 +346,17 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         assertUserRevert(LendingPoolException.unknown("The user does not have any borrow pending"),
                 ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data), null);
 
-//        assertUserRevert(LendingPoolException.unknown("The user does not have any borrow pending"),
-//                ()->testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data), null);
+        assertUserRevert(LendingPoolException.unknown("The user does not have any borrow pending"),
+                ()->testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data), null);
+    }
+
+    private void transferIusdc(){
+
+        byte[] data = new byte[]{};
+        ommClient.iUSDC.transfer(testClient.getAddress(),BigInteger.valueOf(1000).multiply(BigInteger.valueOf(1000_000)),data);
+
+        System.out.println(testClient.iUSDC.balanceOf(testClient.getAddress()));
+
     }
 
     @Test
