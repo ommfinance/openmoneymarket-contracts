@@ -20,5 +20,5 @@ public interface DummyDEX extends IRC31 {
 
     BigInteger getBalnPrice();
 
-    void transfer(Address _to, BigInteger _id, BigInteger _value, @Optional byte[] _data);
+    void transfer(Address _to, BigInteger _value, BigInteger _id, @Optional byte[] _data);
 }

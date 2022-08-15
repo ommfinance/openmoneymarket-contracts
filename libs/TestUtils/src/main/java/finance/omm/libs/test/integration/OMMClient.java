@@ -103,9 +103,9 @@ public class OMMClient {
     public DToken dICX;
 
     @ScoreClient
-    public OToken oUSDC;
+    public OToken oIUSDC;
     @ScoreClient
-    public DToken dUSDC;
+    public DToken dIUSDC;
 
     @ScoreClient
     public LiquidationManager liquidationManager;
@@ -222,7 +222,7 @@ public class OMMClient {
                             entry.getValue());
                     break;
                 case "oIUSDC":
-                    oUSDC = new OTokenScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
+                    oIUSDC = new OTokenScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
                             entry.getValue());
                     break;
                 case "liquidationManager":
@@ -231,7 +231,7 @@ public class OMMClient {
                             entry.getValue());
                     break;
                 case "dIUSDC":
-                    dUSDC = new DTokenScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
+                    dIUSDC = new DTokenScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
                             entry.getValue());
                     break;
                 case "IUSDC":

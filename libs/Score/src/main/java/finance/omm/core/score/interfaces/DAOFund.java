@@ -12,6 +12,6 @@ public interface DAOFund extends AddressProvider {
 
     void transferOmm(BigInteger _value, Address _address);
 
-    void tokenFallback(Address _from, BigInteger _value, @Optional byte[] _data);
+    void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
 }

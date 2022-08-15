@@ -1,7 +1,7 @@
 rootProject.name = 'openmoneymarket-contracts'
 
-include(":VotingEscrowToken")
-findProject(":VotingEscrowToken").projectDir = file("token-contracts/VotingEscrowToken")
+include(":BoostedOMM")
+findProject(":BoostedOMM").projectDir = file("token-contracts/BoostedOMM")
 
 include(":RewardWeightController")
 findProject(":RewardWeightController").projectDir = file("core-contracts/RewardWeightController")
@@ -54,4 +54,8 @@ findProject(":Governance").projectDir = file("core-contracts/Governance")
 include(":OMMToken")
 findProject(":OMMToken").projectDir = file("token-contracts/OMMToken")
 
+include(':PriceOracle')
+findProject(":PriceOracle").projectDir = file("core-contracts/PriceOracle")
 
+include(":LendingPool")
+findProject(":LendingPool").projectDir = file("core-contracts/LendingPool")

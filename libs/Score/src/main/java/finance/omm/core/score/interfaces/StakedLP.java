@@ -40,4 +40,12 @@ public interface StakedLP {
 
     SupplyDetails getLPStakedSupply(int _id, Address _user);
 
+    BigInteger totalStaked(int _id);
+
+    void enableHandleAction();
+
+    void disableHandleAction();
+
+    boolean isHandleActionEnabled();
+
 }
