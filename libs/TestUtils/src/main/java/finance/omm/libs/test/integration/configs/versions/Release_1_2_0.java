@@ -4,7 +4,12 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import java.math.BigInteger;
 import java.util.Map;
+
+import finance.omm.libs.structs.TypeWeightStruct;
+import finance.omm.libs.structs.WeightStruct;
 import score.Address;
+
+import static finance.omm.utils.math.MathUtils.ICX;
 
 public class Release_1_2_0 extends Release {
 
@@ -70,6 +75,24 @@ public class Release_1_2_0 extends Release {
 
 //        ommClient.governance.addAsset("OMMLocking", "bOMM", contractAddresses.get("bOMM"),
 //                BigInteger.valueOf(-1));
+        BigInteger systemTime = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
+        BigInteger time = systemTime.add(BigInteger.valueOf(100));
+
+        ommClient.governance.setTypeWeight(new TypeWeightStruct[]{
+                new TypeWeightStruct("reserve", ICX.divide(BigInteger.TWO)),
+                new TypeWeightStruct("daoFund", ICX.divide(BigInteger.TWO))
+        },time);
+
+
+        WeightStruct[] weightStructs = new WeightStruct[]{
+                new WeightStruct(contractAddresses.get(oICX),ICX.divide(BigInteger.valueOf(4))),
+                new WeightStruct(contractAddresses.get(dICX),ICX.divide(BigInteger.valueOf(4))),
+                new WeightStruct(contractAddresses.get(oIUSDC),ICX.divide(BigInteger.valueOf(4))),
+                new WeightStruct(contractAddresses.get(dIUSDC),ICX.divide(BigInteger.valueOf(4)))
+
+        };
+        ommClient.governance.setAssetWeight("reserve",weightStructs,time);
+
 
 
         return this.next(ommClient);

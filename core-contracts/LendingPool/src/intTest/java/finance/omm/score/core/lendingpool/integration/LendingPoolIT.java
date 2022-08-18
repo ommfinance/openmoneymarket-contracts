@@ -215,15 +215,16 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
     @Test
     void redeem_waitForUnstaking(){
-        //couldn't figure out testcase
         depositICX(ommClient,BigInteger.valueOf(1000));
 
         Address icxAddr = addressMap.get(Contracts.oICX.getKey());
 
         ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),true);
 
+        Address iusdcaddr = addressMap.get(Contracts.oIUSDC.getKey());
+
         assertUserRevert(LendingPoolException.unknown("Redeem with wait for unstaking failed: Invalid token"),
-                ()->ommClient.lendingPool.redeem(icxAddr,BigInteger.valueOf(50).multiply(ICX),false),
+                ()->ommClient.lendingPool.redeem(iusdcaddr,BigInteger.valueOf(50),true),
                 null);
     }
 
@@ -360,7 +361,7 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     }
 
     @Test
-    void liquidation_tokenfallback(){
+    void liquidation_tokenfallback() throws InterruptedException {
         //configuration after borrow case works
         Address collateral = addressMap.get(Contracts.sICX.getKey());
         Address reserve = addressMap.get(Contracts.IUSDC.getKey());
@@ -379,11 +380,14 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         // test client borrows 40 IUSDC
         testClient.lendingPool.borrow(IUSDCAddr, amountToBorrowIUSDC);
 
+//        Thread.sleep(20000L);
         //0.5 icx
         ommClient.dummyPriceOracle.set_reference_data("ICX", HALF_ICX);
 
         byte[] data = createByteArray("liquidationCall", null, collateral, reserve, user);
         BigInteger value = BigInteger.valueOf(50).multiply(BigInteger.valueOf(1000_000));
+
+
 
         Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
         ommClient.governance.setReserveActiveStatus(iusdcAddr,false);
@@ -403,12 +407,21 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
         ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, data);
 
+
     }
 
     @Test
-    void claimRewards(){
+    void claimRewards() throws InterruptedException {
         depositICX(ommClient, BigInteger.valueOf(1000));
+
+        Thread.sleep(1000L);
+        ommClient.reward.distribute();
+
+        Address daofund = addressMap.get(Contracts.DAO_FUND.getKey());
+
+        System.out.println(ommClient.ommToken.balanceOf(daofund));
         ommClient.lendingPool.claimRewards();
+        System.out.println(ommClient.ommToken.balanceOf(ommClient.getAddress()));
     }
 
 
