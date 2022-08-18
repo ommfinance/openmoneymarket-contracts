@@ -265,10 +265,9 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
             Address _user, BigInteger _amountBorrowed, BigInteger _borrowFee) {
         onlyLendingPool();
         BigInteger balanceIncrease = getUserBorrowBalances(_reserve, _user).get("borrowBalanceIncrease");
-        if (balanceIncrease.compareTo(BigInteger.ZERO) > 0) {
-            BigInteger division = balanceIncrease.divide(BigInteger.TEN);
-            call(_reserve,
-                    "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), division);
+        BigInteger division = balanceIncrease.divide(BigInteger.TEN);
+        if (division.compareTo(BigInteger.ZERO) > 0) {
+            call(_reserve, "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), division);
             InterestTransfer(division, _reserve, _user);
         }
         updateCumulativeIndexes(_reserve);
@@ -288,12 +287,11 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void updateStateOnRepay(Address _reserve, Address _user, BigInteger _paybackAmountMinusFees,
-        if (_balanceIncrease.compareTo(BigInteger.ZERO) > 0) {
-            BigInteger division = _balanceIncrease.divide(BigInteger.TEN);
-            call(_reserve,
-                    "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), division);
             BigInteger _originationFeeRepaid, BigInteger _balanceIncrease, boolean _repaidWholeLoan) {
         onlyLendingPool();
+        BigInteger division = _balanceIncrease.divide(BigInteger.TEN);
+        if (division.compareTo(BigInteger.ZERO) > 0) {
+            call(_reserve, "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), division);
             InterestTransfer(division, _reserve, _user);
         }
         updateCumulativeIndexes(_reserve);
@@ -318,14 +316,13 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void updateStateOnLiquidation(Address _principalReserve, Address _collateralReserve, Address _user,
-        if (_balanceIncrease.compareTo(BigInteger.ZERO) > 0) {
-            BigInteger division = _balanceIncrease.divide(BigInteger.TEN);
-            call(_principalReserve,
-                    "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), division);
             BigInteger _amountToLiquidate, BigInteger _collateralToLiquidate, BigInteger _feeLiquidated,
             BigInteger _liquidatedCollateralForFee, BigInteger _balanceIncrease) {
 
         onlyLiquidationManager();
+        BigInteger division = _balanceIncrease.divide(BigInteger.TEN);
+        if (division.compareTo(BigInteger.ZERO) > 0) {
+            call(_principalReserve, "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), division);
             InterestTransfer(division, _principalReserve, _user);
         }
         updatePrincipalReserveStateOnLiquidationInternal(_principalReserve, _user, _amountToLiquidate,
