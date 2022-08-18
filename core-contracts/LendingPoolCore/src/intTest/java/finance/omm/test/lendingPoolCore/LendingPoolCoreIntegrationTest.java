@@ -120,4 +120,68 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
     private BigInteger toBigInt(String inputString) {
         return new BigInteger(inputString.substring(2), 16);
     }
+
+    @DisplayName("Configuration Change Revert Tests")
+    @Nested
+    @TestMethodOrder(OrderAnnotation.class)
+    class ConfigurationChangesTest {
+
+        Address sicx = addressMap.get(Contracts.sICX.getKey());
+
+        @Test
+        @Order(1)
+        void updateBorrowThreshold() {
+            assertThrows(UserRevertedException.class, () ->
+                    ownerClient.lendingPoolCore.updateBorrowThreshold(sicx, BigInteger.TEN));
+        }
+
+        @Test
+        @Order(1)
+        void updateBaseLTVasCollateral() {
+            assertThrows(UserRevertedException.class, () ->
+                    ownerClient.lendingPoolCore.updateBaseLTVasCollateral(sicx, BigInteger.TEN));
+        }
+
+        @Test
+        @Order(1)
+        void updateLiquidationThreshold() {
+            assertThrows(UserRevertedException.class, () ->
+                    ownerClient.lendingPoolCore.updateLiquidationThreshold(sicx, BigInteger.TEN));
+        }
+
+        @Test
+        @Order(1)
+        void updateLiquidationBonus() {
+            assertThrows(UserRevertedException.class, () ->
+                    ownerClient.lendingPoolCore.updateLiquidationBonus(sicx, BigInteger.TEN));
+        }
+
+        @Test
+        @Order(1)
+        void updateBorrowingEnabled() {
+            assertThrows(UserRevertedException.class, () ->
+                    ownerClient.lendingPoolCore.updateBorrowingEnabled(sicx, true));
+        }
+
+        @Test
+        @Order(1)
+        void updateUsageAsCollateralEnabled() {
+            assertThrows(UserRevertedException.class, () ->
+                    ownerClient.lendingPoolCore.updateUsageAsCollateralEnabled(sicx, true));
+        }
+
+        @Test
+        @Order(1)
+        void updateIsFreezed() {
+            assertThrows(UserRevertedException.class, () ->
+                    ownerClient.lendingPoolCore.updateIsFreezed(sicx, true));
+        }
+
+        @Test
+        @Order(1)
+        void updateIsActive() {
+            assertThrows(UserRevertedException.class, () ->
+                    ownerClient.lendingPoolCore.updateIsActive(sicx, true));
+        }
+    }
 }
