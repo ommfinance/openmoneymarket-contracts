@@ -33,7 +33,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External(readonly = true)
     public String name() {
-        return "OMM " + TAG;
+        return "Omm " + TAG;
     }
 
     @External
