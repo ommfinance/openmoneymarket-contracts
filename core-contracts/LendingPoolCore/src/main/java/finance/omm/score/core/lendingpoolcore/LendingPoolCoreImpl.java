@@ -11,8 +11,9 @@ import finance.omm.libs.structs.PrepDelegations;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.score.core.lendingpoolcore.exception.LendingPoolCoreException;
 import finance.omm.score.core.lendingpoolcore.reservedata.ReserveDataObject;
-import score.*;
-
+import score.Context;
+import score.Address;
+import score.DictDB;
 import score.annotation.External;
 import score.annotation.Optional;
 import score.annotation.Payable;
@@ -37,9 +38,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void updateBorrowThreshold(Address _reserve, BigInteger _borrowThreshold) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
         if (_borrowThreshold.compareTo(BigInteger.ZERO) < 0 || _borrowThreshold.compareTo(ICX) > 0) {
             Context.revert(TAG + " : Invalid borrow threshold value)");
@@ -49,63 +48,49 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void updateBaseLTVasCollateral(Address _reserve, BigInteger _baseLTVasCollateral) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
         reserve.getItem(prefix).baseLTVasCollateral.set(_baseLTVasCollateral);
     }
 
     @External
     public void updateLiquidationThreshold(Address _reserve, BigInteger _liquidationThreshold) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
         reserve.getItem(prefix).liquidationThreshold.set(_liquidationThreshold);
     }
 
     @External
     public void updateLiquidationBonus(Address _reserve, BigInteger _liquidationBonus) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
         reserve.getItem(prefix).liquidationBonus.set(_liquidationBonus);
     }
 
     @External
     public void updateBorrowingEnabled(Address _reserve, boolean _borrowingEnabled) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
         reserve.getItem(prefix).borrowingEnabled.set(_borrowingEnabled);
     }
 
     @External
     public void updateUsageAsCollateralEnabled(Address _reserve, boolean _usageAsCollateralEnabled) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
         reserve.getItem(prefix).usageAsCollateralEnabled.set(_usageAsCollateralEnabled);
     }
 
     @External
     public void updateIsFreezed(Address _reserve, boolean _isFreezed) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
         reserve.getItem(prefix).isFreezed.set(_isFreezed);
     }
 
     @External
     public void updateIsActive(Address _reserve, boolean _isActive) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
         reserve.getItem(prefix).isActive.set(_isActive);
     }
@@ -140,9 +125,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void addReserveData(ReserveAttributes _reserve) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         ReserveDataObject reserveDataObj = createReserveDataObject(_reserve);
         if (!checkReserve(reserveDataObj.reserveAddress)) {
             addNewReserve(reserveDataObj.reserveAddress);
@@ -221,9 +204,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void setReserveConstants(Constant[] _constants) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+        onlyGovernance();
         List<Address> reserveList = getReserves();
         for (Constant constant : _constants) {
             Address reserve = constant.reserve;
@@ -255,45 +236,34 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void transferToUser(Address _reserve, Address _user, BigInteger _amount, @Optional byte[] _data) {
-        onlyContractOrElseThrow(Contracts.LENDING_POOL, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " lendingPool " + getAddress(Contracts.LENDING_POOL.getKey())));
-        call(_reserve,
-                "transfer", _user, _amount, _data);
+        onlyLendingPool();
+        call(_reserve,"transfer", _user, _amount, _data);
     }
 
     @External
     public void liquidateFee(Address _reserve, BigInteger _amount, Address _destination) {
-        onlyContractOrElseThrow(Contracts.LIQUIDATION_MANAGER, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " liquidation " + getAddress(Contracts.LIQUIDATION_MANAGER.getKey())));
-        call(_reserve,
-                "transfer", _destination, _amount);
+        onlyLiquidationManager();
+        call(_reserve, "transfer", _destination, _amount);
     }
 
     @External
     public void updateStateOnDeposit(Address _reserve, Address _user, BigInteger _amount) {
-        onlyContractOrElseThrow(Contracts.LENDING_POOL, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " lendingPool " + getAddress(Contracts.LENDING_POOL.getKey())));
+        onlyLendingPool();
         updateCumulativeIndexes(_reserve);
         updateReserveInterestRatesAndTimestampInternal(_reserve, _amount, BigInteger.ZERO);
     }
 
     @External
     public void updateStateOnRedeem(Address _reserve, Address _user, BigInteger _amountRedeemed) {
-        onlyContractOrElseThrow(Contracts.LENDING_POOL, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " lendingPool " + getAddress(Contracts.LENDING_POOL.getKey())));
+        onlyLendingPool();
         updateCumulativeIndexes(_reserve);
         updateReserveInterestRatesAndTimestampInternal(_reserve, BigInteger.ZERO, _amountRedeemed);
     }
 
     @External
-    public Map<String, BigInteger> updateStateOnBorrow(Address _reserve, Address _user, BigInteger _amountBorrowed, BigInteger _borrowFee) {
-        onlyContractOrElseThrow(Contracts.LENDING_POOL, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " lendingPool " + getAddress(Contracts.LENDING_POOL.getKey())));
+    public Map<String, BigInteger> updateStateOnBorrow(Address _reserve,
+            Address _user, BigInteger _amountBorrowed, BigInteger _borrowFee) {
+        onlyLendingPool();
         BigInteger balanceIncrease = getUserBorrowBalances(_reserve, _user).get("borrowBalanceIncrease");
         if (balanceIncrease.compareTo(BigInteger.ZERO) > 0) {
             BigInteger division = balanceIncrease.divide(BigInteger.TEN);
@@ -302,8 +272,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
             InterestTransfer(division, _reserve, _user);
         }
         updateCumulativeIndexes(_reserve);
-        call(getReserveDTokenAddress(_reserve),
-                "mintOnBorrow", _user, _amountBorrowed, balanceIncrease);
+        call(getReserveDTokenAddress(_reserve), "mintOnBorrow", _user, _amountBorrowed, balanceIncrease);
         updateUserStateOnBorrowInternal(_reserve, _user, _amountBorrowed, balanceIncrease, _borrowFee);
 
         updateReserveInterestRatesAndTimestampInternal(_reserve, BigInteger.ZERO, _amountBorrowed);
@@ -319,14 +288,12 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void updateStateOnRepay(Address _reserve, Address _user, BigInteger _paybackAmountMinusFees,
-                                   BigInteger _originationFeeRepaid, BigInteger _balanceIncrease, boolean _repaidWholeLoan) {
-        onlyContractOrElseThrow(Contracts.LENDING_POOL, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " lendingPool " + getAddress(Contracts.LENDING_POOL.getKey())));
         if (_balanceIncrease.compareTo(BigInteger.ZERO) > 0) {
             BigInteger division = _balanceIncrease.divide(BigInteger.TEN);
             call(_reserve,
                     "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), division);
+            BigInteger _originationFeeRepaid, BigInteger _balanceIncrease, boolean _repaidWholeLoan) {
+        onlyLendingPool();
             InterestTransfer(division, _reserve, _user);
         }
         updateCumulativeIndexes(_reserve);
@@ -351,15 +318,14 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void updateStateOnLiquidation(Address _principalReserve, Address _collateralReserve, Address _user,
-                                         BigInteger _amountToLiquidate, BigInteger _collateralToLiquidate, BigInteger _feeLiquidated,
-                                         BigInteger _liquidatedCollateralForFee, BigInteger _balanceIncrease) {
-        onlyContractOrElseThrow(Contracts.LIQUIDATION_MANAGER, LendingPoolCoreException.unauthorized(
-                "SenderNotAuthorized: (sender) " +
-                        Context.getCaller() + " liquidation " + getAddress(Contracts.LIQUIDATION_MANAGER.getKey())));
         if (_balanceIncrease.compareTo(BigInteger.ZERO) > 0) {
             BigInteger division = _balanceIncrease.divide(BigInteger.TEN);
             call(_principalReserve,
                     "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), division);
+            BigInteger _amountToLiquidate, BigInteger _collateralToLiquidate, BigInteger _feeLiquidated,
+            BigInteger _liquidatedCollateralForFee, BigInteger _balanceIncrease) {
+
+        onlyLiquidationManager();
             InterestTransfer(division, _principalReserve, _user);
         }
         updatePrincipalReserveStateOnLiquidationInternal(_principalReserve, _user, _amountToLiquidate,
@@ -444,5 +410,23 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @Payable
     public void fallback() {
+    }
+
+    private void onlyGovernance() {
+        onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(
+                "SenderNotAuthorized: (sender) " +
+                        Context.getCaller() + " governance " + getAddress(Contracts.GOVERNANCE.getKey())));
+    }
+
+    private void onlyLendingPool() {
+        onlyContractOrElseThrow(Contracts.LENDING_POOL, LendingPoolCoreException.unauthorized(
+                "SenderNotAuthorized: (sender) " +
+                        Context.getCaller() + " lendingPool " + getAddress(Contracts.LENDING_POOL.getKey())));
+    }
+
+    private void onlyLiquidationManager() {
+        onlyContractOrElseThrow(Contracts.LIQUIDATION_MANAGER, LendingPoolCoreException.unauthorized(
+                "SenderNotAuthorized: (sender) " +
+                        Context.getCaller() + " liquidation " + getAddress(Contracts.LIQUIDATION_MANAGER.getKey())));
     }
 }
