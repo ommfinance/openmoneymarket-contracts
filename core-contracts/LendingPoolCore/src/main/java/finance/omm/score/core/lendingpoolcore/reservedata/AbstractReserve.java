@@ -24,7 +24,7 @@ public class AbstractReserve {
         reserveData.put("baseLTVasCollateral", reserve.getItem(prefix).baseLTVasCollateral.getOrDefault(BigInteger.ZERO));
         reserveData.put("liquidationThreshold", reserve.getItem(prefix).liquidationThreshold.getOrDefault(BigInteger.ZERO));
         reserveData.put("liquidationBonus", reserve.getItem(prefix).liquidationBonus.getOrDefault(BigInteger.ZERO));
-        reserveData.put("decimals", reserve.getItem(prefix).decimals.getOrDefault(BigInteger.ZERO));
+        reserveData.put("decimals", reserve.getItem(prefix).decimals.getOrDefault(0));
         reserveData.put("borrowingEnabled", reserve.getItem(prefix).borrowingEnabled.get());
         reserveData.put("usageAsCollateralEnabled", reserve.getItem(prefix).usageAsCollateralEnabled.get());
         reserveData.put("isFreezed", reserve.getItem(prefix).isFreezed.get());

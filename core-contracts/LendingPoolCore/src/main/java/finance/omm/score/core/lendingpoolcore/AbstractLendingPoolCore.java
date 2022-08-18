@@ -84,7 +84,7 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
         reserve.getItem(prefix).liquidityCumulativeIndex.set(liquidityCumulativeIndex);
     }
 
-    protected void updateDecimals(Address reserveAddress, BigInteger decimals) {
+    protected void updateDecimals(Address reserveAddress, int decimals) {
         byte[] prefix = reservePrefix(reserveAddress);
         reserve.getItem(prefix).decimals.set(decimals);
     }

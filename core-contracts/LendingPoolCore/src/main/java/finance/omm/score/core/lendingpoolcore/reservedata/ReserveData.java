@@ -20,7 +20,7 @@ public class ReserveData {
     public final VarDB<BigInteger> baseLTVasCollateral = Context.newVarDB("baseLTLasCollateral", BigInteger.class);
     public final VarDB<BigInteger> liquidationThreshold = Context.newVarDB("liquidationThreshold", BigInteger.class);
     public final VarDB<BigInteger> liquidationBonus = Context.newVarDB("liquidationBonus", BigInteger.class);
-    public final VarDB<BigInteger> decimals = Context.newVarDB("decimals", BigInteger.class);
+    public final VarDB<Integer> decimals = Context.newVarDB("decimals", Integer.class);
     public final VarDB<Boolean> borrowingEnabled = Context.newVarDB("borrowingEnabled", Boolean.class);
     public final VarDB<Boolean> usageAsCollateralEnabled = Context.newVarDB("usageAsCollateralEnabled", Boolean.class);
     public final VarDB<Boolean> isFreezed = Context.newVarDB("isFreezed", Boolean.class);

@@ -19,7 +19,7 @@ public class ReserveDataObject {
     public BigInteger baseLTVasCollateral;
     public BigInteger liquidationThreshold;
     public BigInteger liquidationBonus;
-    public BigInteger decimals;
+    public int decimals;
     public Boolean borrowingEnabled;
     public Boolean usageAsCollateralEnabled;
     public Boolean isFreezed;
@@ -37,7 +37,7 @@ public class ReserveDataObject {
         this.baseLTVasCollateral = (BigInteger) reserveData.get("baseLTVasCollateral");
         this.liquidationThreshold = (BigInteger) reserveData.get("liquidationThreshold");
         this.liquidationBonus = (BigInteger) reserveData.get("liquidationBonus");
-        this.decimals = (BigInteger) reserveData.get("decimals");
+        this.decimals = (int) reserveData.get("decimals");
         this.borrowingEnabled = (Boolean) reserveData.get("borrowingEnabled");
         this.usageAsCollateralEnabled = (Boolean) reserveData.get("usageAsCollateralEnabled");
         this.isFreezed = (Boolean) reserveData.get("isFreezed");
