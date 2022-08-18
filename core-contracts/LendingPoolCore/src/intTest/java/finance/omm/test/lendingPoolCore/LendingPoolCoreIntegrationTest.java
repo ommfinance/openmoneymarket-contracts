@@ -121,6 +121,20 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         return new BigInteger(inputString.substring(2), 16);
     }
 
+    protected BigInteger getNormalizedIncome(Address reserve) {
+        return ownerClient.lendingPoolCore.getNormalizedIncome(reserve);
+    }
+
+    protected BigInteger getNormalizedDebt(Address reserve) {
+        return ownerClient.lendingPoolCore.getNormalizedDebt(reserve);
+    }
+
+    protected Map<String, Object> getReserveData(Address reserve) {
+        return ownerClient.lendingPoolCore.getReserveData(reserve);
+    }
+
+    Map<String, Boolean> STATES = new HashMap<>();
+
     @DisplayName("Configuration Change Revert Tests")
     @Nested
     @TestMethodOrder(OrderAnnotation.class)
@@ -182,6 +196,93 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         void updateIsActive() {
             assertThrows(UserRevertedException.class, () ->
                     ownerClient.lendingPoolCore.updateIsActive(sicx, true));
+        }
+    }
+
+    @DisplayName("Deposit Test")
+    @Nested
+    @TestMethodOrder(OrderAnnotation.class)
+    class DepositTest {
+        BigInteger HUNDRED = BigInteger.valueOf(100).multiply(ICX);
+        Address sicx = addressMap.get(Contracts.sICX.getKey());
+
+        protected void depositICX() {
+            ((LendingPoolScoreClient)alice.lendingPool).
+                    deposit(HUNDRED,HUNDRED);
+        }
+        @Test
+        @Order(1)
+        @DisplayName("Deposit: ICX Deposit Alice")
+        void icx_deposit() {
+            // txn
+            depositICX();
+
+            // verification
+            Map<String, Object> sicxReserveData = getReserveData(sicx);
+            assertEquals(HUNDRED, toBigInt((String) sicxReserveData.get("totalLiquidity")));
+            assertEquals(HUNDRED, toBigInt((String) sicxReserveData.get("availableLiquidity")));
+            assertEquals(BigInteger.ZERO, toBigInt((String) sicxReserveData.get("totalBorrows")));
+            assertEquals(BigInteger.valueOf(90).multiply(ICX), toBigInt((String) sicxReserveData.get("availableBorrows")));
+
+
+            Map<String, BigInteger> aliceSicxReserveData = ownerClient.lendingPoolCore.getUserReserveData(sicx, alice.getAddress());
+            assertEquals(BigInteger.ZERO, aliceSicxReserveData.get("originationFee"));
+
+            // normalized income = 1
+            assertEquals(ICX, getNormalizedIncome(sicx));
+            // normalized debt = 1
+            assertEquals(ICX, getNormalizedDebt(sicx));
+
+            STATES.put("icx_deposit_alice_1", true);
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("Borrow: ICX Borrow Alice")
+        void icx_borrow() {
+            if (STATES.getOrDefault("icx_borrow_alice_1", false)) {
+                return;
+            }
+            BigInteger FORTY = BigInteger.valueOf(40).multiply(ICX);
+            // txn
+            alice.lendingPool.borrow(sicx, FORTY);
+            // verification
+            Map<String, Object> sicxReserveData = getReserveData(sicx);
+            assertEquals(FORTY, toBigInt((String) sicxReserveData.get("totalBorrows")));
+            Map<String, BigInteger> aliceSicxReserveData = ownerClient.lendingPoolCore.getUserReserveData(sicx, alice.getAddress());
+            assertEquals(exaMultiply(FORTY, Constant.LOAN_ORIGINATION_FEE_PERCENTAGE), aliceSicxReserveData.get("originationFee"));
+
+            // for first borrow
+            assertEquals(ICX, getNormalizedIncome(sicx));
+            assertEquals(ICX, getNormalizedDebt(sicx));
+            STATES.put("icx_borrow_alice_1", true);
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("Deposit Again: ICX Deposit Alice")
+        void icx_deposit2() throws InterruptedException {
+            if (STATES.getOrDefault("icx_deposit_alice_2", false)) {
+                return;
+            }
+            // 100 ICX has been deposited, 40 ICX has been borrowed before
+            Thread.sleep(3000);
+            depositICX();
+
+            Map<String, Object> sicxReserveData = getReserveData(sicx);
+            // totalBorrows > 0, indexes update
+            BigInteger liquidityCumulativeIndex = toBigInt((String) sicxReserveData.get("liquidityCumulativeIndex"));
+            BigInteger borrowCumulativeIndex = toBigInt((String) sicxReserveData.get("borrowCumulativeIndex"));
+            assertTrue(liquidityCumulativeIndex.compareTo(ICX) > 0);
+            assertTrue(borrowCumulativeIndex.compareTo(ICX) > 0);
+
+            assertEquals(HUNDRED.multiply(BigInteger.TWO), toBigInt((String) sicxReserveData.get("totalLiquidity")));
+            assertEquals(BigInteger.valueOf(160).multiply(ICX), toBigInt((String) sicxReserveData.get("availableLiquidity")));
+
+            assertTrue(getNormalizedDebt(sicx).compareTo(ICX) > 0);
+            assertTrue(getNormalizedIncome(sicx).compareTo(ICX) > 0);
+
+            STATES.put("icx_deposit_alice_2", true);
         }
     }
 }
