@@ -286,8 +286,7 @@ public abstract class AbstractRewardDistribution extends AddressProvider impleme
         }
 
         BigInteger assetIndex = call(BigInteger.class, Contracts.REWARD_WEIGHT_CONTROLLER, "calculateIntegrateIndex",
-                assetAddr,
-                totalSupply, lastUpdateTimestamp, toTimestampInSeconds);
+                assetAddr, totalSupply, lastUpdateTimestamp, toTimestampInSeconds);
         BigInteger newIndex = oldIndex.add(assetIndex);
         if (!readonly) {
             if (!oldIndex.equals(newIndex)) {

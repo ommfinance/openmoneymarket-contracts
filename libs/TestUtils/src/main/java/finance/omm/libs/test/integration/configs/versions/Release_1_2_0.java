@@ -67,6 +67,7 @@ public class Release_1_2_0 extends Release {
         String dICX = Contracts.dICX.getKey();
         String oIUSDC = Contracts.oIUSDC.getKey();
         String dIUSDC = Contracts.dIUSDC.getKey();
+        String daoFund = Contracts.DAO_FUND.getKey();
 
         ommClient.governance.addAsset("reserve", oICX, contractAddresses.get(oICX), BigInteger.valueOf(-1));
         ommClient.governance.addAsset("reserve", dICX, contractAddresses.get(dICX), BigInteger.valueOf(-1));
@@ -76,7 +77,8 @@ public class Release_1_2_0 extends Release {
 //        ommClient.governance.addAsset("OMMLocking", "bOMM", contractAddresses.get("bOMM"),
 //                BigInteger.valueOf(-1));
         BigInteger systemTime = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
-        BigInteger time = systemTime.add(BigInteger.valueOf(100));
+        BigInteger time = systemTime.add(BigInteger.valueOf(1));
+
 
         ommClient.governance.setTypeWeight(new TypeWeightStruct[]{
                 new TypeWeightStruct("reserve", ICX.divide(BigInteger.TWO)),
@@ -91,9 +93,13 @@ public class Release_1_2_0 extends Release {
                 new WeightStruct(contractAddresses.get(dIUSDC),ICX.divide(BigInteger.valueOf(4)))
 
         };
+
+        WeightStruct[] daoWeightStructs = new WeightStruct[]{
+                new WeightStruct(contractAddresses.get(daoFund),ICX)
+        };
+
         ommClient.governance.setAssetWeight("reserve",weightStructs,time);
-
-
+        ommClient.governance.setAssetWeight("daoFund",daoWeightStructs,time);
 
         return this.next(ommClient);
     }

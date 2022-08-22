@@ -13,13 +13,11 @@ import finance.omm.score.core.lendingpool.exception.LendingPoolException;
 import finance.omm.score.core.lendingpool.integration.config.lendingPoolConfig;
 import foundation.icon.score.client.RevertedException;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import score.Address;
-import score.UserRevertedException;
 import score.annotation.Optional;
 
 import java.math.BigInteger;
@@ -27,13 +25,12 @@ import java.util.List;
 import java.util.Map;
 
 
-import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.score.core.lendingpool.AbstractLendingPool.TAG;
 import static finance.omm.utils.math.MathUtils.HALF_ICX;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -72,10 +69,16 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
     @Test
     void deposit_token(){
+
+        Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
+
         ommClient.iUSDC.transfer(testClient.getAddress(),
                 BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000)),new byte[]{});
         System.out.println("bal "+testClient.iUSDC.balanceOf(testClient.getAddress()));
         depositIUSDC(testClient,BigInteger.valueOf(10));
+
+        assertEquals(ommClient.lendingPoolCore.getUserBasicReserveData(iusdcAddr,ommClient.getAddress()),BigInteger.
+                valueOf(1010).multiply(ICX));
     }
     @Test
     void deposit_payble(){
@@ -93,6 +96,10 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
         ommClient.governance.setReserveFreezeStatus(icxAddr,false);
         depositICX(ommClient,BigInteger.valueOf(10));
+        //previous thousand
+        assertEquals((ommClient.lendingPoolCore.getUserBasicReserveData(icxAddr,ommClient.getAddress())).
+                get("underlyingBalance"),BigInteger.valueOf(1010).multiply(ICX));
+
     }
 
     @Test
@@ -332,6 +339,9 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         // test client borrows 100 IUSDC
         testClient.lendingPool.borrow(iusdcAddr, amount);
 
+        assertEquals(BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000)), ommClient.dIUSDC.balanceOf
+                (testClient.getAddress()));
+
         BigInteger repay = BigInteger.valueOf(110).multiply(BigInteger.valueOf(1000_000));
         byte[] data = createByteArray("repay", repay, null, null, null);
 
@@ -349,6 +359,9 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
         assertUserRevert(LendingPoolException.unknown("The user does not have any borrow pending"),
                 ()->testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data), null);
+
+        assertEquals(BigInteger.ZERO, ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+        assertEquals(BigInteger.ZERO, ommClient.dIUSDC.totalSupply());
     }
 
     private void transferIusdc(){
@@ -380,7 +393,7 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         // test client borrows 40 IUSDC
         testClient.lendingPool.borrow(IUSDCAddr, amountToBorrowIUSDC);
 
-//        Thread.sleep(20000L);
+        Thread.sleep(20000L);
         //0.5 icx
         ommClient.dummyPriceOracle.set_reference_data("ICX", HALF_ICX);
 
@@ -402,11 +415,21 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         assertUserRevert(LendingPoolException.reserveNotActive("Collateral reserve is not active,liquidation unsuccessful"),
                 ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, data), null);
 
+
         ommClient.governance.setReserveActiveStatus(iusdcAddr,true);
         ommClient.governance.setReserveActiveStatus(icxAddr,true);
 
+        BigInteger prevBalance = ommClient.oICX.balanceOf(testClient.getAddress());
+
         ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), value, data);
 
+        BigInteger balanceAfterLiq = ommClient.oICX.principalBalanceOf(testClient.getAddress());
+        BigInteger feeProvider = ommClient.sICX.balanceOf(addressMap.get("feeProvider"));
+        BigInteger repayEq = BigInteger.TEN.multiply(ICX);
+        BigInteger tenPercent = BigInteger.ONE.multiply(ICX);
+
+        assertEquals(prevBalance.subtract(feeProvider.add(repayEq).add(tenPercent)), balanceAfterLiq);
+        //10+10% of 10 oICX + fee provider
 
     }
 
@@ -419,11 +442,20 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
         Address daofund = addressMap.get(Contracts.DAO_FUND.getKey());
 
+        BigInteger systemTime = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
+        BigInteger time = systemTime.add(BigInteger.valueOf(1));
+//
+//        System.out.println(ommClient.rewardWeightController.getEmissionRate(time));
+        System.out.println(ommClient.rewardWeightController.getAssetWeight(daofund,time));
         System.out.println(ommClient.ommToken.balanceOf(daofund));
+//        System.out.println(ommClient.reward.getRewards(ommClient.getAddress()));
+//        System.out.println(ommClient.reward.getIndexes(ommClient.getAddress(),addressMap.get(Contracts.oICX.getKey())));
+//        System.out.println(ommClient.reward.getWorkingBalances(ommClient.getAddress()));
+//        System.out.println(ommClient.reward.getUserDailyReward(ommClient.getAddress()));
+        assertTrue(ommClient.ommToken.balanceOf(ommClient.getAddress()).equals(BigInteger.ZERO));
         ommClient.lendingPool.claimRewards();
-        System.out.println(ommClient.ommToken.balanceOf(ommClient.getAddress()));
+        assertTrue(ommClient.ommToken.balanceOf(ommClient.getAddress()).compareTo(BigInteger.ZERO)>0);
     }
-
 
     private void depositICX(OMMClient client, BigInteger amount){
         ((LendingPoolScoreClient)client.lendingPool).deposit(amount.multiply(ICX),amount.multiply(ICX));
@@ -469,14 +501,36 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
     @Test
     void borrow_not_enough_liquidity(){
+//        depositICX(testClient,BigInteger.valueOf(1000));
+//        BigInteger borrowAmt = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
+//        Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
+//
+//        testClient.lendingPool.borrow(iusdc_reserve,borrowAmt);
+//
+//        assertUserRevert(LendingPoolException.unknown("Borrow error:Not enough available liquidity in the reserve"),
+//                () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
+    }
 
-        ((LendingPoolScoreClient)testClient.lendingPool).
-                deposit(BigInteger.valueOf(100000).multiply(ICX),BigInteger.valueOf(100000).multiply(ICX));
-
+    @Test
+    void borrow_success_flow() throws InterruptedException {
+        depositICX(testClient,BigInteger.valueOf(1000));
         BigInteger borrowAmt = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
 
+        Thread.sleep(2000L);
         Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
         testClient.lendingPool.borrow(iusdc_reserve,borrowAmt);
+
+        Thread.sleep(2000L);
+
+        depositICX(testClient,BigInteger.valueOf(1000));
+        Thread.sleep(2000L);
+
+        Map<String, BigInteger> borrowbalance = ommClient.lendingPoolCore.getUserBorrowBalances(iusdc_reserve,
+                testClient.getAddress());
+        assertEquals(borrowbalance.get("principalBorrowBalance"), BigInteger.valueOf(100*1000_000));
+//        assertTrue(borrowbalance.get("compoundedBorrowBalance").compareTo(borrowbalance.
+//                get("principalBorrowBalance"))>0);
+
     }
 
     @Test
@@ -500,7 +554,4 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         assertUserRevert(LendingPoolException.unknown("Borrow error: Insufficient collateral to cover new borrow"),
                 () -> testClient.lendingPool.borrow(iusdc_reserve,borrowAmt),null);
     }
-
-
-
 }
