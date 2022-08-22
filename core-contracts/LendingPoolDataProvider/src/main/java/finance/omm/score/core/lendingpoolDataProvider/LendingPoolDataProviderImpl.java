@@ -23,7 +23,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
     @External(readonly = true)
     public String name() {
-        return "OMM " + TAG;
+        return "Omm " + TAG;
     }
 
     @External
@@ -74,7 +74,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
             if (reserveDecimals.compareTo(BigInteger.valueOf(18)) != 0) {
                 reserveTotalLiquidity = convertToExa(reserveTotalLiquidity, reserveDecimals);
                 reserveAvailableLiquidity = convertToExa(reserveAvailableLiquidity, reserveDecimals);
-                reserveTotalBorrows = convertToExa(reserveAvailableLiquidity, reserveDecimals);
+                reserveTotalBorrows = convertToExa(reserveTotalBorrows, reserveDecimals);
             }
 
             totalLiquidityBalanceUSD = totalLiquidityBalanceUSD.add(exaMultiply(reserveTotalLiquidity, reservePrice));
@@ -107,13 +107,16 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
         List<Address> reserves = call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
         for (Address reserve : reserves) {
-            Map<String, BigInteger> userBasicReserveData = call(Map.class, Contracts.LENDING_POOL_CORE, "getUserBasicReserveData", reserve, _user);
+            Map<String, BigInteger> userBasicReserveData = new HashMap<>();
+            userBasicReserveData.putAll(call(Map.class, Contracts.LENDING_POOL_CORE,
+                    "getUserBasicReserveData", reserve, _user));
             if (userBasicReserveData.get("underlyingBalance").equals(BigInteger.ZERO)
                     && userBasicReserveData.get("compoundedBorrowBalance").equals(BigInteger.ZERO)) {
                 continue;
             }
-            Map<String, Object> reserveConfiguration = call(Map.class, Contracts.LENDING_POOL_CORE,
-                    "getReserveConfiguration", reserve);
+            Map<String, Object> reserveConfiguration = new HashMap<>();
+            reserveConfiguration.putAll(call(Map.class, Contracts.LENDING_POOL_CORE,
+                    "getReserveConfiguration", reserve));
             BigInteger reserveDecimals = (BigInteger) reserveConfiguration.get("decimals");
             // converting the user balances into 18 decimals
             if (reserveDecimals.compareTo(BigInteger.valueOf(18)) != 0) {
@@ -179,7 +182,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         }
 
         return Map.of(
-                "totalLiquidityBalanceUSD", totalCollateralBalanceUSD,
+                "totalLiquidityBalanceUSD", totalLiquidityBalanceUSD,
                 "totalCollateralBalanceUSD", totalCollateralBalanceUSD,
                 "totalBorrowBalanceUSD", totalBorrowBalanceUSD,
                 "totalFeesUSD", totalFeesUSD,
@@ -199,21 +202,23 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                 "getReserveData", _reserve);
         Map<String, BigInteger> userReserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getUserReserveData", _reserve, _user);
-        BigInteger currentOTokenBalance = call(BigInteger.class, (Address) reserveData.get("oTokenAddress"),
-                "balanceOf", _user);
-        BigInteger principalOTokenBalance = call(BigInteger.class, (Address) reserveData.get("oTokenAddress"),
-                "principalBalanceOf", _user);
-        BigInteger userLiquidityCumulativeIndex = call(BigInteger.class, (Address) reserveData.get("oTokenAddress"),
+        Address oTokenAddr = (Address) reserveData.get("oTokenAddress");
+
+        BigInteger currentOTokenBalance = call(BigInteger.class, oTokenAddr, "balanceOf", _user);
+        BigInteger principalOTokenBalance = call(BigInteger.class, oTokenAddr, "principalBalanceOf", _user);
+        BigInteger userLiquidityCumulativeIndex = call(BigInteger.class, oTokenAddr,
                 "getUserLiquidityCumulativeIndex", _user);
-        BigInteger principalBorrowBalance = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
-                "principalBalanceOf", _user);
-        BigInteger currentBorrowBalance = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
-                "balanceOf", _user);
+
+        Address dTokenAddr = (Address) reserveData.get("dTokenAddress");
+
+        BigInteger principalBorrowBalance = call(BigInteger.class, dTokenAddr, "principalBalanceOf", _user);
+        BigInteger currentBorrowBalance = call(BigInteger.class, dTokenAddr, "balanceOf", _user);
+
         BigInteger borrowRate = (BigInteger) reserveData.get("borrowRate");
         BigInteger reserveDecimals = (BigInteger) reserveData.get("decimals");
         BigInteger liquidityRate = (BigInteger) reserveData.get("liquidityRate");
         BigInteger originationFee = userReserveData.get("originationFee");
-        BigInteger userBorrowCumulativeIndex = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
+        BigInteger userBorrowCumulativeIndex = call(BigInteger.class, dTokenAddr,
                 "getUserBorrowCumulativeIndex", _user);
         BigInteger lastUpdateTimestamp = userReserveData.get("lastUpdateTimestamp");
         String symbol = this.symbol.get(_reserve);
