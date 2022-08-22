@@ -23,7 +23,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
     @External(readonly = true)
     public String name() {
-        return "OMM " + TAG;
+        return "Omm " + TAG;
     }
 
     @External
@@ -74,7 +74,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
             if (reserveDecimals.compareTo(BigInteger.valueOf(18)) != 0) {
                 reserveTotalLiquidity = convertToExa(reserveTotalLiquidity, reserveDecimals);
                 reserveAvailableLiquidity = convertToExa(reserveAvailableLiquidity, reserveDecimals);
-                reserveTotalBorrows = convertToExa(reserveAvailableLiquidity, reserveDecimals);
+                reserveTotalBorrows = convertToExa(reserveTotalBorrows, reserveDecimals);
             }
 
             totalLiquidityBalanceUSD = totalLiquidityBalanceUSD.add(exaMultiply(reserveTotalLiquidity, reservePrice));
