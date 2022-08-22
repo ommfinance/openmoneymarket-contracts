@@ -5,6 +5,8 @@ import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import finance.omm.libs.structs.AssetConfig;
 import finance.omm.libs.structs.SupplyDetails;
@@ -472,4 +474,19 @@ public class StakedLPTest implements ScoreIntegrationTest {
 
         status.put("testUnstake", true);
     }
+
+    @DisplayName("test handleAction")
+    @Test
+    @Order(50)
+    void handleAction() {
+
+        assertTrue(ownerClient.stakedLP.isHandleActionEnabled());
+
+        score.RevertedException handleAction = assertThrows(score.RevertedException.class, () ->
+                ownerClient.stakedLP.enableHandleAction());
+
+        handleAction = assertThrows(score.RevertedException.class, () -> ownerClient.stakedLP.disableHandleAction());
+    }
+
+
 }

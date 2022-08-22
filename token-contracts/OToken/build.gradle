@@ -34,11 +34,10 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('_addressProvider', 'cxa755b2ef6eb46c1e817c636be3c21d26c81fe6cc')
-        arg('_name', 'OToken')
-        arg('_symbol', 'oToken')
-        arg('_decimals', '0x6')
-        arg('_update', '0x0')
+        arg('_addressProvider', rootProject.findProperty("contracts.address-provider"))
+        arg('_name', null)
+        arg('_symbol', null)
+        arg('_decimals', null)
     }
 }
 
