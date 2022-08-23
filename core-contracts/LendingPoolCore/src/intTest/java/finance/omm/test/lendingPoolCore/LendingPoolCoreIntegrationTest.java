@@ -2,6 +2,7 @@ package finance.omm.test.lendingPoolCore;
 
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
+import static finance.omm.utils.math.MathUtils.pow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -134,6 +135,14 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         return ownerClient.lendingPoolCore.getReserveData(reserve);
     }
 
+    private Map<String, BigInteger> getUserBorrowBalances(Address reserve, String user) {
+        return ownerClient.lendingPoolCore.getUserBorrowBalances(reserve, Address.fromString(user));
+    }
+
+    private boolean assertBetween(BigInteger start, BigInteger end, BigInteger value) {
+        return value.compareTo(start) >= 0 && value.compareTo(end) <= 0;
+    }
+
     private byte[] createRepayData() {
         JsonObject internalParameters = new JsonObject();
         JsonObject jsonData = new JsonObject()
@@ -223,6 +232,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         @Order(1)
         @DisplayName("Deposit: ICX Deposit Alice")
         void icx_deposit() {
+
             // txn
             depositICX();
 
@@ -344,7 +354,6 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             Map<String, Object> sicxReserveDataBefore = getReserveData(sicx);
             Thread.sleep(2000);
 
-            // create byte array
             Address lendingPool = addressMap.get(Contracts.LENDING_POOL.getKey());
             BigInteger val = BigInteger.valueOf(40).multiply(ICX);
             alice.sICX.transfer(lendingPool, val, createRepayData());
@@ -383,7 +392,107 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             // borrow still pending because of accumulated interest
             assertTrue(totalBorrowsAfter.compareTo(BigInteger.ZERO) > 0);
 
+            // 0.1% of  goes to fee provider
+            BigInteger amt = exaMultiply(val, ownerClient.feeProvider.getLoanOriginationFeePercentage());
+            assertTrue(ownerClient.sICX.balanceOf(addressMap.get(Contracts.FEE_PROVIDER.getKey())).compareTo(amt) > 0);
+
+
+            Map<String, BigInteger> userBorrowBalance = getUserBorrowBalances(sicx,alice.getAddress().toString());
+            // loan of 40 ICX, repaid 40 ICX
+            // ~0.1% as origination fee
+            // a little accrued interest
+            // pending borrow should be a bit > 0.1% of 40ICX
+            BigInteger a = val.divide(BigInteger.valueOf(1000));
+            assertTrue(userBorrowBalance.get("compoundedBorrowBalance").compareTo(a) > 0);
+            BigInteger pow13 = pow(BigInteger.TEN, 13);
+            // assertAlmostEquals
+            assertEquals(userBorrowBalance.get("compoundedBorrowBalance").longValue(), a.longValue(), pow13.longValue());
+
             STATES.put("icx_repay_alice_1", true);
+        }
+
+        @Test
+        @Order(6)
+        @DisplayName("Repay Again: ICX Repay Alice")
+        void icx_repay_2 () throws InterruptedException {
+            if (STATES.getOrDefault("icx_repay_alice_2", false)) {
+                return;
+            }
+
+            Map<String, Object> sicxReserveDataBefore = getReserveData(sicx);
+            Thread.sleep(2000);
+
+            // pending borrow balance is ~0.04
+            // repay 20 sICX
+            // should refund extra
+            Address lendingPool = addressMap.get(Contracts.LENDING_POOL.getKey());
+            BigInteger val = BigInteger.valueOf(20).multiply(ICX);
+            alice.sICX.transfer(lendingPool, val, createRepayData());
+            Map<String, Object> sicxReserveDataAfter = getReserveData(sicx);
+
+            // indexes should increase
+            BigInteger borrowRateBefore = toBigInt((String) sicxReserveDataBefore.get("borrowRate"));
+            BigInteger borrowRateAfter = toBigInt((String) sicxReserveDataAfter.get("borrowRate"));
+            assertTrue(borrowRateBefore.compareTo(borrowRateAfter) > 0);
+
+            BigInteger liquidityCumulativeIndexBefore = toBigInt((String) sicxReserveDataBefore.get("liquidityCumulativeIndex"));
+            BigInteger liquidityCumulativeIndexAfter = toBigInt((String) sicxReserveDataAfter.get("liquidityCumulativeIndex"));
+            assertTrue(liquidityCumulativeIndexAfter.compareTo(liquidityCumulativeIndexBefore) > 0);
+
+            // after all loan is repaid, liquidity rate = 0
+            BigInteger liquidityRate = toBigInt((String) sicxReserveDataAfter.get("liquidityRate"));
+            assertEquals(BigInteger.ZERO, liquidityRate);
+            // borrow rate = base borrow rate
+            BigInteger borrowRate = toBigInt((String) sicxReserveDataAfter.get("borrowRate"));
+            assertEquals(ICX.multiply(BigInteger.TWO).divide(BigInteger.valueOf(100)), borrowRate);
+
+            BigInteger availableLiquidityBefore = toBigInt((String) sicxReserveDataBefore.get("availableLiquidity"));
+            BigInteger availableLiquidityAfter = toBigInt((String) sicxReserveDataAfter.get("availableLiquidity"));
+            assertTrue(availableLiquidityAfter.compareTo(availableLiquidityBefore) > 0);
+
+            Map<String, BigInteger> userBorrowBalanceAfter = getUserBorrowBalances(sicx,alice.getAddress().toString());
+
+            assertEquals(BigInteger.ZERO, userBorrowBalanceAfter.get("borrowBalanceIncrease"));
+            assertEquals(BigInteger.ZERO, userBorrowBalanceAfter.get("compoundedBorrowBalance"));
+            assertEquals(BigInteger.ZERO, userBorrowBalanceAfter.get("principalBorrowBalance"));
+
+            // repay ~0.04 sICX
+            // aliceBalance > 19.95
+            BigInteger reqd = BigInteger.valueOf(1995).multiply(ICX).divide(BigInteger.valueOf(100));
+            assertTrue(ownerClient.sICX.balanceOf(alice.getAddress()).compareTo(reqd) > 0);
+
+            STATES.put("icx_repay_alice_2", true);
+        }
+
+        @Test
+        @Order(7)
+        @DisplayName("Redeem Again: ICX Redeem All")
+        void icx_redeem2() throws InterruptedException {
+            if (STATES.getOrDefault("icx_redeem_alice_2", false)) {
+                return;
+            }
+            Thread.sleep(2000);
+
+            BigInteger ALL = BigInteger.valueOf(-1);
+            Address oICX = addressMap.get(Contracts.oICX.getKey());
+            alice.lendingPool.redeem(oICX, ALL, false);
+            Map<String, Object> sicxReserveDataAfter = getReserveData(sicx);
+            BigInteger balanceAfter = ownerClient.sICX.balanceOf(alice.getAddress());
+            assertTrue(
+                    assertBetween(
+                            BigInteger.valueOf(199).multiply(ICX),
+                            BigInteger.valueOf(200).multiply(ICX),
+                            balanceAfter
+                    )
+            );
+            // dust amount should be pending for available, total liquidity
+            BigInteger dustValue = BigInteger.valueOf((long) 1e5);
+            // available liquidity == total liquidity
+            BigInteger availableLiquidityAfter = toBigInt((String) sicxReserveDataAfter.get("availableLiquidity"));
+            BigInteger totalLiquidityAfter = toBigInt((String) sicxReserveDataAfter.get("totalLiquidity"));
+            assertEquals(availableLiquidityAfter, totalLiquidityAfter);
+            assertTrue(dustValue.compareTo(totalLiquidityAfter) > 0);
+            STATES.put("icx_redeem_alice_2", true);
         }
     }
 }
