@@ -377,13 +377,13 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                 BigInteger maxAmountToLiquidate;
                 if (badDebt.compareTo(exaMultiply(price, userBorrowBalance)) > 0) {
                     maxAmountToLiquidateUSD = exaMultiply(price, userBorrowBalance);
-                    maxAmountToLiquidate = userReserveData.get("compoundedBorrowBalance");
+                    maxAmountToLiquidate = compoundedBorrowBalance;
                 } else {
                     maxAmountToLiquidateUSD = badDebt;
                     maxAmountToLiquidate = convertExaToOther(exaDivide(badDebt, price), reserveDecimals.intValue());
                 }
                 borrows.put(symbol, Map.of(
-                        "compoundedBorrowBalance", userReserveData.get("compoundedBorrowBalance"),
+                        "compoundedBorrowBalance", compoundedBorrowBalance,
                         "compoundedBorrowBalanceUSD", exaMultiply(price, userBorrowBalance),
                         "maxAmountToLiquidate", maxAmountToLiquidate,
                         "maxAmountToLiquidateUSD", maxAmountToLiquidateUSD
