@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.function.Executable;
 import scorex.util.HashMap;
 
-
 import java.math.BigInteger;
 import java.util.Map;
 
@@ -76,13 +75,14 @@ public class AbstractLendingDataProviderTest extends TestBase {
         score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER), "setAddresses", params);
     }
 
-    public void expectErrorMessage(Executable contractCall, String errorMessage){
-        AssertionError e = Assertions.assertThrows(AssertionError.class,contractCall);
-        assertEquals(errorMessage,e.getMessage());
+    public void expectErrorMessage(Executable contractCall, String errorMessage) {
+        AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
+        assertEquals(errorMessage, e.getMessage());
     }
 
-    protected Map<String, BigInteger> reserveDataCalculation(String symbol, BigInteger reserveTotalLiquidity, BigInteger reserveAvailableLiquidity,
-                                                           BigInteger reserveTotalBorrows, Boolean collateralEnabled){
+    protected Map<String, BigInteger> reserveDataCalculation(String symbol, BigInteger reserveTotalLiquidity,
+                                                             BigInteger reserveAvailableLiquidity,
+                                                             BigInteger reserveTotalBorrows, Boolean collateralEnabled) {
         BigInteger totalLiquidityBalanceUSD = BigInteger.ZERO;
         BigInteger totalCollateralBalanceUSD = BigInteger.ZERO;
         BigInteger totalBorrowBalanceUSD = BigInteger.ZERO;
@@ -90,17 +90,16 @@ public class AbstractLendingDataProviderTest extends TestBase {
         BigInteger reservePrice = ICX;
         BigInteger reserveDecimals = BigInteger.valueOf(6);
 
-        if (symbol.equals("ICX")){
+        if (symbol.equals("ICX")) {
             reservePrice = exaMultiply(reservePrice,
                     BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN));
         }
 
-        if (symbol.equals("USDC")){
+        if (symbol.equals("USDC")) {
             reserveTotalLiquidity = convertToExa(reserveTotalLiquidity, reserveDecimals);
             reserveAvailableLiquidity = convertToExa(reserveAvailableLiquidity, reserveDecimals);
             reserveTotalBorrows = convertToExa(reserveTotalBorrows, reserveDecimals);
         }
-
 
 
         totalLiquidityBalanceUSD = totalLiquidityBalanceUSD.add(exaMultiply(reserveTotalLiquidity, reservePrice));
@@ -108,7 +107,7 @@ public class AbstractLendingDataProviderTest extends TestBase {
         totalBorrowBalanceUSD = totalBorrowBalanceUSD.add(exaMultiply(reserveTotalBorrows, reservePrice));
         totalCollateralBalanceUSD = totalCollateralBalanceUSD.add(exaMultiply(reserveTotalLiquidity, reservePrice));
 
-        if (!collateralEnabled){
+        if (!collateralEnabled) {
             totalBorrowBalanceUSD = BigInteger.ZERO;
             totalCollateralBalanceUSD = BigInteger.ZERO;
         }
@@ -120,10 +119,10 @@ public class AbstractLendingDataProviderTest extends TestBase {
     }
 
 
-    protected Map<String, Object> userAccountDataCalculation(String symbol, BigInteger  underlyingBalance,
-                                                           BigInteger compoundedBorrowBalance, BigInteger originationFee,
-                                                           Boolean usageAsCollateralEnabled, BigInteger baseLTVasCollateral,
-                                                           BigInteger liquidationThreshold) {
+    protected Map<String, Object> userAccountDataCalculation(String symbol, BigInteger underlyingBalance,
+                                                             BigInteger compoundedBorrowBalance, BigInteger originationFee,
+                                                             Boolean usageAsCollateralEnabled, BigInteger baseLTVasCollateral,
+                                                             BigInteger liquidationThreshold) {
         BigInteger todayRate = BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN);
         BigInteger totalLiquidityBalanceUSD = BigInteger.ZERO;
         BigInteger totalCollateralBalanceUSD = BigInteger.ZERO;
@@ -175,7 +174,7 @@ public class AbstractLendingDataProviderTest extends TestBase {
         BigInteger borrowsAllowedUSD = exaMultiply(totalCollateralBalanceUSD.subtract(totalFeesUSD), currentLtv);
         BigInteger availableBorrowsUSD = borrowsAllowedUSD.subtract(totalBorrowBalanceUSD);
 
-        if (availableBorrowsUSD.compareTo(BigInteger.ZERO) < 0){
+        if (availableBorrowsUSD.compareTo(BigInteger.ZERO) < 0) {
             availableBorrowsUSD = BigInteger.ZERO;
         }
 
@@ -191,36 +190,35 @@ public class AbstractLendingDataProviderTest extends TestBase {
 
     }
 
-    protected BigInteger availableBorrow(BigInteger availableBorrowICX, BigInteger availableBorrowIUSDC){
+    protected BigInteger availableBorrow(BigInteger availableBorrowICX, BigInteger availableBorrowIUSDC) {
 
         BigInteger availableBorrowsUSD = availableBorrowICX.add(availableBorrowIUSDC);
-        if (availableBorrowICX.equals(BigInteger.ZERO) || availableBorrowIUSDC.equals(BigInteger.ZERO)){
+        if (availableBorrowICX.equals(BigInteger.ZERO) || availableBorrowIUSDC.equals(BigInteger.ZERO)) {
             availableBorrowsUSD = BigInteger.ZERO;
         }
 
-        return  availableBorrowsUSD;
+        return availableBorrowsUSD;
     }
 
-    protected BigInteger healthFactor(BigInteger totalBorrowBalanceUSD,BigInteger totalCollateralBalanceUSD,
-                                      BigInteger totalFeesUSD,BigInteger liquidationThreshold){
+    protected BigInteger healthFactor(BigInteger totalBorrowBalanceUSD, BigInteger totalCollateralBalanceUSD,
+                                      BigInteger totalFeesUSD, BigInteger liquidationThreshold) {
         BigInteger healthFactor;
-        if (totalBorrowBalanceUSD.equals(BigInteger.ZERO)){
+        if (totalBorrowBalanceUSD.equals(BigInteger.ZERO)) {
             healthFactor = BigInteger.ONE.negate();
-        }
-        else {
+        } else {
             healthFactor = exaDivide(exaMultiply(totalCollateralBalanceUSD.subtract(totalFeesUSD), liquidationThreshold)
                     , totalBorrowBalanceUSD);
         }
 
-        return  healthFactor;
+        return healthFactor;
     }
 
-    protected BigInteger borrowingPower(BigInteger totalCollateralBalanceUSD,BigInteger totalBorrowBalanceUSD,BigInteger totalFeesUSD, BigInteger currentLiquidationThreshold){
-        BigInteger borrowingPower ;
-        if (totalCollateralBalanceUSD.equals(BigInteger.ZERO)){
+    protected BigInteger borrowingPower(BigInteger totalCollateralBalanceUSD, BigInteger totalBorrowBalanceUSD,
+                                        BigInteger totalFeesUSD, BigInteger currentLiquidationThreshold) {
+        BigInteger borrowingPower;
+        if (totalCollateralBalanceUSD.equals(BigInteger.ZERO)) {
             borrowingPower = BigInteger.ZERO;
-        }
-        else {
+        } else {
             borrowingPower = exaDivide(totalBorrowBalanceUSD, exaMultiply(totalCollateralBalanceUSD.subtract(totalFeesUSD),
                     currentLiquidationThreshold.divide(BigInteger.TWO)));
         }
@@ -228,35 +226,35 @@ public class AbstractLendingDataProviderTest extends TestBase {
         return borrowingPower;
     }
 
-    protected BigInteger collateralNeededUSDCalculation(String symbol,BigInteger amount,BigInteger userCurrentBorrow,
-                                                      BigInteger userCurrentFee,BigInteger userCurrentLTV){
+    protected BigInteger collateralNeededUSDCalculation(String symbol, BigInteger amount, BigInteger userCurrentBorrow,
+                                                        BigInteger userCurrentFee, BigInteger userCurrentLTV) {
         BigInteger decimals = BigInteger.valueOf(18);
         BigInteger price = ICX;
 
-        if (symbol.equals("USDC")){
+        if (symbol.equals("USDC")) {
             decimals = BigInteger.valueOf(6);
-            amount = convertToExa(amount,decimals);
+            amount = convertToExa(amount, decimals);
         }
 
-        if (symbol.equals("ICX")){
-            price = exaMultiply(price,BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN));
+        if (symbol.equals("ICX")) {
+            price = exaMultiply(price, BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN));
         }
 
 
-        BigInteger requestedBorrowUSD= exaMultiply(price,amount);
+        BigInteger requestedBorrowUSD = exaMultiply(price, amount);
 
         return exaDivide(userCurrentBorrow.add(requestedBorrowUSD),
                 userCurrentLTV).add(userCurrentFee);
     }
 
-    protected BigInteger reserveDataCalcualtion(String symbol,BigInteger price, BigInteger value){
+    protected BigInteger reserveDataCalcualtion(String symbol, BigInteger price, BigInteger value) {
         BigInteger reserveDecimals = BigInteger.valueOf(18);
 
-        if (symbol.equals("ICX")){
-            price = exaMultiply(ICX.divide(BigInteger.TEN),price);
+        if (symbol.equals("ICX")) {
+            price = exaMultiply(ICX.divide(BigInteger.TEN), price);
         }
 
-        if (symbol.equals("USDC")){
+        if (symbol.equals("USDC")) {
             reserveDecimals = BigInteger.valueOf(6);
         }
 
@@ -265,25 +263,25 @@ public class AbstractLendingDataProviderTest extends TestBase {
 
 
     protected Map<String, Object> liquidationDataCalculation(String symbol, BigInteger compoundedBorrowBalance,
-                                                           BigInteger underLyingBalance,BigInteger badDebt){
+                                                             BigInteger underLyingBalance, BigInteger badDebt) {
         BigInteger reserveDecimals = BigInteger.valueOf(18);
         BigInteger price = ICX;
-        BigInteger userBorrowBalance= BigInteger.ZERO;
+        BigInteger userBorrowBalance = BigInteger.ZERO;
         BigInteger userReserveUnderlyingBalance = BigInteger.ZERO;
 
         Map<String, Object> borrows = new HashMap<>();
         Map<String, Object> collaterals = new HashMap<>();
 
-        if (symbol.equals("ICX")){
-            price = exaMultiply(price,ICX.divide(BigInteger.TEN));
+        if (symbol.equals("ICX")) {
+            price = exaMultiply(price, ICX.divide(BigInteger.TEN));
             userBorrowBalance = convertToExa(compoundedBorrowBalance, reserveDecimals);
-            userReserveUnderlyingBalance = convertToExa(underLyingBalance,reserveDecimals);
+            userReserveUnderlyingBalance = convertToExa(underLyingBalance, reserveDecimals);
         }
 
-        if (symbol.equals("USDC")){
+        if (symbol.equals("USDC")) {
             reserveDecimals = BigInteger.valueOf(6);
             userBorrowBalance = convertToExa(compoundedBorrowBalance, reserveDecimals);
-            userReserveUnderlyingBalance = convertToExa(underLyingBalance,reserveDecimals);
+            userReserveUnderlyingBalance = convertToExa(underLyingBalance, reserveDecimals);
         }
 
         if (userBorrowBalance.compareTo(BigInteger.ZERO) > 0) {
@@ -316,7 +314,6 @@ public class AbstractLendingDataProviderTest extends TestBase {
                 "collaterals", collaterals
         );
     }
-
 
 
 }
