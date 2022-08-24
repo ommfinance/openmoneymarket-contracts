@@ -411,7 +411,8 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         Map<String, Map<String, Object>> userLiquidationDetails = new HashMap<>();
         for (Address wallet : wallets) {
             BigInteger healthFactor = (BigInteger) getUserAccountData(wallet).get("healthFactor");
-            if (healthFactor.compareTo(ICX) < 0) {
+            // added healthFactor negation review
+            if (healthFactor.compareTo(ICX) < 0 && !healthFactor.equals(BigInteger.ONE.negate())) {
                 userLiquidationDetails.put(wallet.toString(), getUserLiquidationData(wallet));
             }
         }
