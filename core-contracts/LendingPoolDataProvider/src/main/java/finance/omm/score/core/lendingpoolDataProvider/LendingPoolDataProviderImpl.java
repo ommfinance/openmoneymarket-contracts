@@ -356,11 +356,13 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         Map<String, Object> collaterals = new HashMap<>();
 
         for (Address reserve : reserves) {
-            Map<String, BigInteger> userReserveData = call(Map.class, Contracts.LENDING_POOL_CORE, "getUserBasicReserveData", reserve, _user);
-            Map<String, Object> reserveConfiguration = call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve);
+            Map<String, BigInteger> userReserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
+                    "getUserBasicReserveData", reserve, _user);
+            Map<String, Object> reserveConfiguration = call(Map.class, Contracts.LENDING_POOL_CORE,
+                    "getReserveConfiguration", reserve);
             BigInteger reserveDecimals = (BigInteger) reserveConfiguration.get("decimals");
-            BigInteger userBorrowBalance = convertToExa(userReserveData.get("compoundedBorrowBalance"),
-                    reserveDecimals);
+            BigInteger compoundedBorrowBalance = userReserveData.get("compoundedBorrowBalance");
+            BigInteger userBorrowBalance = convertToExa(compoundedBorrowBalance, reserveDecimals);
             BigInteger userReserveUnderlyingBalance = convertToExa(userReserveData.get("underlyingBalance"),
                     reserveDecimals);
             String symbol = this.symbol.get(reserve);
@@ -418,7 +420,8 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
     @External(readonly = true)
     public Map<String, Object> getReserveData(Address _reserve) {
-        Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", _reserve);
+        Map<String, Object> reserveData = new HashMap<>();
+        reserveData.putAll(call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", _reserve));
         String symbol = this.symbol.get(_reserve);
         BigInteger price = call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
                 symbol, "USD");
@@ -482,11 +485,12 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         List<Map<String, BigInteger>> response = new ArrayList<>();
         for (Map<String, Object> unstakedRecords : unstakeDetails) {
             Address fromAddress = (Address) unstakedRecords.get("from");
+            Map<String,BigInteger> record = new HashMap<>();
+            record.put("amount",(BigInteger) unstakedRecords.get("amount"));
+            record.put("unstakingBlockHeight",(BigInteger) unstakedRecords.get("unstakingBlockHeight"));
+
             if (fromAddress.equals(getAddress(String.valueOf(Contracts.LENDING_POOL_CORE.getKey())))) {
-                response.add(Map.of(
-                        "amount", (BigInteger) unstakedRecords.get("amount"),
-                        "unstakingBlockHeight", (BigInteger) unstakedRecords.get("blockHeight")
-                ));
+                response.add(record);
             }
         }
         return response;
