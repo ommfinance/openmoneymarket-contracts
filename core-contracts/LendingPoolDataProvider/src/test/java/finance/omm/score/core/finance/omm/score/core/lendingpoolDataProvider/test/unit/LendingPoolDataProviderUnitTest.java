@@ -12,9 +12,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
-import static finance.omm.utils.math.MathUtils.convertExaToOther;
 import static finance.omm.utils.math.MathUtils.convertToExa;
-import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -237,7 +235,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
                 MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress(), "USDC");
 
         Map<String, Object>  result = (Map<String, Object> )score.call("getUserAccountData", user.getAddress());
-        System.out.println("thus "+result.get("totalLiquidityBalanceUSD"));
 
         Map<String, Object> icx = userAccountDataCalculation("ICX",depositedBalance_icx,compoundedBorrowBalance_icx,
                 originationFee_icx,true,baseLTVasCollateral,liquidationThreshold);
@@ -885,7 +882,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData",user);
-        System.out.println(result);
         Map<String,Map<String,BigInteger>> resultBorrows = (Map<String, Map<String,BigInteger>>) result.get("borrows");
         Map<String,Map<String,BigInteger>> resultCollateral = (Map<String, Map<String,BigInteger>>) result.get("collaterals");
 
@@ -929,60 +925,86 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
     }
 
+    @Test
+    public void liquidationList(){
+        BigInteger index = BigInteger.valueOf(50);
+
+        Address user1 = sm.createAccount(100).getAddress();
+        Address user2 = sm.createAccount(100).getAddress();
+        Address user3 = sm.createAccount(100).getAddress();
+        Address user4 = sm.createAccount(100).getAddress();
+
+        List<Address> wallets = new ArrayList<>();
+        wallets.add(user1);
+        wallets.add(user2);
+        wallets.add(user3);
+        wallets.add(user4);
+
+        doReturn(wallets).when(scoreSpy).call(List.class, Contracts.LENDING_POOL, "getBorrowWallets", index);
+
+        // user1 has no borrows
+        BigInteger healthFactor_user1 = healthFactor(BigInteger.ZERO,BigInteger.valueOf(100),BigInteger.ONE,
+                BigInteger.valueOf(650000000000000000L));
+
+        // user2 has borrowed 10 with collateral of 100
+        BigInteger healthFactor_user2 = healthFactor(BigInteger.TEN,BigInteger.valueOf(100),BigInteger.ONE,
+                BigInteger.valueOf(650000000000000000L));
+
+        // user3 has borrowed 56 with collateral of 100
+        BigInteger healthFactor_user3 = healthFactor(BigInteger.valueOf(66),BigInteger.valueOf(100),BigInteger.ONE,
+                BigInteger.valueOf(550000000000000000L));
+
+        // user4 has borrowed 20 with collteral of 100 but has bad debt of 30
+        BigInteger healthFactor_user4 = healthFactor(BigInteger.valueOf(50),BigInteger.valueOf(100),BigInteger.ONE,
+                BigInteger.valueOf(450000000000000000L));
+
+        Map<String, Object> liquidateData_user2 = liquidationDataCalculation("ICX", BigInteger.valueOf(100).multiply(ICX), BigInteger.valueOf(150).multiply(ICX), BigInteger.ZERO);
+        Map<String, Object> liquidateData_user3 = liquidationDataCalculation("ICX",
+                BigInteger.valueOf(100).multiply(ICX), BigInteger.valueOf(150).multiply(ICX), BigInteger.valueOf(20).multiply(ICX));
 
 
+        Map<String, Object> liquidateData_user4 = liquidationDataCalculation("USDC",
+                BigInteger.valueOf(50).multiply(BigInteger.valueOf(1000_000)),
+                BigInteger.valueOf(250).multiply(BigInteger.valueOf(1000_000)), BigInteger.valueOf(30));
 
+        Map<String, Object> user_account_data = new HashMap();
+        user_account_data.put("healthFactor",healthFactor_user1);
 
-//    @Test
-//    public void liquidationList(){
-//        BigInteger index = BigInteger.valueOf(50);
-//
-//        Address user1 = sm.createAccount(100).getAddress();
-//        Address user2 = sm.createAccount(100).getAddress();
-//        Address user3 = sm.createAccount(100).getAddress();
-//        Address user4 = sm.createAccount(100).getAddress();
-//
-//        List<Address> wallets = new ArrayList<>();
-//        wallets.add(user1);
-//        wallets.add(user2);
-//        wallets.add(user3);
-//        wallets.add(user4);
-//
-//        doReturn(wallets).when(scoreSpy).call(List.class, Contracts.LENDING_POOL, "getBorrowWallets", index);
-//
-//        BigInteger healthFactor_user1 = healthFactor(BigInteger.TEN,BigInteger.valueOf(100),BigInteger.ONE,
-//                BigInteger.valueOf(650000000000000000L));
-//
-//        BigInteger healthFactor_user2 = healthFactor(BigInteger.ZERO,BigInteger.valueOf(100),BigInteger.ONE,
-//                BigInteger.valueOf(650000000000000000L));
-//
-//        BigInteger healthFactor_user3 = healthFactor(BigInteger.TEN,BigInteger.valueOf(100),BigInteger.ONE,
-//                BigInteger.valueOf(650000000000000000L));
-//
-//        BigInteger healthFactor_user4 = healthFactor(BigInteger.TEN,BigInteger.valueOf(100),BigInteger.ONE,
-//                BigInteger.valueOf(650000000000000000L));
-//
-//        liquidationDataCalculation("ICX",)
-//        doReturn().when(scoreSpy).getUserLiquidationData(user2);
-//
-//        Map<String, Object> user_account_data = new HashMap();
-//        user_account_data.put("healthFactor",healthFactor_user1);
-//
-//        Map<String, Object> user_account_data2 = new HashMap();
-//        user_account_data2.put("healthFactor",healthFactor_user2);
-//
-//        Map<String, Object> user_account_data3 = new HashMap();
-//        user_account_data3.put("healthFactor",healthFactor_user3);
-//
-//        Map<String, Object> user_account_data4 = new HashMap();
-//        user_account_data4.put("healthFactor",healthFactor_user4);
-//
-//        doReturn(user_account_data).when(scoreSpy).getUserAccountData(user1);
-//        doReturn(user_account_data2).when(scoreSpy).getUserAccountData(user2);
-//        doReturn(user_account_data3).when(scoreSpy).getUserAccountData(user3);
-//        doReturn(user_account_data4).when(scoreSpy).getUserAccountData(user4);
-//        System.out.println(score.call("liquidationList", index));
-//    }
+        Map<String, Object> user_account_data2 = new HashMap();
+        user_account_data2.put("healthFactor",healthFactor_user2);
+
+        Map<String, Object> user_account_data3 = new HashMap();
+        user_account_data3.put("healthFactor",healthFactor_user3);
+
+        Map<String, Object> user_account_data4 = new HashMap();
+        user_account_data4.put("healthFactor",healthFactor_user4);
+
+        doReturn(user_account_data).when(scoreSpy).getUserAccountData(user1);
+        doReturn(user_account_data2).when(scoreSpy).getUserAccountData(user2);
+        doReturn(user_account_data3).when(scoreSpy).getUserAccountData(user3);
+        doReturn(user_account_data4).when(scoreSpy).getUserAccountData(user4);
+
+        doReturn(liquidateData_user2).when(scoreSpy).getUserLiquidationData(user2);
+        doReturn(liquidateData_user3).when(scoreSpy).getUserLiquidationData(user3);
+        doReturn(liquidateData_user4).when(scoreSpy).getUserLiquidationData(user4);
+
+        Map<String, Map<String, Object>> result = (Map<String, Map<String, Object>>)
+                score.call("liquidationList",index);
+
+        assertNull(result.get(user1.toString()));
+        assertNull(result.get(user2.toString()));
+
+        assertEquals(result.get(user3.toString()),liquidateData_user3);
+        assertEquals(result.get(user3.toString()).get("badDebt"),liquidateData_user3.get("badDebt"));
+        assertEquals(result.get(user3.toString()).get("collaterals"),liquidateData_user3.get("collaterals"));
+        assertEquals(result.get(user3.toString()).get("borrows"),liquidateData_user3.get("borrows"));
+
+        assertEquals(result.get(user4.toString()),liquidateData_user4);
+        assertEquals(result.get(user4.toString()).get("badDebt"),liquidateData_user4.get("badDebt"));
+        assertEquals(result.get(user4.toString()).get("collaterals"),liquidateData_user4.get("collaterals"));
+        assertEquals(result.get(user4.toString()).get("borrows"),liquidateData_user4.get("borrows"));
+
+    }
 
     @Test
     public Map<String, Object> reserveData_iusdc(){
@@ -1133,7 +1155,7 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         Map<String, Map<String, Object>> result =
                 (Map<String, Map<String, Object>>) score.call("getAllReserveConfigurationData");
-//
+
         assertEquals(Map.of(),result.get("ICX"));
         assertEquals(Map.of(),result.get("USDC"));
     }
