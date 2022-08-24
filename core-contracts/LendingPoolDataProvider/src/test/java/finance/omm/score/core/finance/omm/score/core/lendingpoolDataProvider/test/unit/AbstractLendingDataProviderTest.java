@@ -16,6 +16,7 @@ import scorex.util.HashMap;
 import java.math.BigInteger;
 import java.util.Map;
 
+import static finance.omm.utils.math.MathUtils.convertExaToOther;
 import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
@@ -38,6 +39,12 @@ public class AbstractLendingDataProviderTest extends TestBase {
         put(Contracts.IUSDC, Account.newScoreAccount(102));
         put(Contracts.sICX, Account.newScoreAccount(103));
         put(Contracts.OMM_TOKEN, Account.newScoreAccount(104));
+        put(Contracts.oICX, Account.newScoreAccount(105));
+        put(Contracts.oIUSDC, Account.newScoreAccount(106));
+        put(Contracts.dICX, Account.newScoreAccount(107));
+        put(Contracts.dIUSDC, Account.newScoreAccount(108));
+        put(Contracts.LENDING_POOL_CORE, Account.newScoreAccount(109));
+
     }};
 
     @BeforeEach
@@ -194,7 +201,8 @@ public class AbstractLendingDataProviderTest extends TestBase {
         return  availableBorrowsUSD;
     }
 
-    protected BigInteger healthFactor(BigInteger totalBorrowBalanceUSD,BigInteger totalCollateralBalanceUSD,BigInteger totalFeesUSD,BigInteger liquidationThreshold){
+    protected BigInteger healthFactor(BigInteger totalBorrowBalanceUSD,BigInteger totalCollateralBalanceUSD,
+                                      BigInteger totalFeesUSD,BigInteger liquidationThreshold){
         BigInteger healthFactor;
         if (totalBorrowBalanceUSD.equals(BigInteger.ZERO)){
             healthFactor = BigInteger.ONE.negate();
@@ -218,6 +226,95 @@ public class AbstractLendingDataProviderTest extends TestBase {
         }
 
         return borrowingPower;
+    }
+
+    protected BigInteger collateralNeededUSDCalculation(String symbol,BigInteger amount,BigInteger userCurrentBorrow,
+                                                      BigInteger userCurrentFee,BigInteger userCurrentLTV){
+        BigInteger decimals = BigInteger.valueOf(18);
+        BigInteger price = ICX;
+
+        if (symbol.equals("USDC")){
+            decimals = BigInteger.valueOf(6);
+            amount = convertToExa(amount,decimals);
+        }
+
+        if (symbol.equals("ICX")){
+            price = exaMultiply(price,BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN));
+        }
+
+
+        BigInteger requestedBorrowUSD= exaMultiply(price,amount);
+
+        return exaDivide(userCurrentBorrow.add(requestedBorrowUSD),
+                userCurrentLTV).add(userCurrentFee);
+    }
+
+    protected BigInteger reserveDataCalcualtion(String symbol,BigInteger price, BigInteger value){
+        BigInteger reserveDecimals = BigInteger.valueOf(18);
+
+        if (symbol.equals("ICX")){
+            price = exaMultiply(ICX.divide(BigInteger.TEN),price);
+        }
+
+        if (symbol.equals("USDC")){
+            reserveDecimals = BigInteger.valueOf(6);
+        }
+
+        return exaMultiply(convertToExa(value, reserveDecimals), price);
+    }
+
+
+    protected Map<String, Object> liquidationDataCalculation(String symbol, BigInteger compoundedBorrowBalance,
+                                                           BigInteger underLyingBalance,BigInteger badDebt){
+        BigInteger reserveDecimals = BigInteger.valueOf(18);
+        BigInteger price = ICX;
+        BigInteger userBorrowBalance= BigInteger.ZERO;
+        BigInteger userReserveUnderlyingBalance = BigInteger.ZERO;
+
+        Map<String, Object> borrows = new HashMap<>();
+        Map<String, Object> collaterals = new HashMap<>();
+
+        if (symbol.equals("ICX")){
+            price = exaMultiply(price,ICX.divide(BigInteger.TEN));
+            userBorrowBalance = convertToExa(compoundedBorrowBalance, reserveDecimals);
+            userReserveUnderlyingBalance = convertToExa(underLyingBalance,reserveDecimals);
+        }
+
+        if (symbol.equals("USDC")){
+            reserveDecimals = BigInteger.valueOf(6);
+            userBorrowBalance = convertToExa(compoundedBorrowBalance, reserveDecimals);
+            userReserveUnderlyingBalance = convertToExa(underLyingBalance,reserveDecimals);
+        }
+
+        if (userBorrowBalance.compareTo(BigInteger.ZERO) > 0) {
+            BigInteger maxAmountToLiquidateUSD;
+            BigInteger maxAmountToLiquidate;
+            if (badDebt.compareTo(exaMultiply(price, userBorrowBalance)) > 0) {
+                maxAmountToLiquidateUSD = exaMultiply(price, userBorrowBalance);
+                maxAmountToLiquidate = compoundedBorrowBalance;
+            } else {
+                maxAmountToLiquidateUSD = badDebt;
+                maxAmountToLiquidate = convertExaToOther(exaDivide(badDebt, price), reserveDecimals.intValue());
+            }
+            borrows.put(symbol, Map.of(
+                    "compoundedBorrowBalance", compoundedBorrowBalance,
+                    "compoundedBorrowBalanceUSD", exaMultiply(price, userBorrowBalance),
+                    "maxAmountToLiquidate", maxAmountToLiquidate,
+                    "maxAmountToLiquidateUSD", maxAmountToLiquidateUSD
+
+            ));
+        }
+        if (userReserveUnderlyingBalance.compareTo(BigInteger.ZERO) > 0) {
+            collaterals.put(symbol, Map.of(
+                    "underlyingBalance", underLyingBalance,
+                    "underlyingBalanceUSD", exaMultiply(price, userReserveUnderlyingBalance)
+            ));
+        }
+        return Map.of(
+                "badDebt", badDebt,
+                "borrows", borrows,
+                "collaterals", collaterals
+        );
     }
 
 

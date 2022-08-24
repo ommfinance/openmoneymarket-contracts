@@ -6,11 +6,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import score.Address;
 import scorex.util.ArrayList;
+import scorex.util.HashMap;
 
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
+import static finance.omm.utils.math.MathUtils.convertExaToOther;
+import static finance.omm.utils.math.MathUtils.convertToExa;
+import static finance.omm.utils.math.MathUtils.exaDivide;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 
 import static finance.omm.score.core.lendingpoolDataProvider.AbstractLendingPoolDataProvider.TAG;
@@ -389,9 +397,698 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
 
     @Test
+    /*
+    user has deposited 100 ICX an borrowed 20ICX
+     */
     public void userReserveData_icx_reserve(){
+        Address icx_reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
+        Account user = sm.createAccount();
+
+        Address oTokenAddr = MOCK_CONTRACT_ADDRESS.get(Contracts.oICX).getAddress();
+        Address dTokenAddr = MOCK_CONTRACT_ADDRESS.get(Contracts.dICX).getAddress();
+        BigInteger borrowRate = BigInteger.valueOf(10).divide(BigInteger.valueOf(100));
+        BigInteger decimals= BigInteger.valueOf(18);
+        BigInteger liquidityRate = BigInteger.valueOf(7).divide(BigInteger.valueOf(1000));
+        BigInteger originationFee = BigInteger.valueOf(1).divide(BigInteger.valueOf(100));
+        BigInteger lastUpdateTimestamp = BigInteger.valueOf(System.currentTimeMillis()/1000);
+        BigInteger currentOTokenBalance = BigInteger.valueOf(101).multiply(ICX);
+        BigInteger principalOTokenBalance = BigInteger.valueOf(100).multiply(ICX);
+        BigInteger userLiquidityCumulativeIndex = BigInteger.valueOf((long) 1.032f);
+        BigInteger principalBorrowBalance = BigInteger.valueOf(20).multiply(ICX);
+        BigInteger currentBorrowBalance = BigInteger.valueOf(21).multiply(ICX);
+        BigInteger userBorrowCumulativeIndex  = BigInteger.valueOf((long) 1.0356f);
+        BigInteger price = BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN); // 0.1
+
+
+        doReturn(Map.of(
+                "oTokenAddress",oTokenAddr,
+                "dTokenAddress",dTokenAddr,
+                "borrowRate",borrowRate,
+                "decimals", decimals,
+                "liquidityRate",liquidityRate)
+        ).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveData", icx_reserve);
+
+        doReturn(Map.of(
+                "originationFee",originationFee,
+                "lastUpdateTimestamp",lastUpdateTimestamp
+        )).when(scoreSpy). call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getUserReserveData", icx_reserve, user.getAddress());
+
+        doReturn(currentOTokenBalance).when(scoreSpy).
+                call(BigInteger.class,oTokenAddr,"balanceOf",user.getAddress());
+        doReturn(principalOTokenBalance).when(scoreSpy).
+                call(BigInteger.class, oTokenAddr, "principalBalanceOf", user.getAddress());
+        doReturn(userLiquidityCumulativeIndex).when(scoreSpy)
+                .call(BigInteger.class, oTokenAddr, "getUserLiquidityCumulativeIndex", user.getAddress());
+        doReturn(principalBorrowBalance).when(scoreSpy).
+                call(BigInteger.class, dTokenAddr, "principalBalanceOf", user.getAddress());
+        doReturn(currentBorrowBalance).when(scoreSpy).
+                call(BigInteger.class, dTokenAddr, "balanceOf", user.getAddress());
+        doReturn(userBorrowCumulativeIndex).when(scoreSpy).
+                call(BigInteger.class, dTokenAddr, "getUserBorrowCumulativeIndex", user.getAddress());
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "ICX", "USD");
+
+        doReturn(price)
+                .when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+
+
+        BigInteger currentOTokenBalanceUSD = exaMultiply(convertToExa(currentOTokenBalance, decimals), price);
+        BigInteger principalOTokenBalanceUSD = exaMultiply(convertToExa(principalOTokenBalance, decimals), price);
+        BigInteger currentBorrowBalanceUSD = exaMultiply(convertToExa(currentBorrowBalance, decimals), price);
+        BigInteger principalBorrowBalanceUSD = exaMultiply(convertToExa(principalBorrowBalance, decimals), price);
+
+        Map<String, BigInteger> result = (Map<String, BigInteger>) score.call("getUserReserveData",
+                icx_reserve,user.getAddress());
+
+        assertEquals(currentOTokenBalance,result.get("currentOTokenBalance"));
+        assertEquals(currentOTokenBalanceUSD,result.get("currentOTokenBalanceUSD"));
+        assertEquals(principalOTokenBalance,result.get("principalOTokenBalance"));
+        assertEquals(principalOTokenBalanceUSD,result.get("principalOTokenBalanceUSD"));
+        assertEquals(currentBorrowBalance,result.get("currentBorrowBalance"));
+        assertEquals(currentBorrowBalanceUSD,result.get("currentBorrowBalanceUSD"));
+        assertEquals(principalBorrowBalance,result.get("principalBorrowBalance"));
+        assertEquals(principalBorrowBalanceUSD,result.get("principalBorrowBalanceUSD"));
+        assertEquals(userLiquidityCumulativeIndex,result.get("userLiquidityCumulativeIndex"));
+        assertEquals(borrowRate,result.get("borrowRate"));
+        assertEquals(liquidityRate,result.get("liquidityRate"));
+        assertEquals(originationFee,result.get("originationFee"));
+        assertEquals(userBorrowCumulativeIndex,result.get("userBorrowCumulativeIndex"));
+        assertEquals(lastUpdateTimestamp,result.get("lastUpdateTimestamp"));
+        assertEquals(price,result.get("exchangeRate"));
+        assertEquals(decimals,result.get("decimals"));
+        assertEquals(price,result.get("sICXRate"));
+    }
+
+    @Test
+    /*
+    user has deposited 100 IUSDC an borrowed 23 IUSDC
+     */
+    public void userReserveData_iusdc_reserve(){
+        Address iusdc_reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress();
+        Account user = sm.createAccount();
+
+        Address oTokenAddr = MOCK_CONTRACT_ADDRESS.get(Contracts.oIUSDC).getAddress();
+        Address dTokenAddr = MOCK_CONTRACT_ADDRESS.get(Contracts.dIUSDC).getAddress();
+        BigInteger borrowRate = BigInteger.valueOf(10).divide(BigInteger.valueOf(100));
+        BigInteger decimals= BigInteger.valueOf(6);
+        BigInteger liquidityRate = BigInteger.valueOf(2).divide(BigInteger.valueOf(1000));
+        BigInteger originationFee = BigInteger.valueOf(1).divide(BigInteger.valueOf(100));
+        BigInteger lastUpdateTimestamp = BigInteger.valueOf(System.currentTimeMillis()/1000);
+        BigInteger currentOTokenBalance = BigInteger.valueOf(101).multiply(BigInteger.valueOf(1000_000));
+        BigInteger principalOTokenBalance = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
+        BigInteger userLiquidityCumulativeIndex = BigInteger.valueOf((long) 1.032f);
+        BigInteger principalBorrowBalance = BigInteger.valueOf(23).multiply(BigInteger.valueOf(1000_000));
+        BigInteger currentBorrowBalance = BigInteger.valueOf(24).multiply(BigInteger.valueOf(1000_000));
+        BigInteger userBorrowCumulativeIndex  = BigInteger.valueOf((long) 1.0356f);
+
+        doReturn(Map.of(
+                "oTokenAddress",oTokenAddr,
+                "dTokenAddress",dTokenAddr,
+                "borrowRate",borrowRate,
+                "decimals", decimals,
+                "liquidityRate",liquidityRate)
+        ).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveData", iusdc_reserve);
+
+        doReturn(Map.of(
+                "originationFee",originationFee,
+                "lastUpdateTimestamp",lastUpdateTimestamp
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getUserReserveData", iusdc_reserve, user.getAddress());
+
+        doReturn(currentOTokenBalance).when(scoreSpy).
+                call(BigInteger.class,oTokenAddr,"balanceOf",user.getAddress());
+        doReturn(principalOTokenBalance).when(scoreSpy).
+                call(BigInteger.class, oTokenAddr, "principalBalanceOf", user.getAddress());
+        doReturn(userLiquidityCumulativeIndex).when(scoreSpy)
+                .call(BigInteger.class, oTokenAddr, "getUserLiquidityCumulativeIndex", user.getAddress());
+        doReturn(principalBorrowBalance).when(scoreSpy).
+                call(BigInteger.class, dTokenAddr, "principalBalanceOf", user.getAddress());
+        doReturn(currentBorrowBalance).when(scoreSpy).
+                call(BigInteger.class, dTokenAddr, "balanceOf", user.getAddress());
+        doReturn(userBorrowCumulativeIndex).when(scoreSpy).
+                call(BigInteger.class, dTokenAddr, "getUserBorrowCumulativeIndex", user.getAddress());
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress(), "USDC");
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "USDC", "USD");
+
+        BigInteger currentOTokenBalanceUSD = exaMultiply(convertToExa(currentOTokenBalance, decimals), ICX);
+        BigInteger principalOTokenBalanceUSD = exaMultiply(convertToExa(principalOTokenBalance, decimals), ICX);
+        BigInteger currentBorrowBalanceUSD = exaMultiply(convertToExa(currentBorrowBalance, decimals), ICX);
+        BigInteger principalBorrowBalanceUSD = exaMultiply(convertToExa(principalBorrowBalance, decimals), ICX);
+
+        Map<String, BigInteger> result = (Map<String, BigInteger>) score.call("getUserReserveData",
+                iusdc_reserve,user.getAddress());
+
+        assertEquals(currentOTokenBalance,result.get("currentOTokenBalance"));
+        assertEquals(currentOTokenBalanceUSD,result.get("currentOTokenBalanceUSD"));
+        assertEquals(principalOTokenBalance,result.get("principalOTokenBalance"));
+        assertEquals(principalOTokenBalanceUSD,result.get("principalOTokenBalanceUSD"));
+        assertEquals(currentBorrowBalance,result.get("currentBorrowBalance"));
+        assertEquals(currentBorrowBalanceUSD,result.get("currentBorrowBalanceUSD"));
+        assertEquals(principalBorrowBalance,result.get("principalBorrowBalance"));
+        assertEquals(principalBorrowBalanceUSD,result.get("principalBorrowBalanceUSD"));
+        assertEquals(userLiquidityCumulativeIndex,result.get("userLiquidityCumulativeIndex"));
+        assertEquals(borrowRate,result.get("borrowRate"));
+        assertEquals(liquidityRate,result.get("liquidityRate"));
+        assertEquals(originationFee,result.get("originationFee"));
+        assertEquals(userBorrowCumulativeIndex,result.get("userBorrowCumulativeIndex"));
+        assertEquals(lastUpdateTimestamp,result.get("lastUpdateTimestamp"));
+        assertEquals(ICX,result.get("exchangeRate"));
+        assertEquals(decimals,result.get("decimals"));
+        assertNull(result.get("sICXRate"));
+    }
+
+    @Test
+    public void balanceDecreaseAllowed_colleteral_not_enabled(){
+        Address icx_reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
+        Account user = sm.createAccount();
+
+        doReturn(Map.of(
+                "liquidationThreshold",BigInteger.valueOf(650000000000000000L),
+                "usageAsCollateralEnabled",false
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration", icx_reserve);
+
+        assertTrue((Boolean) score.call("balanceDecreaseAllowed",icx_reserve,user.getAddress(),BigInteger.valueOf(100)));
+    }
+
+    @Test
+    /*
+    user deposited 50, borrowed 20 and tried to redeem 20
+     */
+    public void balanceDecreaseAllowed_iusdc_returns_false(){
+        Address iusdc_reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress();
+        Account user = sm.createAccount();
+
+        doReturn(Map.of(
+                "liquidationThreshold",BigInteger.valueOf(650000000000000000L),
+                "usageAsCollateralEnabled",true,
+                "decimals", BigInteger.valueOf(6)
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration", iusdc_reserve);
+
+        doReturn(Map.of(
+                "totalCollateralBalanceUSD",BigInteger.valueOf(50).multiply(ICX),
+                "totalBorrowBalanceUSD",BigInteger.valueOf(20).multiply(ICX),
+                "totalFeesUSD",BigInteger.valueOf(1).multiply(ICX),
+                "currentLiquidationThreshold",BigInteger.valueOf(500000000000000000L)
+        )).when(scoreSpy).getUserAccountData(user.getAddress());
+
+        doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "USDC", "USD");
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress(), "USDC");
+
+        assertFalse((boolean)score.call("balanceDecreaseAllowed",iusdc_reserve,user.getAddress(),
+                BigInteger.valueOf(20).multiply(ICX)));
+    }
+
+    @Test
+    public void calculateCollateralNeededUSD(){
+        Address iusdc_reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress();
+        BigInteger amount = BigInteger.valueOf(50).multiply(ICX);
+        BigInteger fee = BigInteger.ONE.multiply(BigInteger.valueOf(1000000L)) ;
+        BigInteger userCurrentBorrow = BigInteger.valueOf(20).multiply(ICX);
+        BigInteger userCurrentFee = BigInteger.ONE.multiply(BigInteger.valueOf(10000L)) ;
+        BigInteger userCurrentLTV = BigInteger.valueOf(450000000000000000L);
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress(), "USDC");
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "USDC", "USD");
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(6)
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration", iusdc_reserve);
+
+
+        BigInteger expectedCollateralNeededUSD = collateralNeededUSDCalculation("USDC",amount,
+                userCurrentBorrow,userCurrentFee,userCurrentLTV);
+        BigInteger actualCollateralNeededUSD = (BigInteger) score.call("calculateCollateralNeededUSD",
+                iusdc_reserve,amount,fee,userCurrentBorrow,
+                userCurrentFee,userCurrentLTV);
+
+        assertEquals(expectedCollateralNeededUSD,actualCollateralNeededUSD);
+    }
+
+
+    @Test
+    public void userALlReserveData(){
+        Account user = sm.createAccount(100);
+
+        List<Address> reserve = new ArrayList<>();
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
+
+        doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
+
+        doReturn(Map.of()).when(scoreSpy).getUserReserveData(reserve.get(0),user.getAddress());
+        doReturn(Map.of()).when(scoreSpy).getUserReserveData(reserve.get(1),user.getAddress());
+        score.call("getUserAllReserveData",user.getAddress());
+    }
+
+    @Test
+    /*
+    user has not taken any borrows initially
+     */
+    public void userLiquidationData_no_borrows(){
+        Address user = sm.createAccount().getAddress();
+        List<Address> reserve = new ArrayList<>();
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
+
+        doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
+
+        doReturn(Map.of("healthFactorBelowThreshold",false)).when(scoreSpy).getUserAccountData(user);
+
+        doReturn(Map.of(
+                "compoundedBorrowBalance",BigInteger.ZERO,
+                "underlyingBalance",BigInteger.valueOf(100).multiply(ICX)))
+                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                        "getUserBasicReserveData", reserve.get(0), user);
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18))).when(scoreSpy)
+                .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(0));
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
+
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "ICX", "USD");
+        doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+
+        Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData",user);
+
+        Map<String,BigInteger> result_borrow = (Map<String, BigInteger>) result.get("borrows");
+        Map<String,BigInteger> result_collateral = (Map<String, BigInteger>) result.get("collaterals");
+
+        System.out.println(result_borrow);
+        System.out.println(result_collateral);
+
+        assertEquals(result.get("badDebt"),BigInteger.ZERO);
+        // asserts Left
+        System.out.println(result);
 
     }
+
+    @Test
+    public void userLiquidationData_health_factor_above_threshold(){
+        Address user = sm.createAccount().getAddress();
+        List<Address> reserve = new ArrayList<>();
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
+//        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
+
+        doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
+
+        doReturn(Map.of("healthFactorBelowThreshold",false)).when(scoreSpy).getUserAccountData(user);
+
+        doReturn(Map.of(
+                "compoundedBorrowBalance",BigInteger.valueOf(30).multiply(ICX),
+                "underlyingBalance",BigInteger.valueOf(100).multiply(ICX)))
+                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                        "getUserBasicReserveData", reserve.get(0), user);
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18))).when(scoreSpy)
+                .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(0));
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
+
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "ICX", "USD");
+        doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+
+        Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData",user);
+
+        Map<String,Object> expected = liquidationDataCalculation("ICX",BigInteger.valueOf(30).multiply(ICX),
+                BigInteger.valueOf(100).multiply(ICX),BigInteger.ZERO);
+
+        Map<String,Map<String,BigInteger>> expectedCollateral = (Map<String, Map<String,BigInteger>>) expected.get("borrows");
+        System.out.println("ss "+expectedCollateral.get("ICX"));
+        System.out.println("ss 1"+expectedCollateral.get("ICX").get("compoundedBorrowBalanceUSD"));
+        assertEquals(result.get("badDebt"),expected.get("badDebt"));
+//        assertEquals(result.get("borrows"),expected.get("borrows"));
+//        assertEquals(result.get("collaterals"),expected.get("collaterals"));
+        // asserts Left
+//        System.out.println(result);
+    }
+
+    @Test
+    public void userLiquidationData(){
+        Address user = sm.createAccount().getAddress();
+        List<Address> reserve = new ArrayList<>();
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
+//        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
+
+        doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
+
+        BigInteger totalBorrowBalanceUSD = BigInteger.valueOf(35).multiply(ICX);
+        BigInteger totalFeesUSD = BigInteger.ONE;
+        BigInteger totalCollateralBalanceUSD = BigInteger.valueOf(110).multiply(ICX);
+        BigInteger currentLtv = BigInteger.valueOf(650000000000000000L);
+        doReturn(Map.of(
+                "healthFactorBelowThreshold",true,
+                "totalBorrowBalanceUSD",totalBorrowBalanceUSD,
+                "totalFeesUSD",totalFeesUSD,
+                "totalCollateralBalanceUSD",totalCollateralBalanceUSD,
+                "currentLtv",currentLtv
+        )).when(scoreSpy).getUserAccountData(user);
+
+        BigInteger badDebt = BigInteger.valueOf(13).multiply(ICX);
+        doReturn(badDebt).when(scoreSpy).
+                call(BigInteger.class, Contracts.LIQUIDATION_MANAGER, "calculateBadDebt",
+                totalBorrowBalanceUSD,totalFeesUSD,totalCollateralBalanceUSD,currentLtv
+        );
+        doReturn(Map.of(
+                "compoundedBorrowBalance",BigInteger.valueOf(30).multiply(ICX),
+                "underlyingBalance",BigInteger.valueOf(100).multiply(ICX)))
+                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                        "getUserBasicReserveData", reserve.get(0), user);
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18))).when(scoreSpy)
+                .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(0));
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
+
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "ICX", "USD");
+        doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+
+        Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData",user);
+
+        Map<String,Object> expected = liquidationDataCalculation("ICX",BigInteger.valueOf(30).multiply(ICX),
+                BigInteger.valueOf(100).multiply(ICX),badDebt);
+
+        Map<String,Map<String,BigInteger>> expectedCollateral = (Map<String, Map<String,BigInteger>>) expected.get("borrows");
+//        System.out.println("ss "+expectedCollateral.get("ICX"));
+//        System.out.println("ss 1"+expectedCollateral.get("ICX").get("compoundedBorrowBalanceUSD"));
+//        assertEquals(result.get("badDebt"),expected.get("badDebt"));
+//        assertEquals(result.get("borrows"),expected.get("borrows"));
+//        assertEquals(result.get("collaterals"),expected.get("collaterals"));
+        // asserts Left
+        System.out.println("res "+result);
+        System.out.println("ex" + expected);
+    }
+
+
+
+
+
+//    @Test
+//    public void liquidationList(){
+//        BigInteger index = BigInteger.valueOf(50);
+//
+//        Address user1 = sm.createAccount(100).getAddress();
+//        Address user2 = sm.createAccount(100).getAddress();
+//        Address user3 = sm.createAccount(100).getAddress();
+//        Address user4 = sm.createAccount(100).getAddress();
+//
+//        List<Address> wallets = new ArrayList<>();
+//        wallets.add(user1);
+//        wallets.add(user2);
+//        wallets.add(user3);
+//        wallets.add(user4);
+//
+//        doReturn(wallets).when(scoreSpy).call(List.class, Contracts.LENDING_POOL, "getBorrowWallets", index);
+//
+//        BigInteger healthFactor_user1 = healthFactor(BigInteger.TEN,BigInteger.valueOf(100),BigInteger.ONE,
+//                BigInteger.valueOf(650000000000000000L));
+//
+//        BigInteger healthFactor_user2 = healthFactor(BigInteger.ZERO,BigInteger.valueOf(100),BigInteger.ONE,
+//                BigInteger.valueOf(650000000000000000L));
+//
+//        BigInteger healthFactor_user3 = healthFactor(BigInteger.TEN,BigInteger.valueOf(100),BigInteger.ONE,
+//                BigInteger.valueOf(650000000000000000L));
+//
+//        BigInteger healthFactor_user4 = healthFactor(BigInteger.TEN,BigInteger.valueOf(100),BigInteger.ONE,
+//                BigInteger.valueOf(650000000000000000L));
+//
+//        liquidationDataCalculation("ICX",)
+//        doReturn().when(scoreSpy).getUserLiquidationData(user2);
+//
+//        Map<String, Object> user_account_data = new HashMap();
+//        user_account_data.put("healthFactor",healthFactor_user1);
+//
+//        Map<String, Object> user_account_data2 = new HashMap();
+//        user_account_data2.put("healthFactor",healthFactor_user2);
+//
+//        Map<String, Object> user_account_data3 = new HashMap();
+//        user_account_data3.put("healthFactor",healthFactor_user3);
+//
+//        Map<String, Object> user_account_data4 = new HashMap();
+//        user_account_data4.put("healthFactor",healthFactor_user4);
+//
+//        doReturn(user_account_data).when(scoreSpy).getUserAccountData(user1);
+//        doReturn(user_account_data2).when(scoreSpy).getUserAccountData(user2);
+//        doReturn(user_account_data3).when(scoreSpy).getUserAccountData(user3);
+//        doReturn(user_account_data4).when(scoreSpy).getUserAccountData(user4);
+//        System.out.println(score.call("liquidationList", index));
+//    }
+
+    @Test
+    public Map<String, Object> reserveData_iusdc(){
+
+        Address iusdc_reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress();
+        Address oToken_addr = MOCK_CONTRACT_ADDRESS.get(Contracts.oIUSDC).getAddress();
+        Address dToken_addr = MOCK_CONTRACT_ADDRESS.get(Contracts.dIUSDC).getAddress();
+
+        BigInteger lendingPercentage = BigInteger.valueOf(8).divide(BigInteger.TEN);
+        BigInteger borrowingPercentage = BigInteger.valueOf(9);
+        BigInteger totalLiquidity = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
+        BigInteger availableLiquidity = BigInteger.valueOf(20).multiply(BigInteger.valueOf(1000_000));
+        BigInteger totalBorrows = BigInteger.valueOf(80).multiply(BigInteger.valueOf(1000_000));
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(6),
+                "totalLiquidity",totalLiquidity,
+                "availableLiquidity",availableLiquidity,
+                "totalBorrows",totalBorrows,
+                "oTokenAddress",oToken_addr,
+                "dTokenAddress",dToken_addr
+        )).when(scoreSpy)
+                .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", iusdc_reserve);
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress(), "USDC");
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "USDC", "USD");
+
+        doReturn(lendingPercentage).when(scoreSpy)
+                .call(BigInteger.class, Contracts.REWARDS, "assetDistPercentage", oToken_addr);
+
+        doReturn(borrowingPercentage).when(scoreSpy)
+                .call(BigInteger.class, Contracts.REWARDS, "assetDistPercentage", dToken_addr);
+
+        // calculation
+        BigInteger totalLiquidityUSD = reserveDataCalcualtion("USDC",ICX,totalLiquidity);
+        BigInteger availableLiquidityUSD = reserveDataCalcualtion("USDC",ICX,availableLiquidity);
+        BigInteger totalBorrowsUSD = reserveDataCalcualtion("USDC",ICX,totalBorrows);
+
+        Map<String, Object> result = (Map<String, Object>) score.call("getReserveData",iusdc_reserve);
+
+        assertEquals(result.get("exchangePrice"),ICX);
+        assertEquals(result.get("totalLiquidityUSD"),totalLiquidityUSD);
+        assertEquals(result.get("availableLiquidityUSD"),availableLiquidityUSD);
+        assertEquals(result.get("totalBorrowsUSD"),totalBorrowsUSD);
+        assertEquals(result.get("lendingPercentage"),lendingPercentage);
+        assertEquals(result.get("borrowingPercentage"),borrowingPercentage);
+        assertEquals(result.get("rewardPercentage"),borrowingPercentage.add(lendingPercentage));
+        assertNull(result.get("sICXRate"));
+        return  result;
+    }
+
+    @Test
+    public Map<String, Object> reserveData_icx(){
+
+        Address icx_reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
+        Address oToken_addr = MOCK_CONTRACT_ADDRESS.get(Contracts.oICX).getAddress();
+        Address dToken_addr = MOCK_CONTRACT_ADDRESS.get(Contracts.dICX).getAddress();
+
+        BigInteger lendingPercentage = BigInteger.valueOf(1).divide(BigInteger.TEN);
+        BigInteger borrowingPercentage = BigInteger.valueOf(12);
+        BigInteger totalLiquidity = BigInteger.valueOf(500).multiply(ICX);
+        BigInteger availableLiquidity = BigInteger.valueOf(245).multiply(ICX);
+        BigInteger totalBorrows = BigInteger.valueOf(255).multiply(ICX);
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18),
+                "totalLiquidity",totalLiquidity,
+                "availableLiquidity",availableLiquidity,
+                "totalBorrows",totalBorrows,
+                "oTokenAddress",oToken_addr,
+                "dTokenAddress",dToken_addr
+        )).when(scoreSpy)
+                .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", icx_reserve);
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "ICX", "USD");
+        doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+
+        doReturn(lendingPercentage).when(scoreSpy)
+                .call(BigInteger.class, Contracts.REWARDS, "assetDistPercentage", oToken_addr);
+
+        doReturn(borrowingPercentage).when(scoreSpy)
+                .call(BigInteger.class, Contracts.REWARDS, "assetDistPercentage", dToken_addr);
+
+        // calculation
+        BigInteger totalLiquidityUSD = reserveDataCalcualtion("ICX",ICX,totalLiquidity);
+        BigInteger availableLiquidityUSD = reserveDataCalcualtion("ICX",ICX,availableLiquidity);
+        BigInteger totalBorrowsUSD = reserveDataCalcualtion("ICX",ICX,totalBorrows);
+
+        Map<String, Object> result = (Map<String, Object>) score.call("getReserveData",icx_reserve);
+
+        assertEquals(result.get("exchangePrice"),ICX);
+        assertEquals(result.get("totalLiquidityUSD"),totalLiquidityUSD);
+        assertEquals(result.get("availableLiquidityUSD"),availableLiquidityUSD);
+        assertEquals(result.get("totalBorrowsUSD"),totalBorrowsUSD);
+        assertEquals(result.get("lendingPercentage"),lendingPercentage);
+        assertEquals(result.get("borrowingPercentage"),borrowingPercentage);
+        assertEquals(result.get("rewardPercentage"),borrowingPercentage.add(lendingPercentage));
+        assertEquals(result.get("sICXRate"),ICX.divide(BigInteger.TEN));
+
+        return result;
+    }
+
+    @Test
+    public void getAllReserveData(){
+        List<Address> reserve = new ArrayList<>();
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
+
+        doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress(), "USDC");
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
+
+        doReturn(reserveData_iusdc()).when(scoreSpy).getReserveData(reserve.get(1));
+        doReturn(reserveData_icx()).when(scoreSpy).getReserveData(reserve.get(0));
+
+        Map<String, Map<String, Object>> result =
+                (Map<String, Map<String, Object>>) score.call("getAllReserveData");
+
+        assertEquals(reserveData_icx(),result.get("ICX"));
+        assertEquals(reserveData_iusdc(),result.get("USDC"));
+    }
+
+    @Test
+    public void allReserveConfiguration(){
+        List<Address> reserve = new ArrayList<>();
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
+
+        doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress(), "USDC");
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
+
+        doReturn(Map.of()).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration", reserve.get(0));
+        doReturn(Map.of()).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveConfiguration", reserve.get(1));
+
+        Map<String, Map<String, Object>> result =
+                (Map<String, Map<String, Object>>) score.call("getAllReserveConfigurationData");
+//
+        assertEquals(Map.of(),result.get("ICX"));
+        assertEquals(Map.of(),result.get("USDC"));
+    }
+
+    @Test
+    public void loadOrigination(){
+        doReturn(BigInteger.valueOf(1)).when(scoreSpy)
+                .call(BigInteger.class, Contracts.FEE_PROVIDER, "getLoanOriginationFeePercentage");
+
+        assertEquals(BigInteger.valueOf(1),score.call("getLoanOriginationFeePercentage"));
+    }
+
+    @Test
+    public void realTimeDebt(){
+        Account user = sm.createAccount(100);
+        Address icx_reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
+
+        doReturn(Map.of(
+                "currentBorrowBalance", BigInteger.valueOf(10).multiply(ICX),
+                "originationFee",BigInteger.valueOf(1)
+        )).when(scoreSpy).getUserReserveData(icx_reserve,user.getAddress());
+
+        BigInteger result = (BigInteger) score.call("getRealTimeDebt",icx_reserve,user.getAddress());
+        BigInteger expected = BigInteger.valueOf(10).multiply(ICX).add(BigInteger.valueOf(1));
+        assertEquals(result,expected);
+    }
+
+    @Test
+    public void userStakeInfo_returns_empty_list(){
+        Account user = sm.createAccount(100);
+
+        Map<String, Object> unstakedRecords = new HashMap<>();
+        unstakedRecords.put("from",MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
+
+        List<Map<String, Object>> unstakeDetails= new ArrayList<>();
+        unstakeDetails.add(0,unstakedRecords);
+
+        doReturn(unstakeDetails).when(scoreSpy)
+                .call(List.class, Contracts.STAKING, "getUserUnstakeInfo", user.getAddress());
+
+        List<Map<String, BigInteger>> result = (List<Map<String, BigInteger>>) score.call("getUserUnstakeInfo",
+                user.getAddress());
+
+        List<Map<String, BigInteger>> expected = new ArrayList<>();
+
+        assertEquals(result,expected);
+
+    }
+
+    @Test
+    void userStakeInfo(){
+        Account user = sm.createAccount(100);
+
+        Map<String, Object> unstakedRecords = new HashMap<>();
+        unstakedRecords.put("from",MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL_CORE).getAddress());
+        unstakedRecords.put("amount",BigInteger.valueOf(100));
+        unstakedRecords.put("unstakingBlockHeight",BigInteger.valueOf(10000));
+
+
+        List<Map<String, Object>> unstakeDetails= new ArrayList<>();
+        unstakeDetails.add(unstakedRecords);
+
+        doReturn(unstakeDetails).when(scoreSpy)
+                .call(List.class, Contracts.STAKING, "getUserUnstakeInfo", user.getAddress());
+
+        List<Map<String, BigInteger>> result = (List<Map<String, BigInteger>>) score.call("getUserUnstakeInfo",
+                user.getAddress());
+
+        List<Map<String, BigInteger>> expected = new ArrayList<>();
+
+        Map<String, BigInteger> expectedResponse = new HashMap<>();
+        expectedResponse.put("amount",BigInteger.valueOf(100));
+        expectedResponse.put("unstakingBlockHeight",BigInteger.valueOf(10000));
+
+        expected.add(expectedResponse);
+
+        assertEquals(result.size(),expected.size());
+        assertEquals(result.get(0).get("amount"),expected.get(0).get("amount"));
+        assertEquals(result.get(0).get("unstakingBlockHeight"),expected.get(0).get("unstakingBlockHeight"));
+
+    }
+
+
+
 
 
 
