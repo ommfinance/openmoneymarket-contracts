@@ -669,7 +669,7 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         doReturn(Map.of(
                 "compoundedBorrowBalance",BigInteger.ZERO,
-                "underlyingBalance",BigInteger.valueOf(100).multiply(ICX)))
+                "underlyingBalance",BigInteger.valueOf(50).multiply(ICX)))
                 .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                         "getUserBasicReserveData", reserve.get(0), user);
 
@@ -686,24 +686,31 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData",user);
 
-        Map<String,BigInteger> result_borrow = (Map<String, BigInteger>) result.get("borrows");
-        Map<String,BigInteger> result_collateral = (Map<String, BigInteger>) result.get("collaterals");
+        Map<String,Map<String,BigInteger>> result_borrow = (Map<String, Map<String, BigInteger>>) result.get("borrows");
+        Map<String,Map<String,BigInteger>> result_collateral = (Map<String, Map<String, BigInteger>>) result.get("collaterals");
 
-        System.out.println(result_borrow);
-        System.out.println(result_collateral);
+
+        Map<String,Object> expected = liquidationDataCalculation("ICX",BigInteger.ZERO,
+                BigInteger.valueOf(50).multiply(ICX),BigInteger.ZERO);
+        Map<String,Map<String,BigInteger>> expected_collateral = (Map<String, Map<String,BigInteger>>) expected.get("collaterals");
 
         assertEquals(result.get("badDebt"),BigInteger.ZERO);
-        // asserts Left
-        System.out.println(result);
+        assertEquals(result_borrow.get("ICX"),null);
+        assertEquals(result_collateral.get("ICX"), expected_collateral.get("ICX"));
+        assertEquals(result_collateral.get("ICX").get("underlyingBalance"),BigInteger.valueOf(50).multiply(ICX));
+        assertEquals(result_collateral.get("ICX").get("underlyingBalanceUSD"),
+                expected_collateral.get("ICX").get("underlyingBalanceUSD"));
 
     }
 
     @Test
+    /*
+    user has borrow of 30ICX initially with 100 ICX as collateral and no badDebt
+     */
     public void userLiquidationData_health_factor_above_threshold(){
         Address user = sm.createAccount().getAddress();
         List<Address> reserve = new ArrayList<>();
         reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
-//        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
 
         doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
 
@@ -727,33 +734,42 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData",user);
+        Map<String,Map<String,BigInteger>> resultBorrows = (Map<String, Map<String,BigInteger>>) result.get("borrows");
+        Map<String,Map<String,BigInteger>> resultCollateral = (Map<String, Map<String,BigInteger>>) result.get("collaterals");
+
 
         Map<String,Object> expected = liquidationDataCalculation("ICX",BigInteger.valueOf(30).multiply(ICX),
                 BigInteger.valueOf(100).multiply(ICX),BigInteger.ZERO);
+        Map<String,Map<String,BigInteger>> expectedBorrows = (Map<String, Map<String,BigInteger>>) expected.get("borrows");
+        Map<String,Map<String,BigInteger>> expectedCollateral = (Map<String, Map<String,BigInteger>>) expected.get("collaterals");
 
-        Map<String,Map<String,BigInteger>> expectedCollateral = (Map<String, Map<String,BigInteger>>) expected.get("borrows");
-        System.out.println("ss "+expectedCollateral.get("ICX"));
-        System.out.println("ss 1"+expectedCollateral.get("ICX").get("compoundedBorrowBalanceUSD"));
         assertEquals(result.get("badDebt"),expected.get("badDebt"));
-//        assertEquals(result.get("borrows"),expected.get("borrows"));
-//        assertEquals(result.get("collaterals"),expected.get("collaterals"));
-        // asserts Left
-//        System.out.println(result);
+        assertEquals(resultBorrows.get("ICX"),expectedBorrows.get("ICX"));
+        assertEquals(resultBorrows.get("ICX").get("compoundedBorrowBalanceUSD"), expectedBorrows.get("ICX").get("compoundedBorrowBalanceUSD"));
+        assertEquals(resultBorrows.get("ICX").get("maxAmountToLiquidateUSD"), expectedBorrows.get("ICX").get("maxAmountToLiquidateUSD"));
+        assertEquals(resultBorrows.get("ICX").get("maxAmountToLiquidate"), expectedBorrows.get("ICX").get("maxAmountToLiquidate"));
+        assertEquals(resultBorrows.get("ICX").get("compoundedBorrowBalance"), expectedBorrows.get("ICX").get("compoundedBorrowBalance"));
+        assertEquals(resultCollateral.get("ICX"), expectedCollateral.get("ICX"));
+        assertEquals(resultCollateral.get("ICX").get("underlyingBalance"),BigInteger.valueOf(100).multiply(ICX));
+        assertEquals(resultCollateral.get("ICX").get("underlyingBalanceUSD"),expectedCollateral.get("ICX").get("underlyingBalanceUSD"));
+
     }
 
     @Test
-    public void userLiquidationData(){
+    /*
+     user has borrow of 30ICX initially with 100 ICX as collateral and badDebt of 13ICX
+     */
+    public void userLiquidationData_bad_debt(){
         Address user = sm.createAccount().getAddress();
         List<Address> reserve = new ArrayList<>();
         reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
-//        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
 
         doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
 
-        BigInteger totalBorrowBalanceUSD = BigInteger.valueOf(35).multiply(ICX);
+        BigInteger totalBorrowBalanceUSD = BigInteger.valueOf(35).multiply(ICX).divide(BigInteger.TEN);
         BigInteger totalFeesUSD = BigInteger.ONE;
-        BigInteger totalCollateralBalanceUSD = BigInteger.valueOf(110).multiply(ICX);
-        BigInteger currentLtv = BigInteger.valueOf(650000000000000000L);
+        BigInteger totalCollateralBalanceUSD = BigInteger.valueOf(100).multiply(ICX).divide(BigInteger.TEN);
+        BigInteger currentLtv = BigInteger.valueOf(500000000000000000L);
         doReturn(Map.of(
                 "healthFactorBelowThreshold",true,
                 "totalBorrowBalanceUSD",totalBorrowBalanceUSD,
@@ -785,19 +801,132 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData",user);
+        Map<String,Map<String,BigInteger>> resultBorrows = (Map<String, Map<String,BigInteger>>) result.get("borrows");
+        Map<String,Map<String,BigInteger>> resultCollateral = (Map<String, Map<String,BigInteger>>) result.get("collaterals");
+
 
         Map<String,Object> expected = liquidationDataCalculation("ICX",BigInteger.valueOf(30).multiply(ICX),
                 BigInteger.valueOf(100).multiply(ICX),badDebt);
+        Map<String,Map<String,BigInteger>> expectedBorrows = (Map<String, Map<String,BigInteger>>) expected.get("borrows");
+        Map<String,Map<String,BigInteger>> expectedCollateral = (Map<String, Map<String,BigInteger>>) expected.get("collaterals");
 
-        Map<String,Map<String,BigInteger>> expectedCollateral = (Map<String, Map<String,BigInteger>>) expected.get("borrows");
-//        System.out.println("ss "+expectedCollateral.get("ICX"));
-//        System.out.println("ss 1"+expectedCollateral.get("ICX").get("compoundedBorrowBalanceUSD"));
-//        assertEquals(result.get("badDebt"),expected.get("badDebt"));
-//        assertEquals(result.get("borrows"),expected.get("borrows"));
-//        assertEquals(result.get("collaterals"),expected.get("collaterals"));
-        // asserts Left
-        System.out.println("res "+result);
-        System.out.println("ex" + expected);
+        assertEquals(result.get("badDebt"),expected.get("badDebt"));
+        assertEquals(resultBorrows.get("ICX"),expectedBorrows.get("ICX"));
+        assertEquals(resultBorrows.get("ICX").get("compoundedBorrowBalanceUSD"), expectedBorrows.get("ICX").get("compoundedBorrowBalanceUSD"));
+        assertEquals(resultBorrows.get("ICX").get("maxAmountToLiquidateUSD"), expectedBorrows.get("ICX").get("maxAmountToLiquidateUSD"));
+        assertEquals(resultBorrows.get("ICX").get("maxAmountToLiquidate"), expectedBorrows.get("ICX").get("maxAmountToLiquidate"));
+        assertEquals(resultBorrows.get("ICX").get("compoundedBorrowBalance"), expectedBorrows.get("ICX").get("compoundedBorrowBalance"));
+        assertEquals(resultCollateral.get("ICX"), expectedCollateral.get("ICX"));
+        assertEquals(resultCollateral.get("ICX").get("underlyingBalance"),BigInteger.valueOf(100).multiply(ICX));
+        assertEquals(resultCollateral.get("ICX").get("underlyingBalanceUSD"),expectedCollateral.get("ICX").get("underlyingBalanceUSD"));
+
+    }
+
+    @Test
+    /*
+     user has borrow of 30ICX initially with 100 ICX as collateral and badDebt of 13ICX
+     user has also borrow of 20 IUSDC
+     */
+    public void userLiquidationData_bad_debt_multiple_reserve(){
+        Address user = sm.createAccount().getAddress();
+        List<Address> reserve = new ArrayList<>();
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
+        reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
+
+
+        doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
+
+        BigInteger totalBorrowBalanceUSD = BigInteger.valueOf(35).multiply(ICX);
+        BigInteger totalFeesUSD = BigInteger.ONE;
+        BigInteger totalCollateralBalanceUSD = BigInteger.valueOf(110).multiply(ICX);
+        BigInteger currentLtv = BigInteger.valueOf(500000000000000000L);
+        doReturn(Map.of(
+                "healthFactorBelowThreshold",true,
+                "totalBorrowBalanceUSD",totalBorrowBalanceUSD,
+                "totalFeesUSD",totalFeesUSD,
+                "totalCollateralBalanceUSD",totalCollateralBalanceUSD,
+                "currentLtv",currentLtv
+        )).when(scoreSpy).getUserAccountData(user);
+
+        BigInteger badDebt = BigInteger.valueOf(13).multiply(ICX);
+        doReturn(badDebt).when(scoreSpy).
+                call(BigInteger.class, Contracts.LIQUIDATION_MANAGER, "calculateBadDebt",
+                        totalBorrowBalanceUSD,totalFeesUSD,totalCollateralBalanceUSD,currentLtv
+                );
+        doReturn(Map.of(
+                "compoundedBorrowBalance",BigInteger.valueOf(30).multiply(ICX),
+                "underlyingBalance",BigInteger.valueOf(100).multiply(ICX)))
+                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                        "getUserBasicReserveData", reserve.get(0), user);
+
+        doReturn(Map.of(
+                "compoundedBorrowBalance",BigInteger.valueOf(40).multiply(BigInteger.valueOf(1000_000)),
+                "underlyingBalance",BigInteger.valueOf(15).multiply(BigInteger.valueOf(1000_000))))
+                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                        "getUserBasicReserveData", reserve.get(1), user);
+
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(18))).when(scoreSpy)
+                .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(0));
+        doReturn(Map.of(
+                "decimals",BigInteger.valueOf(6))).when(scoreSpy)
+                .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(1));
+
+
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
+        score.invoke(owner, "setSymbol",
+                MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress(), "USDC");
+
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "ICX", "USD");
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "USDC", "USD");
+        doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+
+        Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData",user);
+        System.out.println(result);
+        Map<String,Map<String,BigInteger>> resultBorrows = (Map<String, Map<String,BigInteger>>) result.get("borrows");
+        Map<String,Map<String,BigInteger>> resultCollateral = (Map<String, Map<String,BigInteger>>) result.get("collaterals");
+
+
+        Map<String,Object> expected_icx = liquidationDataCalculation("ICX",BigInteger.valueOf(30).multiply(ICX),
+                BigInteger.valueOf(100).multiply(ICX),badDebt);
+        Map<String,Map<String,BigInteger>> expectedBorrows = (Map<String, Map<String,BigInteger>>) expected_icx.get("borrows");
+        Map<String,Map<String,BigInteger>> expectedCollateral = (Map<String, Map<String,BigInteger>>) expected_icx.get("collaterals");
+
+        Map<String,Object> expected_iusdc = liquidationDataCalculation("USDC",BigInteger.valueOf(40).multiply(BigInteger.valueOf(1000_000)),
+                BigInteger.valueOf(15).multiply(BigInteger.valueOf(1000_000)),badDebt);
+        Map<String,Map<String,BigInteger>> expectedBorrowsUSDC = (Map<String, Map<String,BigInteger>>) expected_iusdc.get("borrows");
+        Map<String,Map<String,BigInteger>> expectedCollateralUSDC = (Map<String, Map<String,BigInteger>>) expected_iusdc.get("collaterals");
+
+
+        assertEquals(result.get("badDebt"),expected_icx.get("badDebt"));
+
+        assertEquals(resultBorrows.get("ICX"),expectedBorrows.get("ICX"));
+        assertEquals(resultBorrows.get("ICX").get("compoundedBorrowBalanceUSD"), expectedBorrows.get("ICX").get("compoundedBorrowBalanceUSD"));
+        assertEquals(resultBorrows.get("ICX").get("maxAmountToLiquidateUSD"), expectedBorrows.get("ICX").get("maxAmountToLiquidateUSD"));
+        assertEquals(resultBorrows.get("ICX").get("maxAmountToLiquidate"), expectedBorrows.get("ICX").get("maxAmountToLiquidate"));
+        assertEquals(resultBorrows.get("ICX").get("compoundedBorrowBalance"), expectedBorrows.get("ICX").get("compoundedBorrowBalance"));
+
+        assertEquals(resultCollateral.get("ICX"), expectedCollateral.get("ICX"));
+        assertEquals(resultCollateral.get("ICX").get("underlyingBalance"),BigInteger.valueOf(100).multiply(ICX));
+        assertEquals(resultCollateral.get("ICX").get("underlyingBalanceUSD"),expectedCollateral.get("ICX").get("underlyingBalanceUSD"));
+
+        assertEquals(result.get("badDebt"),expected_iusdc.get("badDebt"));
+
+        assertEquals(resultBorrows.get("USDC"),expectedBorrowsUSDC.get("USDC"));
+        assertEquals(resultBorrows.get("USDC").get("compoundedBorrowBalanceUSD"), expectedBorrowsUSDC.get("USDC").get("compoundedBorrowBalanceUSD"));
+        assertEquals(resultBorrows.get("USDC").get("maxAmountToLiquidateUSD"), expectedBorrowsUSDC.get("USDC").get("maxAmountToLiquidateUSD"));
+        assertEquals(resultBorrows.get("USDC").get("maxAmountToLiquidate"), expectedBorrowsUSDC.get("USDC").get("maxAmountToLiquidate"));
+        assertEquals(resultBorrows.get("USDC").get("compoundedBorrowBalance"), expectedBorrowsUSDC.get("USDC").get("compoundedBorrowBalance"));
+
+        assertEquals(resultCollateral.get("USDC"), expectedCollateralUSDC.get("USDC"));
+        assertEquals(resultCollateral.get("USDC").get("underlyingBalance"),BigInteger.valueOf(15).multiply(BigInteger.valueOf(1000_000)));
+        assertEquals(resultCollateral.get("USDC").get("underlyingBalanceUSD"),expectedCollateralUSDC.get("USDC").get("underlyingBalanceUSD"));
+
+
+
     }
 
 
