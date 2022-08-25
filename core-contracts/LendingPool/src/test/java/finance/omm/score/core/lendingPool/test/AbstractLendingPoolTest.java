@@ -71,6 +71,7 @@ public class AbstractLendingPoolTest extends TestBase {
 
     @BeforeEach
     void setup() throws Exception{
+        contextMock.reset();
         contextMock
                 .when(() -> Context.newBranchDB("feeSharingUsers", BigInteger.class))
                 .thenReturn(feeSharingDB);

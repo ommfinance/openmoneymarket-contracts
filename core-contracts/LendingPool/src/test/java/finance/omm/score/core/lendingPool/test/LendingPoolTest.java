@@ -3,11 +3,9 @@ package finance.omm.score.core.lendingPool.test;
 import com.eclipsesource.json.JsonObject;
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import score.Address;
 import score.Context;
 
