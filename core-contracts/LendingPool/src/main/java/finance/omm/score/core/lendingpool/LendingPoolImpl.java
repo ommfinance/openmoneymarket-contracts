@@ -144,7 +144,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
         Address caller = Context.getCaller();
 
-        if (borrowIndex.get(caller) != null) {
+        if (borrowIndex.get(caller) == null) {
             borrowWallets.add(caller);
             borrowIndex.set(caller, BigInteger.valueOf(borrowWallets.size()));
         }

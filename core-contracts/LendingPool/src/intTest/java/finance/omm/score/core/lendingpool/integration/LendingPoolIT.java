@@ -77,8 +77,8 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         System.out.println("bal "+testClient.iUSDC.balanceOf(testClient.getAddress()));
         depositIUSDC(testClient,BigInteger.valueOf(10));
 
-        assertEquals(ommClient.lendingPoolCore.getUserBasicReserveData(iusdcAddr,ommClient.getAddress()),BigInteger.
-                valueOf(1010).multiply(ICX));
+        assertEquals(ommClient.lendingPoolCore.getUserBasicReserveData(iusdcAddr,ommClient.getAddress()).
+                get("underlyingBalance"),BigInteger.valueOf(1010).multiply(ICX));
     }
     @Test
     void deposit_payble(){
@@ -253,6 +253,39 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
     }
 
+    @Test
+    void redeem_partial_test() throws InterruptedException {
+
+        BigInteger amount = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
+        depositICX(testClient, BigInteger.valueOf(1000));
+        Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
+
+        // test client borrows 100 IUSDC
+        testClient.lendingPool.borrow(iusdcAddr, amount);
+
+        BigInteger repay = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
+        byte[] data = createByteArray("repay", repay, null, null, null);
+
+        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data);
+
+        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+
+        Thread.sleep(2000L);
+
+         amount =BigInteger.valueOf(600).multiply(ICX);
+
+        ommClient.lendingPool.redeem(icxAddr,amount,false);
+
+        Thread.sleep(2000L);
+
+        depositICX(testClient,BigInteger.valueOf(10));
+
+        Thread.sleep(2000L);
+
+        assertEquals(BigInteger.valueOf(600).multiply(ICX),ommClient.sICX.balanceOf(ommClient.getAddress()));
+        assertEquals(BigInteger.valueOf(400).multiply(ICX),ommClient.oICX.balanceOf(ommClient.getAddress()));
+    }
+
 
     @Test
     void stake(){
@@ -290,7 +323,7 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         List<Address> list= ommClient.lendingPool.getBorrowWallets(6);
         assertEquals(0,list.size());
 
-        Address iusdc_reserve = addressMap.get(Contracts.IUSDC.getKey());
+        Address iusdc_reserve = addressMap.get(Contracts.sICX.getKey());
         ommClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100));
         testClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100));
 
@@ -339,10 +372,9 @@ public class LendingPoolIT implements ScoreIntegrationTest{
         // test client borrows 100 IUSDC
         testClient.lendingPool.borrow(iusdcAddr, amount);
 
-        assertEquals(BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000)), ommClient.dIUSDC.balanceOf
-                (testClient.getAddress()));
+        assertEquals(amount, ommClient.dIUSDC.balanceOf(testClient.getAddress()));
 
-        BigInteger repay = BigInteger.valueOf(110).multiply(BigInteger.valueOf(1000_000));
+        BigInteger repay = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000));
         byte[] data = createByteArray("repay", repay, null, null, null);
 
         ommClient.governance.setReserveActiveStatus(iusdcAddr,false);
@@ -352,7 +384,16 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
         ommClient.governance.setReserveActiveStatus(iusdcAddr,true);
 
+        testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), BigInteger.valueOf(40).multiply(BigInteger.valueOf(1000_000)), data);
+
+        BigInteger loanOriginationFee = BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000).divide(BigInteger.valueOf(1000)));
+        assertEquals(BigInteger.valueOf(60).multiply(BigInteger.valueOf(1000_000)).add(loanOriginationFee), ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+
+        assertEquals(BigInteger.valueOf(1060).multiply(BigInteger.valueOf(1000_000)),ommClient.iUSDC.balanceOf(testClient.getAddress()));
         testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data);
+        //now have to pay 60 + loan origination fee = 60.1
+        //so remaining balance= 1060-60.01 = 999.9
+        assertEquals(BigInteger.valueOf(9999).multiply(BigInteger.valueOf(1000_00)),ommClient.iUSDC.balanceOf(testClient.getAddress()));
 
         assertUserRevert(LendingPoolException.unknown("The user does not have any borrow pending"),
                 ()->ommClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay, data), null);
