@@ -12,7 +12,7 @@ import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
 import finance.omm.score.core.lendingpool.exception.LendingPoolException;
 import finance.omm.score.core.lendingpool.integration.config.lendingPoolConfig;
 import foundation.icon.score.client.RevertedException;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -42,7 +42,7 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
     private static Map<String, foundation.icon.jsonrpc.Address> addressMap;
 
-    @BeforeAll
+    @BeforeEach
     void setup() throws  Exception{
         OMM omm = new OMM("conf/all-contracts.json");
 
@@ -309,27 +309,28 @@ public class LendingPoolIT implements ScoreIntegrationTest{
     @Test
     void checkDepositWallets(){
         depositICX(testClient,BigInteger.valueOf(1000));
-        List<Address> list= ommClient.lendingPool.getDepositWallets(0);
+        List<Address> depositList= ommClient.lendingPool.getDepositWallets(0);
 
-        assertEquals(2,list.size());
-        assertEquals(ommClient.getAddress(),list.get(0));
-        assertEquals(testClient.getAddress(),list.get(1));
+        assertEquals(2,depositList.size());
+        assertEquals(ommClient.getAddress(),depositList.get(0));
+        assertEquals(testClient.getAddress(),depositList.get(1));
     }
 
     @Test
     void checkBorrowWallets(){
         depositICX(testClient,BigInteger.valueOf(1000));
 
-        List<Address> list= ommClient.lendingPool.getBorrowWallets(6);
-        assertEquals(0,list.size());
+        List<Address> borrowList= ommClient.lendingPool.getBorrowWallets(0);
+        assertEquals(0,borrowList.size());
 
         Address iusdc_reserve = addressMap.get(Contracts.sICX.getKey());
-        ommClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100));
-        testClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100));
+        ommClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000)));
+        testClient.lendingPool.borrow(iusdc_reserve,BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000)));
 
-        assertEquals(2,list.size());
-        assertEquals(ommClient.getAddress(),list.get(0));
-        assertEquals(testClient.getAddress(),list.get(1));
+        borrowList= ommClient.lendingPool.getBorrowWallets(0);
+        assertEquals(2,borrowList.size());
+        assertEquals(ommClient.getAddress(),borrowList.get(0));
+        assertEquals(testClient.getAddress(),borrowList.get(1));
     }
 
 
