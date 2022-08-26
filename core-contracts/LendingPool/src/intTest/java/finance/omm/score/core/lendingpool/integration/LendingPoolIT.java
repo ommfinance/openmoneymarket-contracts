@@ -467,8 +467,8 @@ public class LendingPoolIT implements ScoreIntegrationTest{
 
         BigInteger balanceAfterLiq = ommClient.oICX.principalBalanceOf(testClient.getAddress());
         BigInteger feeProvider = ommClient.sICX.balanceOf(addressMap.get("feeProvider"));
-        BigInteger repayEq = BigInteger.TEN.multiply(ICX);
-        BigInteger tenPercent = BigInteger.ONE.multiply(ICX);
+        BigInteger repayEq = BigInteger.valueOf(100).multiply(ICX);
+        BigInteger tenPercent = BigInteger.TEN.multiply(ICX);
 
         assertEquals(prevBalance.subtract(feeProvider.add(repayEq).add(tenPercent)), balanceAfterLiq);
         //10+10% of 10 oICX + fee provider
