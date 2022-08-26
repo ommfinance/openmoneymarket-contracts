@@ -7,8 +7,8 @@ public class AbstractUserReserve {
 
     public static Map<String, BigInteger> getDataFromUserReserve(byte[] prefix, UserReserveDataDB userReserve) {
         return Map.of(
-                "lastUpdateTimestamp", userReserve.getItem(prefix).lastUpdateTimestamp.getOrDefault(BigInteger.ZERO),
-                "originationFee", userReserve.getItem(prefix).originationFee.getOrDefault(BigInteger.ZERO)
+                "lastUpdateTimestamp", userReserve.lastUpdateTimestamp.getOrDefault(prefix, BigInteger.ZERO),
+                "originationFee", userReserve.originationFee.getOrDefault(prefix, BigInteger.ZERO)
         );
     }
 }

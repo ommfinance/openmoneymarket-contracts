@@ -12,45 +12,45 @@ public class AbstractReserve {
 
     public static Map<String, Object> getDataFromReserve(byte[] prefix, ReserveDataDB reserve) {
         Map<String, Object> reserveData = new HashMap<>();
-        reserveData.put("reserveAddress", reserve.getItem(prefix).reserveAddress.get());
-        reserveData.put("oTokenAddress", reserve.getItem(prefix).oTokenAddress.get());
-        reserveData.put("dTokenAddress", reserve.getItem(prefix).dTokenAddress.get());
-        reserveData.put("lastUpdateTimestamp", reserve.getItem(prefix).lastUpdateTimestamp.getOrDefault(BigInteger.ZERO));
-        reserveData.put("liquidityRate", reserve.getItem(prefix).liquidityRate.getOrDefault(BigInteger.ZERO));
-        reserveData.put("borrowRate", reserve.getItem(prefix).borrowRate.getOrDefault(BigInteger.ZERO));
-        reserveData.put("borrowThreshold", reserve.getItem(prefix).borrowThreshold.getOrDefault(BigInteger.ZERO));
-        reserveData.put("liquidityCumulativeIndex", reserve.getItem(prefix).liquidityCumulativeIndex.getOrDefault(BigInteger.ZERO));
-        reserveData.put("borrowCumulativeIndex", reserve.getItem(prefix).borrowCumulativeIndex.getOrDefault(BigInteger.ZERO));
-        reserveData.put("baseLTVasCollateral", reserve.getItem(prefix).baseLTVasCollateral.getOrDefault(BigInteger.ZERO));
-        reserveData.put("liquidationThreshold", reserve.getItem(prefix).liquidationThreshold.getOrDefault(BigInteger.ZERO));
-        reserveData.put("liquidationBonus", reserve.getItem(prefix).liquidationBonus.getOrDefault(BigInteger.ZERO));
-        reserveData.put("decimals", reserve.getItem(prefix).decimals.getOrDefault(0));
-        reserveData.put("borrowingEnabled", reserve.getItem(prefix).borrowingEnabled.get());
-        reserveData.put("usageAsCollateralEnabled", reserve.getItem(prefix).usageAsCollateralEnabled.get());
-        reserveData.put("isFreezed", reserve.getItem(prefix).isFreezed.get());
-        reserveData.put("isActive", reserve.getItem(prefix).isActive.get());
+        reserveData.put("reserveAddress", reserve.reserveAddress.get(prefix));
+        reserveData.put("oTokenAddress", reserve.oTokenAddress.get(prefix));
+        reserveData.put("dTokenAddress", reserve.dTokenAddress.get(prefix));
+        reserveData.put("lastUpdateTimestamp", reserve.lastUpdateTimestamp.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("liquidityRate", reserve.liquidityRate.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("borrowRate", reserve.borrowRate.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("borrowThreshold", reserve.borrowThreshold.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("liquidityCumulativeIndex", reserve.liquidityCumulativeIndex.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("borrowCumulativeIndex", reserve.borrowCumulativeIndex.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("baseLTVasCollateral", reserve.baseLTVasCollateral.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("liquidationThreshold", reserve.liquidationThreshold.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("liquidationBonus", reserve.liquidationBonus.getOrDefault(prefix, BigInteger.ZERO));
+        reserveData.put("decimals", reserve.decimals.getOrDefault(prefix, 0));
+        reserveData.put("borrowingEnabled", reserve.borrowingEnabled.get(prefix));
+        reserveData.put("usageAsCollateralEnabled", reserve.usageAsCollateralEnabled.get(prefix));
+        reserveData.put("isFreezed", reserve.isFreezed.get(prefix));
+        reserveData.put("isActive", reserve.isActive.get(prefix));
 
         return reserveData;
     }
 
     public static void addDataToReserve(byte[] prefix, ReserveDataDB reserve, ReserveDataObject reserveData) {
-        reserve.getItem(prefix).dTokenAddress.set(reserveData.dTokenAddress);
-        reserve.getItem(prefix).reserveAddress.set(reserveData.reserveAddress);
-        reserve.getItem(prefix).oTokenAddress.set(reserveData.oTokenAddress);
-        reserve.getItem(prefix).lastUpdateTimestamp.set(reserveData.lastUpdateTimestamp);
-        reserve.getItem(prefix).liquidityRate.set(reserveData.liquidityRate);
-        reserve.getItem(prefix).borrowRate.set(reserveData.borrowRate);
-        reserve.getItem(prefix).liquidityCumulativeIndex.set(reserveData.liquidityCumulativeIndex);
-        reserve.getItem(prefix).borrowCumulativeIndex.set(reserveData.borrowCumulativeIndex);
-        reserve.getItem(prefix).baseLTVasCollateral.set(reserveData.baseLTVasCollateral);
-        reserve.getItem(prefix).liquidationThreshold.set(reserveData.liquidationThreshold);
-        reserve.getItem(prefix).liquidationBonus.set(reserveData.liquidationBonus);
-        reserve.getItem(prefix).decimals.set(reserveData.decimals);
-        reserve.getItem(prefix).borrowingEnabled.set(reserveData.borrowingEnabled);
-        reserve.getItem(prefix).usageAsCollateralEnabled.set(reserveData.usageAsCollateralEnabled);
-        reserve.getItem(prefix).isFreezed.set(reserveData.isFreezed);
-        reserve.getItem(prefix).isActive.set(reserveData.isActive);
-        reserve.getItem(prefix).borrowThreshold.set(ICX);
+        reserve.dTokenAddress.set(prefix, reserveData.dTokenAddress);
+        reserve.reserveAddress.set(prefix, reserveData.reserveAddress);
+        reserve.oTokenAddress.set(prefix, reserveData.oTokenAddress);
+        reserve.lastUpdateTimestamp.set(prefix, reserveData.lastUpdateTimestamp);
+        reserve.liquidityRate.set(prefix, reserveData.liquidityRate);
+        reserve.borrowRate.set(prefix, reserveData.borrowRate);
+        reserve.liquidityCumulativeIndex.set(prefix, reserveData.liquidityCumulativeIndex);
+        reserve.borrowCumulativeIndex.set(prefix, reserveData.borrowCumulativeIndex);
+        reserve.baseLTVasCollateral.set(prefix, reserveData.baseLTVasCollateral);
+        reserve.liquidationThreshold.set(prefix, reserveData.liquidationThreshold);
+        reserve.liquidationBonus.set(prefix, reserveData.liquidationBonus);
+        reserve.decimals.set(prefix, reserveData.decimals);
+        reserve.borrowingEnabled.set(prefix, reserveData.borrowingEnabled);
+        reserve.usageAsCollateralEnabled.set(prefix, reserveData.usageAsCollateralEnabled);
+        reserve.isFreezed.set(prefix, reserveData.isFreezed);
+        reserve.isActive.set(prefix, reserveData.isActive);
+        reserve.borrowThreshold.set(prefix, ICX);
     }
 
     public static ReserveDataObject createReserveDataObject(ReserveAttributes reserveData) {
