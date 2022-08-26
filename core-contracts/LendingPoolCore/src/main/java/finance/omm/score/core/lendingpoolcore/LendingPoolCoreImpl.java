@@ -43,56 +43,56 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         if (_borrowThreshold.compareTo(BigInteger.ZERO) < 0 || _borrowThreshold.compareTo(ICX) > 0) {
             Context.revert(TAG + " : Invalid borrow threshold value)");
         }
-        reserve.getItem(prefix).borrowThreshold.set(_borrowThreshold);
+        reserve.borrowThreshold.set(prefix, _borrowThreshold);
     }
 
     @External
     public void updateBaseLTVasCollateral(Address _reserve, BigInteger _baseLTVasCollateral) {
         onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
-        reserve.getItem(prefix).baseLTVasCollateral.set(_baseLTVasCollateral);
+        reserve.baseLTVasCollateral.set(prefix, _baseLTVasCollateral);
     }
 
     @External
     public void updateLiquidationThreshold(Address _reserve, BigInteger _liquidationThreshold) {
         onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
-        reserve.getItem(prefix).liquidationThreshold.set(_liquidationThreshold);
+        reserve.liquidationThreshold.set(prefix, _liquidationThreshold);
     }
 
     @External
     public void updateLiquidationBonus(Address _reserve, BigInteger _liquidationBonus) {
         onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
-        reserve.getItem(prefix).liquidationBonus.set(_liquidationBonus);
+        reserve.liquidationBonus.set(prefix, _liquidationBonus);
     }
 
     @External
     public void updateBorrowingEnabled(Address _reserve, boolean _borrowingEnabled) {
         onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
-        reserve.getItem(prefix).borrowingEnabled.set(_borrowingEnabled);
+        reserve.borrowingEnabled.set(prefix, _borrowingEnabled);
     }
 
     @External
     public void updateUsageAsCollateralEnabled(Address _reserve, boolean _usageAsCollateralEnabled) {
         onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
-        reserve.getItem(prefix).usageAsCollateralEnabled.set(_usageAsCollateralEnabled);
+        reserve.usageAsCollateralEnabled.set(prefix, _usageAsCollateralEnabled);
     }
 
     @External
     public void updateIsFreezed(Address _reserve, boolean _isFreezed) {
         onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
-        reserve.getItem(prefix).isFreezed.set(_isFreezed);
+        reserve.isFreezed.set(prefix, _isFreezed);
     }
 
     @External
     public void updateIsActive(Address _reserve, boolean _isActive) {
         onlyGovernance();
         byte[] prefix = reservePrefix(_reserve);
-        reserve.getItem(prefix).isActive.set(_isActive);
+        reserve.isActive.set(prefix, _isActive);
     }
 
     @External(readonly = true)
@@ -109,13 +109,13 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     @External(readonly = true)
     public BigInteger getReserveLiquidityCumulativeIndex(Address _reserve) {
         byte[] prefix = reservePrefix(_reserve);
-        return reserve.getItem(prefix).liquidityCumulativeIndex.getOrDefault(BigInteger.ZERO);
+        return reserve.liquidityCumulativeIndex.getOrDefault(prefix, BigInteger.ZERO);
     }
 
     @External(readonly = true)
     public BigInteger getReserveBorrowCumulativeIndex(Address _reserve) {
         byte[] prefix = reservePrefix(_reserve);
-        return reserve.getItem(prefix).borrowCumulativeIndex.getOrDefault(BigInteger.ZERO);
+        return reserve.borrowCumulativeIndex.getOrDefault(prefix, BigInteger.ZERO);
     }
 
     @External(readonly = true)
@@ -305,13 +305,13 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     @External(readonly = true)
     public Address getReserveOTokenAddress(Address _reserve) {
         byte[] prefix = reservePrefix(_reserve);
-        return reserve.getItem(prefix).oTokenAddress.get();
+        return reserve.oTokenAddress.get(prefix);
     }
 
     @External(readonly = true)
     public Address getReserveDTokenAddress(Address _reserve) {
         byte[] prefix = reservePrefix(_reserve);
-        return reserve.getItem(prefix).dTokenAddress.get();
+        return reserve.dTokenAddress.get(prefix);
     }
 
     @External

@@ -55,54 +55,54 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
 
     protected void updateDToken(Address reserveAddress, Address dToken) {
         byte[] prefix = reservePrefix(reserveAddress);
-        reserve.getItem(prefix).dTokenAddress.set(dToken);
+        reserve.dTokenAddress.set(prefix, dToken);
     }
 
     protected void updateLastUpdateTimestamp(Address reserveAddress, BigInteger lastUpdateTimestamp) {
         byte[] prefix = reservePrefix(reserveAddress);
-        reserve.getItem(prefix).lastUpdateTimestamp.set(lastUpdateTimestamp);
+        reserve.lastUpdateTimestamp.set(prefix, lastUpdateTimestamp);
     }
 
     protected void updateLiquidityRate(Address reserveAddress, BigInteger liquidityRate) {
         byte[] prefix = reservePrefix(reserveAddress);
-        reserve.getItem(prefix).liquidityRate.set(liquidityRate);
+        reserve.liquidityRate.set(prefix, liquidityRate);
     }
 
     protected void updateBorrowRate(Address reserveAddress, BigInteger borrowRate) {
         byte[] prefix = reservePrefix(reserveAddress);
-        reserve.getItem(prefix).borrowRate.set(borrowRate);
+        reserve.borrowRate.set(prefix, borrowRate);
     }
 
     protected void updateBorrowCumulativeIndex(Address reserveAddress, BigInteger borrowCumulativeIndex) {
         byte[] prefix = reservePrefix(reserveAddress);
-        reserve.getItem(prefix).borrowCumulativeIndex.set(borrowCumulativeIndex);
+        reserve.borrowCumulativeIndex.set(prefix, borrowCumulativeIndex);
 
     }
 
     protected void updateLiquidityCumulativeIndex(Address reserveAddress, BigInteger liquidityCumulativeIndex) {
         byte[] prefix = reservePrefix(reserveAddress);
-        reserve.getItem(prefix).liquidityCumulativeIndex.set(liquidityCumulativeIndex);
+        reserve.liquidityCumulativeIndex.set(prefix, liquidityCumulativeIndex);
     }
 
     protected void updateDecimals(Address reserveAddress, int decimals) {
         byte[] prefix = reservePrefix(reserveAddress);
-        reserve.getItem(prefix).decimals.set(decimals);
+        reserve.decimals.set(prefix, decimals);
     }
 
     protected void updateOtokenAddress(Address reserveAddress, Address oTokenAddress) {
         byte[] prefix = reservePrefix(reserveAddress);
-        reserve.getItem(prefix).oTokenAddress.set(oTokenAddress);
+        reserve.oTokenAddress.set(prefix, oTokenAddress);
     }
 
     protected void updateUserLastUpdateTimestamp(Address reserve, Address user,
                                                  BigInteger lastUpdateTimestamp) {
         byte[] prefix = userReservePrefix(reserve, user);
-        userReserve.getItem(prefix).lastUpdateTimestamp.set(lastUpdateTimestamp);
+        userReserve.lastUpdateTimestamp.set(prefix, lastUpdateTimestamp);
     }
 
     protected void updateUserOriginationFee(Address reserve, Address user, BigInteger originationFee) {
         byte[] prefix = userReservePrefix(reserve, user);
-        userReserve.getItem(prefix).originationFee.set(originationFee);
+        userReserve.originationFee.set(prefix, originationFee);
     }
 
     protected boolean checkReserve(Address reserve) {
