@@ -39,6 +39,8 @@ import scorex.util.ArrayList;
 public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
     private static OMMClient ownerClient;
     private static OMMClient alice;
+    private static OMMClient bob;
+    private static OMMClient clint;
 
     private static Map<String, Address> addressMap;
 
@@ -52,6 +54,12 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         omm.runConfig(config);
         ownerClient = omm.defaultClient();
         alice = omm.newClient(BigInteger.TEN.pow(24));
+        bob = omm.newClient(BigInteger.TEN.pow(24));
+        clint = omm.newClient(BigInteger.TEN.pow(24));
+
+        // approve owner as issuer to iusdc
+        ownerClient.iUSDC.addIssuer(ownerClient.getAddress());
+        ownerClient.iUSDC.approve(ownerClient.getAddress(), BigInteger.TEN.multiply(ICX));
     }
 
     @Test
@@ -143,12 +151,37 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         return value.compareTo(start) >= 0 && value.compareTo(end) <= 0;
     }
 
-    private byte[] createRepayData() {
+    private byte[] createByteData(String method) {
         JsonObject internalParameters = new JsonObject();
         JsonObject jsonData = new JsonObject()
-                .add("method", "repay")
+                .add("method", method)
                 .add("params",internalParameters);
         return jsonData.toString().getBytes();
+    }
+
+    private byte[] createLiquidationByteData(Address collateral, Address reserve, String user) {
+        JsonObject internalParameters = new JsonObject()
+                .add("_collateral", String.valueOf(collateral))
+                .add("_reserve", String.valueOf(reserve))
+                .add("_user", user);
+
+        JsonObject jsonData = new JsonObject()
+                .add("method", "liquidationCall")
+                .add("params",internalParameters);
+        return jsonData.toString().getBytes();
+    }
+
+    private void verifyLiquidityIndexesIncreased(Map<String, Object> before, Map<String, Object> after) {
+        BigInteger liquidityCumulativeIndexBefore = toBigInt((String) before.get("liquidityCumulativeIndex"));
+        BigInteger liquidityCumulativeIndexAfter = toBigInt((String) after.get("liquidityCumulativeIndex"));
+        assertTrue(liquidityCumulativeIndexAfter.compareTo(liquidityCumulativeIndexBefore) > 0);
+    }
+
+
+    private void verifyBorrowIndexesIncreased(Map<String, Object> before, Map<String, Object> after) {
+        BigInteger borrowCumulativeIndexBefore = toBigInt((String) before.get("borrowCumulativeIndex"));
+        BigInteger borrowCumulativeIndexAfter = toBigInt((String) after.get("borrowCumulativeIndex"));
+        assertTrue(borrowCumulativeIndexAfter.compareTo(borrowCumulativeIndexBefore) > 0);
     }
 
     Map<String, Boolean> STATES = new HashMap<>();
@@ -223,11 +256,34 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
     class DepositTest {
         BigInteger HUNDRED = BigInteger.valueOf(100).multiply(ICX);
         Address sicx = addressMap.get(Contracts.sICX.getKey());
+        BigInteger THOUSAND = BigInteger.valueOf(1000).multiply(ICX);
+        BigInteger POW12 = BigInteger.TEN.pow(12);
+        BigInteger POW6 = BigInteger.TEN.pow(6);
+        Address collateral = addressMap.get(Contracts.sICX.getKey());
+        Address reserve = addressMap.get(Contracts.IUSDC.getKey());
+        Address lendingPool = addressMap.get(Contracts.LENDING_POOL.getKey());
+
+        protected void depositICXBob() {
+            ((LendingPoolScoreClient)bob.lendingPool).
+                    deposit(THOUSAND,THOUSAND);
+        }
+
+        protected void getSicxFromIcx() {
+            Address oToken = addressMap.get(Contracts.oICX.getKey());
+            ((LendingPoolScoreClient)ownerClient.lendingPool).
+                    deposit(THOUSAND,THOUSAND);
+            ownerClient.lendingPool.redeem(oToken, THOUSAND, false);
+        }
+
+        void mintIUSDC(score.Address address) {
+            ownerClient.iUSDC.mintTo(address, ICX);
+        }
 
         protected void depositICX() {
             ((LendingPoolScoreClient)alice.lendingPool).
                     deposit(HUNDRED,HUNDRED);
         }
+
         @Test
         @Order(1)
         @DisplayName("Deposit: ICX Deposit Alice")
@@ -333,13 +389,8 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             BigInteger borrowRateAfter = toBigInt((String) sicxReserveDataAfter.get("borrowRate"));
             assertTrue(borrowRateAfter.compareTo(borrowRateBefore) > 0);
 
-            BigInteger liquidityCumulativeIndexBefore = toBigInt((String) sicxReserveDataBefore.get("liquidityCumulativeIndex"));
-            BigInteger liquidityCumulativeIndexAfter = toBigInt((String) sicxReserveDataAfter.get("liquidityCumulativeIndex"));
-            assertTrue(liquidityCumulativeIndexAfter.compareTo(liquidityCumulativeIndexBefore) > 0);
-
-            BigInteger borrowCumulativeIndexBefore = toBigInt((String) sicxReserveDataBefore.get("borrowCumulativeIndex"));
-            BigInteger borrowCumulativeIndexAfter = toBigInt((String) sicxReserveDataAfter.get("borrowCumulativeIndex"));
-            assertTrue(borrowCumulativeIndexAfter.compareTo(borrowCumulativeIndexBefore) > 0);
+            verifyLiquidityIndexesIncreased(sicxReserveDataBefore, sicxReserveDataAfter);
+            verifyBorrowIndexesIncreased(sicxReserveDataBefore, sicxReserveDataAfter);
 
             STATES.put("icx_redeem_alice_1", true);
         }
@@ -356,7 +407,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
 
             Address lendingPool = addressMap.get(Contracts.LENDING_POOL.getKey());
             BigInteger val = BigInteger.valueOf(40).multiply(ICX);
-            alice.sICX.transfer(lendingPool, val, createRepayData());
+            alice.sICX.transfer(lendingPool, val, createByteData("repay"));
             Map<String, Object> sicxReserveDataAfter = getReserveData(sicx);
 
             BigInteger liquidityRateBefore = toBigInt((String) sicxReserveDataBefore.get("liquidityRate"));
@@ -367,13 +418,8 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             BigInteger borrowRateAfter = toBigInt((String) sicxReserveDataAfter.get("borrowRate"));
             assertTrue(borrowRateBefore.compareTo(borrowRateAfter) > 0);
 
-            BigInteger liquidityCumulativeIndexBefore = toBigInt((String) sicxReserveDataBefore.get("liquidityCumulativeIndex"));
-            BigInteger liquidityCumulativeIndexAfter = toBigInt((String) sicxReserveDataAfter.get("liquidityCumulativeIndex"));
-            assertTrue(liquidityCumulativeIndexAfter.compareTo(liquidityCumulativeIndexBefore) > 0);
-
-            BigInteger borrowCumulativeIndexBefore = toBigInt((String) sicxReserveDataBefore.get("borrowCumulativeIndex"));
-            BigInteger borrowCumulativeIndexAfter = toBigInt((String) sicxReserveDataAfter.get("borrowCumulativeIndex"));
-            assertTrue(borrowCumulativeIndexAfter.compareTo(borrowCumulativeIndexBefore) > 0);
+            verifyLiquidityIndexesIncreased(sicxReserveDataBefore, sicxReserveDataAfter);
+            verifyBorrowIndexesIncreased(sicxReserveDataBefore, sicxReserveDataAfter);
 
             // total liquidity
             BigInteger totalLiquidityBefore = toBigInt((String) sicxReserveDataBefore.get("totalLiquidity"));
@@ -427,7 +473,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             // should refund extra
             Address lendingPool = addressMap.get(Contracts.LENDING_POOL.getKey());
             BigInteger val = BigInteger.valueOf(20).multiply(ICX);
-            alice.sICX.transfer(lendingPool, val, createRepayData());
+            alice.sICX.transfer(lendingPool, val, createByteData("repay"));
             Map<String, Object> sicxReserveDataAfter = getReserveData(sicx);
 
             // indexes should increase
@@ -435,9 +481,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             BigInteger borrowRateAfter = toBigInt((String) sicxReserveDataAfter.get("borrowRate"));
             assertTrue(borrowRateBefore.compareTo(borrowRateAfter) > 0);
 
-            BigInteger liquidityCumulativeIndexBefore = toBigInt((String) sicxReserveDataBefore.get("liquidityCumulativeIndex"));
-            BigInteger liquidityCumulativeIndexAfter = toBigInt((String) sicxReserveDataAfter.get("liquidityCumulativeIndex"));
-            assertTrue(liquidityCumulativeIndexAfter.compareTo(liquidityCumulativeIndexBefore) > 0);
+            verifyLiquidityIndexesIncreased(sicxReserveDataBefore, sicxReserveDataAfter);
 
             // after all loan is repaid, liquidity rate = 0
             BigInteger liquidityRate = toBigInt((String) sicxReserveDataAfter.get("liquidityRate"));
@@ -493,6 +537,372 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             assertEquals(availableLiquidityAfter, totalLiquidityAfter);
             assertTrue(dustValue.compareTo(totalLiquidityAfter) > 0);
             STATES.put("icx_redeem_alice_2", true);
+        }
+
+        @Test
+        @DisplayName("Liquidation 1: Single Collateral, Single Borrow, Covers double Liquidation")
+        @Order(8)
+        void liquidation1() {
+
+            // set price of ICX to 1$
+            ownerClient.dummyPriceOracle.set_reference_data("ICX", ICX);
+
+            // deposit 1000 ICX
+            depositICXBob();
+
+            // owner deposits 1000 USDC
+            mintIUSDC(ownerClient.getAddress());
+            ownerClient.iUSDC.transfer(lendingPool,
+                    BigInteger.valueOf(1000_000_000), createByteData("deposit"));
+
+            // owner get sicx from icx
+            getSicxFromIcx();
+
+            // borrow 500 USDC
+            bob.lendingPool.borrow(reserve, BigInteger.valueOf(500_000_000));
+
+            // price of ICX falls to 0.7$
+            ownerClient.dummyPriceOracle.set_reference_data("ICX", ICX.multiply(BigInteger.valueOf(7)).divide(BigInteger.TEN));
+
+            // before liquidation data
+            Map<String, Object> reserveDataBefore = getReserveData(reserve);
+            Map<String, Object> collateralDataBefore = getReserveData(collateral);
+            Map<String, Object> lqdnDataBefore = ownerClient.lendingPoolDataProvider.getUserLiquidationData(bob.getAddress());
+            BigInteger reserveBalanceBefore = ownerClient.dIUSDC.balanceOf(bob.getAddress());
+            BigInteger collateralBalanceBefore = ownerClient.oICX.balanceOf(bob.getAddress());
+            BigInteger liquidatorSicxBalanceBefore = ownerClient.sICX.balanceOf(ownerClient.getAddress());
+            BigInteger liquidatorIUSDCBalanceBefore = ownerClient.iUSDC.balanceOf(ownerClient.getAddress());
+            Address feeProvider = addressMap.get(Contracts.FEE_PROVIDER.getKey());
+            BigInteger feeProvidersICXBalanceBefore = ownerClient.sICX.balanceOf(feeProvider);
+            BigInteger feeProviderUSDCBalanceBefore = ownerClient.iUSDC.balanceOf(feeProvider);
+
+            // liquidation
+            BigInteger amtToLiquidate  = toBigInt((String) lqdnDataBefore.get("badDebt")).divide(POW12);
+            ownerClient.iUSDC.transfer(lendingPool, amtToLiquidate,
+                    createLiquidationByteData(collateral, reserve, bob.getAddress().toString()));
+
+            // data after liquidation
+            Map<String, Object> reserveDataAfter = getReserveData(reserve);
+            Map<String, Object> collateralDataAfter = getReserveData(collateral);
+            Map<String, Object> lqdnDataAfter = ownerClient.lendingPoolDataProvider.getUserLiquidationData(bob.getAddress());
+            BigInteger reserveBalanceAfter = ownerClient.dIUSDC.balanceOf(bob.getAddress());
+            BigInteger collateralBalanceAfter = ownerClient.oICX.balanceOf(bob.getAddress());
+            BigInteger liquidatorSicxBalanceAfter = ownerClient.sICX.balanceOf(ownerClient.getAddress());
+            BigInteger liquidatorIUSDCBalanceAfter = ownerClient.iUSDC.balanceOf(ownerClient.getAddress());
+            BigInteger feeProvidersICXBalanceAfter = ownerClient.sICX.balanceOf(feeProvider);
+            BigInteger feeProviderUSDCBalanceAfter = ownerClient.iUSDC.balanceOf(feeProvider);
+
+            // assert conditions
+            BigInteger feeProviderDiff = feeProvidersICXBalanceAfter.subtract(feeProvidersICXBalanceBefore); // sicx
+            BigInteger lqdnBonus = liquidatorSicxBalanceAfter.subtract(liquidatorSicxBalanceBefore);
+            assertEquals(collateralBalanceBefore,
+                    collateralBalanceAfter.add(feeProviderDiff).add(lqdnBonus));
+
+            assertEquals(reserveBalanceAfter, reserveBalanceBefore.subtract(amtToLiquidate));
+
+            assertEquals(lqdnBonus.divide(ICX).longValue(),
+                    amtToLiquidate.divide(POW6).longValue()*11/7, 1);
+            assertEquals(feeProviderUSDCBalanceAfter, feeProviderUSDCBalanceBefore);
+            assertEquals(liquidatorIUSDCBalanceAfter, liquidatorIUSDCBalanceBefore.subtract(amtToLiquidate));
+
+            // reserve data
+            assertEquals(
+                    toBigInt((String) reserveDataAfter.get("totalBorrows")),
+                    toBigInt((String) reserveDataBefore.get("totalBorrows")).subtract(amtToLiquidate)
+            );
+
+            assertEquals(
+                    toBigInt((String) reserveDataAfter.get("availableLiquidity")),
+                    toBigInt((String) reserveDataBefore.get("availableLiquidity")).add(amtToLiquidate)
+            );
+
+            assertEquals(
+                    toBigInt((String) reserveDataAfter.get("totalLiquidity")),
+                    toBigInt((String) reserveDataBefore.get("totalLiquidity"))
+            );
+
+            assertTrue(
+                    toBigInt((String) reserveDataBefore.get("liquidityRate")).compareTo(
+                            toBigInt((String) reserveDataAfter.get("liquidityRate"))) > 0
+            );
+
+            assertTrue(
+                    toBigInt((String) reserveDataBefore.get("borrowRate")).compareTo(
+                            toBigInt((String) reserveDataAfter.get("borrowRate"))) > 0
+            );
+
+            verifyLiquidityIndexesIncreased(reserveDataBefore, reserveDataAfter);
+            verifyBorrowIndexesIncreased(reserveDataBefore, reserveDataAfter);
+
+            // collateral data
+
+            BigInteger beforeTotalLiquidity = toBigInt((String) collateralDataBefore.get("totalLiquidity"));
+            BigInteger afterTotalLiquidity = toBigInt((String) collateralDataAfter.get("totalLiquidity"));
+            assertEquals(
+                    beforeTotalLiquidity.divide(ICX).longValue(),
+                    afterTotalLiquidity.divide(ICX).longValue()+
+                            feeProviderDiff.longValue()/(1e18)+
+                    amtToLiquidate.divide(POW6).longValue() * 11 / 7,
+                    2
+            );
+
+            BigInteger beforeAvailableLiquidity = toBigInt((String) collateralDataBefore.get("availableLiquidity"));
+            BigInteger afterAvailableLiquidity = toBigInt((String) collateralDataAfter.get("availableLiquidity"));
+            assertEquals(
+                    beforeAvailableLiquidity.divide(ICX).longValue(),
+                    afterAvailableLiquidity.divide(ICX).longValue()+
+                            feeProviderDiff.longValue()/(1e18)+
+                            amtToLiquidate.divide(POW6).longValue() * 11 / 7,
+                    2
+            );
+
+            // indexes for collateral should remain same, though collateral goes from borrower's data
+            // because icx borrows is cleared, and indexes are not updated for this case.
+
+            BigInteger liquidityCumulativeIndexBefore = toBigInt((String) collateralDataBefore.get("liquidityCumulativeIndex"));
+            BigInteger liquidityCumulativeIndexAfter = toBigInt((String) collateralDataAfter.get("liquidityCumulativeIndex"));
+            assertEquals(liquidityCumulativeIndexBefore, liquidityCumulativeIndexAfter);
+
+            BigInteger borrowCumulativeIndexBefore = toBigInt((String) collateralDataBefore.get("borrowCumulativeIndex"));
+            BigInteger borrowCumulativeIndexAfter = toBigInt((String) collateralDataAfter.get("borrowCumulativeIndex"));
+            assertEquals(borrowCumulativeIndexBefore, borrowCumulativeIndexAfter);
+
+            assertEquals(
+                    toBigInt((String) collateralDataBefore.get("totalBorrows")),
+                    toBigInt((String) collateralDataAfter.get("totalBorrows"))
+            );
+
+            assertEquals(
+                    toBigInt((String) collateralDataBefore.get("liquidityRate")),
+                    toBigInt((String) collateralDataAfter.get("liquidityRate"))
+            );
+
+            assertEquals(
+                    toBigInt((String) collateralDataBefore.get("borrowRate")),
+                    toBigInt((String) collateralDataAfter.get("borrowRate"))
+            );
+
+            /*
+             * CHECK IF BOB IS STILL UNDER LIQUIDATION
+             * 1000 ICX -> $ 1000
+             * 500 USD -> $500
+             * ICX price decreases
+             * 1000 ICX -> $ 700
+             * 500/700 = 0.71 > 0.65, so under liquidation
+             * pay back $ 150.25, 10% bonus
+             * 236.107 ICX back to liquidator
+             * ICX remaining: 1000-236.107 = 763.893 = $534.7251
+             * Borrow pending: 500 - 150.25 = $ 349.75
+             * hf : 349.75/534.7251 = 0.6549 > 0.65
+             * so, user still under liquidation
+             */
+
+            Map<String, Object> bobAccountData = ownerClient.lendingPoolDataProvider.getUserAccountData(bob.getAddress());
+            BigInteger healthFactor = toBigInt( (String) bobAccountData.get("healthFactor"));
+
+            assertEquals(
+                    healthFactor.longValue()/1e18,
+                    0.99,
+                    0.2
+            );
+
+            assertEquals(
+                    (String) bobAccountData.get("healthFactorBelowThreshold"),
+                    "0x1"
+            );
+
+            BigInteger newBadDebt = toBigInt((String) lqdnDataAfter.get("badDebt")); // 82.6375
+
+            assertTrue(newBadDebt.compareTo(BigInteger.ZERO) > 0);
+
+            // over Bad Debt Amount
+            // check if extra is refunded back to user
+
+            BigInteger newAmtToLiquidate = BigInteger.valueOf(100).multiply(POW6);
+            liquidatorIUSDCBalanceBefore = ownerClient.iUSDC.balanceOf(ownerClient.getAddress());
+
+            // liquidation
+            ownerClient.iUSDC.transfer(lendingPool, newAmtToLiquidate,
+                    createLiquidationByteData(collateral, reserve, bob.getAddress().toString()));
+
+            liquidatorIUSDCBalanceAfter = ownerClient.iUSDC.balanceOf(ownerClient.getAddress());
+
+            // only bad debt amount goes for liquidation
+            // 100-82.6375 comes back to user
+            assertEquals(liquidatorIUSDCBalanceAfter, liquidatorIUSDCBalanceBefore.subtract(newBadDebt.divide(POW12)));
+            lqdnDataAfter = ownerClient.lendingPoolDataProvider.getUserLiquidationData(bob.getAddress());
+
+            /*
+             * Collateral Left: 633.32 ICX, $ 443.32
+             * Borrows Left: $ 267.1125
+             * hf: 267.1125 / 443.32 = 0.60 > 0.65
+             * no longer under liquidation
+             */
+            assertEquals(toBigInt((String) lqdnDataAfter.get("badDebt")), BigInteger.ZERO);
+
+            bobAccountData = ownerClient.lendingPoolDataProvider.getUserAccountData(bob.getAddress());
+            assertTrue(toBigInt((String) bobAccountData.get("healthFactor")).compareTo(ICX) > 0);
+            assertEquals((String) bobAccountData.get("healthFactorBelowThreshold"),"0x0");
+        }
+
+        @Order(9)
+        void borrowOnAllReserves() {
+            // after this, till borrow is cleared, indexes should update for both reserve and collateral on liquidation
+            ownerClient.lendingPool.borrow(sicx, HUNDRED);
+            ownerClient.lendingPool.borrow(reserve, BigInteger.valueOf(100).multiply(POW6));
+        }
+
+        @Test
+        @Order(10)
+        @DisplayName("Liquidation 2: Multi collateral multi borrow")
+        void liquidation2() {
+            // transaction another client :> clint
+
+            // set price of ICX to 1$
+            ownerClient.dummyPriceOracle.set_reference_data("ICX", ICX);
+
+            // clint deposits $ 800
+            mintIUSDC(clint.getAddress());
+            clint.iUSDC.transfer(lendingPool,
+                    BigInteger.valueOf(800_000_000), createByteData("deposit"));
+
+            // clint deposits 200 ICX
+            BigInteger TWO_HUNDRED = BigInteger.valueOf(200).multiply(ICX);
+            ((LendingPoolScoreClient)clint.lendingPool).
+                    deposit(TWO_HUNDRED,TWO_HUNDRED);
+
+            // clint borrows $ 100
+            clint.lendingPool.borrow(reserve, BigInteger.valueOf(100_000_000));
+            clint.lendingPool.borrow(collateral, BigInteger.valueOf(395).multiply(ICX));
+
+            // set ICX price to $ 1.7
+            ownerClient.dummyPriceOracle.set_reference_data("ICX",
+                    ICX.multiply(BigInteger.valueOf(17)).divide(BigInteger.valueOf(10)));
+
+            // User has sICX already, uncomment if needed
+            // getSicxFromIcx();
+
+            // owner liquidates clint
+            Map<String, Object> lqdnDataBefore = ownerClient.lendingPoolDataProvider.
+                    getUserLiquidationData(clint.getAddress());
+            Map<String, Object> reserveDataBefore = getReserveData(reserve);
+            Map<String, Object> collateralDataBefore = getReserveData(collateral);
+            BigInteger reserveBalanceBefore = ownerClient.dICX.balanceOf(clint.getAddress());
+            BigInteger collateralBalanceBefore = ownerClient.oIUSDC.balanceOf(clint.getAddress());
+            BigInteger liquidatorIUSDCBalanceBefore = ownerClient.iUSDC.balanceOf(ownerClient.getAddress());
+            Address feeProvider = addressMap.get(Contracts.FEE_PROVIDER.getKey());
+            BigInteger feeProviderUSDCBalanceBefore = ownerClient.iUSDC.balanceOf(feeProvider);
+
+            BigInteger amtToLiquidate = toBigInt((String) lqdnDataBefore.get("badDebt"));
+
+            // usdc as collateral, sicx as reserve for this case
+            // usdc borrows should not change before and after liquidation for clint
+            // amtToLiquidate * 1.1 to owner
+            // indexes of both reserve should update
+
+            Address iusdc = addressMap.get(Contracts.IUSDC.getKey());
+            ownerClient.sICX.transfer(lendingPool, amtToLiquidate,
+                    createLiquidationByteData(iusdc, sicx, clint.getAddress().toString()));
+
+            Map<String, Object> lqdnDataAfter = ownerClient.lendingPoolDataProvider.
+                    getUserLiquidationData(clint.getAddress());
+            Map<String, Object> reserveDataAfter = getReserveData(reserve);
+            Map<String, Object> collateralDataAfter = getReserveData(collateral);
+            BigInteger reserveBalanceAfter = ownerClient.dICX.balanceOf(clint.getAddress());
+            BigInteger collateralBalanceAfter = ownerClient.oIUSDC.balanceOf(clint.getAddress());
+            BigInteger liquidatorIUSDCBalanceAfter = ownerClient.iUSDC.balanceOf(ownerClient.getAddress());
+            BigInteger feeProviderUSDCBalanceAfter = ownerClient.iUSDC.balanceOf(feeProvider);
+
+            // user balance checks
+            BigInteger feeProviderDiff = feeProviderUSDCBalanceAfter.subtract(feeProviderUSDCBalanceBefore);
+            BigInteger lqdnBonus = liquidatorIUSDCBalanceAfter.subtract(liquidatorIUSDCBalanceBefore);
+
+            assertEquals((collateralBalanceBefore.subtract(collateralBalanceAfter)).longValue()/1e6,
+                    (feeProviderDiff.add(
+                            amtToLiquidate.multiply(BigInteger.valueOf(11)).divide(BigInteger.valueOf(10))).divide(POW12)).longValue()/1e6,
+                    1
+            );
+            assertTrue(reserveBalanceBefore.compareTo(reserveBalanceAfter) > 0);
+            assertEquals((reserveBalanceBefore.subtract(reserveBalanceAfter)).longValue(),
+                    (amtToLiquidate.multiply(BigInteger.valueOf(10)).divide(BigInteger.valueOf(17))).longValue(),
+                    1e18
+            );
+            assertEquals(lqdnBonus.longValue()/1e6,
+                    amtToLiquidate.divide(POW12).longValue()*1.1/1e6,
+                    0.1);
+
+            assertTrue(feeProviderUSDCBalanceAfter.compareTo(feeProviderUSDCBalanceBefore) > 0);
+            verifyBorrowIndexesIncreased(reserveDataBefore, reserveDataAfter);
+            verifyLiquidityIndexesIncreased(reserveDataBefore, reserveDataAfter);
+            verifyBorrowIndexesIncreased(collateralDataBefore, collateralDataAfter);
+            verifyLiquidityIndexesIncreased(collateralDataBefore, collateralDataAfter);
+
+            /*
+             * Deposit 800$
+             * Deposit 200 ICX -> 200$
+             * Borrow 100$
+             * Borrow 395 ICX -> 395 $
+             * Update ICX price:
+             *      395 ICX -> 671.5 $
+             *      200 ICX -> 340 $
+             * ltv: (671.5+100)/(340+800) = 0.67 > 0.65, so liquidation
+             * Liquidation successful
+             * New Deposit: 340 + 800 - 222.074
+             * New Borrow: 276.2 * 1.7 + 100
+             * ltv: 0.62 < 0.65
+             */
+
+            assertEquals(toBigInt((String) lqdnDataAfter.get("badDebt")), BigInteger.ZERO);
+
+            Map<String, Object> clintAccountData = ownerClient.lendingPoolDataProvider.getUserAccountData(clint.getAddress());
+            // 0.62 > 0.5, so no more borrow available
+            assertEquals(toBigInt((String) clintAccountData.get("availableBorrowsUSD")), BigInteger.ZERO);
+
+            assertEquals(
+                    toBigInt((String) clintAccountData.get("totalLiquidityBalanceUSD")).divide(ICX).longValue(),
+                    340 + 800 - 222.074,
+                    1);
+
+            assertEquals(toBigInt((String) clintAccountData.get("totalBorrowBalanceUSD")).divide(ICX).longValue(),
+                    276.2 * 1.7 + 100,
+                    1);
+
+            assertTrue(toBigInt((String) clintAccountData.get("healthFactor")).compareTo(ICX) > 0);
+            assertEquals((String) clintAccountData.get("healthFactorBelowThreshold"),"0x0");
+
+
+            // iusdc collateral taken away, iusdc scarce in system
+            // borrow rate >
+            // liquidity rate >
+            assertTrue(
+                    toBigInt((String) reserveDataAfter.get("liquidityRate")).compareTo(
+                            toBigInt((String) reserveDataBefore.get("liquidityRate"))) > 0
+            );
+
+            assertTrue(
+                    toBigInt((String) reserveDataAfter.get("borrowRate")).compareTo(
+                            toBigInt((String) reserveDataBefore.get("borrowRate"))) > 0
+            );
+
+            assertEquals(
+                    (amtToLiquidate.divide(ICX).multiply(BigInteger.valueOf(11)).divide(BigInteger.TEN)).longValue(),
+                    (toBigInt((String) reserveDataBefore.get("availableLiquidity")).subtract(
+                    toBigInt((String) reserveDataAfter.get("availableLiquidity")))).longValue()/1e6,
+                    2
+            );
+
+            // icx loan repaid, icx surplus in system
+            // borrow rate <
+            // liquidity rate <
+            assertTrue(
+                    toBigInt((String) collateralDataBefore.get("liquidityRate")).compareTo(
+                            toBigInt((String) collateralDataAfter.get("liquidityRate"))) > 0
+            );
+
+            assertTrue(
+                    toBigInt((String) collateralDataBefore.get("borrowRate")).compareTo(
+                            toBigInt((String) collateralDataAfter.get("borrowRate"))) > 0
+            );
         }
     }
 }
