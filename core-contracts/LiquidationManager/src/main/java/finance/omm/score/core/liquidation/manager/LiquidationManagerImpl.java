@@ -123,8 +123,8 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
             Address _collateral, Address _reserve, Address _user, BigInteger _purchaseAmount) {
 
         onlyContractOrElseThrow(Contracts.LENDING_POOL,
-                LiquidationManagerException.unauthorized(TAG + ": SenderNotLendingPoolError: (sender)" +
-                        Context.getCaller() + " (lending pool)" + getAddress(Contracts.LENDING_POOL.getKey())));
+                LiquidationManagerException.unauthorized(TAG + ": SenderNotLendingPoolError: (sender) " +
+                        Context.getCaller() + " (lending pool) " + getAddress(Contracts.LENDING_POOL.getKey())));
 
         String principalBase = call(String.class, Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol", _reserve);
         BigInteger principalPrice = call(BigInteger.class, Contracts.PRICE_ORACLE,
@@ -146,15 +146,15 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         BigInteger userHealthFactor = (BigInteger) userAccountData.get("healthFactor");
         boolean healthFactorBelowThreshold = (boolean) userAccountData.get("healthFactorBelowThreshold");
         if (!healthFactorBelowThreshold) {
-            throw LiquidationManagerException.unknown(TAG + ": unsuccessful liquidation call,health factor of user is above 1" +
-                    "health factor of user " + userHealthFactor);
+            throw LiquidationManagerException.unknown(TAG + ": unsuccessful liquidation call,health factor of " +
+                    "user is above 1 " + "health factor of user " + userHealthFactor);
         }
 
         BigInteger userCollateralBalance = call(BigInteger.class, Contracts.LENDING_POOL_CORE,
                 "getUserUnderlyingAssetBalance", _collateral, _user);
         if (userCollateralBalance.equals(ZERO)) {
             throw LiquidationManagerException.unknown(TAG + ": unsuccessful liquidation call,user have no collateral balance" +
-                    "for collateral" + _collateral + "balance of user: " + _user + " is " + userCollateralBalance);
+                    " for collateral " + _collateral + " balance of user: " + _user + " is " + userCollateralBalance);
         }
 
         Map<String, BigInteger> userBorrowBalances = call(Map.class, Contracts.LENDING_POOL_CORE,
@@ -162,7 +162,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         BigInteger compoundedBorrowBalance = userBorrowBalances.get("compoundedBorrowBalance");
         if (compoundedBorrowBalance.equals(ZERO)) {
             throw LiquidationManagerException.unknown(TAG + ": unsuccessful liquidation call,user have no borrow balance" +
-                    "for reserve" + _reserve + "borrow balance of user: " + _user + " is " + userBorrowBalances);
+                    " for reserve" + _reserve + " borrow balance of user: " + _user + " is " + userBorrowBalances);
         }
         BigInteger maxPrincipalAmountToLiquidateUSD = calculateBadDebt((BigInteger) userAccountData.get("totalBorrowBalanceUSD"),
                 (BigInteger) userAccountData.get("totalFeesUSD"),
