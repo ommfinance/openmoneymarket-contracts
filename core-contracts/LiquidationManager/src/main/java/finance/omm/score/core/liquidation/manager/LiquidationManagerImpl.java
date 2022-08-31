@@ -33,7 +33,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
 
     @EventLog(indexed = 3)
     public void LiquidationCall(Address _collateral, Address _reserve, Address _user, BigInteger _purchaseAmount,
-                                BigInteger _liquidatedCollateralForFee, BigInteger _accruedBorrowInterest,
+                                BigInteger _liquidatedCollateralAmount, BigInteger _accruedBorrowInterest,
                                 Address _liquidator){
 
     }
@@ -62,13 +62,13 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
             Address _collateral, Address _reserve, BigInteger _purchaseAmount, BigInteger _userCollateralBalance,
             boolean _fee) {
         BigInteger liquidationBonus;
+        Map<String, Object> collateralConfiguration = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getReserveConfigurationData",_collateral);
         if (_fee){
             liquidationBonus = ZERO;
         }
         else {
-            Map<String, BigInteger> collateralConfigs = call(Map.class,Contracts.LENDING_POOL_DATA_PROVIDER,
-                    "getReserveConfigurationData",_collateral);
-            liquidationBonus = collateralConfigs.get("liquidationBonus");
+            liquidationBonus = (BigInteger) collateralConfiguration.get("liquidationBonus");
         }
         String collateralBase = call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",_collateral);
         String principalBase = call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER, "getSymbol",_reserve);
@@ -85,26 +85,21 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
 
         if (principalBase.equals("ICX")){
             BigInteger sicxRate = call(BigInteger.class,Contracts.STAKING,"getTodayRate");
-            principalPrice = exaMultiply(principalPrice,sicxRate);//100
+            principalPrice = exaMultiply(principalPrice,sicxRate);
         }
 
-        Map<String, BigInteger> reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,
+        Map<String, Object> reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,
                 "getReserveConfiguration",_reserve);
-        BigInteger reserveDecimals = reserveConfiguration.get("decimals");
-        reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,
-                "getReserveConfiguration",_collateral);
-        BigInteger collateralDecimals = reserveConfiguration.get("decimals");
+        BigInteger reserveDecimals = (BigInteger) reserveConfiguration.get("decimals");
+        BigInteger collateralDecimals = (BigInteger) collateralConfiguration.get("decimals");
 
         BigInteger userCollateralUSD = exaMultiply(
-                convertToExa(_userCollateralBalance, collateralDecimals), collateralPrice);//2100
-//        System.out.println("userCollateralUSD"+userCollateralUSD);
+                convertToExa(_userCollateralBalance, collateralDecimals), collateralPrice);
 
-        BigInteger purchaseAmountUSD = exaMultiply(convertToExa(_purchaseAmount, reserveDecimals), principalPrice);//2000
-//        System.out.println("purchaseAmountUSD"+purchaseAmountUSD);
+        BigInteger purchaseAmountUSD = exaMultiply(convertToExa(_purchaseAmount, reserveDecimals), principalPrice);
         BigInteger maxCollateralToLiquidate = convertExaToOther(
                 exaDivide(exaMultiply(purchaseAmountUSD, ICX.add(liquidationBonus)), collateralPrice),
                 collateralDecimals.intValue());
-//        System.out.println("maxCollateralToLiquidate"+maxCollateralToLiquidate);
 
         BigInteger collateralAmount, principalAmountNeeded;
         if (maxCollateralToLiquidate.compareTo(_userCollateralBalance)>0){
@@ -122,14 +117,6 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         return Map.of("collateralAmount", collateralAmount,
                 "principalAmountNeeded", principalAmountNeeded);
 
-    }
-
-    public static BigInteger calculateCurrentLiquidationThreshold(BigInteger _totalBorrowBalanceUSD, BigInteger
-            _totalFeesUSD, BigInteger _totalCollateralBalanceUSD){
-        if (_totalCollateralBalanceUSD.equals(ZERO)){
-            return ZERO;
-        }
-        return exaDivide(_totalBorrowBalanceUSD,_totalCollateralBalanceUSD.subtract(_totalFeesUSD));
     }
 
     @External
@@ -158,35 +145,35 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
                     " cannot be used as collateral");
         }
         BigInteger userHealthFactor = (BigInteger) userAccountData.get("healthFactor");
-        if (!(userAccountData.containsKey("healthFactorBelowThreshold"))){
+        boolean healthFactorBelowThreshold = (boolean) userAccountData.get("healthFactorBelowThreshold");
+        if (!healthFactorBelowThreshold){
             throw LiquidationManagerException.unknown(TAG + ": unsuccessful liquidation call,health factor of user is above 1" +
                     "health factor of user " + userHealthFactor);
         }
 
         BigInteger userCollateralBalance = call(BigInteger.class,Contracts.LENDING_POOL_CORE,
                 "getUserUnderlyingAssetBalance",_collateral,_user);
-        if (userCollateralBalance == null){
+        if (userCollateralBalance.equals(ZERO)){
            throw LiquidationManagerException.unknown(TAG + ": unsuccessful liquidation call,user have no collateral balance" +
                     "for collateral" + _collateral + "balance of user: " + _user + " is " + userCollateralBalance);
         }
-//        System.out.println(userCollateralBalance);
+
         Map<String, BigInteger> userBorrowBalances = call(Map.class,Contracts.LENDING_POOL_CORE,
                 "getUserBorrowBalances",_reserve,_user);
-        if (!(userBorrowBalances.containsKey("compoundedBorrowBalance"))){
+        BigInteger compoundedBorrowBalance = userBorrowBalances.get("compoundedBorrowBalance");
+        if (compoundedBorrowBalance.equals(ZERO)){
             throw LiquidationManagerException.unknown(TAG +": unsuccessful liquidation call,user have no borrow balance"+
                     "for reserve" + _reserve + "borrow balance of user: " + _user + " is " + userBorrowBalances);
         }
-//        System.out.println(userBorrowBalances);
         BigInteger maxPrincipalAmountToLiquidateUSD = calculateBadDebt((BigInteger) userAccountData.get("totalBorrowBalanceUSD"),
                                                                         (BigInteger)userAccountData.get("totalFeesUSD"),
                                                                         (BigInteger)userAccountData.get("totalCollateralBalanceUSD"),
                                                                         (BigInteger)userAccountData.get("currentLtv"));
-//        BigInteger maxPrincipalAmountToLiquidateUSD = calculateBadDebt(BigInteger.valueOf(40).multiply(ICX),BigInteger.valueOf(10).multiply(ICX),BigInteger.valueOf(40).multiply(ICX),BigInteger.valueOf(40).multiply(ICX));
         BigInteger maxPrincipalAmountToLiquidate = exaDivide(maxPrincipalAmountToLiquidateUSD,principalPrice);
-//        System.out.println("maxPrincipalAmountToLiquidate"+maxPrincipalAmountToLiquidate );
-        Map<String, ?> reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,
+
+        Map<String, Object> reserveConfiguration = call(Map.class,Contracts.LENDING_POOL_CORE,
                 "getReserveConfiguration",_reserve);
-//        System.out.println(reserveConfiguration);
+
         BigInteger reserveDecimals = (BigInteger) reserveConfiguration.get("decimals");
 
         // converting the user balances into 18 decimals
@@ -200,15 +187,14 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         else {
             actualAmountToLiquidate = _purchaseAmount;
         }
-//
+
         Map<String,BigInteger> liquidationDetails= calculateAvailableCollateralToLiquidate(
                 _collateral,_reserve,actualAmountToLiquidate,userCollateralBalance,false);
-//
+
         BigInteger maxCollateralToLiquidate = liquidationDetails.get("collateralAmount");
         BigInteger principalAmountNeeded = liquidationDetails.get("principalAmountNeeded");
         BigInteger userOriginationFee = call(BigInteger.class,Contracts.LENDING_POOL_CORE,
                 "getUserOriginationFee",_reserve,_user);
-//        System.out.println("lllllllll"+liquidationDetails);
         if (userOriginationFee.compareTo(ZERO) > 0){
             Map<String, BigInteger> feeLiquidationDetails = calculateAvailableCollateralToLiquidate(
                     _collateral, _reserve, userOriginationFee, userCollateralBalance.subtract(maxCollateralToLiquidate),
@@ -221,7 +207,6 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         if (principalAmountNeeded.compareTo(actualAmountToLiquidate)<0){
             actualAmountToLiquidate = principalAmountNeeded;
         }
-//        System.out.println(maxCollateralToLiquidate);
 
         call(Contracts.LENDING_POOL_CORE,"updateStateOnLiquidation",
                 _reserve, _collateral, _user, actualAmountToLiquidate, maxCollateralToLiquidate,
@@ -234,6 +219,7 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
 
         if (feeLiquidated.compareTo(ZERO) >0){
             call(collateralOtokenAddress,"burnOnLiquidation",_user,liquidatedCollateralForFee);
+            // the liquidated fee is sent to fee provider
             call(Contracts.LENDING_POOL_CORE,"liquidateFee",_collateral, liquidatedCollateralForFee,
                     getAddress(Contracts.FEE_PROVIDER.getKey()));
 
@@ -243,8 +229,6 @@ public class LiquidationManagerImpl extends AddressProvider implements Liquidati
         LiquidationCall(_collateral, _reserve, _user, actualAmountToLiquidate, maxCollateralToLiquidate,
                 userBorrowBalances.get("borrowBalanceIncrease"), Context.getOrigin());
 
-//        System.out.println("maxCollateralToLiquidate"+maxCollateralToLiquidate+
-//                "actualAmountToLiquidate"+actualAmountToLiquidate);
         return Map.of(
                 "maxCollateralToLiquidate",maxCollateralToLiquidate,
                 "actualAmountToLiquidate",actualAmountToLiquidate );
