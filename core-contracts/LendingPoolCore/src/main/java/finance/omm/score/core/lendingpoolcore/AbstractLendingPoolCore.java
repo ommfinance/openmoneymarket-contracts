@@ -1,7 +1,12 @@
 package finance.omm.score.core.lendingpoolcore;
 
 import static finance.omm.score.core.lendingpoolcore.reservedata.AbstractReserve.getDataFromReserve;
-import static finance.omm.utils.math.MathUtils.*;
+import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.SECONDS_PER_YEAR;
+import static finance.omm.utils.math.MathUtils.exaDivide;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
+import static finance.omm.utils.math.MathUtils.exaPow;
+import static finance.omm.utils.math.MathUtils.pow10;
 
 import finance.omm.core.score.interfaces.LendingPoolCore;
 import finance.omm.libs.address.AddressProvider;
@@ -14,7 +19,11 @@ import java.util.Map;
 import finance.omm.score.core.lendingpoolcore.exception.LendingPoolCoreException;
 import finance.omm.score.core.lendingpoolcore.reservedata.ReserveDataDB;
 import finance.omm.score.core.lendingpoolcore.userreserve.UserReserveDataDB;
-import score.*;
+import score.Address;
+import score.ArrayDB;
+import score.BranchDB;
+import score.Context;
+import score.DictDB;
 import score.annotation.EventLog;
 import scorex.util.HashMap;
 
@@ -45,64 +54,64 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
     public void InterestTransfer(BigInteger _amount, Address _reserve, Address _initiatiator) {
     }
 
-    protected byte[] reservePrefix(Address reserve) {
-        return ("reserve" + "|" + reserve.toString()).getBytes();
+    protected String reservePrefix(Address reserve) {
+        return ("reserve" + "|" + reserve.toString());
     }
 
-    protected byte[] userReservePrefix(Address reserve, Address user) {
-        return ("userReserve" + "|" + reserve.toString() + user.toString()).getBytes();
+    protected String userReservePrefix(Address reserve, Address user) {
+        return ("userReserve" + "|" + reserve.toString() + "|" + user.toString());
     }
 
     protected void updateDToken(Address reserveAddress, Address dToken) {
-        byte[] prefix = reservePrefix(reserveAddress);
-        reserve.dTokenAddress.set(prefix, dToken);
+        String prefix = reservePrefix(reserveAddress);
+        reserve.dTokenAddress.at(prefix).set(dToken);
     }
 
     protected void updateLastUpdateTimestamp(Address reserveAddress, BigInteger lastUpdateTimestamp) {
-        byte[] prefix = reservePrefix(reserveAddress);
-        reserve.lastUpdateTimestamp.set(prefix, lastUpdateTimestamp);
+        String prefix = reservePrefix(reserveAddress);
+        reserve.lastUpdateTimestamp.at(prefix).set(lastUpdateTimestamp);
     }
 
     protected void updateLiquidityRate(Address reserveAddress, BigInteger liquidityRate) {
-        byte[] prefix = reservePrefix(reserveAddress);
-        reserve.liquidityRate.set(prefix, liquidityRate);
+        String prefix = reservePrefix(reserveAddress);
+        reserve.liquidityRate.at(prefix).set(liquidityRate);
     }
 
     protected void updateBorrowRate(Address reserveAddress, BigInteger borrowRate) {
-        byte[] prefix = reservePrefix(reserveAddress);
-        reserve.borrowRate.set(prefix, borrowRate);
+        String prefix = reservePrefix(reserveAddress);
+        reserve.borrowRate.at(prefix).set(borrowRate);
     }
 
     protected void updateBorrowCumulativeIndex(Address reserveAddress, BigInteger borrowCumulativeIndex) {
-        byte[] prefix = reservePrefix(reserveAddress);
-        reserve.borrowCumulativeIndex.set(prefix, borrowCumulativeIndex);
+        String prefix = reservePrefix(reserveAddress);
+        reserve.borrowCumulativeIndex.at(prefix).set(borrowCumulativeIndex);
 
     }
 
     protected void updateLiquidityCumulativeIndex(Address reserveAddress, BigInteger liquidityCumulativeIndex) {
-        byte[] prefix = reservePrefix(reserveAddress);
-        reserve.liquidityCumulativeIndex.set(prefix, liquidityCumulativeIndex);
+        String prefix = reservePrefix(reserveAddress);
+        reserve.liquidityCumulativeIndex.at(prefix).set(liquidityCumulativeIndex);
     }
 
     protected void updateDecimals(Address reserveAddress, int decimals) {
-        byte[] prefix = reservePrefix(reserveAddress);
-        reserve.decimals.set(prefix, decimals);
+        String prefix = reservePrefix(reserveAddress);
+        reserve.decimals.at(prefix).set(decimals);
     }
 
     protected void updateOtokenAddress(Address reserveAddress, Address oTokenAddress) {
-        byte[] prefix = reservePrefix(reserveAddress);
-        reserve.oTokenAddress.set(prefix, oTokenAddress);
+        String prefix = reservePrefix(reserveAddress);
+        reserve.oTokenAddress.at(prefix).set(oTokenAddress);
     }
 
     protected void updateUserLastUpdateTimestamp(Address reserve, Address user,
                                                  BigInteger lastUpdateTimestamp) {
-        byte[] prefix = userReservePrefix(reserve, user);
-        userReserve.lastUpdateTimestamp.set(prefix, lastUpdateTimestamp);
+        String prefix = userReservePrefix(reserve, user);
+        userReserve.lastUpdateTimestamp.at(prefix).set(lastUpdateTimestamp);
     }
 
     protected void updateUserOriginationFee(Address reserve, Address user, BigInteger originationFee) {
-        byte[] prefix = userReservePrefix(reserve, user);
-        userReserve.originationFee.set(prefix, originationFee);
+        String prefix = userReservePrefix(reserve, user);
+        userReserve.originationFee.at(prefix).set(originationFee);
     }
 
     protected boolean checkReserve(Address reserve) {
@@ -146,9 +155,10 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
     }
 
     protected BigInteger getReserveTotalBorrows(Address reserveAddress) {
-        byte[] prefix = reservePrefix(reserveAddress);
+        String prefix = reservePrefix(reserveAddress);
         Map<String, Object> reserveData = getDataFromReserve(prefix, reserve);
-        return call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
+        Address dTokenAddress = (Address) reserveData.get("dTokenAddress");
+        return call(BigInteger.class, dTokenAddress,
                 "principalTotalSupply");
 
     }
