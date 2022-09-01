@@ -82,9 +82,9 @@ public abstract class AbstractLendingPool extends AddressProvider
             if (userFeeSharing.get(START_HEIGHT) != null) {
                 userFeeSharing.set(START_HEIGHT, currentBlockHeight);
             }
-            if (userFeeSharing.get(START_HEIGHT).add(TERM_LENGTH).compareTo(currentBlockHeight) > 0) {
-                if (userFeeSharing.get(TXN_COUNT).compareTo(feeSharingTxnLimit.get()) < 0) {
-                    BigInteger count = userFeeSharing.get(TXN_COUNT);
+            if (userFeeSharing.getOrDefault(START_HEIGHT,BigInteger.ZERO).add(TERM_LENGTH).compareTo(currentBlockHeight) > 0) {
+                if (userFeeSharing.getOrDefault(TXN_COUNT,BigInteger.ZERO).compareTo(feeSharingTxnLimit.get()) < 0) {
+                    BigInteger count = userFeeSharing.getOrDefault(TXN_COUNT,BigInteger.ZERO);
                     userFeeSharing.set(TXN_COUNT, count.add(BigInteger.ONE));
                     return true;
                 }
@@ -126,14 +126,20 @@ public abstract class AbstractLendingPool extends AddressProvider
 
         call(Contracts.LENDING_POOL_CORE, "updateStateOnDeposit", reserve, sender, amount);
 
-        Address oToken = Address.fromString((String) reserveData.get("oTokenAddress"));
+        Address oToken = (Address) reserveData.get("oTokenAddress");
         call(oToken, "mintOnDeposit", sender, amount);
 
         BigInteger icxValue = Context.getValue();
         Address lendingPoolCore = getAddress(Contracts.LENDING_POOL_CORE.getKey());
         if (reserve.equals(getAddress(Contracts.sICX.getKey())) && !icxValue.equals(BigInteger.ZERO)) {
-            amount = Context.call(BigInteger.class, icxValue, getAddress(Contracts.STAKING.getKey()),
-                    "stakeICX", lendingPoolCore);
+
+//            TODO: CHECK THIS
+//            amount = Context.call(BigInteger.class, icxValue, getAddress(Contracts.STAKING.getKey()),"stakeICX",
+//                    lendingPoolCore);
+
+            amount = (BigInteger) Context.call(icxValue, getAddress(Contracts.STAKING.getKey()),"stakeICX",
+                    lendingPoolCore);
+
         } else {
             call(reserve, "transfer", lendingPoolCore, amount);
         }

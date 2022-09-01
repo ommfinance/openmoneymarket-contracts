@@ -35,9 +35,9 @@ deployJar {
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
 	parameters {
         arg('_addressProvider', rootProject.findProperty("contracts.address-provider") as String)
-		arg('_initialSupply', '5000')
-		arg('_decimals', '10')
-	}
+        arg('_initialSupply', '100')
+        arg('_decimals', '18')
+    }
 }
 
 test {

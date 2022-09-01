@@ -42,4 +42,10 @@ public interface StakedLP {
 
     BigInteger totalStaked(int _id);
 
+    void enableHandleAction();
+
+    void disableHandleAction();
+
+    boolean isHandleActionEnabled();
+
 }

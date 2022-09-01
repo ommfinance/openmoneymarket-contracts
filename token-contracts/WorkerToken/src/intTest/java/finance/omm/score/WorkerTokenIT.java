@@ -22,6 +22,6 @@ public class WorkerTokenIT implements ScoreIntegrationTest {
     void testTotalSupply() {
         BigInteger totalSupply = scoreClient.totalSupply();
         assertNotNull(totalSupply);
-        assertEquals(new BigInteger("50000000000000"), totalSupply);
+        assertEquals(new BigInteger("100000000000000000000"), totalSupply);
     }
 }
