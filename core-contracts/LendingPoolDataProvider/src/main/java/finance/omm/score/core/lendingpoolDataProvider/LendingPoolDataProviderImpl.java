@@ -107,13 +107,16 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
         List<Address> reserves = call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
         for (Address reserve : reserves) {
-            Map<String, BigInteger> userBasicReserveData = call(Map.class, Contracts.LENDING_POOL_CORE, "getUserBasicReserveData", reserve, _user);
+            Map<String, BigInteger> userBasicReserveData = new HashMap<>();
+            userBasicReserveData.putAll(call(Map.class, Contracts.LENDING_POOL_CORE,
+                    "getUserBasicReserveData", reserve, _user));
             if (userBasicReserveData.get("underlyingBalance").equals(BigInteger.ZERO)
                     && userBasicReserveData.get("compoundedBorrowBalance").equals(BigInteger.ZERO)) {
                 continue;
             }
-            Map<String, Object> reserveConfiguration = call(Map.class, Contracts.LENDING_POOL_CORE,
-                    "getReserveConfiguration", reserve);
+            Map<String, Object> reserveConfiguration = new HashMap<>();
+            reserveConfiguration.putAll(call(Map.class, Contracts.LENDING_POOL_CORE,
+                    "getReserveConfiguration", reserve));
             BigInteger reserveDecimals = (BigInteger) reserveConfiguration.get("decimals");
             // converting the user balances into 18 decimals
             if (reserveDecimals.compareTo(BigInteger.valueOf(18)) != 0) {
@@ -179,7 +182,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         }
 
         return Map.of(
-                "totalLiquidityBalanceUSD", totalCollateralBalanceUSD,
+                "totalLiquidityBalanceUSD", totalLiquidityBalanceUSD,
                 "totalCollateralBalanceUSD", totalCollateralBalanceUSD,
                 "totalBorrowBalanceUSD", totalBorrowBalanceUSD,
                 "totalFeesUSD", totalFeesUSD,
@@ -199,21 +202,23 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                 "getReserveData", _reserve);
         Map<String, BigInteger> userReserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getUserReserveData", _reserve, _user);
-        BigInteger currentOTokenBalance = call(BigInteger.class, (Address) reserveData.get("oTokenAddress"),
-                "balanceOf", _user);
-        BigInteger principalOTokenBalance = call(BigInteger.class, (Address) reserveData.get("oTokenAddress"),
-                "principalBalanceOf", _user);
-        BigInteger userLiquidityCumulativeIndex = call(BigInteger.class, (Address) reserveData.get("oTokenAddress"),
+        Address oTokenAddr = (Address) reserveData.get("oTokenAddress");
+
+        BigInteger currentOTokenBalance = call(BigInteger.class, oTokenAddr, "balanceOf", _user);
+        BigInteger principalOTokenBalance = call(BigInteger.class, oTokenAddr, "principalBalanceOf", _user);
+        BigInteger userLiquidityCumulativeIndex = call(BigInteger.class, oTokenAddr,
                 "getUserLiquidityCumulativeIndex", _user);
-        BigInteger principalBorrowBalance = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
-                "principalBalanceOf", _user);
-        BigInteger currentBorrowBalance = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
-                "balanceOf", _user);
+
+        Address dTokenAddr = (Address) reserveData.get("dTokenAddress");
+
+        BigInteger principalBorrowBalance = call(BigInteger.class, dTokenAddr, "principalBalanceOf", _user);
+        BigInteger currentBorrowBalance = call(BigInteger.class, dTokenAddr, "balanceOf", _user);
+
         BigInteger borrowRate = (BigInteger) reserveData.get("borrowRate");
         BigInteger reserveDecimals = (BigInteger) reserveData.get("decimals");
         BigInteger liquidityRate = (BigInteger) reserveData.get("liquidityRate");
         BigInteger originationFee = userReserveData.get("originationFee");
-        BigInteger userBorrowCumulativeIndex = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
+        BigInteger userBorrowCumulativeIndex = call(BigInteger.class, dTokenAddr,
                 "getUserBorrowCumulativeIndex", _user);
         BigInteger lastUpdateTimestamp = userReserveData.get("lastUpdateTimestamp");
         String symbol = this.symbol.get(_reserve);
@@ -351,11 +356,13 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         Map<String, Object> collaterals = new HashMap<>();
 
         for (Address reserve : reserves) {
-            Map<String, BigInteger> userReserveData = call(Map.class, Contracts.LENDING_POOL_CORE, "getUserBasicReserveData", reserve, _user);
-            Map<String, Object> reserveConfiguration = call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve);
+            Map<String, BigInteger> userReserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
+                    "getUserBasicReserveData", reserve, _user);
+            Map<String, Object> reserveConfiguration = call(Map.class, Contracts.LENDING_POOL_CORE,
+                    "getReserveConfiguration", reserve);
             BigInteger reserveDecimals = (BigInteger) reserveConfiguration.get("decimals");
-            BigInteger userBorrowBalance = convertToExa(userReserveData.get("compoundedBorrowBalance"),
-                    reserveDecimals);
+            BigInteger compoundedBorrowBalance = userReserveData.get("compoundedBorrowBalance");
+            BigInteger userBorrowBalance = convertToExa(compoundedBorrowBalance, reserveDecimals);
             BigInteger userReserveUnderlyingBalance = convertToExa(userReserveData.get("underlyingBalance"),
                     reserveDecimals);
             String symbol = this.symbol.get(reserve);
@@ -370,13 +377,13 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                 BigInteger maxAmountToLiquidate;
                 if (badDebt.compareTo(exaMultiply(price, userBorrowBalance)) > 0) {
                     maxAmountToLiquidateUSD = exaMultiply(price, userBorrowBalance);
-                    maxAmountToLiquidate = userReserveData.get("compoundedBorrowBalance");
+                    maxAmountToLiquidate = compoundedBorrowBalance;
                 } else {
                     maxAmountToLiquidateUSD = badDebt;
                     maxAmountToLiquidate = convertExaToOther(exaDivide(badDebt, price), reserveDecimals.intValue());
                 }
                 borrows.put(symbol, Map.of(
-                        "compoundedBorrowBalance", userReserveData.get("compoundedBorrowBalance"),
+                        "compoundedBorrowBalance", compoundedBorrowBalance,
                         "compoundedBorrowBalanceUSD", exaMultiply(price, userBorrowBalance),
                         "maxAmountToLiquidate", maxAmountToLiquidate,
                         "maxAmountToLiquidateUSD", maxAmountToLiquidateUSD
@@ -404,7 +411,8 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         Map<String, Map<String, Object>> userLiquidationDetails = new HashMap<>();
         for (Address wallet : wallets) {
             BigInteger healthFactor = (BigInteger) getUserAccountData(wallet).get("healthFactor");
-            if (healthFactor.compareTo(ICX) < 0) {
+            // added healthFactor negation review
+            if (healthFactor.compareTo(ICX) < 0 && !healthFactor.equals(BigInteger.ONE.negate())) {
                 userLiquidationDetails.put(wallet.toString(), getUserLiquidationData(wallet));
             }
         }
@@ -413,7 +421,8 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
     @External(readonly = true)
     public Map<String, Object> getReserveData(Address _reserve) {
-        Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", _reserve);
+        Map<String, Object> reserveData = new HashMap<>();
+        reserveData.putAll(call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", _reserve));
         String symbol = this.symbol.get(_reserve);
         BigInteger price = call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
                 symbol, "USD");
@@ -477,11 +486,12 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         List<Map<String, BigInteger>> response = new ArrayList<>();
         for (Map<String, Object> unstakedRecords : unstakeDetails) {
             Address fromAddress = (Address) unstakedRecords.get("from");
+            Map<String,BigInteger> record = new HashMap<>();
+            record.put("amount",(BigInteger) unstakedRecords.get("amount"));
+            record.put("unstakingBlockHeight",(BigInteger) unstakedRecords.get("unstakingBlockHeight"));
+
             if (fromAddress.equals(getAddress(String.valueOf(Contracts.LENDING_POOL_CORE.getKey())))) {
-                response.add(Map.of(
-                        "amount", (BigInteger) unstakedRecords.get("amount"),
-                        "unstakingBlockHeight", (BigInteger) unstakedRecords.get("blockHeight")
-                ));
+                response.add(record);
             }
         }
         return response;
