@@ -21,13 +21,22 @@ task init() {
 
 dependencies {
     implementation "foundation.icon:icon-sdk:$iconsdkVersion"
-    implementation "foundation.icon:javaee-score-client:$scoreClientVersion"
-    implementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-    implementation('com.fasterxml.jackson.core:jackson-databind:2.13.2')
-    implementation("com.github.javafaker:javafaker:1.0.2")
+//    implementation "foundation.icon:javaee-score-client:$scoreClientVersion"
+    implementation name: "score-client-$scoreClientVersion"
+    implementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.github.javafaker:javafaker:$javafakerVersion"
     implementation "foundation.icon:javaee-unittest:$javaeeUnittestVersion"
-    implementation 'org.mockito:mockito-core:4.3.1'
+    implementation "org.mockito:mockito-core:$mockitoVersion"
 
+    implementation "foundation.icon:icon-sdk:$iconsdkVersion"
+    implementation group: 'commons-io', name: 'commons-io', version: "$commonIOVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:1.60"
+
+    implementation project(':OMMStruct')
+    implementation project(':Score')
+    implementation project(':ScoreUtils')
+    implementation project(':AddressProvider')
 }
 
 repositories {

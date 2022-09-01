@@ -17,7 +17,10 @@ public class OMMException extends UserRevertException {
         AddressManager(35),
         Governance(40),
         OMMToken(50),
-        LiquiditionManager(70),
+        StakeLPException(60),
+        LendingPool(65),
+        PriceOracle(70),
+        LiquiditionManager(75),
         RESERVED(80);
 
         int offset;
@@ -142,6 +145,17 @@ public class OMMException extends UserRevertException {
         }
     }
 
+    public static class StakedLPImpl extends OMMException {
+
+        public StakedLPImpl(int code, String message) {
+            super(Type.StakeLPException, code, message);
+        }
+
+        public StakedLPImpl(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
     public static class RewardWeightError extends OMMException {
 
         public RewardWeightError(int code, String message) {
@@ -206,6 +220,28 @@ public class OMMException extends UserRevertException {
         }
 
         public OMMToken(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class PriceOracleException extends OMMException {
+
+        public PriceOracleException(int code, String message) {
+            super(Type.PriceOracle, code, message);
+        }
+
+        public PriceOracleException(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class LendingPool extends OMMException {
+
+        public LendingPool(int code, String message) {
+            super(Type.LendingPool, code, message);
+        }
+
+        public LendingPool(Coded code, String message) {
             this(code.code(), message);
         }
     }

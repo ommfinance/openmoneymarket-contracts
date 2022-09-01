@@ -79,6 +79,9 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
     @EventLog(indexed = 3)
     public void Transfer(Address _from, Address _to, BigInteger _value, byte[] _data) {}
 
+    @EventLog(indexed = 3)
+    public void MigrateStakedOMM(Address user, BigInteger _amount, BigInteger _lockPeriod) {}
+
     protected void makeAvailable(Address user) {
         DictDB<Integer, BigInteger> stakeInfo = this.stakedBalances.at(user);
         BigInteger unstakingPeriod = stakeInfo.getOrDefault(Status.UNSTAKING_PERIOD.getKey(), BigInteger.ZERO);
@@ -113,16 +116,17 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
             throw OMMTokenException.insufficientBalance(
                     "available balance of user " + senderAvailableBalance + "balance to transfer " + value);
         }
-        this.balances.set(from, fromBalance.subtract(value));
 
+        this.balances.set(from, fromBalance.subtract(value));
         BigInteger toBalance = this.balances.getOrDefault(to, BigInteger.ZERO);
         this.balances.set(to, toBalance.add(value));
+
+        this.Transfer(from, to, value, data);
 
         if (to.isContract()) {
             call(to, "tokenFallback", from, value, data);
         }
 
-        this.Transfer(from, to, value, data);
     }
 
     protected void checkFeeSharing(Address from) {

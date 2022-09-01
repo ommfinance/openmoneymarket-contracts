@@ -21,6 +21,11 @@ optimizedJar {
 
 deployJar {
     endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.worker-token") as String
+            nid = 0x53
+        }
         local {
             uri = 'http://localhost:9082/api/v3'
             nid = 0x3
@@ -29,9 +34,10 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
 	parameters {
-		arg('_initialSupply', '5000')
-		arg('_decimals', '10')
-	}
+        arg('_addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+        arg('_initialSupply', '100')
+        arg('_decimals', '18')
+    }
 }
 
 test {
@@ -61,12 +67,15 @@ task integrationTest(type: Test, dependsOn: optimizedJar) {
         systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
         systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
 
+
         systemProperty '_initialSupply', "2000"
         systemProperty '_decimals', "10"
         systemProperty '_update', "false"
         systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
 
         project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+        systemProperty 'params._addressProvider', "cxc79098b45adc86e0a49db68212a4fa34104a91c0"
 
     }
 

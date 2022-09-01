@@ -1,0 +1,75 @@
+version = '0.0.1'
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
+    implementation project(':OMMStruct')
+    testImplementation project(':TestUtils')
+    testImplementation "org.mockito:mockito-inline:$mockitoVersion"
+}
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.tokens.DTokenImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.dToken") as String
+            nid = 0x53
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('_addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+        arg('_name', null)
+        arg('_symbol', null)
+        arg('_decimals', null)
+    }
+}
+
+tasks.named('test') {
+    // Use JUnit Platform for unit tests.
+    useJUnitPlatform()
+}
+
+configurations {
+    itestImplementation.extendsFrom implementation
+    itestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        systemProperty 'keyStore', scoreTest.keystoreName
+        systemProperty 'keyPassword', scoreTest.keystorePass
+
+        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
+        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
+
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+
+        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value }
+
+    }
+}

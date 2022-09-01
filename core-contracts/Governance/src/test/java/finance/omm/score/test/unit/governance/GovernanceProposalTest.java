@@ -42,7 +42,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         score.invoke(owner, "setVoteDefinitionFee", THOUSAND.multiply(ICX));
         score.invoke(owner, "setQuorum", quorum);
         score.invoke(owner, "setVoteDuration", duration);
-        score.invoke(owner, "setBoostedVoteDefinitionCriterion", BigInteger.ONE.multiply(PERCENT));
+        score.invoke(owner, "setVoteDefinitionCriteria", BigInteger.ONE.multiply(PERCENT));
     }
 
     private byte[] createByteArray(String name, String forum, String description,
@@ -98,7 +98,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         score.invoke(owner, "setVoteDefinitionFee", voteDefinitionFeeExpected);
         score.invoke(owner, "setQuorum", quorumExpected);
         score.invoke(owner, "setVoteDuration", voteDurationExpected);
-        score.invoke(owner, "setBoostedVoteDefinitionCriterion", ommVoteDefinitionCriterion);
+        score.invoke(owner, "setVoteDefinitionCriteria", ommVoteDefinitionCriterion);
 
         assertEquals(voteDefinitionFeeExpected, score.call("getVoteDefinitionFee"));
         assertEquals(quorumExpected, score.call("getQuorum"));
@@ -111,7 +111,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         expectErrorMessage(errorMsg, "require owner access");
         errorMsg = () -> score.invoke(notOwner, "setVoteDuration", voteDefinitionFeeExpected);
         expectErrorMessage(errorMsg, "require owner access");
-        errorMsg = () -> score.invoke(notOwner, "setBoostedVoteDefinitionCriterion", voteDefinitionFeeExpected);
+        errorMsg = () -> score.invoke(notOwner, "setVoteDefinitionCriteria", voteDefinitionFeeExpected);
         expectErrorMessage(errorMsg, "require owner access");
     }
 
@@ -310,17 +310,17 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         BigInteger ONE_HOUR = FIVE_MINUTES.multiply(BigInteger.valueOf(12));
         BigInteger ONE_DAY = ONE_HOUR.multiply(BigInteger.valueOf(24L));
         voteStart = voteStart.add(ONE_DAY);
-        byte[] data1 = createByteArray(name + " abcd", forum, description, voteStart.add(ONE_DAY),
+        byte[] data1 = createByteArray(name + " abcd", forum, description, voteStart,
                 methodName);
         score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data1);
         verify(scoreSpy).ProposalCreated(TWO, name + " abcd", from);
 
-        increaseTimeBy(voteStart.add(FIVE_MINUTES));
+        increaseTimeBy(ONE_DAY.add(FIVE_MINUTES));
         Executable voteStarted = () -> score.invoke(fromWallet, "cancelVote", 2);
         expectErrorMessage(voteStarted, "Only owner can cancel a vote that has started.");
 
         BigInteger SIX_DAYS = ONE_DAY.multiply(BigInteger.valueOf(6L));
-        increaseTimeBy(voteStart.add(SIX_DAYS));
+        increaseTimeBy(SIX_DAYS);
 
         // newly created proposal cannot be cancelled
         Executable pastTime = () -> score.invoke(owner, "cancelVote", 1);

@@ -19,7 +19,7 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-//            to = 'cx603f3466aa7744541043ade4dd0cd70f030a2786'
+            to = rootProject.findProperty("contracts.reward-weight-controller") as String
             nid = 0x53
         }
         mainnet {
@@ -30,8 +30,8 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('addressProvider', 'cx36e3408f031983d220d99b1a58849ac443d2c585')
-        arg('startTimestamp', '1581724800000000')
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+        arg('startTimestamp', rootProject.findProperty("startTimestamp") as String)
     }
 }
 
