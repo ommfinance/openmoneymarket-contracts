@@ -68,8 +68,8 @@ public class Release_1_2_0 extends Release {
         ommClient.governance.addAsset("reserve", oIUSDC, contractAddresses.get(oIUSDC), BigInteger.valueOf(-1));
         ommClient.governance.addAsset("reserve", dIUSDC, contractAddresses.get(dIUSDC), BigInteger.valueOf(-1));
 
-//        ommClient.governance.addAsset("OMMLocking", "bOMM", contractAddresses.get("bOMM"),
-//                BigInteger.valueOf(-1));
+        ommClient.governance.addAsset("OMMLocking", "bOMM", contractAddresses.get("bOMM"),
+                BigInteger.valueOf(-1));
 
 
         return this.next(ommClient);
