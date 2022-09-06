@@ -45,12 +45,10 @@ public abstract class AbstractLendingPool extends AddressProvider
     public final VarDB<BigInteger> feeSharingTxnLimit = Context.newVarDB(FEE_SHARING_TXN_LIMIT, BigInteger.class);
     public final VarDB<BigInteger> bridgeFeeThreshold = Context.newVarDB(BRIDGE_FEE_THRESHOLD, BigInteger.class);
 
-    public AbstractLendingPool(Address addressProvider, boolean _update) {
-        super(addressProvider, _update);
+    public AbstractLendingPool(Address addressProvider) {
+        super(addressProvider, false);
         if (bridgeFeeThreshold.get() == null) {
             bridgeFeeThreshold.set(BigInteger.ZERO);
-        }
-        if (feeSharingTxnLimit.get() == null) {
             feeSharingTxnLimit.set(BigInteger.valueOf(50));
         }
     }
@@ -79,12 +77,12 @@ public abstract class AbstractLendingPool extends AddressProvider
         BigInteger currentBlockHeight = BigInteger.valueOf(Context.getBlockHeight());
         DictDB<String, BigInteger> userFeeSharing = feeSharingUsers.at(user);
         if (hasUserDepositBridgeOToken(user)) {
-            if (userFeeSharing.get(START_HEIGHT) != null) {
+            if (userFeeSharing.get(START_HEIGHT) == null) {
                 userFeeSharing.set(START_HEIGHT, currentBlockHeight);
             }
-            if (userFeeSharing.getOrDefault(START_HEIGHT,BigInteger.ZERO).add(TERM_LENGTH).compareTo(currentBlockHeight) > 0) {
-                if (userFeeSharing.getOrDefault(TXN_COUNT,BigInteger.ZERO).compareTo(feeSharingTxnLimit.get()) < 0) {
-                    BigInteger count = userFeeSharing.getOrDefault(TXN_COUNT,BigInteger.ZERO);
+            if (userFeeSharing.get(START_HEIGHT).add(TERM_LENGTH).compareTo(currentBlockHeight) > 0) {
+                BigInteger count = userFeeSharing.getOrDefault(TXN_COUNT, BigInteger.ZERO);
+                if (count.compareTo(feeSharingTxnLimit.get()) < 0) {
                     userFeeSharing.set(TXN_COUNT, count.add(BigInteger.ONE));
                     return true;
                 }
@@ -119,7 +117,7 @@ public abstract class AbstractLendingPool extends AddressProvider
             throw LendingPoolException.unknown("Reserve is frozen, deposit unsuccessful");
         }
 
-        if (depositIndex.get(sender) != null) {
+        if ( depositIndex.get(sender) == null ) {
             depositWallets.add(sender);
             depositIndex.set(sender, BigInteger.valueOf(depositWallets.size()));
         }
@@ -132,10 +130,6 @@ public abstract class AbstractLendingPool extends AddressProvider
         BigInteger icxValue = Context.getValue();
         Address lendingPoolCore = getAddress(Contracts.LENDING_POOL_CORE.getKey());
         if (reserve.equals(getAddress(Contracts.sICX.getKey())) && !icxValue.equals(BigInteger.ZERO)) {
-//            TODO: CHECK THIS
-//            amount = Context.call(BigInteger.class, icxValue, getAddress(Contracts.STAKING.getKey()),"stakeICX",
-//                    lendingPoolCore);
-
             amount = (BigInteger) Context.call(icxValue, getAddress(Contracts.STAKING.getKey()),"stakeICX",
                     lendingPoolCore);
         } else {
@@ -199,7 +193,9 @@ public abstract class AbstractLendingPool extends AddressProvider
             throw LendingPoolException.unknown("The user does not have any borrow pending");
         }
 
-        BigInteger paybackAmount = compoundedBorrowBalance.add(userBasicReserveData.get("originationFee"));
+
+        BigInteger originationFee = userBasicReserveData.get("originationFee");
+        BigInteger paybackAmount = compoundedBorrowBalance.add(originationFee);
         BigInteger returnAmount = BigInteger.ZERO;
 
         if (amount.compareTo(paybackAmount) < 0) {
@@ -208,12 +204,11 @@ public abstract class AbstractLendingPool extends AddressProvider
             returnAmount = amount.subtract(paybackAmount);
         }
 
-        BigInteger originationFee = userBasicReserveData.get("originationFee");
         BigInteger borrowBalanceIncrease = borrowData.get("borrowBalanceIncrease");
 
         if (paybackAmount.compareTo(originationFee) <= 0) {
             call(Contracts.LENDING_POOL_CORE, "updateStateOnRepay", reserve, sender,
-                    BigInteger.ZERO, paybackAmount, borrowData.get("borrowBalanceIncrease"), false);
+                    BigInteger.ZERO, paybackAmount, borrowBalanceIncrease, false);
             call(reserve, "transfer", getAddress(Contracts.FEE_PROVIDER.getKey()), paybackAmount);
             Repay(reserve, sender, BigInteger.ZERO, paybackAmount, borrowBalanceIncrease);
             return;
