@@ -49,17 +49,16 @@ public class MathUtils {
 
     public static BigInteger exaPow(BigInteger x, BigInteger n) {
         BigInteger z;
-        if(!n.mod(BigInteger.TWO).equals(BigInteger.ZERO)){
-        z = x;
-        }
-        else {
+        if (!n.mod(BigInteger.TWO).equals(BigInteger.ZERO)) {
+            z = x;
+        } else {
             z = ICX;
         }
         n = n.divide(BigInteger.TWO);
-        while(!n.equals(BigInteger.ZERO)){
+        while (!n.equals(BigInteger.ZERO)) {
             x = exaMultiply(x, x);
 
-            if(!n.mod(BigInteger.TWO).equals(BigInteger.ZERO)){
+            if (!n.mod(BigInteger.TWO).equals(BigInteger.ZERO)) {
                 z = exaMultiply(z, x);
             }
             n = n.divide(BigInteger.TWO);
@@ -88,8 +87,8 @@ public class MathUtils {
     }
 
     /**
-     * If a=8*EXA and b=3*EXA ,it  returns 2666666666666666666
-     * If a=100*EXA and b=6*EXA , it returns 16666666666666666666
+     * If a=8*EXA and b=3*EXA ,it  returns 2666666666666666666 If a=100*EXA and b=6*EXA , it returns
+     * 16666666666666666666
      */
     public static BigInteger exaDivideFloor(BigInteger first, BigInteger second) {
         return first.multiply(ICX).divide(second);
@@ -115,7 +114,7 @@ public class MathUtils {
     }
 
     public static double percentageInHundred(BigInteger value) {
-        return 100*value.doubleValue()/ICX.doubleValue();
+        return 100 * value.doubleValue() / ICX.doubleValue();
     }
 
     public static BigInteger convertToNumber(JsonValue value) {

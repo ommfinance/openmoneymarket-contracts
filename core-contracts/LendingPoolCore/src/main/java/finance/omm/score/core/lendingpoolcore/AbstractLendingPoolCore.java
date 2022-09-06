@@ -12,6 +12,7 @@ import finance.omm.core.score.interfaces.LendingPoolCore;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Authorization;
 
+import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -41,13 +42,13 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
     public static ArrayDB<Address> reserveList = Context.newArrayDB(RESERVE_LIST,
             Address.class);
 
-    public AbstractLendingPoolCore(Address addressProvider, boolean _update) {
-        super(addressProvider, _update);
+    public AbstractLendingPoolCore(Address addressProvider) {
+        super(addressProvider, false);
     }
 
     @EventLog(indexed = 3)
     public void ReserveUpdated(Address _reserve, BigInteger _liquidityRate, BigInteger _borrowRate,
-                               BigInteger _liquidityCumulativeIndex, BigInteger _borrowCumulativeIndex) {
+            BigInteger _liquidityCumulativeIndex, BigInteger _borrowCumulativeIndex) {
     }
 
     @EventLog(indexed = 3)
@@ -60,11 +61,6 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
 
     protected String userReservePrefix(Address reserve, Address user) {
         return ("userReserve" + "|" + reserve.toString() + "|" + user.toString());
-    }
-
-    protected void updateDToken(Address reserveAddress, Address dToken) {
-        String prefix = reservePrefix(reserveAddress);
-        reserve.dTokenAddress.at(prefix).set(dToken);
     }
 
     protected void updateLastUpdateTimestamp(Address reserveAddress, BigInteger lastUpdateTimestamp) {
@@ -93,18 +89,8 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
         reserve.liquidityCumulativeIndex.at(prefix).set(liquidityCumulativeIndex);
     }
 
-    protected void updateDecimals(Address reserveAddress, int decimals) {
-        String prefix = reservePrefix(reserveAddress);
-        reserve.decimals.at(prefix).set(decimals);
-    }
-
-    protected void updateOtokenAddress(Address reserveAddress, Address oTokenAddress) {
-        String prefix = reservePrefix(reserveAddress);
-        reserve.oTokenAddress.at(prefix).set(oTokenAddress);
-    }
-
     protected void updateUserLastUpdateTimestamp(Address reserve, Address user,
-                                                 BigInteger lastUpdateTimestamp) {
+            BigInteger lastUpdateTimestamp) {
         String prefix = userReservePrefix(reserve, user);
         userReserve.lastUpdateTimestamp.at(prefix).set(lastUpdateTimestamp);
     }
@@ -124,13 +110,15 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
     }
 
     protected BigInteger calculateLinearInterest(BigInteger rate, BigInteger lastUpdateTimestamp) {
-        BigInteger timeDifference = (BigInteger.valueOf(Context.getBlockTimestamp()).subtract(lastUpdateTimestamp)).divide(pow10(6));
+        BigInteger timeDifference = (TimeConstants.getBlockTimestamp().subtract(lastUpdateTimestamp)).divide(
+                TimeConstants.SECOND);
         BigInteger timeDelta = exaDivide(timeDifference, SECONDS_PER_YEAR);
         return exaMultiply(rate, timeDelta).add(ICX);
     }
 
     protected BigInteger calculateCompoundedInterest(BigInteger rate, BigInteger lastUpdateTimestamp) {
-        BigInteger timeDifference = (BigInteger.valueOf(Context.getBlockTimestamp()).subtract(lastUpdateTimestamp)).divide(pow10(6));
+        BigInteger timeDifference = (TimeConstants.getBlockTimestamp().subtract(lastUpdateTimestamp)).divide(
+                TimeConstants.SECOND);
         BigInteger ratePerSecond = rate.divide(SECONDS_PER_YEAR);
         return exaPow(ratePerSecond.add(ICX), timeDifference);
     }
@@ -140,13 +128,15 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
         BigInteger totalBorrows = (BigInteger) reserveData.get("totalBorrows");
 
         if (totalBorrows.compareTo(BigInteger.ZERO) > 0) {
-            BigInteger cumulatedLiquidityInterest = calculateLinearInterest((BigInteger) reserveData.get("liquidityRate"),
+            BigInteger cumulatedLiquidityInterest = calculateLinearInterest(
+                    (BigInteger) reserveData.get("liquidityRate"),
                     (BigInteger) reserveData.get("lastUpdateTimestamp"));
             updateLiquidityCumulativeIndex(reserve, exaMultiply(cumulatedLiquidityInterest,
                     (BigInteger) reserveData.get("liquidityCumulativeIndex")));
             BigInteger cumulatedBorrowInterest = calculateCompoundedInterest((BigInteger) reserveData.get("borrowRate"),
                     (BigInteger) reserveData.get("lastUpdateTimestamp"));
-            updateBorrowCumulativeIndex(reserve, exaMultiply(cumulatedBorrowInterest, (BigInteger) reserveData.get("borrowCumulativeIndex")));
+            updateBorrowCumulativeIndex(reserve,
+                    exaMultiply(cumulatedBorrowInterest, (BigInteger) reserveData.get("borrowCumulativeIndex")));
         }
     }
 
@@ -156,61 +146,47 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
 
     protected BigInteger getReserveTotalBorrows(Address reserveAddress) {
         String prefix = reservePrefix(reserveAddress);
-        Map<String, Object> reserveData = getDataFromReserve(prefix, reserve);
-        Address dTokenAddress = (Address) reserveData.get("dTokenAddress");
-        return call(BigInteger.class, dTokenAddress,
+        return call(BigInteger.class, reserve.dTokenAddress.at(prefix).get(),
                 "principalTotalSupply");
-
-    }
-
-    protected BigInteger getReserveUtilizationRate(Address reserve) {
-        Map<String, Object> reserveData = getReserveData(reserve);
-        BigInteger totalBorrows = (BigInteger) reserveData.get("totalBorrows");
-
-        if (totalBorrows.equals(BigInteger.ZERO)) {
-            return BigInteger.ZERO;
-        }
-        BigInteger totalLiquidity = getReserveTotalLiquidity(reserve);
-        return exaDivide(totalBorrows, totalLiquidity);
     }
 
     protected void updateReserveInterestRatesAndTimestampInternal(Address reserve, BigInteger liquidityAdded,
-                                                                  BigInteger liquidityTaken) {
+            BigInteger liquidityTaken) {
         Map<String, Object> reserveData = getReserveData(reserve);
         Map<String, BigInteger> rate = calculateInterestRates(reserve, getReserveAvailableLiquidity(reserve)
                 .add(liquidityAdded)
                 .subtract(liquidityTaken), (BigInteger) reserveData.get("totalBorrows"));
         updateLiquidityRate(reserve, rate.get("liquidityRate"));
         updateBorrowRate(reserve, rate.get("borrowRate"));
-        updateLastUpdateTimestamp(reserve, BigInteger.valueOf(Context.getBlockTimestamp()));
+        updateLastUpdateTimestamp(reserve, TimeConstants.getBlockTimestamp());
 
-        ReserveUpdated(reserve, rate.get("liquidityRate"), rate.get("borrowRate"), (BigInteger) reserveData.get("liquidityCumulativeIndex")
+        ReserveUpdated(reserve, rate.get("liquidityRate"), rate.get("borrowRate"),
+                (BigInteger) reserveData.get("liquidityCumulativeIndex")
                 , (BigInteger) reserveData.get("borrowCumulativeIndex"));
     }
 
-    protected BigInteger getCurrentBorrowRate(Address reserve) {
-        Map<String, Object> reserveData = getReserveData(reserve);
-        return (BigInteger) reserveData.get("borrowRate");
+    protected BigInteger getCurrentBorrowRate(Address _reserve) {
+        String prefix = reservePrefix(_reserve);
+        return reserve.borrowRate.at(prefix).getOrDefault(BigInteger.ZERO);
     }
 
-    protected void updateUserStateOnBorrowInternal(Address reserve, Address user, BigInteger amountBorrowed,
-                                                   BigInteger balanceIncrease, BigInteger borrowFee) {
+    protected void updateUserStateOnBorrowInternal(Address reserve, Address user, BigInteger borrowFee) {
         Map<String, BigInteger> userReserveData = getUserReserveData(reserve, user);
         BigInteger userPreviousOriginationFee = userReserveData.get("originationFee");
         updateUserOriginationFee(reserve, user, userPreviousOriginationFee.add(borrowFee));
-        updateUserLastUpdateTimestamp(reserve, user, BigInteger.valueOf(Context.getBlockTimestamp()));
+        updateUserLastUpdateTimestamp(reserve, user, TimeConstants.getBlockTimestamp());
     }
 
-    protected void updateUserStateOnRepayInternal(Address reserve, Address user, BigInteger paybackAmountMinusFees,
-                                                  BigInteger originationFeeRepaid, BigInteger balanceIncrease, boolean repaidWholeLoan) {
+    protected void updateUserStateOnRepayInternal(Address reserve, Address user,
+            BigInteger originationFeeRepaid) {
         Map<String, BigInteger> userReserveData = getUserReserveData(reserve, user);
         BigInteger originationFee = userReserveData.get("originationFee");
         updateUserOriginationFee(reserve, user, originationFee.subtract(originationFeeRepaid));
-        updateUserLastUpdateTimestamp(reserve, user, BigInteger.valueOf(Context.getBlockTimestamp()));
+        updateUserLastUpdateTimestamp(reserve, user, TimeConstants.getBlockTimestamp());
     }
 
     protected void updatePrincipalReserveStateOnLiquidationInternal(Address principalReserve, Address user,
-                                                                    BigInteger amountToLiquidate, BigInteger balanceIncrease) {
+            BigInteger amountToLiquidate, BigInteger balanceIncrease) {
         updateCumulativeIndexes(principalReserve);
         Address dTokenAddress = getReserveDTokenAddress(principalReserve);
         call(dTokenAddress,
@@ -221,19 +197,19 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
         updateCumulativeIndexes(collateralReserve);
     }
 
-    protected void updateUserStateOnLiquidationInternal(Address reserve, Address user, BigInteger amountToLiquidate,
-                                                        BigInteger feeLiquidated, BigInteger balanceIncrease) {
-        Map<String, BigInteger> userReserveData = getUserReserveData(reserve, user);
-        BigInteger originationFee = userReserveData.get("originationFee");
+    protected void updateUserStateOnLiquidationInternal(Address reserve, Address user,
+            BigInteger feeLiquidated) {
 
         if (feeLiquidated.compareTo(BigInteger.ZERO) > 0) {
+            BigInteger originationFee = getUserOriginationFee(reserve, user);
             updateUserOriginationFee(reserve, user, originationFee.subtract(feeLiquidated));
         }
 
-        updateUserLastUpdateTimestamp(reserve, user, BigInteger.valueOf(Context.getBlockTimestamp()));
+        updateUserLastUpdateTimestamp(reserve, user, TimeConstants.getBlockTimestamp());
     }
 
-    protected Map<String, BigInteger> calculateInterestRates(Address reserve, BigInteger availableLiquidity, BigInteger totalBorrows) {
+    protected Map<String, BigInteger> calculateInterestRates(Address reserve, BigInteger availableLiquidity,
+            BigInteger totalBorrows) {
         Map<String, Object> constants = getReserveConstants(reserve);
         Map<String, BigInteger> rate = new HashMap<>();
         BigInteger utilizationRate;

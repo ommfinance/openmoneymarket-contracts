@@ -30,7 +30,7 @@ import static finance.omm.utils.math.MathUtils.exaMultiply;
 public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     public LendingPoolCoreImpl(Address addressProvider) {
-        super(addressProvider, false);
+        super(addressProvider);
     }
 
     @External(readonly = true)
@@ -41,7 +41,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     @External
     public void updateBorrowThreshold(Address _reserve, BigInteger _borrowThreshold) {
         onlyGovernance();
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         if (_borrowThreshold.compareTo(BigInteger.ZERO) < 0 || _borrowThreshold.compareTo(ICX) > 0) {
             Context.revert(TAG + " : Invalid borrow threshold value)");
         }
@@ -51,49 +51,49 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     @External
     public void updateBaseLTVasCollateral(Address _reserve, BigInteger _baseLTVasCollateral) {
         onlyGovernance();
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         reserve.baseLTVasCollateral.at(prefix).set(_baseLTVasCollateral);
     }
 
     @External
     public void updateLiquidationThreshold(Address _reserve, BigInteger _liquidationThreshold) {
         onlyGovernance();
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         reserve.liquidationThreshold.at(prefix).set(_liquidationThreshold);
     }
 
     @External
     public void updateLiquidationBonus(Address _reserve, BigInteger _liquidationBonus) {
         onlyGovernance();
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         reserve.liquidationBonus.at(prefix).set(_liquidationBonus);
     }
 
     @External
     public void updateBorrowingEnabled(Address _reserve, boolean _borrowingEnabled) {
         onlyGovernance();
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         reserve.borrowingEnabled.at(prefix).set(_borrowingEnabled);
     }
 
     @External
     public void updateUsageAsCollateralEnabled(Address _reserve, boolean _usageAsCollateralEnabled) {
         onlyGovernance();
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         reserve.usageAsCollateralEnabled.at(prefix).set(_usageAsCollateralEnabled);
     }
 
     @External
     public void updateIsFreezed(Address _reserve, boolean _isFreezed) {
         onlyGovernance();
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         reserve.isFreezed.at(prefix).set(_isFreezed);
     }
 
     @External
     public void updateIsActive(Address _reserve, boolean _isActive) {
         onlyGovernance();
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         reserve.isActive.at(prefix).set(_isActive);
     }
 
@@ -110,19 +110,20 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External(readonly = true)
     public BigInteger getReserveLiquidityCumulativeIndex(Address _reserve) {
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         return reserve.liquidityCumulativeIndex.at(prefix).getOrDefault(BigInteger.ZERO);
     }
 
     @External(readonly = true)
     public BigInteger getReserveBorrowCumulativeIndex(Address _reserve) {
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         return reserve.borrowCumulativeIndex.at(prefix).getOrDefault(BigInteger.ZERO);
     }
 
     @External(readonly = true)
     public boolean isReserveBorrowingEnabled(Address _reserve) {
-        return (boolean) getReserveData(_reserve).get("borrowingEnabled");
+        String prefix = reservePrefix(_reserve);
+        return reserve.borrowingEnabled.at(prefix).get();
     }
 
     @External
@@ -132,7 +133,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         if (!checkReserve(reserveDataObj.reserveAddress)) {
             addNewReserve(reserveDataObj.reserveAddress);
         }
-       String prefix = reservePrefix(reserveDataObj.reserveAddress);
+        String prefix = reservePrefix(reserveDataObj.reserveAddress);
         addDataToReserve(prefix, reserve, reserveDataObj);
     }
 
@@ -140,7 +141,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     public Map<String, Object> getReserveData(Address _reserve) {
         Map<String, Object> response = new HashMap<>();
         if (checkReserve(_reserve)) {
-           String prefix = reservePrefix(_reserve);
+            String prefix = reservePrefix(_reserve);
             response = getDataFromReserve(prefix, reserve);
             response.put("totalLiquidity", getReserveTotalLiquidity(_reserve));
             response.put("availableLiquidity", getReserveAvailableLiquidity(_reserve));
@@ -165,18 +166,6 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
             response = getDataFromUserReserve(prefix, userReserve);
         }
         return response;
-
-    }
-
-    @External
-    public Map<String, BigInteger> getUserReserveDataExtrenal(Address _reserve, Address _user) {
-        Map<String, BigInteger> response = new HashMap<>();
-        if (checkReserve(_reserve)) {
-            String prefix = userReservePrefix(_reserve, _user);
-            response = getDataFromUserReserve(prefix, userReserve);
-        }
-        return response;
-
     }
 
     @External(readonly = true)
@@ -250,7 +239,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     @External
     public void transferToUser(Address _reserve, Address _user, BigInteger _amount, @Optional byte[] _data) {
         onlyLendingPool();
-        call(_reserve,"transfer", _user, _amount, _data);
+        call(_reserve, "transfer", _user, _amount, _data);
     }
 
     @External
@@ -285,7 +274,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         }
         updateCumulativeIndexes(_reserve);
         call(getReserveDTokenAddress(_reserve), "mintOnBorrow", _user, _amountBorrowed, balanceIncrease);
-        updateUserStateOnBorrowInternal(_reserve, _user, _amountBorrowed, balanceIncrease, _borrowFee);
+        updateUserStateOnBorrowInternal(_reserve, _user, _borrowFee);
 
         updateReserveInterestRatesAndTimestampInternal(_reserve, BigInteger.ZERO, _amountBorrowed);
 
@@ -308,22 +297,22 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
             InterestTransfer(division, _reserve, _user);
         }
         updateCumulativeIndexes(_reserve);
-        call((Address) getReserveData(_reserve).get("dTokenAddress"),
+        String prefix = reservePrefix(_reserve);
+        call(reserve.dTokenAddress.at(prefix).get(),
                 "burnOnRepay", _user, _paybackAmountMinusFees, _balanceIncrease);
-        updateUserStateOnRepayInternal(_reserve, _user, _paybackAmountMinusFees, _originationFeeRepaid,
-                _balanceIncrease, _repaidWholeLoan);
+        updateUserStateOnRepayInternal(_reserve, _user, _originationFeeRepaid);
         updateReserveInterestRatesAndTimestampInternal(_reserve, _paybackAmountMinusFees, BigInteger.ZERO);
     }
 
     @External(readonly = true)
     public Address getReserveOTokenAddress(Address _reserve) {
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         return reserve.oTokenAddress.at(prefix).get();
     }
 
     @External(readonly = true)
     public Address getReserveDTokenAddress(Address _reserve) {
-       String prefix = reservePrefix(_reserve);
+        String prefix = reservePrefix(_reserve);
         return reserve.dTokenAddress.at(prefix).get();
     }
 
@@ -342,8 +331,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
                 _balanceIncrease);
 
         updateCollateralReserveStateOnLiquidationInternal(_collateralReserve);
-        updateUserStateOnLiquidationInternal(_principalReserve, _user, _amountToLiquidate, _feeLiquidated,
-                _balanceIncrease);
+        updateUserStateOnLiquidationInternal(_principalReserve, _user, _feeLiquidated);
         updateReserveInterestRatesAndTimestampInternal(_principalReserve, _amountToLiquidate, BigInteger.ZERO);
         updateReserveInterestRatesAndTimestampInternal(_collateralReserve, BigInteger.ZERO,
                 _collateralToLiquidate.add(_liquidatedCollateralForFee));
@@ -352,15 +340,15 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External(readonly = true)
     public BigInteger getUserUnderlyingAssetBalance(Address _reserve, Address _user) {
-        Map<String, Object> reserveData = getReserveData(_reserve);
-        return call(BigInteger.class, (Address) reserveData.get("oTokenAddress"),
+        String prefix = reservePrefix(_reserve);
+        return call(BigInteger.class, reserve.oTokenAddress.at(prefix).get(),
                 "balanceOf", _user);
     }
 
     @External(readonly = true)
     public BigInteger getUserUnderlyingBorrowBalance(Address _reserve, Address _user) {
-        Map<String, Object> reserveData = getReserveData(_reserve);
-        return call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
+        String prefix = reservePrefix(_reserve);
+        return call(BigInteger.class, reserve.dTokenAddress.at(prefix).get(),
                 "balanceOf", _user);
     }
 
@@ -372,20 +360,20 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserBasicReserveData(Address _reserve, Address _user) {
-        Map<String, BigInteger> userReserveData = getUserReserveData(_reserve, _user);
         BigInteger underlyingBalance = getUserUnderlyingAssetBalance(_reserve, _user);
         BigInteger compoundedBorrowBalance = getUserUnderlyingBorrowBalance(_reserve, _user);
         return Map.of(
                 "underlyingBalance", underlyingBalance,
                 "compoundedBorrowBalance", compoundedBorrowBalance,
-                "originationFee", userReserveData.get("originationFee")
+                "originationFee", getUserOriginationFee(_reserve, _user)
         );
     }
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserBorrowBalances(Address _reserve, Address _user) {
-        Map<String, Object> reserveData = getReserveData(_reserve);
-        BigInteger principalBorrowBalance = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
+        String prefix = reservePrefix(_reserve);
+        Address dTokenAddr = reserve.dTokenAddress.at(prefix).get();
+        BigInteger principalBorrowBalance = call(BigInteger.class, dTokenAddr,
                 "principalBalanceOf", _user);
 
         if (principalBorrowBalance.equals(BigInteger.ZERO)) {
@@ -395,7 +383,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
                     "borrowBalanceIncrease", BigInteger.ZERO
             );
         }
-        BigInteger compoundedBorrowBalance = call(BigInteger.class, (Address) reserveData.get("dTokenAddress"),
+        BigInteger compoundedBorrowBalance = call(BigInteger.class, dTokenAddr,
                 "balanceOf", _user);
         BigInteger borrowBalanceIncrease = compoundedBorrowBalance.subtract(principalBorrowBalance);
         return Map.of(
