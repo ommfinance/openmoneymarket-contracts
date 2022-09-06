@@ -58,8 +58,6 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
 
     @Test
     void testName(){
-//        Map<String, Object> constant= getReserveConfiguration(addressMap.get(Contracts.sICX.getKey()));
-//        System.out.println(constant);
         assertEquals("Omm Lending Pool Data Provider",ommClient.lendingPoolDataProvider.name());
     }
 
@@ -134,10 +132,6 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
         @DisplayName("checking user account data")
         void userAccountData(){
 
-            // remove these later
-//            reserveAccountData_deposit_icx();
-//            reserveAccountData_deposit_iusdc();
-
             Map<String,Object> testClientAccountData = getUserAccountDataTest(testClient.getAddress());
 
             BigInteger liquidity = BigInteger.valueOf(600000000000000000L).add(BigInteger.valueOf(2).multiply(ICX));
@@ -157,10 +151,6 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
         @Order(2)
         @DisplayName("checking user data in icx and iusdc reseve")
         void userReserveData(){
-
-            // remove these later
-//            reserveAccountData_deposit_icx();
-//            reserveAccountData_deposit_iusdc();
 
             Map<String,BigInteger> userReserveData_sicx = userReserveDataTest(icx_reserve,testClient.getAddress());
             assertEquals(BigInteger.valueOf(2).multiply(ICX),userReserveData_sicx.get("currentOTokenBalance"));
@@ -191,9 +181,6 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
         @Order(3)
         void reserveData(){
 
-            // remove these
-//            reserveAccountData_deposit_icx();
-//            reserveAccountData_deposit_iusdc();
 
             // another user adds Liquidity to icx reserve
             depositICX(ommClient,BigInteger.valueOf(100).multiply(ICX));
@@ -239,10 +226,6 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
             @Order(4)
             void borrow_icx(){
 
-                //remove these
-//                reserveAccountData_deposit_icx();
-//                reserveAccountData_deposit_iusdc();
-//                depositICX(ommClient,BigInteger.valueOf(100).multiply(ICX));
 
                 // testClient deposit 50 again
                 depositICX(testClient,BigInteger.valueOf(50).multiply(ICX));
@@ -352,40 +335,30 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
 
             @DisplayName("Repay Transactions")
             @Nested
+            @TestMethodOrder(OrderAnnotation.class)
             class repay {
 
                 @Test
+                @DisplayName("partial repay of borrowed icx ")
                 @Order(6)
                 void repay_icx() throws InterruptedException {
-                    // remove these
-//                    reserveAccountData_deposit_icx();
-//                    reserveAccountData_deposit_iusdc();
-//                    depositICX(ommClient,BigInteger.valueOf(100).multiply(ICX));
-//                    depositICX(testClient,BigInteger.valueOf(50).multiply(ICX));
-//                    borrow_icx();
-
-//                    borrow_iusdc();
 
                     BigInteger repay_amount = BigInteger.valueOf(5).multiply(ICX);
                     BigInteger repay_amountUSD = exaMultiply(repay_amount,BigInteger.valueOf(3).multiply(ICX).divide(BigInteger.TEN));
                     byte[] repay_data = createByteArray("repay",null,null,null,null);
 
-                    System.out.println("oICX "+testClient.oICX.balanceOf(testClient.getAddress()));
 
                     BigInteger balance_before = ommClient.sICX.balanceOf(testClient.getAddress());
                     Map<String,Object> icxUserAccountData_before = getUserAccountDataTest(testClient.getAddress());
-                    System.out.println(icxUserAccountData_before);
 
                     // repay
                     testClient.sICX.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), repay_amount, repay_data);
 
                     Thread.sleep(300);
-                    System.out.println("oICX repay"+testClient.oICX.balanceOf(testClient.getAddress()));
 
                     BigInteger balance_after = ommClient.sICX.balanceOf(testClient.getAddress());
                     Map<String,Object> icxUserAccountData_after = getUserAccountDataTest(testClient.getAddress());
                     BigInteger feeUSD = toBigInt((String) icxUserAccountData_after.get("totalFeesUSD"));
-                    System.out.println(icxUserAccountData_after);
 
                     assertEquals(balance_after,balance_before.subtract(repay_amount));
 
@@ -405,18 +378,149 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                     assertTrue(toBigInt((String) icxUserAccountData_after.get("healthFactor")).
                             compareTo(toBigInt((String)icxUserAccountData_before.get("healthFactor")))>0);
 
-                    // totalCollateralBalanceUSD remains same
+                    // totalCollateralBalanceUSD remains almost same
                     assertEquals((toBigInt((String) icxUserAccountData_after.get("totalCollateralBalanceUSD"))).longValue(),
                             toBigInt((String) icxUserAccountData_before.get("totalCollateralBalanceUSD")).longValue(),delta);
 
 
                 }
-            }
 
-            @DisplayName("Repay Transactions")
-            @Nested
-            class redeem{
+                @Test
+                @DisplayName("repay all iusdc borrow")
+                @Order(7)
+                void repay_all_borrowed_iusdc() throws InterruptedException{
+                    Map<String,BigInteger> user_iusdc_reserve_data= userReserveDataTest(iusdc_addr,testClient.getAddress());
 
+                    BigInteger borrowBalance = user_iusdc_reserve_data.get("currentBorrowBalance");
+                    BigInteger originationFee = user_iusdc_reserve_data.get("originationFee");
+                    BigInteger borrowedAmount = BigInteger.valueOf(15).multiply(BigInteger.valueOf(1000_00));
+                    BigInteger repayAmount = borrowedAmount.add(originationFee);
+                    byte[] repay_data = createByteArray("repay",null,null,null,null);
+
+                    BigInteger balance_before = ommClient.iUSDC.balanceOf(testClient.getAddress());
+                    Map<String,Object> iusdcUserAccountData_before = getUserAccountDataTest(testClient.getAddress());
+
+                    BigInteger reapy_AmountUSD = exaMultiply(convertToExa(repayAmount,BigInteger.valueOf(6)),ICX);
+                    Thread.sleep(3000);
+                    // repay
+                    testClient.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), borrowedAmount.add(originationFee), repay_data);
+
+                    Map<String,BigInteger> user_iusdc_reserve_data_after= userReserveDataTest(iusdc_addr,testClient.getAddress());
+                    BigInteger borrowBalanceAfter = user_iusdc_reserve_data_after.get("currentBorrowBalance");
+
+                    BigInteger balance_after = ommClient.iUSDC.balanceOf(testClient.getAddress());
+
+                    assertEquals(borrowBalance.subtract(borrowedAmount),borrowBalanceAfter);
+                    assertEquals(balance_before.subtract(borrowedAmount.add(originationFee)),balance_after);
+                    assertEquals(BigInteger.ZERO,user_iusdc_reserve_data_after.get("userBorrowCumulativeIndex"));
+
+                    Map<String,Object> iusdcUserAccountData_after = getUserAccountDataTest(testClient.getAddress());
+                    BigInteger feeUSD = toBigInt((String) iusdcUserAccountData_before.get("totalFeesUSD"));
+
+
+                    float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+
+//                    System.out.println("float " + delta); // delta is the difference between two and it should be 0.01
+                    //TODO:
+//                    assertEquals((toBigInt((String) iusdcUserAccountData_before.get("availableBorrowsUSD"))
+//                                    .add(reapy_AmountUSD.subtract(feeUSD))).longValue(),
+//                            (toBigInt((String) iusdcUserAccountData_after.get("availableBorrowsUSD"))).longValue(),delta);
+
+
+                    // totalBorrowBalanceUSD decrease
+                    assertTrue((toBigInt((String) iusdcUserAccountData_before.get("totalBorrowBalanceUSD"))).compareTo(
+                            toBigInt((String) iusdcUserAccountData_after.get("totalBorrowBalanceUSD")))>0);
+
+
+                    // healthFactor increase
+                    assertTrue(toBigInt((String) iusdcUserAccountData_after.get("healthFactor")).
+                            compareTo(toBigInt((String)iusdcUserAccountData_before.get("healthFactor")))>0);
+
+                    // totalCollateralBalanceUSD remains almost same
+                    assertEquals((toBigInt((String) iusdcUserAccountData_after.get("totalCollateralBalanceUSD"))).longValue(),
+                            toBigInt((String) iusdcUserAccountData_before.get("totalCollateralBalanceUSD")).longValue(),delta);
+
+//                    System.out.println(user_iusdc_reserve_data_after);
+                    // this should change
+                    assertEquals(user_iusdc_reserve_data.get("userLiquidityCumulativeIndex"),
+                            user_iusdc_reserve_data_after.get("userLiquidityCumulativeIndex"));
+
+
+                }
+
+                @DisplayName("redeem Transactions")
+                @Nested
+                @TestMethodOrder(OrderAnnotation.class)
+                class redeem{
+
+                    @Test
+                    @DisplayName("redeem from icx")
+                    @Order(7)
+                    void redeem_icx(){
+
+                        Address oICX = addressMap.get(Contracts.oICX.getKey());
+                        Map<String,Object> reserveData = getReserveData(icx_reserve);
+
+                        Map<String,BigInteger> userReserveDataBefore = userReserveDataTest(icx_reserve,testClient.getAddress());
+                        System.out.println(userReserveDataBefore);
+                        System.out.println(reserveData);
+                        System.out.println(testClient.sICX.balanceOf(testClient.getAddress()));
+
+                        Map<String,Object> icxUserAccountData_before = getUserAccountDataTest(testClient.getAddress());
+                        System.out.println(icxUserAccountData_before);
+
+                        BigInteger icxBalance_before = testClient.sICX.balanceOf(testClient.getAddress());
+
+
+                        BigInteger redeem_amount = BigInteger.valueOf(4).multiply(ICX);
+                        BigInteger redeem_amount_USD = exaMultiply(redeem_amount,BigInteger.valueOf(3).multiply(ICX).divide(BigInteger.TEN));
+                        testClient.lendingPool.redeem(oICX,redeem_amount,false);
+
+                        Map<String,Object> icxReserveDataAfter = getReserveData(icx_reserve);
+                        Map<String,BigInteger> userReserveDataAfter = userReserveDataTest(icx_reserve,testClient.getAddress());
+                        System.out.println(userReserveDataAfter);
+                        System.out.println(icxReserveDataAfter);
+
+                        Map<String,Object> icxUserAccountData_after = getUserAccountDataTest(testClient.getAddress());
+//                        System.out.println(icxUserAccountData_after);
+
+                        // Liquidity should decrease
+                        BigInteger availableLiquidity_before = toBigInt((String) reserveData.get("availableLiquidity"));
+                        BigInteger availableLiquidity_after = toBigInt((String)icxReserveDataAfter.get("availableLiquidity"));
+                        assertEquals(availableLiquidity_before.subtract(redeem_amount),availableLiquidity_after);
+
+                        // principal oToken should decrease
+                        BigInteger principleOtoken_before =userReserveDataBefore.get("principalOTokenBalance");
+                        BigInteger principleOtoken_after =userReserveDataAfter.get("principalOTokenBalance");
+                        float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+                        System.out.println(delta);
+                        assertEquals(principleOtoken_before.subtract(redeem_amount).floatValue(),
+                                principleOtoken_after.floatValue(),delta);
+
+                        // user liquidity cumulative index should increase
+                        BigInteger userLiquidityCumulativeIndex_before = userReserveDataBefore.get("userLiquidityCumulativeIndex");
+                        BigInteger userLiquidityCumulativeIndex_after = userReserveDataAfter.get("userLiquidityCumulativeIndex");
+                        assertTrue(userLiquidityCumulativeIndex_after.compareTo(userLiquidityCumulativeIndex_before)>0);
+
+                        // collateral should decrease
+                        BigInteger collateralBalance_before = toBigInt((String)icxUserAccountData_before.get("totalCollateralBalanceUSD"));
+                        BigInteger collateralBalance_after = toBigInt((String)icxUserAccountData_after.get("totalCollateralBalanceUSD"));
+                        assertEquals(collateralBalance_before.subtract(redeem_amount_USD).floatValue(),collateralBalance_after.floatValue(),delta);
+
+                        // health factor should decrease
+                        assertTrue(toBigInt((String) icxUserAccountData_before.get("healthFactor")).
+                                compareTo(toBigInt((String)icxUserAccountData_after.get("healthFactor")))>0);
+
+                        // sicx balance should increase
+
+                        BigInteger icxBalance_after = testClient.sICX.balanceOf(testClient.getAddress());
+                        System.out.println(icxBalance_before);
+                        assertEquals(icxBalance_before.add(redeem_amount),icxBalance_after);
+
+
+                    }
+
+                }
             }
 
         }
