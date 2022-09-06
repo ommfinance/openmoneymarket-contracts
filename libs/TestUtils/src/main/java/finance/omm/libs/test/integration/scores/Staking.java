@@ -23,5 +23,5 @@ public interface Staking {
 
     @External
     void setSicxAddress(Address _address);
-    
+
 }
