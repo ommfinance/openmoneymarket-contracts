@@ -1,9 +1,10 @@
 package finance.omm.score.core.lendingpoolcore.reservedata;
 
+import finance.omm.libs.structs.governance.ReserveAttributes;
+import finance.omm.utils.math.MathUtils;
 import score.Address;
 
 import java.math.BigInteger;
-import java.util.Map;
 
 public class ReserveDataObject {
 
@@ -25,25 +26,24 @@ public class ReserveDataObject {
     public Boolean isFreezed;
     public Boolean isActive;
 
-    ReserveDataObject(Map<String, Object> reserveData) {
-        this.reserveAddress = (Address) reserveData.get("reserveAddress");
-        this.oTokenAddress = (Address) reserveData.get("oTokenAddress");
-        this.dTokenAddress = (Address) reserveData.get("dTokenAddress");
-        this.lastUpdateTimestamp = (BigInteger) reserveData.get("lastUpdateTimestamp");
-        this.liquidityRate = (BigInteger) reserveData.get("liquidityRate");
-        this.borrowRate = (BigInteger) reserveData.get("borrowRate");
-        this.liquidityCumulativeIndex = (BigInteger) reserveData.get("liquidityCumulativeIndex");
-        this.borrowCumulativeIndex = (BigInteger) reserveData.get("borrowCumulativeIndex");
-        this.baseLTVasCollateral = (BigInteger) reserveData.get("baseLTVasCollateral");
-        this.liquidationThreshold = (BigInteger) reserveData.get("liquidationThreshold");
-        this.liquidationBonus = (BigInteger) reserveData.get("liquidationBonus");
-        this.decimals = (int) reserveData.get("decimals");
-        this.borrowingEnabled = (Boolean) reserveData.get("borrowingEnabled");
-        this.usageAsCollateralEnabled = (Boolean) reserveData.get("usageAsCollateralEnabled");
-        this.isFreezed = (Boolean) reserveData.get("isFreezed");
-        this.isActive = (Boolean) reserveData.get("isActive");
-        this.borrowThreshold = (BigInteger) reserveData.get("borrowThreshold");
-
+    ReserveDataObject(ReserveAttributes reserveData) {
+        this.reserveAddress = reserveData.reserveAddress;
+        this.oTokenAddress = reserveData.oTokenAddress;
+        this.dTokenAddress = reserveData.dTokenAddress;
+        this.lastUpdateTimestamp = reserveData.lastUpdateTimestamp;
+        this.liquidityRate = reserveData.liquidityRate;
+        this.borrowRate = reserveData.borrowRate;
+        this.liquidityCumulativeIndex = reserveData.liquidityCumulativeIndex;
+        this.borrowCumulativeIndex = reserveData.borrowCumulativeIndex;
+        this.baseLTVasCollateral = reserveData.baseLTVasCollateral;
+        this.liquidationThreshold = reserveData.liquidationThreshold;
+        this.liquidationBonus = reserveData.liquidationBonus;
+        this.decimals = reserveData.decimals;
+        this.borrowingEnabled = reserveData.borrowingEnabled;
+        this.usageAsCollateralEnabled = reserveData.usageAsCollateralEnabled;
+        this.isFreezed = reserveData.isFreezed;
+        this.isActive = reserveData.isActive;
+        this.borrowThreshold = MathUtils.ICX;
     }
 
 }

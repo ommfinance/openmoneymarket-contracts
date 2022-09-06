@@ -33,7 +33,7 @@ public class AbstractReserve {
         return reserveData;
     }
 
-    public static void addDataToReserve(String  prefix, ReserveDataDB reserve, ReserveDataObject reserveData) {
+    public static void addDataToReserve(String prefix, ReserveDataDB reserve, ReserveDataObject reserveData) {
         reserve.dTokenAddress.at(prefix).set(reserveData.dTokenAddress);
         reserve.reserveAddress.at(prefix).set(reserveData.reserveAddress);
         reserve.oTokenAddress.at(prefix).set(reserveData.oTokenAddress);
@@ -54,25 +54,6 @@ public class AbstractReserve {
     }
 
     public static ReserveDataObject createReserveDataObject(ReserveAttributes reserveData) {
-        Map<String, Object> reserveDataDetails = new HashMap<>();
-        reserveDataDetails.put("reserveAddress", reserveData.reserveAddress);
-        reserveDataDetails.put("oTokenAddress", reserveData.oTokenAddress);
-        reserveDataDetails.put("dTokenAddress", reserveData.dTokenAddress);
-        reserveDataDetails.put("lastUpdateTimestamp", reserveData.lastUpdateTimestamp);
-        reserveDataDetails.put("liquidityRate", reserveData.liquidityRate);
-        reserveDataDetails.put("borrowRate", reserveData.borrowRate);
-        reserveDataDetails.put("liquidityCumulativeIndex", reserveData.liquidityCumulativeIndex);
-        reserveDataDetails.put("borrowCumulativeIndex", reserveData.borrowCumulativeIndex);
-        reserveDataDetails.put("baseLTVasCollateral", reserveData.baseLTVasCollateral);
-        reserveDataDetails.put("liquidationThreshold", reserveData.liquidationThreshold);
-        reserveDataDetails.put("liquidationBonus", reserveData.liquidationBonus);
-        reserveDataDetails.put("decimals", reserveData.decimals);
-        reserveDataDetails.put("borrowingEnabled", reserveData.borrowingEnabled);
-        reserveDataDetails.put("usageAsCollateralEnabled", reserveData.usageAsCollateralEnabled);
-        reserveDataDetails.put("isFreezed", reserveData.isFreezed);
-        reserveDataDetails.put("isActive", reserveData.isActive);
-        reserveDataDetails.put("borrowThreshold", ICX);
-
-        return new ReserveDataObject(reserveDataDetails);
+        return new ReserveDataObject(reserveData);
     }
 }
