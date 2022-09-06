@@ -1,4 +1,4 @@
-version '0.0.2'
+version '0.0.1'
 
 optimizedJar {
     mainClassName = 'finance.omm.score.core.stakedLP.StakedLPImpl'
@@ -21,12 +21,11 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-//            to = rootProject.findProperty("contracts.stakedLP")
+            to = rootProject.findProperty("contracts.stakedLP")
             nid = 0x53
         }
         mainnet {
             uri = 'https://ctz.solidwallet.io/api/v3'
-            to = 'cx015c7f8884d43519aa2bcf634140bd7328730cb6'
             nid = 0x1
         }
     }
