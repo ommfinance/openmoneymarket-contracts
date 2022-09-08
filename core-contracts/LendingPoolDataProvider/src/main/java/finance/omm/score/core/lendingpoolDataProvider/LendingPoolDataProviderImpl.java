@@ -9,6 +9,7 @@ import java.util.Map;
 import finance.omm.score.core.lendingpoolDataProvider.exception.LendingPoolDataProviderException;
 import score.Address;
 
+import score.Context;
 import score.annotation.External;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
@@ -28,6 +29,9 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
     @External
     public void setSymbol(Address _reserve, String _sym) {
+//        if (!Context.getOwner().equals(Context.getCaller())) {
+//            Context.revert("not owner");
+//        }
         onlyOwnerOrElseThrow(LendingPoolDataProviderException.notOwner());
         symbol.set(_reserve, _sym);
     }

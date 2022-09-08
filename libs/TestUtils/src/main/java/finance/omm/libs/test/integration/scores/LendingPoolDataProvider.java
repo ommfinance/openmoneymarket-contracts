@@ -8,6 +8,7 @@ import java.util.Map;
 public interface LendingPoolDataProvider {
 
     String name();
+
     void setSymbol(Address _reserve, String _sym);
 
     Map<String, BigInteger> getReserveAccountData();
@@ -20,7 +21,25 @@ public interface LendingPoolDataProvider {
 
     Map<String, Map<String, Object>> getAllReserveData();
 
-    Map<String,Object> test(Address reserve);
-
     Map<String, Map<String, Object>> getAllReserveConfigurationData();
+
+    Map<String, Map<String, BigInteger>> getUserAllReserveData(Address _user);
+
+    Map<String, Object> getUserLiquidationData(Address _user);
+
+    Map<String, Map<String, Object>> liquidationList(BigInteger _index);
+
+    void test(BigInteger index);
+
+    boolean balanceDecreaseAllowed(Address _reserve, Address _user, BigInteger _amount);
+
+    BigInteger calculateCollateralNeededUSD(Address _reserve, BigInteger _amount, BigInteger _fee,
+                                            BigInteger _userCurrentBorrowBalanceUSD,
+                                            BigInteger _userCurrentFeesUSD, BigInteger _userCurrentLtv);
+
+    Map<String, Object> getReserveConfigurationData(Address _reserve);
+
+    BigInteger getLoanOriginationFeePercentage();
+
+    BigInteger getRealTimeDebt(Address _reserve, Address _user);
 }
