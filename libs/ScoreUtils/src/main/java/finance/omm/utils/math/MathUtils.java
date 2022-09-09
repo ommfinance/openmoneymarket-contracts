@@ -7,6 +7,7 @@ import java.math.BigInteger;
 public class MathUtils {
 
     public static BigInteger ICX = pow10(18);
+    public static BigInteger EIGHTEEN = BigInteger.valueOf(18);
     public static BigInteger HUNDRED_PERCENT = ICX;
     public static BigInteger HALF_ICX = ICX.divide(BigInteger.TWO);
     public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(ICX);
