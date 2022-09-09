@@ -3,6 +3,7 @@ package finance.omm.libs.test.integration.scores;
 import score.Address;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
 public interface LendingPoolDataProvider {
@@ -10,6 +11,8 @@ public interface LendingPoolDataProvider {
     String name();
 
     void setSymbol(Address _reserve, String _sym);
+
+    String getSymbol(Address _reserve);
 
     Map<String, BigInteger> getReserveAccountData();
 
@@ -29,8 +32,6 @@ public interface LendingPoolDataProvider {
 
     Map<String, Map<String, Object>> liquidationList(BigInteger _index);
 
-    void test(BigInteger index);
-
     boolean balanceDecreaseAllowed(Address _reserve, Address _user, BigInteger _amount);
 
     BigInteger calculateCollateralNeededUSD(Address _reserve, BigInteger _amount, BigInteger _fee,
@@ -42,4 +43,6 @@ public interface LendingPoolDataProvider {
     BigInteger getLoanOriginationFeePercentage();
 
     BigInteger getRealTimeDebt(Address _reserve, Address _user);
+
+    List<Map<String, BigInteger>> getUserUnstakeInfo(Address _address);
 }
