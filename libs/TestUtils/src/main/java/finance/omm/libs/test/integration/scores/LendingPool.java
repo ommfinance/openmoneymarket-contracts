@@ -33,7 +33,5 @@ public interface LendingPool {
     List<Address> getDepositWallets(int _index);
 
     List<Address> getBorrowWallets(int _index);
-
-    void redeem(Address _oToken, BigInteger _amount, boolean _waitForUnstaking);
     
 }
