@@ -74,6 +74,7 @@ public class Release_1_2_0 extends Release {
         ommClient.governance.addAsset("reserve", oIUSDC, contractAddresses.get(oIUSDC), BigInteger.valueOf(-1));
         ommClient.governance.addAsset("reserve", dIUSDC, contractAddresses.get(dIUSDC), BigInteger.valueOf(-1));
 
+
 //        ommClient.governance.addAsset("OMMLocking", "bOMM", contractAddresses.get("bOMM"),
 //                BigInteger.valueOf(-1));
         BigInteger systemTime = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
@@ -97,6 +98,9 @@ public class Release_1_2_0 extends Release {
         WeightStruct[] daoWeightStructs = new WeightStruct[]{
                 new WeightStruct(contractAddresses.get(daoFund),ICX)
         };
+
+        ommClient.governance.addAsset("OMMLocking", "bOMM", contractAddresses.get("bOMM"),
+                BigInteger.valueOf(-1));
 
         ommClient.governance.setAssetWeight("reserve",weightStructs,time);
         ommClient.governance.setAssetWeight("daoFund",daoWeightStructs,time);

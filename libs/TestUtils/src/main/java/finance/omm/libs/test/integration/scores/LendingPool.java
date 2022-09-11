@@ -1,5 +1,6 @@
 package finance.omm.libs.test.integration.scores;
 
+
 import score.Address;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -10,7 +11,6 @@ import java.util.List;
 
 public interface LendingPool {
 
-    @External(readonly = true)
     String name();
 
     @Payable
@@ -33,4 +33,7 @@ public interface LendingPool {
     List<Address> getDepositWallets(int _index);
 
     List<Address> getBorrowWallets(int _index);
+
+    void redeem(Address _oToken, BigInteger _amount, boolean _waitForUnstaking);
+    
 }

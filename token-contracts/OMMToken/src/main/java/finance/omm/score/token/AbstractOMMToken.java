@@ -117,8 +117,8 @@ public abstract class AbstractOMMToken extends AddressProvider implements OMMTok
                     "available balance of user " + senderAvailableBalance + "balance to transfer " + value);
         }
 
-        BigInteger toBalance = this.balances.getOrDefault(to, BigInteger.ZERO);
         this.balances.set(from, fromBalance.subtract(value));
+        BigInteger toBalance = this.balances.getOrDefault(to, BigInteger.ZERO);
         this.balances.set(to, toBalance.add(value));
 
         this.Transfer(from, to, value, data);
