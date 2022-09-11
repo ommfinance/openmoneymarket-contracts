@@ -38,11 +38,6 @@ deployJar {
     }
 }
 
-test {
-    useJUnitPlatform {
-        excludeTags("integration")
-    }
-}
 
 task integrationTest(type: Test) {
     useJUnitPlatform()
@@ -61,5 +56,4 @@ task integrationTest(type: Test) {
         classpath = sourceSets.intTest.runtimeClasspath
     }
 }
-
 
