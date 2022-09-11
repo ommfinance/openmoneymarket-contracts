@@ -33,7 +33,7 @@ public class LendingPoolDataProviderUnitTest extends TestBase {
 
     @Test
     void testName() throws Exception {
-        assertEquals("OMM " + TAG, lendingPoolDataProvider.call("name") );
+        assertEquals("Omm " + TAG, lendingPoolDataProvider.call("name") );
     }
 
 }
