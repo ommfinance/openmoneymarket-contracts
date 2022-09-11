@@ -2,6 +2,7 @@ package finance.omm.score.core.lendingpool;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.lendingpool.exception.LendingPoolException;
 import score.Address;
@@ -19,7 +20,7 @@ import static finance.omm.utils.math.MathUtils.exaDivide;
 public class LendingPoolImpl extends AbstractLendingPool {
 
     public LendingPoolImpl(Address addressProvider) {
-        super(addressProvider, false);
+        super(addressProvider);
     }
 
     @External(readonly = true)
@@ -55,12 +56,12 @@ public class LendingPoolImpl extends AbstractLendingPool {
         return isFeeSharingEnabled(_user);
     }
 
-    @External
+    @External(readonly = true)
     public List<Address> getDepositWallets(int _index) {
         return getArrayItems(depositWallets, _index);
     }
 
-    @External
+    @External(readonly = true)
     public List<Address> getBorrowWallets(int _index) {
         return getArrayItems(borrowWallets, _index);
     }
@@ -70,9 +71,8 @@ public class LendingPoolImpl extends AbstractLendingPool {
     @Payable
     public void deposit(BigInteger _amount) {
         BigInteger icxValue = Context.getValue();
-
         // check this condition
-        if (!(icxValue.equals(BigInteger.ZERO)) && !(icxValue.compareTo(_amount) == 0)) {
+        if (! icxValue.equals(_amount)) {
             throw LendingPoolException.unknown(TAG + " : Amount in param " +
                     _amount + " doesnt match with the icx sent " + icxValue + " to the Lending Pool");
         }
@@ -99,6 +99,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
     }
 
     @External
+    @Deprecated
     public void stake(BigInteger _value) {
         checkAndEnableFeeSharing();
         call(Contracts.OMM_TOKEN, "stake", _value, Context.getCaller());
@@ -146,7 +147,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
 
         Address caller = Context.getCaller();
 
-        if (borrowIndex.get(caller) != null) {
+        if (borrowIndex.get(caller) == null) {
             borrowWallets.add(caller);
             borrowIndex.set(caller, BigInteger.valueOf(borrowWallets.size()));
         }
@@ -197,14 +198,14 @@ public class LendingPoolImpl extends AbstractLendingPool {
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
         String method;
-        JsonObject params;
+        JsonValue params;
 
         try {
             String data = new String(_data);
             JsonObject json = Json.parse(data).asObject();
 
             method = json.get("method").asString();
-            params = json.get("params").asObject();
+            params = json.get("params");
         } catch (Exception e) {
             throw LendingPoolException.unknown(TAG + " Invalid data: " + _data.toString());
         }
@@ -216,12 +217,12 @@ public class LendingPoolImpl extends AbstractLendingPool {
         } else if (method.equals("repay")) {
             repay(caller, _value, _from);
         } else if (method.equals("liquidationCall") && params != null) {
+            JsonObject param = params.asObject();
+            String collateral = param.getString("_collateral", null);
+            String reserve = param.getString("_reserve", null);
+            String user = param.getString("_user", null);
 
-            String collateral = params.getString("_collateral", null);
-            String reserve = params.getString("_reserve", null);
-            String user = params.getString("_user", null);
-
-            if (collateral.equals("null") || reserve.equals("null") || user.equals("null")) {
+            if (collateral== null || reserve == null || user == null) {
                 throw LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: " + reserve + " User: " + user);
             }
