@@ -76,7 +76,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(BigInteger.ZERO.multiply(ICX)).when(scoreSpy).
                 call(eq(BigInteger.class), eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), any());
         doReturn(Map.of(
-                "reserve",reserveAddress.toString(),
+                "reserve",reserveAddress,
                 "amountToRedeem",amountToRedeem
         )).when(scoreSpy).call(Map.class,oICX,"redeem",notOwner.getAddress(),amountToRedeem);
 
@@ -138,7 +138,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 call(eq(BigInteger.class), eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), any());
 
         doReturn(Map.of(
-                "reserve",reserveAddres.toString(),
+                "reserve",reserveAddres,
                 "amountToRedeem",amountToRedeem
         )).when(scoreSpy).call(Map.class,oToken,"redeem",notOwner.getAddress(),amountToRedeem);
 
@@ -163,7 +163,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         Address notoICX = MOCK_CONTRACT_ADDRESS.get(Contracts.oIUSDC).getAddress();
 
         doReturn(Map.of(
-                "reserve",reserveAddres.toString(),
+                "reserve",reserveAddres,
                 "amountToRedeem",amountToRedeem
         )).when(scoreSpy).call(Map.class,notoICX,"redeem",notOwner.getAddress(),amountToRedeem);
 
@@ -429,12 +429,15 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         expectErrorMessage(call,TAG + " No valid method called, data: "+ invalidMethod.toString());
 
 
-        byte[] invalidParams = createByteArray("liquidationCall",null,null,null);
+        Address collateral = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
+        byte[] invalidParams = createByteArray_liquidation("liquidationCall",collateral);
         call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), invalidParams);
-        expectErrorMessage(call,TAG +" Invalid data: Collateral: " + null +
+        expectErrorMessage(call,TAG +" Invalid data: Collateral: " + collateral +
                 " Reserve: "+null+ " User: "+ null);
     }
+
+
 
     @Test
     void liquidationCall(){
@@ -531,7 +534,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(Map.of(
                 "isActive",true,
                 "isFreezed",false,
-                "oTokenAddress",oTokenAddr.toString()
+                "oTokenAddress",oTokenAddr
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", sICX); // any
         doNothing().when(scoreSpy). call(Contracts.LENDING_POOL_CORE, "updateStateOnDeposit", sICX,
@@ -557,10 +560,14 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
 
         Executable call = () -> score.invoke(notOwner,"deposit",depositAmt);
         expectErrorMessage(call,TAG + " : Amount in param " +
-                depositAmt + "doesnt match with the icx sent " + BigInteger.ONE + " to the Lending Pool");
+                depositAmt + " doesnt match with the icx sent " + BigInteger.ONE + " to the Lending Pool");
 
         Address oTokenAddr = MOCK_CONTRACT_ADDRESS.get(Contracts.oICX).getAddress();
         Address sICX = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
+        Address staking = MOCK_CONTRACT_ADDRESS.get(Contracts.STAKING).getAddress();
+        Address lendingPoolCore = MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL_CORE).getAddress();
+
+        contextMock.when(staking(depositAmt,staking,lendingPoolCore)).thenReturn(BigInteger.ONE);
 
         contextMock.when(sendICX()).thenReturn(BigInteger.valueOf(10).multiply(ICX));
         doReturn(BigInteger.valueOf(1).multiply(ICX)).when(scoreSpy).
@@ -590,14 +597,12 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(Map.of(
                 "isActive",true,
                 "isFreezed",false,
-                "oTokenAddress",oTokenAddr.toString()
+                "oTokenAddress",oTokenAddr
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", sICX); // any
         doNothing().when(scoreSpy). call(Contracts.LENDING_POOL_CORE, "updateStateOnDeposit", sICX,
                 notOwner.getAddress(), depositAmt); // any
         doNothing().when(scoreSpy).call(oTokenAddr, "mintOnDeposit", notOwner.getAddress(), depositAmt);
-
-        doNothing().when(scoreSpy).call(eq(sICX),eq("transfer"),any(Address.class),eq(depositAmt));
 
 
         score.invoke(notOwner,"deposit",depositAmt);
@@ -647,7 +652,6 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 eq(notOwner.getAddress()), eq(BigInteger.ZERO), any(BigInteger.class), eq(BigInteger.valueOf(7).multiply(ICX)), eq(false));
         doNothing().when(scoreSpy).call(sICX, "transfer",
                 MOCK_CONTRACT_ADDRESS.get(Contracts.FEE_PROVIDER).getAddress(), BigInteger.valueOf(10).multiply(ICX));
-//        verify(scoreSpy).Repay(sICX,notOwner.getAddress(),BigInteger.ZERO, amountToRepay, BigInteger.valueOf(7).multiply(ICX));
         score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), repayMethod);
 
@@ -677,6 +681,11 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
 
     }
 
+    public MockedStatic.Verification staking(BigInteger icxValue,Address staking, Address lendingPoolCore) {
+        return () -> Context.call(icxValue, staking,"stakeICX", lendingPoolCore);
+    }
+
+
     public MockedStatic.Verification sendICX() {
         return () -> Context.getValue();
     }
@@ -691,6 +700,18 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 .add("_collateral", String.valueOf(collateral))
                 .add("_reserve", String.valueOf(reserve))
                 .add("_user", String.valueOf(user));
+
+        JsonObject jsonData = new JsonObject()
+                .add("method", methodName)
+                .add("params", internalParameters);
+
+        return jsonData.toString().getBytes();
+    }
+
+    private byte[] createByteArray_liquidation(String methodName, Address collateral ) {
+
+        JsonObject internalParameters = new JsonObject()
+                .add("_collateral", String.valueOf(collateral));
 
         JsonObject jsonData = new JsonObject()
                 .add("method", methodName)
