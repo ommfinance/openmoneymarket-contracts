@@ -440,7 +440,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                     BigInteger feeUSD = toBigInt((String) iusdcUserAccountData_before.get("totalFeesUSD"));
 
 
-                    float delta = 7.2625003e+18f;
+                    float delta = 2e+18f;
                     assertEquals((toBigInt((String) iusdcUserAccountData_before.get("availableBorrowsUSD"))
                                     .add(repayUSD.subtract(feeUSD))).longValue(),
                             (toBigInt((String) iusdcUserAccountData_after.get("availableBorrowsUSD"))).longValue(),delta);
