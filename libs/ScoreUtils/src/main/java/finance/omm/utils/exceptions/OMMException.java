@@ -20,6 +20,7 @@ public class OMMException extends UserRevertException {
         StakeLPException(60),
         LendingPool(65),
         PriceOracle(70),
+        OMMWallet(75),
         RESERVED(80);
 
         int offset;
@@ -217,6 +218,17 @@ public class OMMException extends UserRevertException {
         }
 
         public PriceOracleException(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class OMMWalletException extends OMMException {
+
+        public OMMWalletException(int code, String message) {
+            super(Type.OMMWallet, code, message);
+        }
+
+        public OMMWalletException(Coded code, String message) {
             this(code.code(), message);
         }
     }

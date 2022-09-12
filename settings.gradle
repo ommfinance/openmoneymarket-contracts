@@ -59,3 +59,6 @@ findProject(":PriceOracle").projectDir = file("core-contracts/PriceOracle")
 
 include(":LendingPool")
 findProject(":LendingPool").projectDir = file("core-contracts/LendingPool")
+
+include(":KarmaDAOWallet")
+findProject(":KarmaDAOWallet").projectDir = file("core-contracts/KarmaDAOWallet")
