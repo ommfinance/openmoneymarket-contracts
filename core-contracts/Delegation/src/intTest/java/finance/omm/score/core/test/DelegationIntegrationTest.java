@@ -18,8 +18,9 @@ import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
 import finance.omm.score.core.delegation.exception.DelegationException;
 import finance.omm.score.core.test.config.DelegationConfig;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -50,7 +51,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
     private final BigInteger time = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
 
-    @BeforeEach
+    @BeforeAll
     void setup() throws Exception {
         OMM omm = new OMM("conf/all-contracts.json");
         omm.setupOMM();
@@ -67,11 +68,13 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
+    @Order(1)
     void testName() {
         assertEquals("OMM Delegation", ownerClient.delegation.name());
     }
 
     @Test
+    @Order(2)
     void voteThreshold(){
         assertUserRevert(DelegationException.notOwner(),
                 () -> testClient.delegation.setVoteThreshold(BigInteger.TEN),null);
@@ -83,83 +86,34 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    void addContributor(){
-        // contributors are the default preps
-        score.Address[] contributorSet = Environment.contributors.keySet().toArray(score.Address[]::new);
-        List<score.Address> contributors = new ArrayList<>(Arrays.asList(contributorSet));
-
-        List<score.Address> preplist = ownerClient.delegation.getContributors();
-        assertEquals(4,preplist.size());
-
-        ownerClient.delegation.addContributor(contributorAddr.get(0));
-
-        contributors.add(contributorAddr.get(0));
-
-        preplist = ownerClient.delegation.getContributors();
-
-        assertEquals(5, preplist.size());
-
-        for (int i = 0; i < preplist.size(); i++) {
-            assertEquals(contributors.get(i),preplist.get(i));
-        }
-
-        assertUserRevert(DelegationException.notOwner(),
-                () -> testClient.delegation.addContributor(contributorAddr.get(0)),null);
-    }
-
-    @Test
-    void addAllContributor(){
-
-        score.Address[] contributorSet = Environment.contributors.keySet().toArray(score.Address[]::new);
-        List<score.Address> contributors = new ArrayList<>(Arrays.asList(contributorSet));
-
-        ownerClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new));
-
-        contributors.add(contributorAddr.get(0));
-        contributors.add(contributorAddr.get(1));
-        contributors.add(contributorAddr.get(2));
-
-        List<score.Address> preplist = ownerClient.delegation.getContributors();
-
-        assertEquals(7, preplist.size());
-
-        for (int i = 0; i < preplist.size(); i++) {
-            assertEquals(contributors.get(i),preplist.get(i));
-        }
-
-        assertUserRevert(DelegationException.notOwner(),
-                () -> testClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new)),null);
-
-    }
-
-    @Test
+    @Order(3)
     /*
-    addAllContributor() and remove of the address
-    should throw exception when trying to remove same address
+    check if user has default delegation after locking omm
      */
-    void removeContributor(){
-        //        assertUserRevert(DelegationException.notOwner(),
-//                () -> testClient.delegation.removeContributor(prep.get(0)),null);
-        addAllContributor();
-        List<score.Address> preplist = ownerClient.delegation.getContributors();
-        assertEquals(7, preplist.size());
+    void checkUserDefaultDelegation(){
+        userLockOMM();
+        boolean expected = testClient.delegation.userDefaultDelegation(testClient.getAddress());
+        assertTrue(expected);
 
-        ownerClient.delegation.removeContributor(contributorAddr.get(0));
+        List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
+        assertEquals(4,prepDelegatedList.size());
 
-        preplist = ownerClient.delegation.getContributors();
-        assertEquals(6, preplist.size());
+        PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
 
-        assertUserRevert(DelegationException.unknown("OMM: " + contributorAddr.get(0) +" is not in contributor list"),
-                () ->  ownerClient.delegation.removeContributor(contributorAddr.get(0)),null);
+        score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
+
+        for (int i = 0; i < prepDelegatedList.size(); i++) {
+            assertEquals(prepSet[i],userDelegations[i]._address);
+        }
     }
 
     @Test
+    @Order(4)
     /*
     after user locks OMM
     user updates delegation to their desired prep
      */
     void updateDelegation(){
-        userLockOMM();
 
         // default contributors
         List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
@@ -192,9 +146,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
+    @Order(5)
     void updateDelegationShouldFail(){
-
-        userLockOMM();
 
         score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
 
@@ -220,51 +173,12 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    /*
-    user votes other than contributors
-    on calling initializeVoteToContributor the vote should be to contributors
-     */
-    void initializeVoteToContributor(){
-
-        assertUserRevert(DelegationException.notOwner(),
-                () -> testClient.delegation.initializeVoteToContributors(),null);
-
-        updateDelegation();
-
-        ownerClient.delegation.initializeVoteToContributors();
-
-        assertUserRevert(DelegationException.unknown(TAG+" : This method cannot be called again."),
-                () -> ownerClient.delegation.initializeVoteToContributors(),null);
-    }
-
-    @Test
-    /*
-    check if user has default delegation after locking omm
-     */
-    void checkUserDefaultDelegation(){
-        userLockOMM();
-        boolean expected = testClient.delegation.userDefaultDelegation(testClient.getAddress());
-        assertTrue(expected);
-
-        List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
-        assertEquals(4,prepDelegatedList.size());
-
-        PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
-
-        score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
-
-        for (int i = 0; i < prepDelegatedList.size(); i++) {
-            assertEquals(prepSet[i],userDelegations[i]._address);
-        }
-    }
-
-    @Test
+    @Order(6)
     /*
     delegate votes to different preps
     clearPrevious set delegation to default
      */
     void clearPrevious(){
-        updateDelegation();
 
         assertUserRevert(DelegationException.unknown(TAG+" :You are not authorized to clear others delegation preference"),
                 () -> ownerClient.delegation.clearPrevious(testClient.getAddress()),null);
@@ -284,28 +198,120 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
+    @Order(7)
     /*
     this method is called from Boosted OMM
      */
     void onKick(){
-
-        userLockOMM();
 
         assertUserRevert(DelegationException.unauthorized(TAG+" :You are not authorized to clear others delegation preference"),
                 () -> ownerClient.delegation.onKick(testClient.getAddress(),BigInteger.ONE,new byte[]{}),null);
 
     }
     @Test
+    @Order(7)
     /*
     onBalanceUpdate is called on bOMM when omm is locked
      */
     void onBalanceUpdate(){
-        userLockOMM();
         assertUserRevert(DelegationException.unauthorized("Only bOMM contract is allowed to call onBalanceUpdate method"),
                 () -> ownerClient.delegation.onBalanceUpdate(ownerClient.getAddress()),null);
 
 
     }
+
+    @Test
+    @Order(8)
+    /*
+    user votes other than contributors
+    on calling initializeVoteToContributor the vote should be to contributors
+     */
+    void initializeVoteToContributor(){
+
+        assertUserRevert(DelegationException.notOwner(),
+                () -> testClient.delegation.initializeVoteToContributors(),null);
+
+        ownerClient.delegation.initializeVoteToContributors();
+
+        assertUserRevert(DelegationException.unknown(TAG+" : This method cannot be called again."),
+                () -> ownerClient.delegation.initializeVoteToContributors(),null);
+    }
+
+    @Test
+    @Order(9)
+    void addContributor(){
+        // contributors are the default preps
+        score.Address[] contributorSet = Environment.contributors.keySet().toArray(score.Address[]::new);
+        List<score.Address> contributors = new ArrayList<>(Arrays.asList(contributorSet));
+
+        List<score.Address> preplist = ownerClient.delegation.getContributors();
+        assertEquals(4,preplist.size());
+
+        ownerClient.delegation.addContributor(contributorAddr.get(0));
+
+        contributors.add(contributorAddr.get(0));
+
+        preplist = ownerClient.delegation.getContributors();
+
+        assertEquals(5, preplist.size());
+
+        for (int i = 0; i < preplist.size(); i++) {
+            assertEquals(contributors.get(i),preplist.get(i));
+        }
+
+        assertUserRevert(DelegationException.notOwner(),
+                () -> testClient.delegation.addContributor(contributorAddr.get(0)),null);
+    }
+
+    @Test
+    @Order(10)
+    void addAllContributor(){
+
+        score.Address[] contributorSet = Environment.contributors.keySet().toArray(score.Address[]::new);
+        List<score.Address> contributors = new ArrayList<>(Arrays.asList(contributorSet));
+
+        ownerClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new));
+
+        contributors.add(contributorAddr.get(0));
+        contributors.add(contributorAddr.get(1));
+        contributors.add(contributorAddr.get(2));
+
+        List<score.Address> preplist = ownerClient.delegation.getContributors();
+
+        assertEquals(7, preplist.size());
+
+        for (int i = 0; i < preplist.size(); i++) {
+            assertEquals(contributors.get(i),preplist.get(i));
+        }
+
+        assertUserRevert(DelegationException.notOwner(),
+                () -> testClient.delegation.addAllContributors(contributorAddr.toArray(Address[]::new)),null);
+
+    }
+
+    @Test
+    @Order(11)
+    /*
+    addAllContributor() and remove of the address
+    should throw exception when trying to remove same address
+     */
+    void removeContributor(){
+
+        List<score.Address> preplist = ownerClient.delegation.getContributors();
+        assertEquals(7, preplist.size());
+
+        assertUserRevert(DelegationException.notOwner(),
+                () -> testClient.delegation.removeContributor(contributorAddr.get(0)),null);
+
+        ownerClient.delegation.removeContributor(contributorAddr.get(0));
+
+        preplist = ownerClient.delegation.getContributors();
+        assertEquals(6, preplist.size());
+
+        assertUserRevert(DelegationException.unknown("OMM: " + contributorAddr.get(0) +" is not in contributor list"),
+                () ->  ownerClient.delegation.removeContributor(contributorAddr.get(0)),null);
+    }
+
 
     private PrepDelegations[] prepDelegations(int n) {
         score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
