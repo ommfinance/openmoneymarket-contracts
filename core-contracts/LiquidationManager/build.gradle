@@ -21,8 +21,13 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-//            to = rootProject.findProperty("contracts.liquidation-manager")
+            to = rootProject.findProperty("contracts.liquidation-manager")
             nid = 0x53
+        }
+        berlin {
+            uri = 'https://berlin.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.liquidation-manager")
+            nid = 0x7
         }
         mainnet {
             uri = 'https://ctz.solidwallet.io/api/v3'
@@ -41,38 +46,3 @@ test {
     useJUnitPlatform()
 }
 
-//task integrationTest(type: Test, dependsOn: optimizedJar) {
-//    useJUnitPlatform()
-//    options {
-//        testLogging.showStandardStreams = true
-//        description = 'Runs integration tests.'
-//        group = 'verification'
-//        testClassesDirs = sourceSets.intTest.output.classesDirs
-//        classpath = sourceSets.intTest.runtimeClasspath
-//
-//        systemProperty 'url', scoreTest.url
-//        systemProperty 'nid', scoreTest.nid
-//
-//        systemProperty 'keyStore', scoreTest.keystoreName
-//        systemProperty 'keyPassword', scoreTest.keystorePass
-//
-//        systemProperty 'tester.keyStore', scoreTest.get("tester.keystoreName")
-//        systemProperty 'tester.keyPassword', scoreTest.get("tester.keystorePass")
-//
-////        systemProperty 'address', "cxecae13f554df1495b9104b44a43613df009fb4f0"
-////        systemProperty 'isUpdate', "false"
-//        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
-//        project.extensions.deployJar.arguments.each { arg -> systemProperty 'params.' + arg.name, arg.value
-//        }
-//
-//    }
-
-//
-//    testClassesDirs = sourceSets.intTest.output.classesDirs
-//    classpath = sourceSets.intTest.runtimeClasspath
-
-
-//    def prefix = 'score.path.'
-//    systemProperty(prefix + project.name, optimizedJar.outputJarName)
-
-//}
