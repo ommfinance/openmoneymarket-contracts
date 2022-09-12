@@ -21,7 +21,6 @@ public class OMMException extends UserRevertException {
         LendingPool(65),
         LiquidationManager(70),
         LendingPoolCore(75),
-        LiquidationManager(75),
         RESERVED(80);
 
         int offset;
@@ -240,7 +239,7 @@ public class OMMException extends UserRevertException {
     public static class LendingPoolCore extends OMMException {
 
         public LendingPoolCore(int code, String message) {
-            super(Type.LendingPool, code, message);
+            super(Type.LendingPoolCore, code, message);
         }
 
         public LendingPoolCore(Coded code, String message) {
