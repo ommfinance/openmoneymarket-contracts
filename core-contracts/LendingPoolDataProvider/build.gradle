@@ -7,12 +7,10 @@ dependencies {
     implementation project(':OMMStruct')
 
     testImplementation project(':TestUtils')
-
-    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.6.1'
 }
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.core.lendingpool.LendingPoolImpl'
+    mainClassName = 'finance.omm.score.core.lendingpoolDataProvider.LendingPoolDataProviderImpl'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -24,12 +22,12 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-            to = rootProject.findProperty("contracts.lending-pool")
+            to = rootProject.findProperty("contracts.data-provider")
             nid = 0x53
         }
         berlin {
             uri = 'https://berlin.net.solidwallet.io/api/v3'
-            to = rootProject.findProperty("contracts.lending-pool")
+            to = rootProject.findProperty("contracts.data-provider")
             nid = 0x7
         }
         mainnet {
@@ -44,6 +42,11 @@ deployJar {
     }
 }
 
+test {
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
+}
 
 task integrationTest(type: Test) {
     useJUnitPlatform()
@@ -62,4 +65,5 @@ task integrationTest(type: Test) {
         classpath = sourceSets.intTest.runtimeClasspath
     }
 }
+
 
