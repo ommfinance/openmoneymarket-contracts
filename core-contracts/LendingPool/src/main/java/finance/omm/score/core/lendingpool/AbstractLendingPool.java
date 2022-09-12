@@ -59,14 +59,14 @@ public abstract class AbstractLendingPool extends AddressProvider
 
     @EventLog(indexed = 3)
     public void Borrow(Address _reserve, Address _user, BigInteger _amount,
-            BigInteger _borrowRate, BigInteger _borrowFee, BigInteger _borrowBalanceIncrease){}
+                       BigInteger _borrowRate, BigInteger _borrowFee, BigInteger _borrowBalanceIncrease){}
 
     @EventLog(indexed = 3)
     public void RedeemUnderlying(Address _reserve, Address _user, BigInteger _amount) {}
 
     @EventLog(indexed = 3)
     public void Repay(Address _reserve, Address _user, BigInteger _paybackAmount, BigInteger _originationFee,
-            BigInteger _borrowBalanceIncrease) {}
+                      BigInteger _borrowBalanceIncrease) {}
 
     protected boolean hasUserDepositBridgeOToken(Address user) {
         BigInteger balance = call(BigInteger.class, Contracts.BRIDGE_O_TOKEN, "balanceOf", user);
@@ -132,6 +132,7 @@ public abstract class AbstractLendingPool extends AddressProvider
         if (reserve.equals(getAddress(Contracts.sICX.getKey())) && !icxValue.equals(BigInteger.ZERO)) {
             amount = (BigInteger) Context.call(icxValue, getAddress(Contracts.STAKING.getKey()),"stakeICX",
                     lendingPoolCore);
+
         } else {
             call(reserve, "transfer", lendingPoolCore, amount);
         }
@@ -139,7 +140,7 @@ public abstract class AbstractLendingPool extends AddressProvider
     }
 
     protected void redeemUnderlying(Address reserve, Address user, Address oToken,
-            BigInteger amount, boolean waitForUnstaking) {
+                                    BigInteger amount, boolean waitForUnstaking) {
 
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
@@ -231,7 +232,7 @@ public abstract class AbstractLendingPool extends AddressProvider
     }
 
     protected void liquidationCall(Address collateral, Address reserve, Address user,
-            BigInteger purchaseAmount, Address sender) {
+                                   BigInteger purchaseAmount, Address sender) {
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
         Map<String, Object> collateralData = call(Map.class, Contracts.LENDING_POOL_CORE,

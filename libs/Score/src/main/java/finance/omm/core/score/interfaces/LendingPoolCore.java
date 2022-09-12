@@ -97,4 +97,9 @@ public interface LendingPoolCore {
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
     void fallback();
+
+    Map<String, Object> getReserveConfiguration(Address _reserve);
+
+    Map<String,Object> getReserveConstants(Address _reserve);
+
 }

@@ -1,39 +1,37 @@
-version = '0.0.1'
-
-dependencies {
-    implementation project(':AddressProvider')
-    implementation project(':Score')
-    implementation project(':ScoreUtils')
-    implementation project(':OMMStruct')
-
-    testImplementation project(':TestUtils')
-
-    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.6.1'
-}
+version '0.0.1'
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.core.lendingpool.LendingPoolImpl'
+    mainClassName = 'finance.omm.score.core.liquidation.manager.LiquidationManagerImpl'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-    enableDebug = false
+}
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
+
+    testImplementation project(':TestUtils')
 }
 
 deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-            to = rootProject.findProperty("contracts.lending-pool")
+            to = rootProject.findProperty("contracts.liquidation-manager")
             nid = 0x53
         }
         berlin {
             uri = 'https://berlin.net.solidwallet.io/api/v3'
-            to = rootProject.findProperty("contracts.lending-pool")
+            to = rootProject.findProperty("contracts.liquidation-manager")
             nid = 0x7
         }
         mainnet {
             uri = 'https://ctz.solidwallet.io/api/v3'
+//            to = rootProject.findProperty("contracts.liquidation-manager")
             nid = 0x1
         }
     }
@@ -45,11 +43,6 @@ deployJar {
 }
 
 test {
-    useJUnitPlatform {
-        excludeTags("integration")
-    }
+    useJUnitPlatform()
 }
 
-repositories {
-    mavenCentral()
-}
