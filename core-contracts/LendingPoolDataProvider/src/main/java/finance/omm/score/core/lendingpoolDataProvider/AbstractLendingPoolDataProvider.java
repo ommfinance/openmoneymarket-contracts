@@ -50,7 +50,7 @@ public abstract class AbstractLendingPoolDataProvider extends AddressProvider
         return exaDivide(borrowBalanceUSD, exaMultiply(collateralBalanceUSD.subtract(totalFeesUSD), ltv));
     }
 
-    protected <K> K call(Class<K> kClass, Address contract, String method, Object... params) {
+    public <K> K call(Class<K> kClass, Address contract, String method, Object... params) {
         return Context.call(kClass, contract, method, params);
     }
 }

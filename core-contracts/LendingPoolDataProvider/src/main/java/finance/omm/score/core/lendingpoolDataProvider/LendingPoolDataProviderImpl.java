@@ -220,7 +220,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                 "getReserveData", _reserve);
         Map<String, BigInteger> userReserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getUserReserveData", _reserve, _user);
-
+                
         Address oTokenAddr = (Address) reserveData.get("oTokenAddress");
 
         BigInteger currentOTokenBalance = call(BigInteger.class, oTokenAddr, "balanceOf", _user);
@@ -232,6 +232,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
         BigInteger principalBorrowBalance = call(BigInteger.class, dTokenAddr, "principalBalanceOf", _user);
         BigInteger currentBorrowBalance = call(BigInteger.class, dTokenAddr, "balanceOf", _user);
+
         BigInteger userBorrowCumulativeIndex = call(BigInteger.class, dTokenAddr,
                 "getUserBorrowCumulativeIndex", _user);
 
@@ -240,6 +241,10 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         BigInteger liquidityRate = (BigInteger) reserveData.get("liquidityRate");
 
         BigInteger originationFee = userReserveData.get("originationFee");
+
+        BigInteger userBorrowCumulativeIndex = call(BigInteger.class, dTokenAddr,
+                "getUserBorrowCumulativeIndex", _user);
+
         BigInteger lastUpdateTimestamp = userReserveData.get("lastUpdateTimestamp");
 
         String symbol = this.symbol.get(_reserve);
@@ -511,7 +516,6 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                 Map<String, BigInteger> record = new HashMap<>();
                 record.put("amount", (BigInteger) unstakedRecords.get("amount"));
                 record.put("unstakingBlockHeight", (BigInteger) unstakedRecords.get("unstakingBlockHeight"));
-
                 response.add(record);
             }
         }
