@@ -4,6 +4,8 @@ import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.libs.structs.governance.ReserveConstant;
 import foundation.icon.score.client.ScoreInterface;
 import java.math.BigInteger;
+import java.util.Map;
+
 import score.Address;
 
 @ScoreInterface(suffix = "Client")
@@ -28,4 +30,8 @@ public interface LendingPoolCore {
     void updateBorrowingEnabled(Address _reserve, boolean _borrowingEnabled);
 
     void updateUsageAsCollateralEnabled(Address _reserve, boolean _usageAsCollateralEnabled);
+
+    Map<String, Object> getReserveConfiguration(Address _reserve);
+
+    Map<String,Object> getReserveConstants(Address _reserve);
 }

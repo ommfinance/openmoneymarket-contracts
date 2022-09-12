@@ -34,8 +34,6 @@ public interface LendingPoolDataProvider {
 
     Map<String, Object> getUserLiquidationData(Address _user);
 
-    Map<String, Map<String, Object>> liquidationList(BigInteger _index);
-
     Map<String, Object> getReserveData(Address _reserve);
 
     Map<String, Map<String, Object>> getAllReserveData();
