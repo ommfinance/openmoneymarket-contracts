@@ -33,7 +33,7 @@
     "params": {
     },
     "addressParams": {
-      "_addressProvider": "addressProvider"
+      "addressProvider": "addressProvider"
     },
     "order": 1.0
   },
