@@ -7,6 +7,8 @@ import finance.omm.core.score.interfaces.AddressManager;
 import finance.omm.core.score.interfaces.AddressManagerScoreClient;
 import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.core.score.interfaces.BoostedTokenScoreClient;
+import finance.omm.core.score.interfaces.BridgeOToken;
+import finance.omm.core.score.interfaces.BridgeOTokenScoreClient;
 import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.core.score.interfaces.DAOFundScoreClient;
 import finance.omm.core.score.interfaces.Delegation;
@@ -111,6 +113,10 @@ public class OMMClient {
     public PriceOracle priceOracle;
     @ScoreClient
     public StakedLP stakedLP;
+
+
+    @ScoreClient
+    public BridgeOToken bridgeOToken;
 
 
     //dummy
@@ -238,6 +244,10 @@ public class OMMClient {
                     break;
                 case "stakedLP":
                     stakedLP = new StakedLPScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
+                            entry.getValue());
+                    break;
+                case "bridgeOToken":
+                    bridgeOToken = new BridgeOTokenScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
                             entry.getValue());
                     break;
 

@@ -48,6 +48,7 @@ public class Environment {
 
     public static Map<Address, String> preps;
 
+    public static Map<Address,String> contributors;
     @ScoreClient
     public static SystemInterface SYSTEM_INTERFACE;
 
@@ -64,6 +65,12 @@ public class Environment {
         try {
             godWallet = readWalletFromFile(godWalletPath, godPassword);
             loadPREPs(confPath + "preps.json");
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
+
+        try {
+            loadContributors(confPath + "contributors.json");
         } catch (IOException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
@@ -92,6 +99,16 @@ public class Environment {
         InputStream is = ClassLoader.getSystemResource(path).openStream();
 
         preps = objectMapper.readValue(is, new TypeReference<Map<Address, String>>() {
+        });
+
+    }
+
+    private static void loadContributors(String path) throws IOException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        InputStream is = ClassLoader.getSystemResource(path).openStream();
+
+         contributors = objectMapper.readValue(is, new TypeReference<Map<Address, String>>() {
         });
 
     }
