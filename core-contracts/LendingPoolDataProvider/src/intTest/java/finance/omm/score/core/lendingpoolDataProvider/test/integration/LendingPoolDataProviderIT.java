@@ -85,7 +85,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
         assertEquals("0x1", reserveConfiguration.get("usageAsCollateralEnabled"));
         assertEquals(BigInteger.valueOf(18),toBigInt((String) reserveConfiguration.get("decimals")));
 
-        assertEquals(new BigInteger("10000000000000000"), getLoanOriginationFeePercentage());
+        assertEquals(new BigInteger("1000000000000000"), getLoanOriginationFeePercentage());
 
         assertEquals("ICX", ommClient.lendingPoolDataProvider.getSymbol(icx_reserve));
         assertEquals("USDC", ommClient.lendingPoolDataProvider.getSymbol(iusdc_reserve));
