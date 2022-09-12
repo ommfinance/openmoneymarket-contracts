@@ -1,6 +1,5 @@
 package finance.omm.libs.test.integration.scores;
 
-import java.util.Map;
 import score.Address;
 
 import java.math.BigInteger;
@@ -13,15 +12,11 @@ public interface LendingPoolDataProvider {
 
     void setSymbol(Address _reserve, String _sym);
 
-    Map<String, Object> getUserLiquidationData(Address _user);
-    
     Map<String, Object> getUserAccountData(Address _user);
 
     String getSymbol(Address _reserve);
 
     Map<String, BigInteger> getReserveAccountData();
-
-    Map<String, Object> getUserAccountData(Address _user);
 
     Map<String, BigInteger> getUserReserveData(Address _reserve, Address _user);
 

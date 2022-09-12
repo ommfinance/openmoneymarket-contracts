@@ -3,16 +3,13 @@ package finance.omm.core.score.interfaces;
 import finance.omm.libs.structs.Constant;
 import finance.omm.libs.structs.PrepDelegations;
 import finance.omm.libs.structs.governance.ReserveAttributes;
-import finance.omm.libs.structs.governance.ReserveConstant;
 import foundation.icon.score.client.ScoreInterface;
+import score.Address;
+import score.annotation.Optional;
 
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-
-import score.Address;
-import score.annotation.External;
-import score.annotation.Optional;
 
 @ScoreInterface(suffix = "Client")
 public interface LendingPoolCore {
@@ -92,14 +89,10 @@ public interface LendingPoolCore {
 
     Map<String, BigInteger> getUserBorrowBalances(Address _reserve, Address _user);
 
-    void updatePrepDelegations( PrepDelegations[] _delegations);
+    void updatePrepDelegations(PrepDelegations[] _delegations);
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
     void fallback();
-
-    Map<String, Object> getReserveConfiguration(Address _reserve);
-
-    Map<String,Object> getReserveConstants(Address _reserve);
 
 }
