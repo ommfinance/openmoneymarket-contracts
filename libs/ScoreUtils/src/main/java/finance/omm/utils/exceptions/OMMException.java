@@ -20,6 +20,7 @@ public class OMMException extends UserRevertException {
         StakeLPException(60),
         LendingPool(65),
         PriceOracle(70),
+        LiquiditionManager(75),
         RESERVED(80);
 
         int offset;
@@ -197,6 +198,19 @@ public class OMMException extends UserRevertException {
         public Governance(Coded code, String message) {
             this(code.code(), message);
         }
+    }
+
+    public static class LiquidationManager extends OMMException {
+
+        public LiquidationManager(int code, String message) {
+            super(Type.LiquiditionManager, code, message);
+        }
+
+        public LiquidationManager(Coded code, String message) {
+            this(code.code(), message);
+        }
+
+
     }
 
     public static class OMMToken extends OMMException {
