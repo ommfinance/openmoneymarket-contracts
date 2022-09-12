@@ -241,10 +241,6 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         BigInteger liquidityRate = (BigInteger) reserveData.get("liquidityRate");
 
         BigInteger originationFee = userReserveData.get("originationFee");
-
-        BigInteger userBorrowCumulativeIndex = call(BigInteger.class, dTokenAddr,
-                "getUserBorrowCumulativeIndex", _user);
-
         BigInteger lastUpdateTimestamp = userReserveData.get("lastUpdateTimestamp");
 
         String symbol = this.symbol.get(_reserve);
