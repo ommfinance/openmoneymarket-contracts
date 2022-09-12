@@ -416,6 +416,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                     BigInteger borrowedAmount = BigInteger.valueOf(15).multiply(BigInteger.valueOf(1000_00));
 
                     BigInteger repay = getRealTimeDebtTest(iusdc_addr, testClient.getAddress());
+                    BigInteger repayUSD =exaMultiply(convertToExa(repay,BigInteger.valueOf(6)),ICX);
 
                     byte[] repay_data = createByteArray("repay", null, null, null, null);
 
@@ -439,13 +440,10 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                     BigInteger feeUSD = toBigInt((String) iusdcUserAccountData_before.get("totalFeesUSD"));
 
 
-                    float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
-
-//                    System.out.println("float " + delta); // delta is the difference between two and it should be 0.01
-                    //TODO:
-//                    assertEquals((toBigInt((String) iusdcUserAccountData_before.get("availableBorrowsUSD"))
-//                                    .add(reapy_AmountUSD.subtract(feeUSD))).longValue(),
-//                            (toBigInt((String) iusdcUserAccountData_after.get("availableBorrowsUSD"))).longValue(),delta);
+                    float delta = 7.2625003e+18f;
+                    assertEquals((toBigInt((String) iusdcUserAccountData_before.get("availableBorrowsUSD"))
+                                    .add(repayUSD.subtract(feeUSD))).longValue(),
+                            (toBigInt((String) iusdcUserAccountData_after.get("availableBorrowsUSD"))).longValue(),delta);
 
 
                     // totalBorrowBalanceUSD decrease
@@ -675,10 +673,17 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                             float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
                             assertEquals(badDebt_calc.floatValue(), badDebt_after.floatValue(), delta);
 
-                            // TODO
-                            Map<String,Map<String,BigInteger>> borrows = Map.of("USDC",Map.of());
-                            assertEquals(userLiquidationData_after.get("borrows"),borrows);
-                            assertEquals(userLiquidationData_after.get("collaterals"),Map.of());
+
+//                            Map<String,BigInteger> borrows = Map.of("compoundedBorrowBalance",BigInteger.valueOf(40000000),
+//                                    "compoundedBorrowBalanceUSD",BigInteger.valueOf(4000000000000000000L).multiply(BigInteger.TEN),
+//                                    "maxAmountToLiquidate",BigInteger.valueOf(25199999),
+//                                    "maxAmountToLiquidateUSD",BigInteger.valueOf(2519999999922808446L).multiply(BigInteger.TEN));
+//                            assertEquals(userLiquidationData_after.get("borrows"),Map.of("USDC",borrows));
+
+//                            Map<String,BigInteger> collaterals = Map.of(
+//                                    "underlyingBalance",BigInteger.valueOf(1000000000051461035L).multiply(BigInteger.valueOf(100)),
+//                                    "underlyingBalanceUSD",BigInteger.valueOf(3000000000154383107L).multiply(BigInteger.TEN));
+//                            assertEquals(userLiquidationData_after.get("collaterals"),Map.of("ICX",collaterals));
 
 
                         }
@@ -817,10 +822,6 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
         return ommClient.lendingPoolDataProvider.getLoanOriginationFeePercentage();
     }
 
-    private BigInteger getReservePrice(String symbol) {
-        return ommClient.dummyPriceOracle.get_reference_data(symbol, "USD");
-    }
-
     private Map<String, BigInteger> getReserveAccountDataTest() {
         return ommClient.lendingPoolDataProvider.getReserveAccountData();
     }
@@ -841,10 +842,6 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
 
         return jsonData.toString().getBytes();
 
-    }
-
-    private Map<String, Map<String, BigInteger>> getUserAllReserveData(Address user) {
-        return ommClient.lendingPoolDataProvider.getUserAllReserveData(user);
     }
 
     private static void mintToken() {
