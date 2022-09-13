@@ -12,11 +12,11 @@ public interface LendingPoolDataProvider {
 
     void setSymbol(Address _reserve, String _sym);
 
+    Map<String, Object> getUserAccountData(Address _user);
+
     String getSymbol(Address _reserve);
 
     Map<String, BigInteger> getReserveAccountData();
-
-    Map<String, Object> getUserAccountData(Address _user);
 
     Map<String, BigInteger> getUserReserveData(Address _reserve, Address _user);
 
@@ -45,4 +45,5 @@ public interface LendingPoolDataProvider {
     BigInteger getRealTimeDebt(Address _reserve, Address _user);
 
     List<Map<String, BigInteger>> getUserUnstakeInfo(Address _address);
+
 }
