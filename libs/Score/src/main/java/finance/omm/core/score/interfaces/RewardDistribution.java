@@ -142,7 +142,7 @@ public interface RewardDistribution extends AddressProvider, BoostedOMMCallback 
     void addAsset(String type, String name, Address address, @Optional BigInteger poolID);
 
     @External(readonly = true)
-    Map<String, ?> getRewards(Address user);
+    Map<String, ?> getRewards(Address _user);
 
     @External
     void claimRewards(Address user);

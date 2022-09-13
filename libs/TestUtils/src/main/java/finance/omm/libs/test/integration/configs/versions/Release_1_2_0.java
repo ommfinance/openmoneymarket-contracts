@@ -1,15 +1,14 @@
 package finance.omm.libs.test.integration.configs.versions;
 
+import static finance.omm.utils.math.MathUtils.ICX;
+
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
-import java.math.BigInteger;
-import java.util.Map;
-
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.WeightStruct;
+import java.math.BigInteger;
+import java.util.Map;
 import score.Address;
-
-import static finance.omm.utils.math.MathUtils.ICX;
 
 public class Release_1_2_0 extends Release {
 
@@ -74,17 +73,15 @@ public class Release_1_2_0 extends Release {
         ommClient.governance.addAsset("reserve", oIUSDC, contractAddresses.get(oIUSDC), BigInteger.valueOf(-1));
         ommClient.governance.addAsset("reserve", dIUSDC, contractAddresses.get(dIUSDC), BigInteger.valueOf(-1));
 
-
         ommClient.governance.addAsset("OMMLocking", "bOMM", contractAddresses.get("bOMM"),
                 BigInteger.valueOf(-1));
-        BigInteger systemTime = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
+        BigInteger systemTime = BigInteger.valueOf(System.currentTimeMillis() / 1000);
         BigInteger time = systemTime.add(BigInteger.valueOf(1));
-
 
         ommClient.governance.setTypeWeight(new TypeWeightStruct[]{
                 new TypeWeightStruct("reserve", ICX.divide(BigInteger.TWO)),
                 new TypeWeightStruct("daoFund", ICX.divide(BigInteger.TWO))
-        },time);
+        }, time);
 
 
         WeightStruct[] weightStructs = new WeightStruct[]{
