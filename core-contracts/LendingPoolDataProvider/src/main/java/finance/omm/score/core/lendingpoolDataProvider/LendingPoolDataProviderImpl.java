@@ -372,10 +372,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
             if (underlyingBalance.equals(BigInteger.ZERO) && compoundedBorrowBalance.equals(BigInteger.ZERO)) {
                 continue;
             }
-            Map<String, Object> reserveConfiguration = new HashMap<>();
-
-            reserveConfiguration.putAll(
-                    call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve));
+            Map<String, Object> reserveConfiguration = call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve);
 
             BigInteger reserveDecimals = (BigInteger) reserveConfiguration.get("decimals");
             BigInteger userReserveUnderlyingBalance = convertToExa(underlyingBalance, reserveDecimals);
@@ -388,8 +385,6 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                 BigInteger todaySicxRate = call(BigInteger.class, Contracts.STAKING, "getTodayRate");
                 price = exaMultiply(price, todaySicxRate);
             }
-
-            reserveConfiguration.put("reserveUnitPrice", price);
 
             if (userReserveUnderlyingBalance.compareTo(BigInteger.ZERO) > 0) {
 
@@ -418,7 +413,6 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                                 borrowBalanceInUSD, "price", price, "reserveDecimals", reserveDecimals));
 
             }
-
         }
 
         if (totalCollateralBalanceUSD.compareTo(BigInteger.ZERO) > 0) {
@@ -434,7 +428,6 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
         boolean healthFactorBelowThreshold =
                 healthFactor.compareTo(HEALTH_FACTOR_LIQUIDATION_THRESHOLD) < 0 && (!healthFactor.equals(
                         BigInteger.ONE.negate()));
-
         if (healthFactorBelowThreshold) {
             badDebt = call(BigInteger.class, Contracts.LIQUIDATION_MANAGER, "calculateBadDebt", totalBorrowBalanceUSD,
                     totalFeesUSD, totalCollateralBalanceUSD, currentLtv);
