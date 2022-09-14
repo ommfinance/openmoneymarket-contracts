@@ -24,10 +24,12 @@ import score.annotation.Optional;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import scorex.util.HashMap;
 
 import static finance.omm.libs.test.AssertRevertedException.assertUserRevert;
 import static finance.omm.libs.test.AssertRevertedException.assertUserReverted;
 import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.convertExaToOther;
 import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaDivide;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
@@ -618,6 +620,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                                     amount, data);
                         }
 
+
                         @Test
                         @DisplayName("transferring oToken")
                         @Order(12)
@@ -637,6 +640,77 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                             float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
                             assertEquals(ommClient_oToken_before.add(amount).floatValue(), ommClient_oToken_after.floatValue(), delta);
 
+                        }
+
+                        boolean strToBool(String text) {
+                            return text.equals("0x1");
+                        }
+
+                        private BigInteger toBigInt(String inputString) {
+                            return new BigInteger(inputString.substring(2), 16);
+                        }
+
+                        Map<String, Object> _getUserLiquidationData(score.Address user) {
+                            List<score.Address> reserves = ommClient.lendingPoolCore.getReserves();
+                            Map<String, Object> userAccountData = ommClient.lendingPoolDataProvider.getUserAccountData(user);
+                            BigInteger badDebt = BigInteger.ZERO;
+                            boolean healthFactorBelowThreshold = strToBool(
+                                    (String) userAccountData.get("healthFactorBelowThreshold"));
+                            if (healthFactorBelowThreshold) {
+                                badDebt = ommClient.liquidationManager.calculateBadDebt(
+                                        toBigInt((String) userAccountData.get("totalBorrowBalanceUSD")),
+                                        toBigInt((String) userAccountData.get("totalFeesUSD")),
+                                        toBigInt((String) userAccountData.get("totalCollateralBalanceUSD")),
+                                        toBigInt((String) userAccountData.get("currentLtv"))
+                                );
+                            }
+                            Map<String, Object> borrows = new HashMap<>();
+                            Map<String, Object> collaterals = new HashMap<>();
+
+                            for (score.Address reserve : reserves) {
+                                Map<String, BigInteger> userReserveData = ommClient.lendingPoolCore.getUserBasicReserveData(reserve, user);
+                                Map<String, Object> reserveConfiguration = ommClient.lendingPoolCore.getReserveConfiguration(reserve);
+                                BigInteger reserveDecimals = toBigInt((String) reserveConfiguration.get("decimals"));
+                                BigInteger compoundedBorrowBalance = userReserveData.get("compoundedBorrowBalance");
+                                BigInteger userBorrowBalance = convertToExa(compoundedBorrowBalance, reserveDecimals);
+                                BigInteger userReserveUnderlyingBalance = convertToExa(userReserveData.get("underlyingBalance"),
+                                        reserveDecimals);
+                                String symbol = ommClient.lendingPoolDataProvider.getSymbol(reserve);
+                                BigInteger price = ommClient.priceOracle.get_reference_data(symbol, "USD");
+                                if (symbol.equals("ICX")) {
+                                    BigInteger todaySicxRate = ommClient.staking.getTodayRate();
+                                    price = exaMultiply(price, todaySicxRate);
+                                }
+                                if (userBorrowBalance.compareTo(BigInteger.ZERO) > 0) {
+                                    BigInteger maxAmountToLiquidateUSD;
+                                    BigInteger maxAmountToLiquidate;
+                                    if (badDebt.compareTo(exaMultiply(price, userBorrowBalance)) > 0) {
+                                        maxAmountToLiquidateUSD = exaMultiply(price, userBorrowBalance);
+                                        maxAmountToLiquidate = compoundedBorrowBalance;
+                                    } else {
+                                        maxAmountToLiquidateUSD = badDebt;
+                                        maxAmountToLiquidate = convertExaToOther(exaDivide(badDebt, price), reserveDecimals.intValue());
+                                    }
+                                    borrows.put(symbol, Map.of(
+                                            "compoundedBorrowBalance", compoundedBorrowBalance,
+                                            "compoundedBorrowBalanceUSD", exaMultiply(price, userBorrowBalance),
+                                            "maxAmountToLiquidate", maxAmountToLiquidate,
+                                            "maxAmountToLiquidateUSD", maxAmountToLiquidateUSD
+
+                                    ));
+                                }
+                                if (userReserveUnderlyingBalance.compareTo(BigInteger.ZERO) > 0) {
+                                    collaterals.put(symbol, Map.of(
+                                            "underlyingBalance", userReserveData.get("underlyingBalance"),
+                                            "underlyingBalanceUSD", exaMultiply(price, userReserveUnderlyingBalance)
+                                    ));
+                                }
+                            }
+                            return Map.of(
+                                    "badDebt", badDebt,
+                                    "borrows", borrows,
+                                    "collaterals", collaterals
+                            );
                         }
 
                         @Test
@@ -665,8 +739,18 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
 
                             Map<String, Object> userLiquidationData_after = userLiquidationData(alice.getAddress());
 
+                            Map<String, Object> aliceLqdnData = _getUserLiquidationData(alice.getAddress());
+                            // verify these values are identical
+                            System.out.println(userLiquidationData_after.entrySet());
+                            System.out.println(aliceLqdnData.entrySet());
+
                             BigInteger badDebt_after = toBigInt((String) userLiquidationData_after.get("badDebt"));
                             assertTrue(badDebt_after.compareTo(badDebt_before) > 0);
+
+                            assertEquals(
+                                    toBigInt((String) userLiquidationData_after.get("badDebt")),
+                                    aliceLqdnData.get("badDebt")
+                            );
 
                             // badDebt calculation
                             BigInteger badDebt_calc = calculateBadDebt(alice.getAddress());

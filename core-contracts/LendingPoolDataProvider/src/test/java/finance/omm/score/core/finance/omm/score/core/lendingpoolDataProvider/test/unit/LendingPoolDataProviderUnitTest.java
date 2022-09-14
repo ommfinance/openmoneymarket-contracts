@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProviderTest {
@@ -50,7 +52,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
                 MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress(), "ICX");
         score.invoke(owner, "setSymbol",
                 MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN).getAddress(), "OMM");
-
 
         doReturn(BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN))
                 .when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
@@ -97,7 +98,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
                 "USDC", "USD");
 
-
         // omm reserve
         doReturn(Map.of(
                 "decimals", BigInteger.valueOf(18),
@@ -110,13 +110,11 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
                 "OMM", "USD");
 
-
         Map<String, BigInteger> IUSDC = reserveDataCalculation("USDC", totalLiquidity_iusdc,
                 availableLiquidity_iusdc, borrows_iusdc, true);
         Map<String, BigInteger> icx = reserveDataCalculation("ICX", totalLiquidity_icx,
                 availableLiquidity_icx, borrows_icx, true);
         Map<String, BigInteger> omm = reserveDataCalculation("OMM", ICX, ICX, BigInteger.ZERO, false);
-
 
         totalLiquidityBalanceUSD = IUSDC.get("totalLiquidityBalanceUSD").add(icx.get("totalLiquidityBalanceUSD"))
                 .add(omm.get("totalLiquidityBalanceUSD"));
@@ -126,7 +124,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
                 .add(omm.get("totalBorrowsBalanceUSD"));
         totalCollateralBalanceUSD = IUSDC.get("totalCollateralBalanceUSD").add(icx.get("totalCollateralBalanceUSD"))
                 .add(omm.get("totalCollateralBalanceUSD"));
-
 
         Map<String, BigInteger> result = (Map<String, BigInteger>) score.call("getReserveAccountData");
 
@@ -147,7 +144,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
 
         doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
-
 
         // when user has not deposited
         doReturn(Map.of(
@@ -209,7 +205,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
                 call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
                         "ICX", "USD");
 
-
         // when user deposits iusdc
         BigInteger depositedBalance_iusdc = BigInteger.valueOf(20).multiply(BigInteger.valueOf(1000_000));
         BigInteger compoundedBorrowBalance_iusdc = BigInteger.ZERO;
@@ -244,7 +239,8 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         Map<String, Object> icx = userAccountDataCalculation("ICX", depositedBalance_icx, compoundedBorrowBalance_icx,
                 originationFee_icx, true, baseLTVasCollateral, liquidationThreshold);
 
-        Map<String, Object> iusdc = userAccountDataCalculation("USDC", depositedBalance_iusdc, compoundedBorrowBalance_iusdc,
+        Map<String, Object> iusdc = userAccountDataCalculation("USDC", depositedBalance_iusdc,
+                compoundedBorrowBalance_iusdc,
                 originationFee_iusdc, true, baseLTVasCollateral, liquidationThreshold);
 
         BigInteger totalLiquidityBalanceUSD = ((BigInteger) icx.get("totalLiquidityBalanceUSD")).
@@ -263,7 +259,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         BigInteger availableBorrowsUSD = availableBorrow(availableBorrowICX, availableBorrowIUSDC);
 
-
         BigInteger healthFactor = healthFactor(totalBorrowBalanceUSD, totalCollateralBalanceUSD,
                 totalFeesUSD, liquidationThreshold);
 
@@ -272,7 +267,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         BigInteger borrowingPower = borrowingPower(totalCollateralBalanceUSD, totalBorrowBalanceUSD,
                 totalFeesUSD, currentLiquidationThreshold);
-
 
         assertEquals(totalLiquidityBalanceUSD, result.get("totalLiquidityBalanceUSD"));
         assertEquals(totalCollateralBalanceUSD, result.get("totalCollateralBalanceUSD"));
@@ -327,7 +321,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
                 call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
                         "ICX", "USD");
 
-
         // when user borrows iusdc and also deposited
         BigInteger depositedBalance_iusdc = BigInteger.valueOf(20).multiply(BigInteger.valueOf(1000_000));
         BigInteger compoundedBorrowBalance_iusdc = BigInteger.valueOf(20).multiply(BigInteger.valueOf(1000_000));
@@ -359,13 +352,12 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserAccountData", user.getAddress());
 
-
         Map<String, Object> icx = userAccountDataCalculation("ICX", depositedBalance_icx, compoundedBorrowBalance_icx,
                 originationFee_icx, true, baseLTVasCollateral, liquidationThreshold);
 
-        Map<String, Object> iusdc = userAccountDataCalculation("USDC", depositedBalance_iusdc, compoundedBorrowBalance_iusdc,
+        Map<String, Object> iusdc = userAccountDataCalculation("USDC", depositedBalance_iusdc,
+                compoundedBorrowBalance_iusdc,
                 originationFee_iusdc, true, baseLTVasCollateral, liquidationThreshold);
-
 
         BigInteger totalLiquidityBalanceUSD = ((BigInteger) icx.get("totalLiquidityBalanceUSD"))
                 .add((BigInteger) iusdc.get("totalLiquidityBalanceUSD"));
@@ -383,7 +375,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         BigInteger availableBorrowsUSD = availableBorrow(availableBorrowICX, availableBorrowIUSDC);
 
-
         BigInteger healthFactor = healthFactor(totalBorrowBalanceUSD, totalCollateralBalanceUSD,
                 totalFeesUSD, liquidationThreshold);
 
@@ -392,7 +383,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         BigInteger borrowingPower = borrowingPower(totalCollateralBalanceUSD, totalBorrowBalanceUSD,
                 totalFeesUSD, currentLiquidationThreshold);
-
 
         assertEquals(totalLiquidityBalanceUSD, result.get("totalLiquidityBalanceUSD"));
         assertEquals(totalCollateralBalanceUSD, result.get("totalCollateralBalanceUSD"));
@@ -431,7 +421,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         BigInteger userBorrowCumulativeIndex = BigInteger.valueOf((long) 1.0356f);
         BigInteger price = BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN); // 0.1
 
-
         doReturn(Map.of(
                 "oTokenAddress", oTokenAddr,
                 "dTokenAddress", dTokenAddr,
@@ -467,7 +456,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         doReturn(price)
                 .when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
-
 
         BigInteger currentOTokenBalanceUSD = exaMultiply(convertToExa(currentOTokenBalance, decimals), price);
         BigInteger principalOTokenBalanceUSD = exaMultiply(convertToExa(principalOTokenBalance, decimals), price);
@@ -641,7 +629,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveConfiguration", iusdc_reserve);
 
-
         BigInteger expectedCollateralNeededUSD = collateralNeededUSDCalculation("USDC", amount,
                 userCurrentBorrow, userCurrentFee, userCurrentLTV);
         BigInteger actualCollateralNeededUSD = (BigInteger) score.call("calculateCollateralNeededUSD",
@@ -678,16 +665,23 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
 
-        doReturn(Map.of("healthFactorBelowThreshold", false)).when(scoreSpy).getUserAccountData(user);
+//        doReturn(Map.of("healthFactorBelowThreshold", false)).when(scoreSpy).getUserAccountData(user);
 
-        doReturn(Map.of(
-                "compoundedBorrowBalance", BigInteger.ZERO,
-                "underlyingBalance", BigInteger.valueOf(50).multiply(ICX)))
-                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                        "getUserBasicReserveData", reserve.get(0), user);
+        Map<String, Object> uBasicReserveData = new java.util.HashMap<>();
+        uBasicReserveData.put("compoundedBorrowBalance", BigInteger.ZERO);
+        uBasicReserveData.put("underlyingBalance", BigInteger.valueOf(100).multiply(ICX));
+        uBasicReserveData.put("originationFee", ICX.divide(BigInteger.valueOf(1000)));
 
-        doReturn(Map.of(
-                "decimals", BigInteger.valueOf(18))).when(scoreSpy)
+        doReturn(uBasicReserveData).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getUserBasicReserveData", reserve.get(0), user);
+
+
+        Map<String, Object> config = new java.util.HashMap<>();
+        config.put("decimals", BigInteger.valueOf(18));
+        config.put("usageAsCollateralEnabled", true);
+        config.put("baseLTVasCollateral", BigInteger.valueOf(50).multiply(ICX).divide(BigInteger.valueOf(100)));
+        config.put("liquidationThreshold", BigInteger.valueOf(65).multiply(ICX).divide(BigInteger.valueOf(100)));
+        doReturn(config).when(scoreSpy)
                 .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(0));
 
         score.invoke(owner, "setSymbol",
@@ -699,18 +693,20 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData", user);
 
-        Map<String, Map<String, BigInteger>> result_borrow = (Map<String, Map<String, BigInteger>>) result.get("borrows");
-        Map<String, Map<String, BigInteger>> result_collateral = (Map<String, Map<String, BigInteger>>) result.get("collaterals");
-
+        Map<String, Map<String, BigInteger>> result_borrow = (Map<String, Map<String, BigInteger>>) result.get(
+                "borrows");
+        Map<String, Map<String, BigInteger>> result_collateral = (Map<String, Map<String, BigInteger>>) result.get(
+                "collaterals");
 
         Map<String, Object> expected = liquidationDataCalculation("ICX", BigInteger.ZERO,
-                BigInteger.valueOf(50).multiply(ICX), BigInteger.ZERO);
-        Map<String, Map<String, BigInteger>> expected_collateral = (Map<String, Map<String, BigInteger>>) expected.get("collaterals");
+                BigInteger.valueOf(100).multiply(ICX), BigInteger.ZERO);
+        Map<String, Map<String, BigInteger>> expected_collateral = (Map<String, Map<String, BigInteger>>) expected.get(
+                "collaterals");
 
         assertEquals(result.get("badDebt"), BigInteger.ZERO);
         assertEquals(result_borrow.get("ICX"), null);
         assertEquals(result_collateral.get("ICX"), expected_collateral.get("ICX"));
-        assertEquals(result_collateral.get("ICX").get("underlyingBalance"), BigInteger.valueOf(50).multiply(ICX));
+        assertEquals(result_collateral.get("ICX").get("underlyingBalance"), BigInteger.valueOf(100).multiply(ICX));
         assertEquals(result_collateral.get("ICX").get("underlyingBalanceUSD"),
                 expected_collateral.get("ICX").get("underlyingBalanceUSD"));
 
@@ -729,14 +725,21 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         doReturn(Map.of("healthFactorBelowThreshold", false)).when(scoreSpy).getUserAccountData(user);
 
-        doReturn(Map.of(
-                "compoundedBorrowBalance", BigInteger.valueOf(30).multiply(ICX),
-                "underlyingBalance", BigInteger.valueOf(100).multiply(ICX)))
-                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                        "getUserBasicReserveData", reserve.get(0), user);
+        Map<String, Object> uBasicReserveData = new java.util.HashMap<>();
+        uBasicReserveData.put("compoundedBorrowBalance", BigInteger.valueOf(30).multiply(ICX));
+        uBasicReserveData.put("underlyingBalance", BigInteger.valueOf(100).multiply(ICX));
+        uBasicReserveData.put("originationFee", ICX.divide(BigInteger.valueOf(1000)));
 
-        doReturn(Map.of(
-                "decimals", BigInteger.valueOf(18))).when(scoreSpy)
+        doReturn(uBasicReserveData).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getUserBasicReserveData", reserve.get(0), user);
+
+
+        Map<String, Object> config = new java.util.HashMap<>();
+        config.put("decimals", BigInteger.valueOf(18));
+        config.put("usageAsCollateralEnabled", true);
+        config.put("baseLTVasCollateral", BigInteger.valueOf(50).multiply(ICX).divide(BigInteger.valueOf(100)));
+        config.put("liquidationThreshold", BigInteger.valueOf(65).multiply(ICX).divide(BigInteger.valueOf(100)));
+        doReturn(config).when(scoreSpy)
                 .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(0));
 
         score.invoke(owner, "setSymbol",
@@ -784,31 +787,31 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
 
         doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
 
-        BigInteger totalBorrowBalanceUSD = BigInteger.valueOf(35).multiply(ICX).divide(BigInteger.TEN);
-        BigInteger totalFeesUSD = BigInteger.ONE;
-        BigInteger totalCollateralBalanceUSD = BigInteger.valueOf(100).multiply(ICX).divide(BigInteger.TEN);
+        BigInteger totalBorrowBalanceUSD = BigInteger.valueOf(70).multiply(ICX);
+        BigInteger totalFeesUSD = ICX.divide(BigInteger.valueOf(10000));
+        BigInteger totalCollateralBalanceUSD = BigInteger.valueOf(100).multiply(ICX);
         BigInteger currentLtv = BigInteger.valueOf(500000000000000000L);
-        doReturn(Map.of(
-                "healthFactorBelowThreshold", true,
-                "totalBorrowBalanceUSD", totalBorrowBalanceUSD,
-                "totalFeesUSD", totalFeesUSD,
-                "totalCollateralBalanceUSD", totalCollateralBalanceUSD,
-                "currentLtv", currentLtv
-        )).when(scoreSpy).getUserAccountData(user);
 
         BigInteger badDebt = BigInteger.valueOf(13).multiply(ICX);
         doReturn(badDebt).when(scoreSpy).
                 call(BigInteger.class, Contracts.LIQUIDATION_MANAGER, "calculateBadDebt",
                         totalBorrowBalanceUSD, totalFeesUSD, totalCollateralBalanceUSD, currentLtv
                 );
-        doReturn(Map.of(
-                "compoundedBorrowBalance", BigInteger.valueOf(30).multiply(ICX),
-                "underlyingBalance", BigInteger.valueOf(100).multiply(ICX)))
-                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                        "getUserBasicReserveData", reserve.get(0), user);
 
-        doReturn(Map.of(
-                "decimals", BigInteger.valueOf(18))).when(scoreSpy)
+        Map<String, Object> uBasicReserveData = new java.util.HashMap<>();
+        uBasicReserveData.put("compoundedBorrowBalance", totalBorrowBalanceUSD.multiply(BigInteger.TEN));
+        uBasicReserveData.put("underlyingBalance", totalCollateralBalanceUSD.multiply(BigInteger.TEN));
+        uBasicReserveData.put("originationFee", totalFeesUSD.multiply(BigInteger.TEN));
+
+        doReturn(uBasicReserveData).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getUserBasicReserveData", reserve.get(0), user);
+
+        Map<String, Object> config = new java.util.HashMap<>();
+        config.put("decimals", BigInteger.valueOf(18));
+        config.put("usageAsCollateralEnabled", true);
+        config.put("baseLTVasCollateral", BigInteger.valueOf(50).multiply(ICX).divide(BigInteger.valueOf(100)));
+        config.put("liquidationThreshold", BigInteger.valueOf(65).multiply(ICX).divide(BigInteger.valueOf(100)));
+        doReturn(config).when(scoreSpy)
                 .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(0));
 
         score.invoke(owner, "setSymbol",
@@ -819,14 +822,17 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData", user);
-        Map<String, Map<String, BigInteger>> resultBorrows = (Map<String, Map<String, BigInteger>>) result.get("borrows");
-        Map<String, Map<String, BigInteger>> resultCollateral = (Map<String, Map<String, BigInteger>>) result.get("collaterals");
+        Map<String, Map<String, BigInteger>> resultBorrows = (Map<String, Map<String, BigInteger>>) result.get(
+                "borrows");
+        Map<String, Map<String, BigInteger>> resultCollateral = (Map<String, Map<String, BigInteger>>) result.get(
+                "collaterals");
 
-
-        Map<String, Object> expected = liquidationDataCalculation("ICX", BigInteger.valueOf(30).multiply(ICX),
-                BigInteger.valueOf(100).multiply(ICX), badDebt);
-        Map<String, Map<String, BigInteger>> expectedBorrows = (Map<String, Map<String, BigInteger>>) expected.get("borrows");
-        Map<String, Map<String, BigInteger>> expectedCollateral = (Map<String, Map<String, BigInteger>>) expected.get("collaterals");
+        Map<String, Object> expected = liquidationDataCalculation("ICX", BigInteger.valueOf(700).multiply(ICX),
+                BigInteger.valueOf(1000).multiply(ICX), badDebt);
+        Map<String, Map<String, BigInteger>> expectedBorrows = (Map<String, Map<String, BigInteger>>) expected.get(
+                "borrows");
+        Map<String, Map<String, BigInteger>> expectedCollateral = (Map<String, Map<String, BigInteger>>) expected.get(
+                "collaterals");
 
         assertEquals(result.get("badDebt"), expected.get("badDebt"));
         assertEquals(resultBorrows.get("ICX"), expectedBorrows.get("ICX"));
@@ -839,7 +845,7 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         assertEquals(resultBorrows.get("ICX").get("compoundedBorrowBalance"),
                 expectedBorrows.get("ICX").get("compoundedBorrowBalance"));
         assertEquals(resultCollateral.get("ICX"), expectedCollateral.get("ICX"));
-        assertEquals(resultCollateral.get("ICX").get("underlyingBalance"), BigInteger.valueOf(100).multiply(ICX));
+        assertEquals(resultCollateral.get("ICX").get("underlyingBalance"), BigInteger.valueOf(1000).multiply(ICX));
         assertEquals(resultCollateral.get("ICX").get("underlyingBalanceUSD"),
                 expectedCollateral.get("ICX").get("underlyingBalanceUSD"));
 
@@ -856,43 +862,46 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress());
         reserve.add(MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress());
 
-
         doReturn(reserve).when(scoreSpy).call(List.class, Contracts.LENDING_POOL_CORE, "getReserves");
-
-        BigInteger totalBorrowBalanceUSD = BigInteger.valueOf(35).multiply(ICX);
         BigInteger totalFeesUSD = BigInteger.ONE;
-        BigInteger totalCollateralBalanceUSD = BigInteger.valueOf(110).multiply(ICX);
-        BigInteger currentLtv = BigInteger.valueOf(500000000000000000L);
-        doReturn(Map.of(
-                "healthFactorBelowThreshold", true,
-                "totalBorrowBalanceUSD", totalBorrowBalanceUSD,
-                "totalFeesUSD", totalFeesUSD,
-                "totalCollateralBalanceUSD", totalCollateralBalanceUSD,
-                "currentLtv", currentLtv
-        )).when(scoreSpy).getUserAccountData(user);
 
         BigInteger badDebt = BigInteger.valueOf(13).multiply(ICX);
         doReturn(badDebt).when(scoreSpy).
-                call(BigInteger.class, Contracts.LIQUIDATION_MANAGER, "calculateBadDebt",
-                        totalBorrowBalanceUSD, totalFeesUSD, totalCollateralBalanceUSD, currentLtv
+                call(eq(BigInteger.class), eq(Contracts.LIQUIDATION_MANAGER), eq("calculateBadDebt"),
+                        any(), any(), any(), any()
                 );
-        doReturn(Map.of(
-                "compoundedBorrowBalance", BigInteger.valueOf(30).multiply(ICX),
-                "underlyingBalance", BigInteger.valueOf(100).multiply(ICX)))
-                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                        "getUserBasicReserveData", reserve.get(0), user);
 
-        doReturn(Map.of(
-                "compoundedBorrowBalance", BigInteger.valueOf(40).multiply(BigInteger.valueOf(1000_000)),
-                "underlyingBalance", BigInteger.valueOf(15).multiply(BigInteger.valueOf(1000_000))))
-                .when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                        "getUserBasicReserveData", reserve.get(1), user);
+        Map<String, Object> uBasicReserveData = new java.util.HashMap<>();
+        uBasicReserveData.put("compoundedBorrowBalance", BigInteger.valueOf(30).multiply(ICX));
+        uBasicReserveData.put("underlyingBalance", BigInteger.valueOf(100).multiply(ICX));
+        uBasicReserveData.put("originationFee", totalFeesUSD.multiply(BigInteger.TEN));
 
-        doReturn(Map.of(
-                "decimals", BigInteger.valueOf(18))).when(scoreSpy)
+        doReturn(uBasicReserveData).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getUserBasicReserveData", reserve.get(0), user);
+
+        Map<String, Object> uBasicReserveData2 = new java.util.HashMap<>();
+        uBasicReserveData2.put("compoundedBorrowBalance", BigInteger.valueOf(40).multiply(BigInteger.valueOf(1000_000)));
+        uBasicReserveData2.put("underlyingBalance", BigInteger.valueOf(15).multiply(BigInteger.valueOf(1000_000)));
+        uBasicReserveData2.put("originationFee", totalFeesUSD.multiply(BigInteger.TEN));
+
+        doReturn(uBasicReserveData2).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getUserBasicReserveData", reserve.get(1), user);
+
+        Map<String, Object> config = new java.util.HashMap<>();
+        config.put("decimals", BigInteger.valueOf(18));
+        config.put("usageAsCollateralEnabled", true);
+        config.put("baseLTVasCollateral", BigInteger.valueOf(50).multiply(ICX).divide(BigInteger.valueOf(100)));
+        config.put("liquidationThreshold", BigInteger.valueOf(65).multiply(ICX).divide(BigInteger.valueOf(100)));
+        doReturn(config).when(scoreSpy)
                 .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(0));
-        doReturn(Map.of(
-                "decimals", BigInteger.valueOf(6))).when(scoreSpy)
+
+
+        Map<String, Object> config2 = new java.util.HashMap<>();
+        config2.put("usageAsCollateralEnabled", true);
+        config2.put("baseLTVasCollateral", BigInteger.valueOf(50).multiply(ICX).divide(BigInteger.valueOf(100)));
+        config2.put("liquidationThreshold", BigInteger.valueOf(65).multiply(ICX).divide(BigInteger.valueOf(100)));
+        config2.put("decimals", BigInteger.valueOf(6));
+        doReturn(config2).when(scoreSpy)
                 .call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveConfiguration", reserve.get(1));
 
 
@@ -908,21 +917,25 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(ICX.divide(BigInteger.TEN)).when(scoreSpy).call(BigInteger.class, Contracts.STAKING, "getTodayRate");
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserLiquidationData", user);
-        Map<String, Map<String, BigInteger>> resultBorrows = (Map<String, Map<String, BigInteger>>) result.get("borrows");
-        Map<String, Map<String, BigInteger>> resultCollateral = (Map<String, Map<String, BigInteger>>) result.get("collaterals");
-
+        Map<String, Map<String, BigInteger>> resultBorrows = (Map<String, Map<String, BigInteger>>) result.get(
+                "borrows");
+        Map<String, Map<String, BigInteger>> resultCollateral = (Map<String, Map<String, BigInteger>>) result.get(
+                "collaterals");
 
         Map<String, Object> expected_icx = liquidationDataCalculation("ICX", BigInteger.valueOf(30).multiply(ICX),
                 BigInteger.valueOf(100).multiply(ICX), badDebt);
-        Map<String, Map<String, BigInteger>> expectedBorrows = (Map<String, Map<String, BigInteger>>) expected_icx.get("borrows");
-        Map<String, Map<String, BigInteger>> expectedCollateral = (Map<String, Map<String, BigInteger>>) expected_icx.get("collaterals");
+        Map<String, Map<String, BigInteger>> expectedBorrows = (Map<String, Map<String, BigInteger>>) expected_icx.get(
+                "borrows");
+        Map<String, Map<String, BigInteger>> expectedCollateral = (Map<String, Map<String, BigInteger>>) expected_icx.get(
+                "collaterals");
 
         Map<String, Object> expected_iusdc = liquidationDataCalculation("USDC",
                 BigInteger.valueOf(40).multiply(BigInteger.valueOf(1000_000)),
                 BigInteger.valueOf(15).multiply(BigInteger.valueOf(1000_000)), badDebt);
-        Map<String, Map<String, BigInteger>> expectedBorrowsUSDC = (Map<String, Map<String, BigInteger>>) expected_iusdc.get("borrows");
-        Map<String, Map<String, BigInteger>> expectedCollateralUSDC = (Map<String, Map<String, BigInteger>>) expected_iusdc.get("collaterals");
-
+        Map<String, Map<String, BigInteger>> expectedBorrowsUSDC = (Map<String, Map<String, BigInteger>>) expected_iusdc.get(
+                "borrows");
+        Map<String, Map<String, BigInteger>> expectedCollateralUSDC = (Map<String, Map<String, BigInteger>>) expected_iusdc.get(
+                "collaterals");
 
         assertEquals(result.get("badDebt"), expected_icx.get("badDebt"));
 
@@ -1169,7 +1182,6 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         unstakedRecords.put("from", MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL_CORE).getAddress());
         unstakedRecords.put("amount", BigInteger.valueOf(100));
         unstakedRecords.put("unstakingBlockHeight", BigInteger.valueOf(10000));
-
 
         List<Map<String, Object>> unstakeDetails = new ArrayList<>();
         unstakeDetails.add(unstakedRecords);
