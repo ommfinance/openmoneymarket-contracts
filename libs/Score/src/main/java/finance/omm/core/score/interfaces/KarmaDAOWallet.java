@@ -72,6 +72,10 @@ public interface KarmaDAOWallet {
 
     void transferToken(Address token, Address to, BigInteger value);
 
+    void stakeLP(BigInteger poolId, BigInteger value);
+
+    void unstakeLP(BigInteger poolId, BigInteger value);
+
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
     void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data);
