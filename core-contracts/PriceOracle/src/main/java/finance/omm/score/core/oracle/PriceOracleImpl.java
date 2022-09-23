@@ -1,21 +1,22 @@
 package finance.omm.score.core.oracle;
 
-import static finance.omm.utils.math.MathUtils.ICX;
-import static finance.omm.utils.math.MathUtils.exaMultiply;
-
 import finance.omm.core.score.interfaces.PriceOracle;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
-import finance.omm.score.core.oracle.exception.PriceOracleException;
 import finance.omm.score.core.oracle.token.BaseToken;
 import finance.omm.score.core.oracle.token.Token;
 import finance.omm.score.core.oracle.token.sICXToken;
-import java.math.BigInteger;
-import java.util.Map;
+import finance.omm.utils.exceptions.OMMException;
 import score.Address;
 import score.Context;
 import score.VarDB;
 import score.annotation.External;
+
+import java.math.BigInteger;
+import java.util.Map;
+
+import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 public class PriceOracleImpl extends AddressProvider implements PriceOracle {
 
@@ -124,7 +125,7 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
 
     private void checkOwner() {
         if (!Context.getOwner().equals(Context.getCaller())) {
-            throw PriceOracleException.notOwner();
+            throw OMMException.unknown("require owner access");
         }
     }
 }

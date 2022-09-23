@@ -54,8 +54,26 @@ findProject(":Governance").projectDir = file("core-contracts/Governance")
 include(":OMMToken")
 findProject(":OMMToken").projectDir = file("token-contracts/OMMToken")
 
+include(':LiquidationManager')
+findProject(":LiquidationManager").projectDir = file("core-contracts/LiquidationManager")
+
+include(':AddressProvider')
+findProject(":AddressProvider").projectDir = file("libs/AddressProvider")
+
+include(':LiquidationManager')
+findProject(":LiquidationManager").projectDir = file("core-contracts/LiquidationManager")
+
 include(':PriceOracle')
 findProject(":PriceOracle").projectDir = file("core-contracts/PriceOracle")
 
 include(":LendingPool")
 findProject(":LendingPool").projectDir = file("core-contracts/LendingPool")
+
+
+include(":LendingPoolCore")
+findProject(":LendingPoolCore").projectDir = file("core-contracts/LendingPoolCore")
+
+include(":LendingPoolDataProvider")
+findProject(":LendingPoolDataProvider").projectDir = file("core-contracts/LendingPoolDataProvider")
+
+
