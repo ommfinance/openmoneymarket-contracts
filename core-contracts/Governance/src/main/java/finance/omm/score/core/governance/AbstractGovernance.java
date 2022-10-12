@@ -38,7 +38,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     public static final BigInteger MAX_ACTIONS = BigInteger.valueOf(5L);
 
     public final VarDB<BigInteger> voteDuration = Context.newVarDB("vote_duration", BigInteger.class);
-    public final VarDB<BigInteger> boostedOmmVoteDefinitionCriterion = Context.newVarDB("min_boosted_omm", BigInteger.class);
+    public final VarDB<BigInteger> boostedOmmVoteDefinitionCriterion = Context.newVarDB("min_boosted_omm",
+            BigInteger.class);
     public final VarDB<BigInteger> voteDefinitionFee = Context.newVarDB("definition_fee", BigInteger.class);
     public final VarDB<BigInteger> quorum = Context.newVarDB("quorum", BigInteger.class);
 
@@ -79,7 +80,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
      * @param proposer
      * @param forum
      */
-    protected void defineVote(String name, String description, BigInteger voteStart, Address proposer, String forum, String transactions) {
+    protected void defineVote(String name, String description, BigInteger voteStart, Address proposer, String forum,
+            String transactions) {
         if (description.length() > 500) {
             throw GovernanceException.invalidVoteParams("Description must be less than or equal to 500 characters.");
         }
@@ -93,22 +95,23 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             throw GovernanceException.invalidVoteParams("Vote cannot start before the current timestamp");
         }
 
-
         int voteIndex = ProposalDB.getProposalId(name);
         if (voteIndex > 0) {
             throw GovernanceException.invalidVoteParams("Proposal name (" + name + ") has already been used.");
         }
 
-
-        BoostedToken boostedToken = getInstance(BoostedToken.class,Contracts.BOOSTED_OMM);
-        BigInteger userBommBalance = boostedToken.balanceOfAt(proposer,snapshot);
+        BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
+        BigInteger userBommBalance = boostedToken.balanceOfAt(proposer, snapshot);
         BigInteger bommTotal = boostedToken.totalSupplyAt(snapshot);
         BigInteger bommCriterion = getBoostedOmmVoteDefinitionCriterion();
 
         if (MathUtils.exaDivide(userBommBalance, bommTotal).compareTo(bommCriterion) < 0) {
             throw GovernanceException.insufficientbOMMBalance(bommCriterion);
         }
-        verifyTransactions(transactions);
+
+        if (! transactions.equals("[]")) {
+            verifyTransactions(transactions);
+        }
 
         ProposalDB proposal = new ProposalDB.ProposalBuilder(proposer, name)
                 .setDescription(description)

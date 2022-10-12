@@ -624,7 +624,7 @@ public class GovernanceImpl extends AbstractGovernance {
         String name = params.getString("name", null);
         String forum = params.getString("forum", "null");
         String description = params.getString("description", null);
-        String transactions = params.getString("transactions", "[]");
+        String transactions = params.getString("transactions", "[]").trim();
         JsonValue vote_start = params.get("vote_start");
         BigInteger voteStart;
 
