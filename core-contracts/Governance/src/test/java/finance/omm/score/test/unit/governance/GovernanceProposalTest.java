@@ -20,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import score.Address;
+import score.Context;
 
 public class GovernanceProposalTest extends AbstractGovernanceTest {
 
@@ -72,6 +73,12 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         doNothing().when(ommToken).transfer(any(), any(), any());
     }
 
+    private void transactionsMock(){
+        contextMock
+                .when( ()->  Context.call(eq(score.getAddress()), eq("tryExecuteTransactions"),eq("[]")))
+                .thenReturn(null);
+    }
+
     @Test
     public void getProposalsCount() {
         // no proposals at start
@@ -120,6 +127,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void defineVote() {
         initialize();
 
+        transactionsMock();
         byte[] data = createByteArray(name, forum, description, voteStart, methodName);
 
         // general case of proposal creation
@@ -197,6 +205,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void checkVote() {
         initialize();
 
+        transactionsMock();
         successfulProposalCreationMocks();
         byte[] data = createByteArray(name + " 1", forum, description, voteStart, methodName);
         score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
@@ -223,6 +232,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void getProposals() {
         initialize();
 
+        transactionsMock();
         successfulProposalCreationMocks();
         byte[] data1 = createByteArray(name + " 10", forum, description, voteStart, methodName);
         byte[] data2 = createByteArray(name + " 20", forum, description, voteStart, methodName);
@@ -258,6 +268,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void updateVoteForum() {
         initialize();
 
+        transactionsMock();
         // null proposal
         String newLink = forum + "123";
         Executable errorMsg = () -> score.invoke(owner, "updateVoteForum", 1, newLink);
@@ -286,6 +297,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void cancelVote() {
         initialize();
 
+        transactionsMock();
         // try to cancel a proposal which does not exist
         Executable errorMsg = () -> score.invoke(owner, "cancelVote", 10);
         expectErrorMessage(errorMsg, "Proposal not found with index :: 10");
@@ -332,6 +344,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void castVote() {
         initialize();
 
+        transactionsMock();
         Account user1 = sm.createAccount(1);
         Account user2 = sm.createAccount(1);
         Account user3 = sm.createAccount(1);
@@ -439,6 +452,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void differentProposalsStatus() {
         initialize();
 
+        transactionsMock();
         Account user1 = sm.createAccount(1);
         Account user2 = sm.createAccount(1);
         Account user3 = sm.createAccount(1);

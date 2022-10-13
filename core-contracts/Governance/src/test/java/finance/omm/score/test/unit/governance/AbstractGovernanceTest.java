@@ -22,7 +22,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import score.Address;
+import score.Context;
 
 public class AbstractGovernanceTest extends TestBase {
 
@@ -46,6 +49,7 @@ public class AbstractGovernanceTest extends TestBase {
             Account.newScoreAccount(201).getAddress(),
     };
 
+    static MockedStatic<Context> contextMock;
 
     public static final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
@@ -70,6 +74,7 @@ public class AbstractGovernanceTest extends TestBase {
     protected static void init() {
         long CURRENT_TIMESTAMP = System.currentTimeMillis() / 1_000L;
         sm.getBlock().increase(CURRENT_TIMESTAMP / 2);
+        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
     }
 
     public void increaseTimeBy(BigInteger increaseBy) {
