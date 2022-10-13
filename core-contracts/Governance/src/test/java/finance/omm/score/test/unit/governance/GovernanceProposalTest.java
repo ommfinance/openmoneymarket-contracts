@@ -7,8 +7,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
@@ -16,7 +18,7 @@ import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.DisplayName;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import score.Address;
@@ -61,6 +63,46 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         byte[] data = jsonData.toString().getBytes();
         return data;
+    }
+
+    private byte[] createByteArrayTransaction(String name, String forum, String description,
+                                   BigInteger voteStart, String methodName, String transactions) {
+
+        JsonObject internalParameters = new JsonObject()
+                .add("name", name)
+                .add("forum", forum)
+                .add("description", description)
+                .add("vote_start", voteStart.longValue())
+                .add("transactions",transactions);
+
+        JsonObject jsonData = new JsonObject()
+                .add("method", methodName)
+                .add("params", internalParameters);
+
+        byte[] data = jsonData.toString().getBytes();
+        return data;
+    }
+
+    private JsonObject transactionsArray(Address address, String methodName){
+
+        JsonObject param1 = new JsonObject()
+                .add("type", "BigInteger")
+                .add("value", "10000000000");
+
+        JsonObject param2 = new JsonObject()
+                .add("type", "Address")
+                .add("value", fromWallet.getAddress().toString());
+
+        JsonArray params = new JsonArray();
+        params.add(param1);
+        params.add(param2);
+
+        JsonObject jsonData = new JsonObject()
+                .add("address",address.toString())
+                .add("method", methodName)
+                .add("parameters", params);
+
+        return jsonData;
     }
 
     private void successfulProposalCreationMocks() {
@@ -426,16 +468,12 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         Map<String, ?> proposalOver = (Map<String, ?>) score.call("checkVote", 1);
         assertEquals("Succeeded", proposalOver.get("status"));
 
-        // execute proposal not owner
-        Executable notOwnerCall = () -> score.invoke(user5, "execute_proposal", 1);
-        expectErrorMessage(notOwnerCall, "require owner access");
-
         // execute proposal owner
         score.invoke(owner, "execute_proposal", 1);
-        verify(scoreSpy).ActionExecuted(ONE, "Executed");
+        verify(scoreSpy,never()).ActionExecuted(ONE, "Executed"); // transaction is empty
 
         // set proposal status check not owner
-        notOwnerCall = () -> score.invoke(user5, "setProposalStatus", 1, "Pending");
+        Executable notOwnerCall = () -> score.invoke(user5, "setProposalStatus", 1, "Pending");
         expectErrorMessage(notOwnerCall, "require owner access");
 
         // set proposal status check owner
@@ -526,6 +564,25 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         // try to execute that proposal now
         score.invoke(owner, "execute_proposal", 1);
-        verify(scoreSpy).ActionExecuted(ONE, "Executed");
+//        verify(scoreSpy).ActionExecuted(ONE, "Executed");
+    }
+
+    @Test
+    public void proposal_with_transaction(){
+        initialize();
+        successfulProposalCreationMocks();
+
+        Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
+        JsonObject transactions = transactionsArray(daoFund,"transferOmm");
+
+        JsonArray transactionArray = new JsonArray();
+        transactionArray.add(transactions);
+
+        contextMock
+                .when( ()->  Context.call(score.getAddress(), "tryExecuteTransactions",transactionArray.toString()))
+                .thenReturn(null);
+
+        byte[] data = createByteArrayTransaction(name, forum, description, voteStart, methodName, transactionArray.toString());
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
     }
 }
