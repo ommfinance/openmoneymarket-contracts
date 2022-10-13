@@ -109,9 +109,7 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             throw GovernanceException.insufficientbOMMBalance(bommCriterion);
         }
 
-        if (! transactions.equals("[]")) {
-            verifyTransactions(transactions);
-        }
+        verifyTransactions(transactions);
 
         ProposalDB proposal = new ProposalDB.ProposalBuilder(proposer, name)
                 .setDescription(description)
