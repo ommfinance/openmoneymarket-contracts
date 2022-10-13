@@ -19,8 +19,11 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import score.Address;
 import score.Context;
 
@@ -40,6 +43,15 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     BigInteger duration = TWO.multiply(BigInteger.valueOf(86400 * 1_000_000L));
     BigInteger quorum = THIRTY_THREE.multiply(PERCENT);
     BigInteger ZERO = BigInteger.ZERO;
+
+    static MockedStatic<Context> contextMock;
+
+    @BeforeAll
+    protected static void init() {
+        long CURRENT_TIMESTAMP = System.currentTimeMillis() / 1_000L;
+        sm.getBlock().increase(CURRENT_TIMESTAMP / 2);
+        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
+    }
 
     private void initialize() {
         score.invoke(owner, "setVoteDefinitionFee", THOUSAND.multiply(ICX));
