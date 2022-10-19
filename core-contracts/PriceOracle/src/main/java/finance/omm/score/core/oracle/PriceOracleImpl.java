@@ -63,7 +63,7 @@ public class PriceOracleImpl extends AddressProvider implements PriceOracle {
             }
         }
         if (_base.equals(BALN)) {
-            return call(BigInteger.class, Contracts.BALANCED_ORACLE, "getPriceInLoop",_base);
+            return call(BigInteger.class, Contracts.BALANCED_ORACLE, "getLastPriceInLoop",_base);
         } else {
             Map<String, BigInteger> price = call(Map.class, Contracts.BAND_ORACLE, "get_reference_data", _base, _quote);
             return price.get("rate");
