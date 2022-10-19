@@ -31,7 +31,7 @@ public enum Contracts {
     STAKED_LP("stakedLP"),
     BOOSTED_OMM("bOMM"),
     DEX("dex"),
-    BALANCED_ORACLE("Balanced Oracle");
+    BALANCED_ORACLE("balancedOracle");
 
 
     private String key;
