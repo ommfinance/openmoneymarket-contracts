@@ -114,7 +114,6 @@ public class AddressManagerImpl implements AddressManager {
                 Map.entry("PriceOracle", getAddress(Contracts.PRICE_ORACLE.getKey())),
                 Map.entry("StakedLp", getAddress(Contracts.STAKED_LP.getKey())),
                 Map.entry("DEX", getAddress(Contracts.DEX.getKey())),
-                Map.entry("Balanced Oracle", getAddress(Contracts.BALANCED_ORACLE.getKey())),
                 Map.entry("bOMM", getAddress(Contracts.BOOSTED_OMM.getKey())),
                 Map.entry("RewardWeightController", getAddress(Contracts.REWARD_WEIGHT_CONTROLLER.getKey()))
         );
@@ -456,7 +455,6 @@ public class AddressManagerImpl implements AddressManager {
         AddressDetails[] priceOracleAddresses = new AddressDetails[]{
                 new AddressDetails(Contracts.BAND_ORACLE.getKey(), addresses.get(Contracts.BAND_ORACLE.getKey())),
                 new AddressDetails(Contracts.DEX.getKey(), addresses.get(Contracts.DEX.getKey())),
-                new AddressDetails(Contracts.BALANCED_ORACLE.getKey(), addresses.get(Contracts.BALANCED_ORACLE.getKey())),
                 new AddressDetails(Contracts.LENDING_POOL_DATA_PROVIDER.getKey(),
                         addresses.get(Contracts.LENDING_POOL_DATA_PROVIDER.getKey())),
                 new AddressDetails(Contracts.ADDRESS_PROVIDER.getKey(), Context.getAddress())
