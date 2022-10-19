@@ -52,7 +52,8 @@ public class PriceOracleTest extends AbstractPriceOracleTest{
                         "getPriceByName" ,"sICX/ICX"))
                 .thenReturn(BigInteger.valueOf(1).multiply(ICX));
 
-        doReturn(BigInteger.valueOf(10)).when(scoreSpy).call(BigInteger.class, Contracts.DEX,"getBalnPrice");
+        doReturn(BigInteger.valueOf(10)).when(scoreSpy).call(BigInteger.class, Contracts.BALANCED_ORACLE,
+                "getLastPriceInLoop","BALN");
 
         BigInteger icxPrice= getPrice("ICX");
         BigInteger price = icxPrice.divide(BigInteger.valueOf(8000_000).multiply(ICX));

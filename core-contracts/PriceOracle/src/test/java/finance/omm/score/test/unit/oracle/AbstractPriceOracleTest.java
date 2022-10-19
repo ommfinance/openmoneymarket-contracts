@@ -40,6 +40,7 @@ public class AbstractPriceOracleTest extends TestBase{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
         put(Contracts.BAND_ORACLE, Account.newScoreAccount(102));
         put(Contracts.DEX, Account.newScoreAccount(103));
+        put(Contracts.BALANCED_ORACLE, Account.newScoreAccount(104));
     }};
 
     @BeforeAll
