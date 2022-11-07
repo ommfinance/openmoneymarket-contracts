@@ -502,6 +502,7 @@ public class GovernanceImpl extends AbstractGovernance {
         try {
             callManager.executeTransactions(transactions);
             proposal.status.set(ProposalStatus.EXECUTED.getStatus());
+            this.refundVoteDefinitionFee(proposal);
             ActionExecuted(BigInteger.valueOf(vote_index), status);
         } catch (Exception e) {
             proposal.status.set(ProposalStatus.FAILED_EXECUTION.getStatus());

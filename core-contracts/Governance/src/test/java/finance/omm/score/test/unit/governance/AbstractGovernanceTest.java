@@ -9,7 +9,12 @@ import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
-import finance.omm.core.score.interfaces.*;
+import finance.omm.core.score.interfaces.BoostedToken;
+import finance.omm.core.score.interfaces.DAOFund;
+import finance.omm.core.score.interfaces.FeeProvider;
+import finance.omm.core.score.interfaces.LendingPoolCore;
+import finance.omm.core.score.interfaces.OMMToken;
+import finance.omm.core.score.interfaces.StakedLP;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
 import finance.omm.score.core.governance.GovernanceImpl;
@@ -45,7 +50,6 @@ public class AbstractGovernanceTest extends TestBase {
     protected Address[] addresses = new Address[]{
             Account.newScoreAccount(201).getAddress(),
     };
-
 
     public static final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new HashMap<>() {{
         put(Contracts.ADDRESS_PROVIDER, Account.newScoreAccount(101));
