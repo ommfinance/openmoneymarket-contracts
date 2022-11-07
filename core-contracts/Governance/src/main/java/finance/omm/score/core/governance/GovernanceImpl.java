@@ -496,6 +496,7 @@ public class GovernanceImpl extends AbstractGovernance {
             return;
         } else if ( transactions.equals("[]")) {
             this.refundVoteDefinitionFee(proposal);
+            proposal.status.set(ProposalStatus.EXECUTED.getStatus());
             return;
         }
 
