@@ -449,6 +449,26 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     /**
+     * Remove method allowed calling via governance proposal.
+     * @param contract
+     * @param method
+     */
+    @External
+    public void removeAllowedMethods(Address contract, String method) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        callManager.removeAllowedMethods(contract, method);
+    }
+
+    /**
+     * Get supported methods of contract that can be called via governance proposal.
+     * @param contract
+     */
+    @External(readonly = true)
+    public List<String> getSupportedMethodsOfContract(Address contract) {
+        return callManager.allowedMethodsOfContract(contract);
+    }
+
+    /**
      * Returns required parameter of method of a contract.
      * Returns an empty string, if that method is not an allowed method.
      *

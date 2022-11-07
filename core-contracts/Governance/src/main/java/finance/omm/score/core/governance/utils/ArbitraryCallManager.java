@@ -7,12 +7,15 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import finance.omm.score.core.governance.exception.GovernanceException;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import score.Address;
+import score.ArrayDB;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
+import scorex.util.ArrayList;
 import scorex.util.HashMap;
 
 public class ArbitraryCallManager {
@@ -23,9 +26,58 @@ public class ArbitraryCallManager {
 
     public static final BranchDB<Address, DictDB<String, String>> allowedMethods = Context.newBranchDB("allowedMethods",
             String.class);
+    public static final DictDB<Address, ArrayDB> methodsOfContract = Context.newDictDB("methodsOfContract", ArrayDB.class);
 
     public void addAllowedMethods(Address contract, String method, String parameters) {
+        addToArrayDB(contract, method);
         allowedMethods.at(contract).set(method, parameters);
+    }
+
+    public List<String> allowedMethodsOfContract(Address contract) {
+        ArrayDB arr = methodsOfContract.get(contract);
+        List<String> allowedMethods = new ArrayList<>();
+        int size = arr.size();
+        for (int i = 0; i < size; i++) {
+            allowedMethods.add((String) arr.get(i));
+        }
+        return allowedMethods;
+    }
+
+    public void removeAllowedMethods(Address contract, String method) {
+        removeFromArrayDB(contract, method);
+        allowedMethods.at(contract).set(method, null);
+    }
+
+    private void addToArrayDB(Address contract, String method) {
+        ArrayDB arr = methodsOfContract.get(contract);
+        if (!isAllowedMethod(arr, method)) {
+            arr.add(method);
+        }
+    }
+
+    private void removeFromArrayDB(Address contract, String method) {
+        ArrayDB arr = methodsOfContract.get(contract);
+        if (isAllowedMethod(arr, method)) {
+            String methodName = (String) arr.pop();
+            int size = arr.size();
+            if (!method.equals(methodName)) {
+                for (int i = 0; i < size; i++) {
+                    if (arr.get(i).equals(method)) {
+                        arr.set(i, methodName);
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isAllowedMethod(ArrayDB arr, String method) {
+        int size = arr.size();
+        for (int i = 0; i < size; i++) {
+            if (arr.get(i).equals(method)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public String getMethodParameters(Address contract, String method) {
