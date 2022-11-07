@@ -3,7 +3,6 @@ package finance.omm.score.core.governance;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.convertToNumber;
 import static finance.omm.utils.math.MathUtils.isValidPercentage;
-import static finance.omm.utils.math.MathUtils.pow;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
@@ -25,7 +24,6 @@ import finance.omm.score.core.governance.db.ProposalDB;
 import finance.omm.score.core.governance.enums.ProposalStatus;
 import finance.omm.score.core.governance.exception.GovernanceException;
 import finance.omm.score.core.governance.interfaces.RewardDistributionImpl;
-import finance.omm.score.core.governance.utils.ArbitraryCallManager;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
@@ -438,6 +436,7 @@ public class GovernanceImpl extends AbstractGovernance {
 
     /**
      * All methods allowed calling via governance proposal.
+     *
      * @param contract
      * @param method
      * @param parameters
@@ -445,35 +444,37 @@ public class GovernanceImpl extends AbstractGovernance {
     @External
     public void addAllowedMethods(Address contract, String method, String parameters) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        callManager.addAllowedMethods(contract, method, parameters);
+        callManager.addAllowedMethod(contract, method, parameters);
     }
 
     /**
      * Remove method allowed calling via governance proposal.
+     *
      * @param contract
      * @param method
      */
     @External
     public void removeAllowedMethods(Address contract, String method) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        callManager.removeAllowedMethods(contract, method);
+        callManager.removeAllowedMethod(contract, method);
     }
 
     /**
      * Get supported methods of contract that can be called via governance proposal.
+     *
      * @param contract
      */
     @External(readonly = true)
     public List<String> getSupportedMethodsOfContract(Address contract) {
-        return callManager.allowedMethodsOfContract(contract);
+        return callManager.getAllowedMethodsOfContract(contract);
     }
 
     /**
-     * Returns required parameter of method of a contract.
-     * Returns an empty string, if that method is not an allowed method.
+     * Returns required parameter of method of a contract. Returns an empty string, if that method is not an allowed
+     * method.
      *
      * @param contract Contract Address
-     * @param method Name of method of the contract
+     * @param method   Name of method of the contract
      * @return Required parameters for given method
      */
     @External(readonly = true)
@@ -514,7 +515,7 @@ public class GovernanceImpl extends AbstractGovernance {
 
         if (status.equals(ProposalStatus.NO_QUORUM.getStatus()) || status.equals(ProposalStatus.DEFEATED.getStatus())) {
             return;
-        } else if ( transactions.equals("[]")) {
+        } else if (transactions.equals("[]")) {
             this.refundVoteDefinitionFee(proposal);
             proposal.status.set(ProposalStatus.EXECUTED.getStatus());
             return;
