@@ -460,13 +460,22 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     /**
-     * Get supported methods of contract that can be called via governance proposal.
      *
      * @param contract
+     * @return Names of methods of contract, that can be called via governance proposal
      */
     @External(readonly = true)
     public List<String> getSupportedMethodsOfContract(Address contract) {
         return callManager.getAllowedMethodsOfContract(contract);
+    }
+
+    /**
+     *
+     * @return Contract addresses whose method can be called via governance proposal
+     */
+    @External(readonly = true)
+    public List<Address> getSupportedContracts() {
+        return callManager.getContractList();
     }
 
     /**

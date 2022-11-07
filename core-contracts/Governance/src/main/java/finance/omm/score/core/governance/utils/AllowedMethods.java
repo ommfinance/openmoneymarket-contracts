@@ -24,6 +24,16 @@ public class AllowedMethods {
         allowedMethods.at(contract).set(method, parameters);
     }
 
+    public List<Address> getContractList() {
+        List<Address> contracts = new ArrayList<>();
+        int size = contractList.size();
+        for (int i = 0; i < size; i++) {
+            contracts.add(contractList.get(i));
+        }
+        return contracts;
+
+    }
+
     public List<String> getAllowedMethodsOfContract(Address contract) {
         ArrayDB arr = methodsOfContract.get(contract);
         List<String> allowedMethods = new ArrayList<>();

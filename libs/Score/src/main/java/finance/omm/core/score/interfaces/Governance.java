@@ -81,6 +81,8 @@ public interface Governance extends AddressProvider {
 
     List<String> getSupportedMethodsOfContract(Address contract);
 
+    List<Address> getSupportedContracts();
+
     String getMethodParameters(Address contract, String method);
 
     void tryExecuteTransactions(String transactions);
