@@ -75,15 +75,13 @@ public interface Governance extends AddressProvider {
 
     void cancelVote(int vote_index);
 
-    void addAllowedMethods(Address contract, String method, String parameters);
+    void addAllowedMethods(Address contract, String[] method);
 
-    void removeAllowedMethods(Address contract, String method);
+    void removeAllowedMethods(Address contract, String[] method);
 
-    List<String> getSupportedMethodsOfContract(Address contract);
+    String[] getSupportedMethodsOfContract(Address contract);
 
     List<Address> getSupportedContracts();
-
-    String getMethodParameters(Address contract, String method);
 
     void tryExecuteTransactions(String transactions);
 

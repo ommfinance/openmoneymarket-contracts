@@ -16,7 +16,7 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.governance.db.ProposalDB;
 import finance.omm.score.core.governance.exception.GovernanceException;
 import finance.omm.score.core.governance.interfaces.RewardDistributionImplClient;
-import finance.omm.score.core.governance.utils.ArbitraryCallManager;
+import finance.omm.score.core.governance.execution.ArbitraryCallManager;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.constants.TimeConstants.Timestamp;
 import finance.omm.utils.math.MathUtils;

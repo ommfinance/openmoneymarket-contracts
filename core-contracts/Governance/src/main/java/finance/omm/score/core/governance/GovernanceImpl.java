@@ -435,28 +435,25 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     /**
-     * All methods allowed calling via governance proposal.
      *
-     * @param contract
-     * @param method
-     * @param parameters
+     * @param contract Contract Address
+     * @param method Method array of methods allowed to call via governance proposal
      */
     @External
-    public void addAllowedMethods(Address contract, String method, String parameters) {
+    public void addAllowedMethods(Address contract, String[] method) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        callManager.addAllowedMethod(contract, method, parameters);
+        callManager.addAllowedMethods(contract, method);
     }
 
     /**
-     * Remove method allowed calling via governance proposal.
      *
-     * @param contract
-     * @param method
+     * @param contract Contract Address
+     * @param method Remove any methods to not be allowed to call via governance proposal
      */
     @External
-    public void removeAllowedMethods(Address contract, String method) {
+    public void removeAllowedMethods(Address contract, String[] method) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        callManager.removeAllowedMethod(contract, method);
+        callManager.removeAllowedMethods(contract, method);
     }
 
     /**
@@ -465,8 +462,8 @@ public class GovernanceImpl extends AbstractGovernance {
      * @return Names of methods of contract, that can be called via governance proposal
      */
     @External(readonly = true)
-    public List<String> getSupportedMethodsOfContract(Address contract) {
-        return callManager.getAllowedMethodsOfContract(contract);
+    public String[] getSupportedMethodsOfContract(Address contract) {
+        return callManager.allowedMethodsOf(contract);
     }
 
     /**
@@ -477,20 +474,6 @@ public class GovernanceImpl extends AbstractGovernance {
     public List<Address> getSupportedContracts() {
         return callManager.getContractList();
     }
-
-    /**
-     * Returns required parameter of method of a contract. Returns an empty string, if that method is not an allowed
-     * method.
-     *
-     * @param contract Contract Address
-     * @param method   Name of method of the contract
-     * @return Required parameters for given method
-     */
-    @External(readonly = true)
-    public String getMethodParameters(Address contract, String method) {
-        return callManager.getMethodParameters(contract, method);
-    }
-
 
     /**
      * Executes action after the voting period is done. If the vote passed, any actions included in the proposal are
