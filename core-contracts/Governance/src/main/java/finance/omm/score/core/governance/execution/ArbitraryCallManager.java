@@ -1,11 +1,11 @@
 package finance.omm.score.core.governance.execution;
 
-import static finance.omm.utils.math.MathUtils.convertToNumber;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
+import finance.omm.utils.math.MathUtils;
 import java.util.Map;
 import java.util.function.Function;
 import score.Address;
@@ -18,11 +18,17 @@ public class ArbitraryCallManager extends AllowedMethods {
     public static final String ADDRESS = "address";
     public static final String PARAMS = "parameters";
 
+
     public static void executeTransactions(String transactions) {
         JsonArray actionsList = Json.parse(transactions).asArray();
-        for (int i = 0; i < actionsList.size(); i++) {
-            JsonObject transaction = actionsList.get(i).asObject();
-            executeTransaction(transaction);
+
+        try {
+            for (int i = 0; i < actionsList.size(); i++) {
+                JsonObject transaction = actionsList.get(i).asObject();
+                executeTransaction(transaction);
+            }
+        } catch (Exception e) {
+            Context.revert("Transaction Reverted");
         }
     }
 
@@ -61,23 +67,22 @@ public class ArbitraryCallManager extends AllowedMethods {
             case "Address":
                 return parse(value, isArray, jsonValue -> Address.fromString(jsonValue.asString()));
             case "String":
-                return parse(value, isArray, jsonValue -> jsonValue.asString());
+                return parse(value, isArray, JsonValue::asString);
             case "int":
             case "BigInteger":
             case "Long":
             case "Short":
-                return parse(value, isArray, jsonValue -> convertToNumber(jsonValue));
+                return parse(value, isArray, MathUtils::convertToNumber);
             case "boolean":
             case "Boolean":
-                return parse(value, isArray, jsonValue -> jsonValue.asBoolean());
+                return parse(value, isArray, JsonValue::asBoolean);
             case "Struct":
                 return parse(value, isArray, jsonValue -> parseStruct(jsonValue.asObject()));
             case "bytes":
             case "byte[]":
-                return parse(value, isArray, jsonValue -> convertBytesParam(jsonValue));
+                return parse(value, isArray, ArbitraryCallManager::convertBytesParam);
         }
-
-        throw new IllegalArgumentException("Unknown type");
+        throw new IllegalArgumentException("Invalid Parameter Type :> " + type);
     }
 
     private static Object parse(JsonValue value, boolean isArray, Function<JsonValue, ?> parser) {

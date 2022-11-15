@@ -10,11 +10,11 @@ import scorex.util.ArrayList;
 
 public class AllowedMethods {
 
-    public static final DictDB<Address, StringArray> methodsOfContract = Context.newDictDB("methodsOfContract",
-            StringArray.class);
+    public static final DictDB<Address, OMMList> methodsOfContract = Context.newDictDB("supportedMethodsOfContract",
+            OMMList.class);
     public static final ArrayDB<Address> contractList = Context.newArrayDB("contractList", Address.class);
 
-    public void addAllowedMethods(Address contract, String[] methods) {
+    public static void addAllowedMethods(Address contract, String[] methods) {
         addContract(contract);
 
         for(String method: methods) {
@@ -22,7 +22,7 @@ public class AllowedMethods {
         }
     }
 
-    public void removeAllowedMethods(Address contract, String[] methods) {
+    public static void removeAllowedMethods(Address contract, String[] methods) {
         for(String method: methods) {
             removeAllowedMethod(contract, method);
         }
@@ -37,32 +37,35 @@ public class AllowedMethods {
         return contracts;
     }
 
-    public String[] allowedMethodsOf(Address contract) {
-        StringArray sArr = methodsOfContract.get(contract);
-        return sArr.getMethod();
+    public static List<String> allowedMethodsOf(Address contract) {
+        OMMList sArr = methodsOfContract.get(contract);
+        return sArr.getMethods();
     }
 
     public static void isValidMethod(Address contract, String method) {
-        StringArray sArr = methodsOfContract.get(contract);
+        OMMList sArr = methodsOfContract.get(contract);
 
         if (sArr == null || sArr.notIn(method)) {
-            throw GovernanceException.unauthorized("Method not allowed to call");
+            throw GovernanceException.unknown("Method not allowed to call");
         }
     }
 
-    private void addAllowedMethod(Address contract, String method) {
-        StringArray current = methodsOfContract.get(contract);
+    private static void addAllowedMethod(Address contract, String method) {
+        OMMList<String> current = methodsOfContract.get(contract);
         if (current == null) {
-            current = new StringArray(new String[]{method});
+            current = new OMMList();
+            current.add(method);
         } else {
             current.add(method);
         }
-
         methodsOfContract.set(contract, current);
     }
 
-    private void removeAllowedMethod(Address contract, String method) {
-        StringArray sArr = methodsOfContract.get(contract);
+    private static void removeAllowedMethod(Address contract, String method) {
+        OMMList sArr = methodsOfContract.get(contract);
+        if (sArr == null) {
+            throw GovernanceException.unknown("Contract not added");
+        }
         sArr.remove(method);
 
         methodsOfContract.set(contract, sArr);
@@ -71,13 +74,13 @@ public class AllowedMethods {
         }
     }
 
-    private void addContract(Address contract) {
+    private static void addContract(Address contract) {
         if (!arrayContains(contractList, contract)) {
             contractList.add(contract);
         }
     }
 
-    private void removeContract(Address contract) {
+    private static void removeContract(Address contract) {
         Address methodName = contractList.pop();
         int size = contractList.size();
         if (!contract.equals(methodName)) {
@@ -89,7 +92,7 @@ public class AllowedMethods {
         }
     }
 
-    private boolean arrayContains(ArrayDB<Address> arr, Address value) {
+    private static boolean arrayContains(ArrayDB<Address> arr, Address value) {
         int size = arr.size();
         for (int i = 0; i < size; i++) {
             if (arr.get(i).equals(value)) {

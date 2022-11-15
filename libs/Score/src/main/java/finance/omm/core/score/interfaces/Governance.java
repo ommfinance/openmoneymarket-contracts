@@ -79,7 +79,7 @@ public interface Governance extends AddressProvider {
 
     void removeAllowedMethods(Address contract, String[] method);
 
-    String[] getSupportedMethodsOfContract(Address contract);
+    List<String> getSupportedMethodsOfContract(Address contract);
 
     List<Address> getSupportedContracts();
 
