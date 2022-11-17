@@ -400,15 +400,16 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
         Address randomAddr = sm.createAccount().getAddress();
         BigInteger value = ICX;
+        byte[] data = "transfer".getBytes();
 
-        doNothing().when(daoFund).transferOmm(value, randomAddr);
+        doNothing().when(daoFund).transferOmm(value, randomAddr,data);
 
         // not owner
-        Executable notOwnerCall = () -> score.invoke(notOwner, "transferOmmFromDaoFund", value, randomAddr);
+        Executable notOwnerCall = () -> score.invoke(notOwner, "transferOmmFromDaoFund", value, randomAddr,data);
         expectErrorMessage(notOwnerCall, "require owner access");
 
         // owner
-        score.invoke(owner, "transferOmmFromDaoFund", value, randomAddr);
+        score.invoke(owner, "transferOmmFromDaoFund", value, randomAddr,data);
     }
 
     @Test

@@ -143,9 +143,9 @@ public class AbstractGovernanceTest extends TestBase {
     @Test
     public void testTransfer() {
 
-        doNothing().when(daoFund).transferOmm(TestBase.ICX, addresses[0]);
+        doNothing().when(daoFund).transferOmm(TestBase.ICX, addresses[0],"transfer".getBytes());
 
-        score.invoke(owner, "transferOmmFromDaoFund", TestBase.ICX, addresses[0]);
+        score.invoke(owner, "transferOmmFromDaoFund", TestBase.ICX, addresses[0],"transfer".getBytes());
     }
 }
 
