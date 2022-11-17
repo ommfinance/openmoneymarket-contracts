@@ -68,7 +68,7 @@ public class FeeProviderTest extends TestBase {
         ommToken.invoke(owner, "setOwner", ommToken.getAccount());
         ommToken.invoke(owner, "addTo", receiver);
         feeProvider.invoke(accountGovernance, "transferFund",
-                ommToken.getAddress(), amount, receiver.getAddress());
+                ommToken.getAddress(), amount, receiver.getAddress(),"transferFund".getBytes());
 
         assertEquals(amount, receiver.getBalance(Contracts.OMM_TOKEN.getKey()));
         assertEquals(totalSupply.subtract(amount),
