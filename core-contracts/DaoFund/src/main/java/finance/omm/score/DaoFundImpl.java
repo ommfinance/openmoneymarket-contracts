@@ -39,7 +39,7 @@ public class DaoFundImpl extends AddressProvider implements DAOFund {
     }
 
     @External
-    public void transferOmm(BigInteger _value, Address _address) {
+    public void transferOmm(BigInteger _value, Address _address, @Optional byte[] _data) {
         onlyOrElseThrow(Contracts.GOVERNANCE,
                 OMMException.unknown(
                         TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
@@ -48,7 +48,7 @@ public class DaoFundImpl extends AddressProvider implements DAOFund {
         if (ommAddress == null) {
             Context.revert(TAG + "| omm address was not set");
         }
-        Context.call(ommAddress, "transfer", _address, _value);
+        Context.call(ommAddress, "transfer", _address, _value,_data);
     }
 
     @External

@@ -61,7 +61,7 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             proposal.feeRefunded.set(Boolean.TRUE);
 
             DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
-            daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get());
+            daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get(),"refund".getBytes());
         }
     }
 
