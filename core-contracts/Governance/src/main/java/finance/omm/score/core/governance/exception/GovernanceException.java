@@ -47,14 +47,19 @@ public class GovernanceException extends OMMException.Governance {
     }
 
     public static GovernanceException insufficientFee() {
-        return new GovernanceException(Code.ProposalNotActive, "Insufficient fee to create proposal");
+        return new GovernanceException(Code.InsufficientFee, "Insufficient fee to create proposal");
+    }
+
+    public static Exception InvalidParameter(String param) {
+        return new GovernanceException(Code.InvalidParameter, "Invalid Parameter: Key "+ param);
     }
 
 
     //OMMException.RewardDistribution => 30 ~
     public enum Code implements Coded {
         Unknown(0), NotOwner(1), UnAuthorized(2), InvalidVotingDate(3),
-        InsufficientbOMMBalance(4), ProposalNotFound(5), ProposalNotActive(6), InsufficientFee(7);
+        InsufficientbOMMBalance(4), ProposalNotFound(5), ProposalNotActive(6), InsufficientFee(7),
+        InvalidParameter(8);
 
         final int code;
 

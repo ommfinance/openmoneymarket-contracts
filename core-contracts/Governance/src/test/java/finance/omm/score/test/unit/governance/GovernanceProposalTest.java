@@ -7,8 +7,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
@@ -16,10 +18,14 @@ import finance.omm.utils.constants.TimeConstants;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.DisplayName;
+
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import score.Address;
+import score.Context;
 
 public class GovernanceProposalTest extends AbstractGovernanceTest {
 
@@ -37,6 +43,15 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     BigInteger duration = TWO.multiply(BigInteger.valueOf(86400 * 1_000_000L));
     BigInteger quorum = THIRTY_THREE.multiply(PERCENT);
     BigInteger ZERO = BigInteger.ZERO;
+
+    static MockedStatic<Context> contextMock;
+
+    @BeforeAll
+    protected static void init() {
+        long CURRENT_TIMESTAMP = System.currentTimeMillis() / 1_000L;
+        sm.getBlock().increase(CURRENT_TIMESTAMP / 2);
+        contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
+    }
 
     private void initialize() {
         score.invoke(owner, "setVoteDefinitionFee", THOUSAND.multiply(ICX));
@@ -62,6 +77,46 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         return data;
     }
 
+    private byte[] createByteArrayTransaction(String name, String forum, String description,
+                                   BigInteger voteStart, String methodName, String transactions) {
+
+        JsonObject internalParameters = new JsonObject()
+                .add("name", name)
+                .add("forum", forum)
+                .add("description", description)
+                .add("vote_start", voteStart.longValue())
+                .add("transactions",transactions);
+
+        JsonObject jsonData = new JsonObject()
+                .add("method", methodName)
+                .add("params", internalParameters);
+
+        byte[] data = jsonData.toString().getBytes();
+        return data;
+    }
+
+    private JsonObject transactionsArray(Address address, String methodName){
+
+        JsonObject param1 = new JsonObject()
+                .add("type", "BigInteger")
+                .add("value", "10000000000");
+
+        JsonObject param2 = new JsonObject()
+                .add("type", "Address")
+                .add("value", fromWallet.getAddress().toString());
+
+        JsonArray params = new JsonArray();
+        params.add(param1);
+        params.add(param2);
+
+        JsonObject jsonData = new JsonObject()
+                .add("address",address.toString())
+                .add("method", methodName)
+                .add("parameters", params);
+
+        return jsonData;
+    }
+
     private void successfulProposalCreationMocks() {
         BigInteger userStaked = HUNDRED.multiply(ICX);
         BigInteger totalStaked = TWO.multiply(HUNDRED.multiply(ICX));
@@ -70,6 +125,12 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         doReturn(totalStaked).when(bOMM).totalSupplyAt(any());
 
         doNothing().when(ommToken).transfer(any(), any(), any());
+    }
+
+    private void transactionsMock(){
+        contextMock
+                .when( ()->  Context.call(eq(score.getAddress()), eq("tryExecuteTransactions"),eq("[]")))
+                .thenReturn(null);
     }
 
     @Test
@@ -120,6 +181,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void defineVote() {
         initialize();
 
+        transactionsMock();
         byte[] data = createByteArray(name, forum, description, voteStart, methodName);
 
         // general case of proposal creation
@@ -197,6 +259,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void checkVote() {
         initialize();
 
+        transactionsMock();
         successfulProposalCreationMocks();
         byte[] data = createByteArray(name + " 1", forum, description, voteStart, methodName);
         score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
@@ -223,6 +286,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void getProposals() {
         initialize();
 
+        transactionsMock();
         successfulProposalCreationMocks();
         byte[] data1 = createByteArray(name + " 10", forum, description, voteStart, methodName);
         byte[] data2 = createByteArray(name + " 20", forum, description, voteStart, methodName);
@@ -258,6 +322,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void updateVoteForum() {
         initialize();
 
+        transactionsMock();
         // null proposal
         String newLink = forum + "123";
         Executable errorMsg = () -> score.invoke(owner, "updateVoteForum", 1, newLink);
@@ -286,6 +351,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void cancelVote() {
         initialize();
 
+        transactionsMock();
         // try to cancel a proposal which does not exist
         Executable errorMsg = () -> score.invoke(owner, "cancelVote", 10);
         expectErrorMessage(errorMsg, "Proposal not found with index :: 10");
@@ -332,6 +398,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void castVote() {
         initialize();
 
+        transactionsMock();
         Account user1 = sm.createAccount(1);
         Account user2 = sm.createAccount(1);
         Account user3 = sm.createAccount(1);
@@ -413,16 +480,12 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
         Map<String, ?> proposalOver = (Map<String, ?>) score.call("checkVote", 1);
         assertEquals("Succeeded", proposalOver.get("status"));
 
-        // execute proposal not owner
-        Executable notOwnerCall = () -> score.invoke(user5, "execute_proposal", 1);
-        expectErrorMessage(notOwnerCall, "require owner access");
-
         // execute proposal owner
         score.invoke(owner, "execute_proposal", 1);
-        verify(scoreSpy).ActionExecuted(ONE, "Executed");
+        verify(scoreSpy,never()).ActionExecuted(ONE, "Executed"); // transaction is empty
 
         // set proposal status check not owner
-        notOwnerCall = () -> score.invoke(user5, "setProposalStatus", 1, "Pending");
+        Executable notOwnerCall = () -> score.invoke(user5, "setProposalStatus", 1, "Pending");
         expectErrorMessage(notOwnerCall, "require owner access");
 
         // set proposal status check owner
@@ -439,6 +502,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
     public void differentProposalsStatus() {
         initialize();
 
+        transactionsMock();
         Account user1 = sm.createAccount(1);
         Account user2 = sm.createAccount(1);
         Account user3 = sm.createAccount(1);
@@ -512,6 +576,25 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         // try to execute that proposal now
         score.invoke(owner, "execute_proposal", 1);
-        verify(scoreSpy).ActionExecuted(ONE, "Executed");
+//        verify(scoreSpy).ActionExecuted(ONE, "Executed");
+    }
+
+    @Test
+    public void proposal_with_transaction(){
+        initialize();
+        successfulProposalCreationMocks();
+
+        Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
+        JsonObject transactions = transactionsArray(daoFund,"transferOmm");
+
+        JsonArray transactionArray = new JsonArray();
+        transactionArray.add(transactions);
+
+        contextMock
+                .when( ()->  Context.call(score.getAddress(), "tryExecuteTransactions",transactionArray.toString()))
+                .thenReturn(null);
+
+        byte[] data = createByteArrayTransaction(name, forum, description, voteStart, methodName, transactionArray.toString());
+        score.invoke(OMM_TOKEN_ACCOUNT, "tokenFallback", from, value, data);
     }
 }

@@ -23,6 +23,7 @@ import finance.omm.libs.structs.governance.ReserveConstant;
 import finance.omm.score.core.governance.db.ProposalDB;
 import finance.omm.score.core.governance.enums.ProposalStatus;
 import finance.omm.score.core.governance.exception.GovernanceException;
+import finance.omm.score.core.governance.execution.ArbitraryCallManager;
 import finance.omm.score.core.governance.interfaces.RewardDistributionImpl;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
@@ -31,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.Context;
+import score.RevertedException;
+import score.UserRevertedException;
 import score.annotation.External;
 import score.annotation.Optional;
 import scorex.util.ArrayList;
@@ -434,22 +437,58 @@ public class GovernanceImpl extends AbstractGovernance {
         VoteCast(proposal.name.get(), vote, sender, votingWeight, totalFor, totalAgainst);
     }
 
+    /**
+     * @param contract Contract Address
+     * @param method   Method array of methods allowed to call via governance proposal
+     */
+    @External
+    public void addAllowedMethods(Address contract, String[] method) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        ArbitraryCallManager.addAllowedMethods(contract, method);
+    }
 
     /**
-     * Evaluates a vote after the voting period is done. If the vote passed, any actions included in the proposal are
+     * @param contract Contract Address
+     * @param method   Remove any methods to not be allowed to call via governance proposal
+     */
+    @External
+    public void removeAllowedMethods(Address contract, String[] method) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        ArbitraryCallManager.removeAllowedMethods(contract, method);
+    }
+
+    /**
+     * @param contract
+     * @return Names of methods of contract, that can be called via governance proposal
+     */
+    @External(readonly = true)
+    public List<String> getSupportedMethodsOfContract(Address contract) {
+        return ArbitraryCallManager.allowedMethodsOf(contract);
+    }
+
+    /**
+     * @return Contract addresses whose method can be called via governance proposal
+     */
+    @External(readonly = true)
+    public List<Address> getSupportedContracts() {
+        return callManager.getContractList();
+    }
+
+    /**
+     * Executes action after the voting period is done. If the vote passed, any actions included in the proposal are
      * executed. The vote definition fee is also refunded to the proposer if the vote passed.
      *
      * @param vote_index
-     * @return ProposalDB
      */
-
-    private ProposalDB evaluateVote(int vote_index) {
+    @External
+    public void execute_proposal(int vote_index) {
         ProposalDB proposal = ProposalDB.getByVoteIndex(vote_index);
         if (proposal == null) {
             throw GovernanceException.proposalNotFound(vote_index);
         }
 
         BigInteger end = proposal.endSnapshot.get();
+        String transactions = proposal.transactions.get();
 
         if (TimeConstants.getBlockTimestamp().compareTo(end) <= 0) {
             throw GovernanceException.unknown("Voting period has not ended");
@@ -463,23 +502,21 @@ public class GovernanceImpl extends AbstractGovernance {
         String status = (String) result.get("status");
 
         proposal.status.set(status);
-        if (status.equals(ProposalStatus.SUCCEEDED.getStatus())) {
-            this.refundVoteDefinitionFee(proposal);
-        }
         proposal.active.set(Boolean.FALSE);
-        return proposal;
-    }
 
-    @External
-    public void execute_proposal(int vote_index) {
-        onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        ProposalDB proposal = evaluateVote(vote_index);
-        String status = proposal.status.get();
-        if (ProposalStatus.SUCCEEDED.getStatus().equals(status)) {
-            status = ProposalStatus.EXECUTED.getStatus();
-            proposal.status.set(status);
+        if (status.equals(ProposalStatus.NO_QUORUM.getStatus()) || status.equals(ProposalStatus.DEFEATED.getStatus())) {
+            return;
         }
-        ActionExecuted(BigInteger.valueOf(vote_index), status);
+        try {
+            if (!transactions.equals("[]")) {
+                Context.call(Context.getAddress(), "executeTransactions", transactions);
+            }
+            proposal.status.set(ProposalStatus.EXECUTED.getStatus());
+            this.refundVoteDefinitionFee(proposal);
+            ActionExecuted(BigInteger.valueOf(vote_index), status);
+        } catch (UserRevertedException e) {
+            proposal.status.set(ProposalStatus.FAILED_EXECUTION.getStatus());
+        }
     }
 
     @External
@@ -553,6 +590,7 @@ public class GovernanceImpl extends AbstractGovernance {
             put("against_voter_count", proposal.againstVotersCount.getOrDefault(BigInteger.ZERO));
             put("total voting weight", totalVotingWeight);
             put("forum", proposal.forumLink.get());
+            put("transactions", proposal.transactions.get());
             put("status", finalStatus);
         }};
     }
@@ -597,6 +635,7 @@ public class GovernanceImpl extends AbstractGovernance {
         String name = params.getString("name", null);
         String forum = params.getString("forum", "null");
         String description = params.getString("description", null);
+        String transactions = params.getString("transactions", "[]").trim();
         JsonValue vote_start = params.get("vote_start");
         BigInteger voteStart;
 
@@ -606,7 +645,7 @@ public class GovernanceImpl extends AbstractGovernance {
             voteStart = convertToNumber(vote_start);
         }
 
-        defineVote(name, description, voteStart, _from, forum);
+        defineVote(name, description, voteStart, _from, forum, transactions);
 
         OMMToken ommToken = getInstance(OMMToken.class, Contracts.OMM_TOKEN);
         ommToken.transfer(getAddress(Contracts.DAO_FUND.getKey()), voteFee, null);
@@ -614,6 +653,18 @@ public class GovernanceImpl extends AbstractGovernance {
         if (remainingOMMToken.compareTo(BigInteger.ZERO) > 0) {
             ommToken.transfer(_from, remainingOMMToken, null);
         }
+    }
+
+    @External
+    public void tryExecuteTransactions(String transactions) {
+        ArbitraryCallManager.executeTransactions(transactions);
+        Context.revert(SUCCESSFUL_VOTE_EXECUTION_REVERT_ID);
+    }
+
+    @External
+    public void executeTransactions(String transactions) {
+        Context.require(Context.getAddress().equals(Context.getCaller()), "Only governance Contract");
+        ArbitraryCallManager.executeTransactions(transactions);
     }
 
     @External
