@@ -79,7 +79,6 @@ public class ArbitraryCallManager extends AllowedMethods {
             case "Struct":
                 return parse(value, isArray, jsonValue -> parseStruct(jsonValue.asObject()));
             case "bytes":
-            case "byte[]":
                 return parse(value, isArray, ArbitraryCallManager::convertBytesParam);
         }
         throw new IllegalArgumentException("Invalid Parameter Type :> " + type);
