@@ -76,8 +76,8 @@ public class FeeProviderImpl extends AddressProvider implements FeeProvider {
     public void onlyOwner() {
         Address sender = Context.getCaller();
         Address owner = Context.getOwner();
-        if (!sender.equals(owner)){
-            Context.revert(TAG + ": SenderNotScoreOwnerError:  (sender)"+ sender + " (owner)"+owner);
+        if (!sender.equals(owner)) {
+            Context.revert(TAG + ": SenderNotScoreOwnerError:  (sender)" + sender + " (owner)" + owner);
         }
     }
 }

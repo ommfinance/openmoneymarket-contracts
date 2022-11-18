@@ -48,7 +48,7 @@ public class DaoFundImpl extends AddressProvider implements DAOFund {
         if (ommAddress == null) {
             Context.revert(TAG + "| omm address was not set");
         }
-        Context.call(ommAddress, "transfer", _address, _value,_data);
+        Context.call(ommAddress, "transfer", _address, _value, _data);
     }
 
     @External
