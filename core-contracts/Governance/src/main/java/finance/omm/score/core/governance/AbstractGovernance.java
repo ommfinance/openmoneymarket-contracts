@@ -34,10 +34,10 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
     public static final BigInteger MAX_ACTIONS = BigInteger.valueOf(5L);
 
     public final VarDB<BigInteger> voteDuration = Context.newVarDB("vote_duration", BigInteger.class);
-    public final VarDB<BigInteger> boostedOmmVoteDefinitionCriterion = Context.newVarDB("min_boosted_omm", BigInteger.class);
+    public final VarDB<BigInteger> boostedOmmVoteDefinitionCriterion = Context.newVarDB("min_boosted_omm",
+            BigInteger.class);
     public final VarDB<BigInteger> voteDefinitionFee = Context.newVarDB("definition_fee", BigInteger.class);
     public final VarDB<BigInteger> quorum = Context.newVarDB("quorum", BigInteger.class);
-
 
 
     public AbstractGovernance(Address addressProvider, boolean _update) {
@@ -61,7 +61,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             proposal.feeRefunded.set(Boolean.TRUE);
 
             DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
-            daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get(),"refund".getBytes());
+            daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get(),
+                    "refund".getBytes());
         }
     }
 
@@ -88,15 +89,13 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             throw GovernanceException.invalidVoteParams("Vote cannot start before the current timestamp");
         }
 
-
         int voteIndex = ProposalDB.getProposalId(name);
         if (voteIndex > 0) {
             throw GovernanceException.invalidVoteParams("Proposal name (" + name + ") has already been used.");
         }
 
-
-        BoostedToken boostedToken = getInstance(BoostedToken.class,Contracts.BOOSTED_OMM);
-        BigInteger userBommBalance = boostedToken.balanceOfAt(proposer,snapshot);
+        BoostedToken boostedToken = getInstance(BoostedToken.class, Contracts.BOOSTED_OMM);
+        BigInteger userBommBalance = boostedToken.balanceOfAt(proposer, snapshot);
         BigInteger bommTotal = boostedToken.totalSupplyAt(snapshot);
         BigInteger bommCriterion = getBoostedOmmVoteDefinitionCriterion();
 

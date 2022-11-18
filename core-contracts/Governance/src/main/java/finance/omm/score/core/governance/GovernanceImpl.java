@@ -191,7 +191,7 @@ public class GovernanceImpl extends AbstractGovernance {
     public void transferOmmFromDaoFund(BigInteger _value, Address _address, @Optional byte[] _data) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
-        daoFund.transferOmm(_value, _address,_data);
+        daoFund.transferOmm(_value, _address, _data);
     }
 
     @External
