@@ -3,7 +3,6 @@ package finance.omm.score.core.governance;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.utils.math.MathUtils.convertToNumber;
 import static finance.omm.utils.math.MathUtils.isValidPercentage;
-import static finance.omm.utils.math.MathUtils.pow;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
@@ -24,8 +23,8 @@ import finance.omm.libs.structs.governance.ReserveConstant;
 import finance.omm.score.core.governance.db.ProposalDB;
 import finance.omm.score.core.governance.enums.ProposalStatus;
 import finance.omm.score.core.governance.exception.GovernanceException;
+import finance.omm.score.core.governance.execution.ArbitraryCallManager;
 import finance.omm.score.core.governance.interfaces.RewardDistributionImpl;
-import finance.omm.score.core.governance.utils.ArbitraryCallManager;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.math.MathUtils;
 import java.math.BigInteger;
@@ -33,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.Context;
+import score.RevertedException;
+import score.UserRevertedException;
 import score.annotation.External;
 import score.annotation.Optional;
 import scorex.util.ArrayList;
@@ -190,18 +191,18 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     @External
-    public void transferOmmFromDaoFund(BigInteger _value, Address _address) {
+    public void transferOmmFromDaoFund(BigInteger _value, Address _address, @Optional byte[] _data) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
-        daoFund.transferOmm(_value, _address);
+        daoFund.transferOmm(_value, _address, _data);
     }
 
     @External
-    public void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to) {
+    public void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to, @Optional byte[] _data) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
 
         FeeProvider feeProvider = getInstance(FeeProvider.class, Contracts.FEE_PROVIDER);
-        feeProvider.transferFund(_token, _value, _to);
+        feeProvider.transferFund(_token, _value, _to, _data);
     }
 
     @External(readonly = true)
@@ -437,30 +438,41 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     /**
-     * All methods allowed calling via governance proposal.
-     * @param contract
-     * @param method
-     * @param parameters
+     * @param contract Contract Address
+     * @param method   Method array of methods allowed to call via governance proposal
      */
     @External
-    public void addAllowedMethods(Address contract, String method, String parameters) {
+    public void addAllowedMethods(Address contract, String[] method) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        callManager.addAllowedMethods(contract, method, parameters);
+        ArbitraryCallManager.addAllowedMethods(contract, method);
     }
 
     /**
-     * Returns required parameter of method of a contract.
-     * Returns an empty string, if that method is not an allowed method.
-     *
      * @param contract Contract Address
-     * @param method Name of method of the contract
-     * @return Required parameters for given method
+     * @param method   Remove any methods to not be allowed to call via governance proposal
      */
-    @External(readonly = true)
-    public String getMethodParameters(Address contract, String method) {
-        return callManager.getMethodParameters(contract, method);
+    @External
+    public void removeAllowedMethods(Address contract, String[] method) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        ArbitraryCallManager.removeAllowedMethods(contract, method);
     }
 
+    /**
+     * @param contract
+     * @return Names of methods of contract, that can be called via governance proposal
+     */
+    @External(readonly = true)
+    public List<String> getSupportedMethodsOfContract(Address contract) {
+        return ArbitraryCallManager.allowedMethodsOf(contract);
+    }
+
+    /**
+     * @return Contract addresses whose method can be called via governance proposal
+     */
+    @External(readonly = true)
+    public List<Address> getSupportedContracts() {
+        return callManager.getContractList();
+    }
 
     /**
      * Executes action after the voting period is done. If the vote passed, any actions included in the proposal are
@@ -494,16 +506,15 @@ public class GovernanceImpl extends AbstractGovernance {
 
         if (status.equals(ProposalStatus.NO_QUORUM.getStatus()) || status.equals(ProposalStatus.DEFEATED.getStatus())) {
             return;
-        } else if ( transactions.equals("[]")) {
-            this.refundVoteDefinitionFee(proposal);
-            return;
         }
-
         try {
-            callManager.executeTransactions(transactions);
+            if (!transactions.equals("[]")) {
+                Context.call(Context.getAddress(), "executeTransactions", transactions);
+            }
             proposal.status.set(ProposalStatus.EXECUTED.getStatus());
+            this.refundVoteDefinitionFee(proposal);
             ActionExecuted(BigInteger.valueOf(vote_index), status);
-        } catch (Exception e) {
+        } catch (UserRevertedException e) {
             proposal.status.set(ProposalStatus.FAILED_EXECUTION.getStatus());
         }
     }
@@ -646,14 +657,14 @@ public class GovernanceImpl extends AbstractGovernance {
 
     @External
     public void tryExecuteTransactions(String transactions) {
-        callManager.executeTransactions(transactions);
+        ArbitraryCallManager.executeTransactions(transactions);
         Context.revert(SUCCESSFUL_VOTE_EXECUTION_REVERT_ID);
     }
 
     @External
     public void executeTransactions(String transactions) {
-        onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        callManager.executeTransactions(transactions);
+        Context.require(Context.getAddress().equals(Context.getCaller()), "Only governance Contract");
+        ArbitraryCallManager.executeTransactions(transactions);
     }
 
     @External

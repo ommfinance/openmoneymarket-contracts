@@ -400,15 +400,16 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Account notOwner = sm.createAccount();
         Address randomAddr = sm.createAccount().getAddress();
         BigInteger value = ICX;
+        byte[] data = "transfer".getBytes();
 
-        doNothing().when(daoFund).transferOmm(value, randomAddr);
+        doNothing().when(daoFund).transferOmm(value, randomAddr,data);
 
         // not owner
-        Executable notOwnerCall = () -> score.invoke(notOwner, "transferOmmFromDaoFund", value, randomAddr);
+        Executable notOwnerCall = () -> score.invoke(notOwner, "transferOmmFromDaoFund", value, randomAddr,data);
         expectErrorMessage(notOwnerCall, "require owner access");
 
         // owner
-        score.invoke(owner, "transferOmmFromDaoFund", value, randomAddr);
+        score.invoke(owner, "transferOmmFromDaoFund", value, randomAddr,data);
     }
 
     @Test
@@ -417,14 +418,16 @@ public class GovernanceTest extends AbstractGovernanceTest {
         Address token = Account.newScoreAccount(1).getAddress();
         Address randomAddr = sm.createAccount().getAddress();
         BigInteger value = ICX;
+        byte[] data = "transfer".getBytes();
 
-        doNothing().when(feeProvider).transferFund(token, value, randomAddr);
+        doNothing().when(feeProvider).transferFund(token, value, randomAddr,data);
 
         // not owner
-        Executable notOwnerCall = () -> score.invoke(notOwner, "transferFundFromFeeProvider", token, value, randomAddr);
+        Executable notOwnerCall = () -> score.invoke(notOwner, "transferFundFromFeeProvider", token, value,
+                randomAddr,data);
         expectErrorMessage(notOwnerCall, "require owner access");
 
         // owner
-        score.invoke(owner, "transferFundFromFeeProvider", token, value, randomAddr);
+        score.invoke(owner, "transferFundFromFeeProvider", token, value, randomAddr,data);
     }
 }

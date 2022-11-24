@@ -16,7 +16,7 @@ import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.governance.db.ProposalDB;
 import finance.omm.score.core.governance.exception.GovernanceException;
 import finance.omm.score.core.governance.interfaces.RewardDistributionImplClient;
-import finance.omm.score.core.governance.utils.ArbitraryCallManager;
+import finance.omm.score.core.governance.execution.ArbitraryCallManager;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.constants.TimeConstants.Timestamp;
 import finance.omm.utils.math.MathUtils;
@@ -45,7 +45,6 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
 
     public ArbitraryCallManager callManager = new ArbitraryCallManager();
 
-
     public AbstractGovernance(Address addressProvider, boolean _update) {
         super(addressProvider, _update);
 
@@ -67,7 +66,8 @@ public abstract class AbstractGovernance extends AddressProvider implements Gove
             proposal.feeRefunded.set(Boolean.TRUE);
 
             DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
-            daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get());
+            daoFund.transferOmm(proposal.fee.getOrDefault(BigInteger.ZERO), proposal.proposer.get(),
+                    "refund".getBytes());
         }
     }
 

@@ -10,7 +10,7 @@ public interface DAOFund extends AddressProvider {
 
     String name();
 
-    void transferOmm(BigInteger _value, Address _address);
+    void transferOmm(BigInteger _value, Address _address, @Optional byte[] _data);
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 

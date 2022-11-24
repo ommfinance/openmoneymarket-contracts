@@ -363,7 +363,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
         ownerClient.governance.transferOmmToDaoFund(BigInteger.valueOf(4000000).multiply(ICX));
 
-        ownerClient.governance.transferOmmFromDaoFund(BigInteger.valueOf(40000).multiply(ICX),ownerClient.getAddress());
+        ownerClient.governance.transferOmmFromDaoFund(BigInteger.valueOf(40000).multiply(ICX),ownerClient.getAddress(),
+        "reward".getBytes());
     }
 
 
