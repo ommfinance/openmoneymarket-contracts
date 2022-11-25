@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.Context;
-import score.RevertedException;
+
 import score.UserRevertedException;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -495,7 +495,7 @@ public class GovernanceImpl extends AbstractGovernance {
         }
 
         if (!proposal.active.get()) {
-            throw GovernanceException.unknown("This proposal is not active.");
+            throw GovernanceException.proposalNotActive(vote_index);
         }
 
         Map<String, ?> result = this.checkVote(vote_index);
