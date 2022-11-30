@@ -10,6 +10,7 @@ import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.score.intTest.governance.config.GovernanceConfig;
 import foundation.icon.jsonrpc.Address;
 
+import foundation.icon.score.client.RevertedException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -24,10 +25,12 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
+import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserReverted;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.libs.test.integration.Environment.godClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @TestInstance(Lifecycle.PER_CLASS)
@@ -47,7 +50,6 @@ public class GovernanceTest implements ScoreIntegrationTest {
     String description = "Any user can call execute proposal after success";
     String methodName = "defineVote";
     Map<String, Boolean> STATES = new HashMap<>();
-    BigInteger lastBlockHeight = godClient._lastBlockHeight();
 
     @BeforeAll
     static void setup() throws Exception {
@@ -71,186 +73,398 @@ public class GovernanceTest implements ScoreIntegrationTest {
         assertEquals("Omm Governance Manager", ownerClient.governance.name());
     }
 
+    @DisplayName("configuration")
     @Test
     @Order(1)
     public void configuration(){
-
         BigInteger amount = BigInteger.valueOf(10_000).multiply(ICX);
-
-
         rewardDistribution();
         transferOmmFromOwner(alice,amount);
         transferOmmFromOwner(bob,amount);
 
         // totalOmmLocked -> 15_000
+        userLockOMM(ownerClient,amount,4);
         userLockOMM(alice,amount,4);
         userLockOMM(bob,amount.divide(BigInteger.TWO),2);
-
-        setVoteDefinitionFee();
-        setVoteDuration();
-        setQuorum();
-        addAllowedMethods();
-
-//         check voting weight after this
-//        assertTrue(votingWeight(alice,blockHeight).compareTo(BigInteger.ZERO)>0);
-//        assertTrue(votingWeight(bob,blockHeight).compareTo(BigInteger.ZERO)>0);
-
     }
 
-    private void setVoteDefinitionFee(){
-        ownerClient.governance.setVoteDefinitionFee(BigInteger.valueOf(1000).multiply(ICX));
-    }
+    @DisplayName("setting constants ")
+    @Nested
+    @TestMethodOrder(OrderAnnotation.class)
+    class Constants{
 
-    private void setVoteDuration(){
-        ownerClient.governance.setVoteDuration(BigInteger.valueOf(30000000));
-    }
+        @Test
+        @Order(1)
+        public void setVoteDefinitionFee(){
+            BigInteger voteFee = BigInteger.valueOf(1000).multiply(ICX);
 
-    private void setQuorum(){
-        ownerClient.governance.setQuorum(BigInteger.valueOf(2).multiply(ICX).divide(BigInteger.valueOf(100)));
-    }
+            assertUserReverted(41, () -> alice.governance.setVoteDefinitionFee(voteFee), null);
+
+            ownerClient.governance.setVoteDefinitionFee(voteFee);
+
+            assertEquals(voteFee,alice.governance.getVoteDefinitionFee());
+        }
+
+        @Test
+        @Order(1)
+        public void setVoteDuration(){
+            BigInteger duration = BigInteger.valueOf(30000000); // 30 * 10 ** 6 seconds
 
 
-    private void addAllowedMethods(){
-        String[] methods = new String[]{"transferOmm"};
-        ownerClient.governance.addAllowedMethods(addressMap.get(Contracts.DAO_FUND.getKey()),methods);
+            assertUserReverted(41,
+                    () -> alice.governance.setVoteDuration(duration), null);
+
+            ownerClient.governance.setVoteDuration(duration);
+
+            assertEquals(duration,ownerClient.governance.getVoteDuration());
+        }
+
+        @Test
+        @Order(1)
+        public void setQuorum(){
+            BigInteger quorum = BigInteger.valueOf(2).multiply(ICX).divide(BigInteger.valueOf(100));
+            ownerClient.governance.setQuorum(quorum);
+
+
+            assertUserReverted(41,
+                    () -> alice.governance.setQuorum(quorum), null);
+
+            assertUserReverted(40,
+                    () -> ownerClient.governance.setQuorum(BigInteger.valueOf(2).multiply(ICX)), null);
+
+            ownerClient.governance.setVoteDuration(quorum);
+
+            assertEquals(quorum,ownerClient.governance.getQuorum());
+        }
+
+        @Test
+        @Order(1)
+        public void setVoteDefinition(){
+            BigInteger voteDefinition = BigInteger.valueOf(2).multiply(ICX).divide(BigInteger.valueOf(100));
+
+            assertUserReverted(41,
+                    () -> alice.governance.setVoteDefinitionCriteria(voteDefinition), null);
+
+            assertUserReverted(40,
+                    () -> ownerClient.governance.setVoteDefinitionCriteria(BigInteger.TWO.multiply(ICX)), null);
+
+            ownerClient.governance.setVoteDefinitionCriteria(voteDefinition);
+
+            assertEquals(voteDefinition,ownerClient.governance.getBoostedOmmVoteDefinitionCriterion());
+        }
+
+        @DisplayName("Adding and removing allowed methods ")
+        @Nested
+        @TestMethodOrder(OrderAnnotation.class)
+        class MethodConfiguration{
+
+            Address daoFund = addressMap.get(Contracts.DAO_FUND.getKey());
+            @Test
+            @Order(1)
+            public void addMethods(){
+                String[] methods = new String[]{"transferOmm","tokenFallback"};
+
+                assertUserReverted(41,
+                        () -> bob.governance.addAllowedMethods(daoFund,methods), null);
+
+                ownerClient.governance.addAllowedMethods(daoFund,methods);
+
+                // querying methods
+//            List<score.Address> supportedContracts = bob.governance.getSupportedContracts();
+//            assertEquals(daoFund,supportedContracts.get(0));
+//            assertEquals(methods,supportedMethods);
+
+            }
+
+            @Test
+            @Order(2)
+            public void removeMethods(){
+                String[] methods = new String[]{"tokenFallback"};
+
+                assertUserReverted(41,
+                        () -> bob.governance.removeAllowedMethods(daoFund,methods), null);
+
+                ownerClient.governance.removeAllowedMethods(daoFund,methods);
+
+                // querying methods
+//            assertEquals(daoFund,bob.governance.getSupportedContracts());
+//            assertEquals(methods,bob.governance.getSupportedMethodsOfContract(daoFund));
+
+            }
+
+            @DisplayName("Creating Proposals")
+            @Nested
+            @TestMethodOrder(OrderAnnotation.class)
+            class ProposalCreation{
+                Address governance = addressMap.get(Contracts.GOVERNANCE.getKey());
+                Address daoFund = addressMap.get(Contracts.DAO_FUND.getKey());
+                BigInteger value = BigInteger.valueOf(1000).multiply(ICX);
+
+                @Test
+                @Order(1)
+                public void insufficientFeeProposal(){
+                    assertReverted(new RevertedException(1,"Insufficient fee to create proposal"),
+                            ()->ownerClient.ommToken.transfer(governance,BigInteger.ONE,"".getBytes()));
+
+                }
+
+                @Test
+                @Order(1)
+                public void invalidMethodName(){
+                    String transaction = "[]";
+                    byte[] data = defineVoteByteArray("invalidName",name,forum,description,transaction);
+
+                    assertReverted(new RevertedException(1,"No valid method called :: " + data),
+                            ()->ownerClient.ommToken.transfer(governance,value,data));
+
+
+                }
+
+                @Test
+                @Order(2)
+                public void successfulProposals(){
+                    assertEquals(0,getProposalCount());
+
+                    BigInteger balance_before_proposal = ommTokenBalance(ownerClient);
+
+                    String transaction = transactions(daoFund,"transferOmm");
+
+                    // owner creates proposal
+                    createProposal(ownerClient,transaction,1);
+                    createProposal(ownerClient,transaction,2);
+                    createProposal(ownerClient,transaction,3);
+
+                    BigInteger balance_after_proposal = ommTokenBalance(ownerClient);
+                    assertEquals(balance_before_proposal,
+                            balance_after_proposal.add(BigInteger.valueOf(3000).multiply(ICX)));
+                    assertEquals(3,getProposalCount());
+                }
+
+                @Test
+                @Order(3)
+                public void proposalsWithEmptyTransaction(){
+                    BigInteger balance_before_proposal = ommTokenBalance(bob);
+
+                    String transaction = "[]";
+
+                    createProposal(bob,transaction,4);
+                    createProposal(bob,transaction,5);
+
+                    BigInteger balance_after_proposal = ommTokenBalance(bob);
+                    assertEquals(balance_before_proposal,
+                            balance_after_proposal.add(BigInteger.valueOf(2000).multiply(ICX)));
+
+                    assertEquals(5,getProposalCount());
+                }
+
+
+                @DisplayName("Voting on different proposals ")
+                @Nested
+                @TestMethodOrder(OrderAnnotation.class)
+                class VoteProposals{
+
+                    BigInteger blockHeight = godClient._lastBlockHeight();
+                    BigInteger aliceVotingWeight = votingWeight(alice,blockHeight);
+                    BigInteger bobVotingWeight = votingWeight(bob,blockHeight);
+
+                    @Test
+                    @Order(1)
+                    public void for_votes(){
+
+                        // checking voteWeight
+                        assertTrue(aliceVotingWeight.compareTo(BigInteger.ZERO)>0);
+                        assertTrue(bobVotingWeight.compareTo(BigInteger.ZERO)>0);
+
+                        // proposal1 -> accepted
+                        alice.governance.castVote(1,true);
+                        bob.governance.castVote(1,true);
+
+                        // voters count in proposal 1
+                        Map<String,BigInteger> votersCount = ownerClient.governance.getVotersCount(1);
+                        assertEquals(BigInteger.TWO,votersCount.get("for_voters"));
+
+                        // voters weight in proposal 1
+                        Map<String,?> votes = ownerClient.governance.getVotesOfUser(1,alice.getAddress());
+//                        assertEquals(aliceVotingWeight,votes.get("for")); // TODO:convert hex to int
+
+                        // proposal4 -> accepted but no transaction
+                        alice.governance.castVote(4,true);
+                        bob.governance.castVote(4,true);
+                        votersCount = ownerClient.governance.getVotersCount(4);
+                        assertEquals(BigInteger.TWO,votersCount.get("for_voters"));
+
+                    }
+
+                    @Test
+                    @Order(2)
+                    public void against_votes(){
+
+                        // proposal2 -> rejected
+                        alice.governance.castVote(2,false);
+                        bob.governance.castVote(2,false);
+
+                        // voters count in proposal 2
+                        Map<String,BigInteger> votersCount = ownerClient.governance.getVotersCount(2);
+                        assertEquals(BigInteger.TWO,votersCount.get("against_voters"));
+
+                        // voters weight in proposal 2
+                        Map<String,?> votes = ownerClient.governance.getVotesOfUser(2,bob.getAddress());
+//                        assertEquals(bobVotingWeight,votes.get("against")); TODO
+
+                        // proposal5 -> rejected but no transaction
+                        alice.governance.castVote(5,false);
+                        bob.governance.castVote(5,false);
+
+                        votersCount = ownerClient.governance.getVotersCount(5);
+                        assertEquals(BigInteger.TWO,votersCount.get("against_voters"));
+
+                        STATES.put("Voted on all proposal",true);
+                    }
+
+                    @DisplayName("Execute proposal")
+                    @Nested
+                    @TestMethodOrder(OrderAnnotation.class)
+                    class ExecuteProposal{
+
+                        @Test
+                        @Order(1)
+                        public void execute_before_vote_end(){
+
+                            assertUserReverted(40, ()-> ownerClient.governance.execute_proposal(1));
+                        }
+
+                        @Test
+                        @Order(1)
+                        public void execute_succeeded_proposal() throws InterruptedException {
+
+                            // voting time 30sec
+                            Thread.sleep(30001);
+
+                            // check proposal 1 -> succeeded
+                            assertEquals("Succeeded",proposalStatus(1));
+
+                            BigInteger balance_before_execution = ommTokenBalance(ownerClient);
+
+                            // executingProposal by owner
+                            ownerClient.governance.execute_proposal(1);
+
+                            assertEquals("Executed",proposalStatus(1));
+                            // TODO: verify ActionExecuted eventlog
+
+                            BigInteger balance_after_execution = ommTokenBalance(ownerClient);
+                            assertEquals(balance_after_execution,
+                                    balance_before_execution.add(BigInteger.valueOf(1100).multiply(ICX)));
+
+                            STATES.put("executed proposal 1",true);
+                        }
+
+                        @Test
+                        @Order(2)
+                        public void execute_defeated_proposal() {
+
+                            // check proposal 2 -> defeated
+                            assertEquals("Defeated",proposalStatus(2));
+
+                            BigInteger balance_before_execution = ommTokenBalance(ownerClient);
+
+                            // executingProposal by alice
+                            alice.governance.execute_proposal(2);
+
+                            assertEquals("Defeated",proposalStatus(2));
+
+                            BigInteger balance_after_execution = ommTokenBalance(ownerClient);
+                            assertEquals(balance_before_execution, balance_after_execution);
+
+                            STATES.put("executed proposal 2",true);
+                        }
+
+                        @Test
+                        @Order(3)
+                        public void execute_no_quorum_proposal() {
+                            // check proposal 3 -> no quorum
+                            assertEquals("No Quorum",proposalStatus(3));
+
+                            BigInteger balance_before_execution = ommTokenBalance(ownerClient);
+
+                            // executingProposal by bob
+                            bob.governance.execute_proposal(3);
+
+                            assertEquals("No Quorum",proposalStatus(3));
+
+                            BigInteger balance_after_execution = ommTokenBalance(ownerClient);
+                            assertEquals(balance_before_execution, balance_after_execution);
+
+                            STATES.put("executed proposal 3",true);
+                        }
+
+                        @Test
+                        @Order(2)
+                        public void executing_executed_proposal(){
+                            assertUserReverted(46, ()-> ownerClient.governance.execute_proposal(1));
+
+                            // try printing the exception and check the result
+                        }
+
+                        @Test
+                        @Order(4)
+                        public void execute_succeeded_proposal_with_empty_transaction() {
+
+                            // check proposal 4 -> succeeded
+                            assertEquals("Succeeded",proposalStatus(4));
+
+                            BigInteger balance_before_execution = ommTokenBalance(bob);
+
+                            // executingProposal by ownerClient
+                            ownerClient.governance.execute_proposal(4);
+
+                            assertEquals("Executed",proposalStatus(4));
+                            // TODO: verify ActionExecuted eventlog
+
+                            BigInteger balance_after_execution = ommTokenBalance(bob);
+                            assertEquals(balance_after_execution,
+                                    balance_before_execution.add(BigInteger.valueOf(1000).multiply(ICX)));
+
+                            STATES.put("executed proposal 4",true);
+                        }
+
+                        @Test
+                        @Order(2)
+                        public void execute_defeated_proposal_with_empty_transaction() {
+
+                            // check proposal 5 -> defeated
+                            assertEquals("Defeated",proposalStatus(5));
+
+                            BigInteger balance_before_execution = ommTokenBalance(bob);
+
+                            // executingProposal by ownerClient
+                            ownerClient.governance.execute_proposal(5);
+
+                            assertEquals("Defeated",proposalStatus(5));
+
+                            BigInteger balance_after_execution = ommTokenBalance(bob);
+                            assertEquals(balance_before_execution, balance_after_execution);
+
+                            STATES.put("executed proposal 5",true);
+                        }
+
+
+                    }
+
+
+                }
+
+            }
+        }
+
+
     }
 
     private BigInteger votingWeight(OMMClient client, BigInteger timestamp){
         return ownerClient.governance.myVotingWeight(client.getAddress(),timestamp);
     }
 
-    @Test
-    @Order(2)
-    public void owner_puts_proposal(){
 
-        assertEquals(0,getProposalCount());
 
-        Address daoFund = addressMap.get(Contracts.DAO_FUND.getKey());
-
-        BigInteger balance_before_proposal = ommTokenBalance(ownerClient);
-        // owner creates proposal
-        createProposal(ownerClient,daoFund,"transferOmm",1);
-        createProposal(ownerClient,daoFund,"transferOmm",2);
-        createProposal(ownerClient,daoFund,"transferOmm",3);
-        BigInteger balance_after_proposal = ommTokenBalance(ownerClient);
-
-        assertEquals(balance_before_proposal,
-                balance_after_proposal.add(BigInteger.valueOf(3000).multiply(ICX)));
-        assertEquals(3,getProposalCount());
-    }
-
-    @Test
-    @Order(3)
-    public void vote_proposal() {
-
-        // proposal1 -> accepted
-        alice.governance.castVote(1,true);
-        bob.governance.castVote(1,true);
-
-        // proposal2 -> defeated
-        alice.governance.castVote(2,false);
-        bob.governance.castVote(2,false);
-
-        //proposal3 -> no quorum
-
-        STATES.put("Voted on all proposal",true);
-
-    }
-
-    @DisplayName("Execute proposal")
-    @Nested
-    @TestMethodOrder(OrderAnnotation.class)
-    class ExecuteProposal{
-
-        @Test
-        @Order(1)
-        public void execute_before_vote_end(){
-
-            assertUserReverted(40, ()-> ownerClient.governance.execute_proposal(1));
-        }
-
-        @Test
-        @Order(1)
-        public void execute_succeeded_proposal() throws InterruptedException {
-//            if (STATES.getOrDefault("Voted on all proposal",false)){
-//                return;
-//            }
-            // voting time 30sec
-            Thread.sleep(30001);
-
-            // check proposal 1 -> succeeded
-            assertEquals("Succeeded",proposalStatus(1));
-
-            BigInteger balance_before_execution = ommTokenBalance(ownerClient);
-
-            // executingProposal by owner
-            ownerClient.governance.execute_proposal(1);
-
-            assertEquals("Executed",proposalStatus(1));
-            // TODO: verify ActionExecuted eventlog
-
-            BigInteger balance_after_execution = ommTokenBalance(ownerClient);
-            assertEquals(balance_after_execution,
-                    balance_before_execution.add(BigInteger.valueOf(1100).multiply(ICX)));
-
-            STATES.put("executed proposal 1",true);
-        }
-
-        @Test
-        @Order(2)
-        public void execute_defeated_proposal() {
-//            if (STATES.getOrDefault("Voted on all proposal",false)){
-//                return;
-//            }
-            // check proposal 2 -> defeated
-            assertEquals("Defeated",proposalStatus(2));
-
-            BigInteger balance_before_execution = ommTokenBalance(ownerClient);
-
-            // executingProposal by alice
-            alice.governance.execute_proposal(2);
-
-            assertEquals("Defeated",proposalStatus(2));
-
-            BigInteger balance_after_execution = ommTokenBalance(ownerClient);
-            assertEquals(balance_before_execution, balance_after_execution);
-
-            STATES.put("executed proposal 2",true);
-        }
-
-        @Test
-        @Order(3)
-        public void execute_no_quorum_proposal() {
-//            if (STATES.getOrDefault("Voted on all proposal",false)){
-//                return;
-//            }
-            // check proposal 3 -> no quorum
-            assertEquals("No Quorum",proposalStatus(3));
-
-            BigInteger balance_before_execution = ommTokenBalance(ownerClient);
-
-            // executingProposal by bob
-            bob.governance.execute_proposal(3);
-
-            assertEquals("No Quorum",proposalStatus(3));
-
-            BigInteger balance_after_execution = ommTokenBalance(ownerClient);
-            assertEquals(balance_before_execution, balance_after_execution);
-
-            STATES.put("executed proposal 3",true);
-        }
-
-        @Test
-        @Order(2)
-        public void executing_executed_proposal(){
-//            if (STATES.getOrDefault("executed proposal 1",false)){
-//                return;
-//            }
-            assertUserReverted(46, ()-> ownerClient.governance.execute_proposal(1));
-
-            // try printing the exception and check the result
-        }
-    }
 
     private String proposalStatus(int index){
         Map<String,?> proposal = ownerClient.governance.checkVote(index);
@@ -264,18 +478,14 @@ public class GovernanceTest implements ScoreIntegrationTest {
 
     }
 
-    private void createProposal(OMMClient client, Address transactionAddress, String transactionMethodName, int proposalId){
+    private void createProposal(OMMClient client, String transaction, int proposalId){
         Address governance = addressMap.get(Contracts.GOVERNANCE.getKey());
         BigInteger value = BigInteger.valueOf(1000).multiply(ICX);
 
-        // check method names is present in that contract or not
-        String transaction = transactions(transactionAddress,transactionMethodName);
-
-        String proposalName = name + proposalId;
+        String proposalName = name + " "+proposalId;
         byte[] data = defineVoteByteArray(methodName,proposalName,forum,description,transaction);
         client.ommToken.transfer(governance,value,data);
     }
-
 
 
     private int getProposalCount(){
@@ -376,10 +586,5 @@ public class GovernanceTest implements ScoreIntegrationTest {
 
         return transactionArray.toString();
     }
-
-
-
-
-
 
 }
