@@ -3,16 +3,12 @@ package finance.omm.score.intTest.governance;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import finance.omm.libs.address.Contracts;
-import finance.omm.libs.test.integration.OMM;
 import finance.omm.libs.test.integration.OMMClient;
-import finance.omm.libs.test.integration.ScoreIntegrationTest;
-import finance.omm.libs.test.integration.configs.Config;
-import finance.omm.score.intTest.governance.config.GovernanceConfig;
 import foundation.icon.jsonrpc.Address;
 
 import foundation.icon.score.client.RevertedException;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -30,49 +26,19 @@ import static finance.omm.libs.test.AssertRevertedException.assertReverted;
 import static finance.omm.libs.test.AssertRevertedException.assertUserReverted;
 import static finance.omm.utils.math.MathUtils.ICX;
 import static finance.omm.libs.test.integration.Environment.godClient;
+import static finance.omm.utils.math.MathUtils.pow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class GovernanceTest implements ScoreIntegrationTest {
-
-    private static OMMClient ownerClient;
-    private static OMMClient alice;
-    private static OMMClient bob;
-
-    private static Map<String, Address> addressMap;
-
-    private final BigInteger time = BigInteger.valueOf(System.currentTimeMillis()/ 1000);
+public class GovernanceProposalIntTest extends AbstractGovernanceIntTest {
 
     String name = "Arbitrary Call";
     String forum = "https://forum.omm.finance/random_proposal";
     String description = "Any user can call execute proposal after success";
     String methodName = "defineVote";
-
-    @BeforeAll
-    static void setup() throws Exception {
-        OMM omm = new OMM("conf/all-contracts.json");
-
-        omm.setupOMM();
-        addressMap = omm.getAddresses();
-
-        Config config = new GovernanceConfig();
-        omm.runConfig(config);
-
-        ownerClient = omm.defaultClient();
-        alice = omm.newClient(BigInteger.TEN.pow(24));
-        bob = omm.newClient(BigInteger.TEN.pow(24));
-    }
-
-    @DisplayName("Test name")
-    @Test
-    @Order(1)
-    public void testName() {
-        assertEquals("Omm Governance Manager", ownerClient.governance.name());
-    }
-
     @DisplayName("configuration")
     @Test
     @Order(1)
@@ -86,6 +52,68 @@ public class GovernanceTest implements ScoreIntegrationTest {
         userLockOMM(ownerClient,amount,4);
         userLockOMM(alice,amount,4);
         userLockOMM(bob,amount.divide(BigInteger.TWO),2);
+    }
+
+    @DisplayName("Transfer ")
+    @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class Transfer{
+
+        @DisplayName("Transfer omm from owner to daoFund")
+        @Test
+        @Order(1)
+        public void transferOmmToDaoFund(){
+            BigInteger value = BigInteger.valueOf(10).multiply(ICX);
+            Address daoFund = addressMap.get(Contracts.DAO_FUND.getKey());
+            assertUserReverted(41, () -> alice.governance.transferOmmToDaoFund(value), null);
+
+            BigInteger before_balance = ownerClient.ommToken.balanceOf(daoFund);
+            ownerClient.governance.transferOmmToDaoFund(value);
+
+            BigInteger after_balance = ownerClient.ommToken.balanceOf(daoFund);
+
+            assertEquals(after_balance,before_balance.add(value));
+
+        }
+
+        @DisplayName("daoFund to owner")
+        @Test
+        @Order(2)
+        public void transferOmmFromDaoFund(){
+            BigInteger value = BigInteger.valueOf(5).multiply(ICX);
+            assertUserReverted(41, () ->
+                    alice.governance.transferOmmFromDaoFund(value, ownerClient.getAddress(),"toOwner".getBytes()), null);
+
+
+            BigInteger before_balance = ownerClient.ommToken.balanceOf(ownerClient.getAddress());
+            ownerClient.governance.transferOmmFromDaoFund(value, ownerClient.getAddress(),"toOwner".getBytes());
+
+            BigInteger after_balance = ownerClient.ommToken.balanceOf(ownerClient.getAddress());
+
+            assertEquals(after_balance,before_balance.add(value));
+
+        }
+
+        @DisplayName("feeProvider to owner")
+        @Test
+        @Order(2)
+        public void transferFundFromFeeProvider(){
+            BigInteger value = BigInteger.valueOf(5).multiply(ICX);
+
+            Address omm = addressMap.get(Contracts.OMM_TOKEN.getKey());
+            assertUserReverted(41, () ->
+                    alice.governance.transferFundFromFeeProvider(omm,value, ownerClient.getAddress(),"toOwner".getBytes()), null);
+
+
+            BigInteger before_balance = ownerClient.ommToken.balanceOf(ownerClient.getAddress());
+            ownerClient.governance.transferFundFromFeeProvider(omm,value, ownerClient.getAddress(),"toOwner".getBytes());
+
+            BigInteger after_balance = ownerClient.ommToken.balanceOf(ownerClient.getAddress());
+
+            assertEquals(after_balance,before_balance.add(value));
+
+        }
+
     }
 
     @DisplayName("setting constants ")
@@ -309,7 +337,8 @@ public class GovernanceTest implements ScoreIntegrationTest {
 
                         // voters weight in proposal 1
                         Map<String,?> votes = ownerClient.governance.getVotesOfUser(1,alice.getAddress());
-//                        assertEquals(aliceVotingWeight,new BigInteger((votes.get("for")).toString(),16)); TODO
+                        BigInteger pow13 = pow(BigInteger.TEN, 16);
+                        assertEquals(aliceVotingWeight.longValue(),toBigInt(votes.get("for").toString()).longValue(),pow13.longValue());
 
 
                         // proposal4 -> accepted but no transaction
@@ -340,7 +369,8 @@ public class GovernanceTest implements ScoreIntegrationTest {
 
                         // voters weight in proposal 2
                         Map<String,?> votes = ownerClient.governance.getVotesOfUser(2,bob.getAddress());
-//                        assertEquals(bobVotingWeight,new BigInteger((votes.get("against")).toString(),16));
+                        BigInteger pow13 = pow(BigInteger.TEN, 16);
+                        assertEquals(bobVotingWeight.longValue(),toBigInt(votes.get("against").toString()).longValue(),pow13.longValue());
 
                         // proposal5 -> rejected but no transaction
                         alice.governance.castVote(5,false);
@@ -512,7 +542,9 @@ public class GovernanceTest implements ScoreIntegrationTest {
         return ownerClient.governance.myVotingWeight(client.getAddress(),timestamp);
     }
 
-
+    private BigInteger toBigInt(String inputString) {
+        return new BigInteger(inputString.substring(2), 16);
+    }
 
 
     private String proposalStatus(int index){
@@ -541,18 +573,6 @@ public class GovernanceTest implements ScoreIntegrationTest {
         return ownerClient.governance.getProposalCount();
     }
 
-    private void rewardDistribution(){
-        ownerClient.reward.startDistribution();
-        ownerClient.governance.enableRewardClaim();
-        ownerClient.reward.distribute();
-
-        ownerClient.governance.transferOmmToDaoFund(BigInteger.valueOf(4000_000).multiply(ICX));
-
-        // owner has 3000_000 omm
-        ownerClient.governance.transferOmmFromDaoFund(BigInteger.valueOf(3000_000).multiply(ICX),
-                ownerClient.getAddress(),"toOwner".getBytes());
-
-    }
 
     private  void transferOmmFromOwner(OMMClient client, BigInteger value){
         ownerClient.ommToken.transfer(client.getAddress(),value,
