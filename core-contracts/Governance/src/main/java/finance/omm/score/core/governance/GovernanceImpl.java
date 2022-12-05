@@ -665,8 +665,8 @@ public class GovernanceImpl extends AbstractGovernance {
 
     @External
     public void executeTransactions(String transactions) {
-        onlyContractOrElseThrow(Contracts.GOVERNANCE,
-                GovernanceException.unauthorized("Only governance Contract is allowed to call executeTransactions"));
+        Context.require(Context.getAddress().equals(Context.getCaller()),
+                "Only governance Contract is allowed to call executeTransactions");
         ArbitraryCallManager.executeTransactions(transactions);
     }
 
