@@ -505,6 +505,7 @@ public class GovernanceImpl extends AbstractGovernance {
         proposal.active.set(Boolean.FALSE);
 
         if (status.equals(ProposalStatus.NO_QUORUM.getStatus()) || status.equals(ProposalStatus.DEFEATED.getStatus())) {
+            ActionExecuted(BigInteger.valueOf(vote_index), status);
             return;
         }
         try {
@@ -516,6 +517,7 @@ public class GovernanceImpl extends AbstractGovernance {
             ActionExecuted(BigInteger.valueOf(vote_index), status);
         } catch (UserRevertedException e) {
             proposal.status.set(ProposalStatus.FAILED_EXECUTION.getStatus());
+            ActionExecuted(BigInteger.valueOf(vote_index), ProposalStatus.FAILED_EXECUTION.getStatus());
         }
     }
 
