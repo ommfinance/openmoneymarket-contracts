@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import score.Address;
 import score.Context;
-import score.RevertedException;
 import score.UserRevertedException;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -198,11 +197,11 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     @External
-    public void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to, @Optional byte[] _data) {
+    public void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
 
         FeeProvider feeProvider = getInstance(FeeProvider.class, Contracts.FEE_PROVIDER);
-        feeProvider.transferFund(_token, _value, _to, _data);
+        feeProvider.transferFund(_token, _value, _to);
     }
 
     @External(readonly = true)
@@ -516,6 +515,7 @@ public class GovernanceImpl extends AbstractGovernance {
             this.refundVoteDefinitionFee(proposal);
             ActionExecuted(BigInteger.valueOf(vote_index), status);
         } catch (UserRevertedException e) {
+            Context.println(e.getMessage());
             proposal.status.set(ProposalStatus.FAILED_EXECUTION.getStatus());
             ActionExecuted(BigInteger.valueOf(vote_index), ProposalStatus.FAILED_EXECUTION.getStatus());
         }
@@ -665,7 +665,8 @@ public class GovernanceImpl extends AbstractGovernance {
 
     @External
     public void executeTransactions(String transactions) {
-        Context.require(Context.getAddress().equals(Context.getCaller()), "Only governance Contract");
+        onlyContractOrElseThrow(Contracts.GOVERNANCE,
+                GovernanceException.unauthorized("Only governance Contract is allowed to call executeTransactions"));
         ArbitraryCallManager.executeTransactions(transactions);
     }
 
