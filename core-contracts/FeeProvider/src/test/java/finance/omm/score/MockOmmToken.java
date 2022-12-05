@@ -33,7 +33,7 @@ public class MockOmmToken {
     }
 
     @External
-    public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
+    public void transfer(Address _to, BigInteger _value) {
         owner.subtractBalance(Contracts.OMM_TOKEN.getKey(), _value);
         accounts.get(_to).addBalance(Contracts.OMM_TOKEN.getKey(), _value);
         Context.println(name() + "| transferred: " + _value + " to: " + _to);

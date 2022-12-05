@@ -51,7 +51,7 @@ public class OMMList<T> {
     }
 
     public static OMMList readObject(ObjectReader reader) {
-        OMMList<String> obj = new OMMList<String>();
+        OMMList<String> obj = new OMMList<>();
         if (reader.beginNullableList()) {
             List<String> methodList = new ArrayList<>();
             while (reader.hasNext()) {

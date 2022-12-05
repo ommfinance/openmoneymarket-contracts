@@ -28,14 +28,14 @@ public class ArbitraryCallManager extends AllowedMethods {
                 executeTransaction(transaction);
             }
         } catch (Exception e) {
-            Context.revert("Transaction Reverted");
+            Context.revert("Transaction Reverted :: " + e.getMessage());
         }
     }
 
     public static void executeTransaction(JsonObject transaction) {
         Address address = Address.fromString(transaction.get(ADDRESS).asString());
         String method = transaction.get(METHOD).asString();
-        isValidMethod(address, method);
+        validateMethod(address, method);
         JsonArray jsonParams = transaction.get(PARAMS).asArray();
         Object[] params = getConvertedParameters(jsonParams);
         Context.call(address, method, params);

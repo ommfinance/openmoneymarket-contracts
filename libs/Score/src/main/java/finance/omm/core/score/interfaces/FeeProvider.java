@@ -4,8 +4,6 @@ import foundation.icon.score.client.ScoreInterface;
 import java.math.BigInteger;
 import score.Address;
 
-import score.annotation.Optional;
-
 @ScoreInterface(suffix = "Client")
 public interface FeeProvider extends AddressProvider {
 
@@ -19,5 +17,5 @@ public interface FeeProvider extends AddressProvider {
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
-    void transferFund(Address _token, BigInteger _value, Address _to, @Optional byte[] _data);
+    void transferFund(Address _token, BigInteger _value, Address _to);
 }
