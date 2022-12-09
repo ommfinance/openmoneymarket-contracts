@@ -34,6 +34,7 @@ public class ProposalDB {
     public final VarDB<BigInteger> fee;
     public final VarDB<Boolean> feeRefunded;
     public final VarDB<String> forumLink;
+    public final VarDB<String > transactions;
 
     private ProposalDB(int varKey) {
         String key = PREFIX + varKey;
@@ -60,6 +61,7 @@ public class ProposalDB {
         fee = Context.newVarDB(key + "_fee", BigInteger.class);
         feeRefunded = Context.newVarDB(key + "_fee_refunded", Boolean.class);
         forumLink = Context.newVarDB(key + "_forum_link", String.class);
+        transactions = Context.newVarDB(key + "_transactions", String.class);
     }
 
 
@@ -87,6 +89,7 @@ public class ProposalDB {
         public BigInteger totalVotingWeight;
         public BigInteger fee;
         public String forum;
+        public String transaction;
 
 
         public ProposalBuilder(Address proposer, String name) {
@@ -140,6 +143,11 @@ public class ProposalDB {
             return this;
         }
 
+        public ProposalBuilder setTransaction(String transaction) {
+            this.transaction = transaction;
+            return this;
+        }
+
         public ProposalDB build() {
             Integer voteIndex = ProposalDB.getProposalCount() + 1;
             ProposalDB proposal = new ProposalDB(voteIndex);
@@ -160,6 +168,7 @@ public class ProposalDB {
             proposal.fee.set(fee);
             proposal.feeRefunded.set(false);
             proposal.forumLink.set(forum);
+            proposal.transactions.set(transaction);
 
             proposal.forVotersCount.set(BigInteger.ZERO);
             proposal.againstVotersCount.set(BigInteger.ZERO);

@@ -1,4 +1,4 @@
-version = '0.0.2'
+version = '0.0.3'
 
 dependencies {
     implementation project(':AddressProvider')
@@ -7,6 +7,8 @@ dependencies {
     implementation project(':OMMStruct')
 
     testImplementation project(':TestUtils')
+
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.3.0'
 }
 
 optimizedJar {

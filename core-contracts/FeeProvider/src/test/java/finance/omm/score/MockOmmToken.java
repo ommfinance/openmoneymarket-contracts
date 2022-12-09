@@ -10,6 +10,7 @@ import finance.omm.libs.address.Contracts;
 import score.Address;
 import score.Context;
 import score.annotation.External;
+import score.annotation.Optional;
 
 public class MockOmmToken {
 
