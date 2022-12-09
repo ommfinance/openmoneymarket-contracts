@@ -3,12 +3,11 @@ package finance.omm.score;
 import static finance.omm.utils.math.MathUtils.exaMultiply;
 import static finance.omm.utils.math.MathUtils.isValidPercentage;
 
-import java.math.BigInteger;
-
 import finance.omm.core.score.interfaces.FeeProvider;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.utils.exceptions.OMMException;
+import java.math.BigInteger;
 import score.Address;
 import score.Context;
 import score.VarDB;
@@ -67,10 +66,10 @@ public class FeeProviderImpl extends AddressProvider implements FeeProvider {
     }
 
     @External
-    public void transferFund(Address _token, BigInteger _value, Address _to, @Optional byte[] _data) {
+    public void transferFund(Address _token, BigInteger _value, Address _to) {
         onlyOrElseThrow(Contracts.GOVERNANCE, OMMException.unknown(
                 TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
-        Context.call(_token, "transfer", _to, _value, _data);
+        Context.call(_token, "transfer", _to, _value);
     }
 
     public void onlyOwner() {

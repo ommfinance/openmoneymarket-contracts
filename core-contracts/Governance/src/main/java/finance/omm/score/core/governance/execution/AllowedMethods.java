@@ -17,13 +17,13 @@ public class AllowedMethods {
     public static void addAllowedMethods(Address contract, String[] methods) {
         addContract(contract);
 
-        for(String method: methods) {
+        for (String method : methods) {
             addAllowedMethod(contract, method);
         }
     }
 
     public static void removeAllowedMethods(Address contract, String[] methods) {
-        for(String method: methods) {
+        for (String method : methods) {
             removeAllowedMethod(contract, method);
         }
     }
@@ -42,7 +42,7 @@ public class AllowedMethods {
         return sArr.getMethods();
     }
 
-    public static void isValidMethod(Address contract, String method) {
+    public static void validateMethod(Address contract, String method) {
         OMMList sArr = methodsOfContract.get(contract);
 
         if (sArr == null || sArr.notIn(method)) {
@@ -53,16 +53,14 @@ public class AllowedMethods {
     private static void addAllowedMethod(Address contract, String method) {
         OMMList<String> current = methodsOfContract.get(contract);
         if (current == null) {
-            current = new OMMList();
-            current.add(method);
-        } else {
-            current.add(method);
+            current = new OMMList<>();
         }
+        current.add(method);
         methodsOfContract.set(contract, current);
     }
 
     private static void removeAllowedMethod(Address contract, String method) {
-        OMMList sArr = methodsOfContract.get(contract);
+        OMMList<String> sArr = methodsOfContract.get(contract);
         if (sArr == null) {
             throw GovernanceException.unknown("Contract not added");
         }
