@@ -51,7 +51,7 @@ public interface Governance extends AddressProvider {
 
     void transferOmmFromDaoFund(BigInteger _value, Address _address, @Optional byte[] _data);
 
-    void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to, @Optional byte[] _data);
+    void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to);
 
 
     Map<String, BigInteger> getVotersCount(int vote_index);
