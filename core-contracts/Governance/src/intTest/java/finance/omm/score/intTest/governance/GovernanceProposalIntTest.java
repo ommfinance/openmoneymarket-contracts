@@ -102,11 +102,11 @@ public class GovernanceProposalIntTest extends AbstractGovernanceIntTest {
 
             Address omm = addressMap.get(Contracts.OMM_TOKEN.getKey());
             assertUserReverted(41, () ->
-                    alice.governance.transferFundFromFeeProvider(omm,value, ownerClient.getAddress(),"toOwner".getBytes()), null);
+                    alice.governance.transferFundFromFeeProvider(omm,value, ownerClient.getAddress()), null);
 
 
             BigInteger before_balance = ownerClient.ommToken.balanceOf(ownerClient.getAddress());
-            ownerClient.governance.transferFundFromFeeProvider(omm,value, ownerClient.getAddress(),"toOwner".getBytes());
+            ownerClient.governance.transferFundFromFeeProvider(omm,value, ownerClient.getAddress());
 
             BigInteger after_balance = ownerClient.ommToken.balanceOf(ownerClient.getAddress());
 
