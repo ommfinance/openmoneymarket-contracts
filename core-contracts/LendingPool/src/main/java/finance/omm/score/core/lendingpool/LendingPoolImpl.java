@@ -71,7 +71,6 @@ public class LendingPoolImpl extends AbstractLendingPool {
     @Payable
     public void deposit(BigInteger _amount) {
         BigInteger icxValue = Context.getValue();
-        // check this condition
         if (! icxValue.equals(_amount)) {
             throw LendingPoolException.unknown(TAG + " : Amount in param " +
                     _amount + " doesnt match with the icx sent " + icxValue + " to the Lending Pool");
@@ -134,8 +133,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
             throw LendingPoolException.unknown("Reserve is frozen, borrow unsuccessful");
         }
 
-        boolean isReserveBorrowEnabled = call(Boolean.class,
-                Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", _reserve);
+        boolean isReserveBorrowEnabled = (boolean)reserveData.get("borrowingEnabled");
         if (!isReserveBorrowEnabled) {
             throw LendingPoolException.unknown("Borrow error:borrowing not enabled in the reserve");
         }

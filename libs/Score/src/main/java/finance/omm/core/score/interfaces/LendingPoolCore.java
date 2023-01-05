@@ -86,8 +86,10 @@ public interface LendingPoolCore {
     BigInteger getUserUnderlyingBorrowBalance(Address _reserve, Address _user);
 
     BigInteger getUserOriginationFee(Address _reserve, Address _user);
+    BigInteger getUserOriginationFeeProxy(Address _reserve, Address _user);
 
     Map<String, BigInteger> getUserBasicReserveData(Address _reserve, Address _user);
+    Map<String, Object> getUserBasicReserveDataProxy(Address _reserve, Address _user);
 
     Map<String, BigInteger> getUserBorrowBalances(Address _reserve, Address _user);
 

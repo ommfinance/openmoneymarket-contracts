@@ -140,7 +140,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
     }
 
     protected Map<String, Object> getReserveData(Address reserve) {
-        return ownerClient.lendingPoolCore.getReserveData(reserve);
+        return ownerClient.lendingPoolCore.getReserveValues(reserve);
     }
 
     private Map<String, BigInteger> getUserBorrowBalances(Address reserve, String user) {

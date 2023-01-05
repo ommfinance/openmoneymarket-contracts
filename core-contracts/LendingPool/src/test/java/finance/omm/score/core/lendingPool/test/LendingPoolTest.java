@@ -272,11 +272,12 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(Map.of(
                 "availableBorrows",BigInteger.valueOf(1000),
                 "isActive",true,
-                "isFreezed",false
+                "isFreezed",false,
+                "borrowingEnabled",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", sICXReserve);
-        doReturn(false).when(scoreSpy).call(Boolean.class,
-                Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", sICXReserve);
+//        doReturn(false).when(scoreSpy).call(Boolean.class,
+//                Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", sICXReserve);
 
         call= () -> score.invoke(notOwner,"borrow",sICXReserve, borrowAmount);
         expectErrorMessage(call,"Borrow error:borrowing not enabled in the reserve");
@@ -286,10 +287,10 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "availableBorrows",BigInteger.valueOf(1000),
                 "isActive",true,
                 "isFreezed",false,
+                "borrowingEnabled",true,
                 "availableLiquidity",BigInteger.valueOf(10)
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", sICXReserve);
-        doReturn(true).when(scoreSpy).call(Boolean.class,
-                Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", sICXReserve);
+
 
         call= () -> score.invoke(notOwner,"borrow",sICXReserve, borrowAmount);
         expectErrorMessage(call,"Borrow error:Not enough available liquidity in the reserve");
@@ -299,7 +300,9 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "availableBorrows",BigInteger.valueOf(1000),
                 "isActive",true,
                 "isFreezed",false,
-                "availableLiquidity", borrowAmount
+                "borrowingEnabled",true,
+                "availableLiquidity", borrowAmount,
+                "decimals",BigInteger.valueOf(18)
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", sICXReserve);
 
         doReturn(Map.of(
@@ -354,8 +357,6 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
 
         verify(scoreSpy,times(9)).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", sICXReserve);
-        verify(scoreSpy,times(6)).call(Boolean.class, Contracts.LENDING_POOL_CORE,
-                "isReserveBorrowingEnabled", sICXReserve);
         verify(scoreSpy,times(4)).call(eq(Map.class), eq(Contracts.LENDING_POOL_DATA_PROVIDER),
                 eq("getUserAccountData"), eq(notOwner.getAddress()));
         verify(scoreSpy,times(2)).call(BigInteger.class, Contracts.FEE_PROVIDER,
@@ -374,11 +375,13 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "availableBorrows",BigInteger.valueOf(1000),
                 "isActive",true,
                 "isFreezed",false,
-                "availableLiquidity",BigInteger.valueOf(100)
+                "availableLiquidity",BigInteger.valueOf(100),
+                "borrowingEnabled",true,
+                "decimals",BigInteger.valueOf(18)
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", sICXReserve);
 
-        doReturn(true).when(scoreSpy).call(Boolean.class,
-                Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", sICXReserve);
+//        doReturn(true).when(scoreSpy).call(Boolean.class,
+//                Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", sICXReserve);
 
         doReturn(Map.of(
                 "totalCollateralBalanceUSD",BigInteger.valueOf(2000),

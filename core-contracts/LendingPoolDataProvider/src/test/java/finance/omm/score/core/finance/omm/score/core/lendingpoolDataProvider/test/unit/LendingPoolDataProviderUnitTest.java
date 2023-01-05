@@ -150,7 +150,7 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
                 "underlyingBalance", BigInteger.ZERO,
                 "compoundedBorrowBalance", BigInteger.ZERO
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBasicReserveData", reserve.get(0), user.getAddress());
+                "getUserBasicReserveDataProxy", reserve.get(0), user.getAddress());
 
         Map<String, Object> result = (Map<String, Object>) score.call("getUserAccountData", user.getAddress());
 
@@ -183,23 +183,29 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         BigInteger depositedBalance_icx = BigInteger.valueOf(10).multiply(ICX);
         BigInteger compoundedBorrowBalance_icx = BigInteger.ZERO;
         BigInteger originationFee_icx = BigInteger.ZERO;
-        doReturn(Map.of(
-                "underlyingBalance", depositedBalance_icx,
-                "compoundedBorrowBalance", BigInteger.ZERO,
-                "originationFee", originationFee_icx
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBasicReserveData", reserve.get(0), user.getAddress());
 
         BigInteger baseLTVasCollateral = BigInteger.valueOf(500000000000000000L);
         BigInteger liquidationThreshold = BigInteger.valueOf(650000000000000000L);
         doReturn(Map.of(
+                "underlyingBalance", depositedBalance_icx,
+                "compoundedBorrowBalance", BigInteger.ZERO,
+                "originationFee", originationFee_icx,
                 "decimals", BigInteger.valueOf(18),
                 "usageAsCollateralEnabled", true,
                 "baseLTVasCollateral", baseLTVasCollateral,
                 "liquidationThreshold", liquidationThreshold
-
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveConfiguration", reserve.get(0));
+                "getUserBasicReserveDataProxy", reserve.get(0), user.getAddress());
+
+
+//        doReturn(Map.of(
+//                "decimals", BigInteger.valueOf(18),
+//                "usageAsCollateralEnabled", true,
+//                "baseLTVasCollateral", baseLTVasCollateral,
+//                "liquidationThreshold", liquidationThreshold
+//
+//        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getReserveConfiguration", reserve.get(0));
         doReturn(ICX)
                 .when(scoreSpy).
                 call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
@@ -212,18 +218,22 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(Map.of(
                 "underlyingBalance", depositedBalance_iusdc,
                 "compoundedBorrowBalance", BigInteger.ZERO,
-                "originationFee", originationFee_iusdc
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBasicReserveData", reserve.get(1), user.getAddress());
-
-        doReturn(Map.of(
+                "originationFee", originationFee_iusdc,
                 "decimals", BigInteger.valueOf(6),
                 "usageAsCollateralEnabled", true,
                 "baseLTVasCollateral", baseLTVasCollateral,
                 "liquidationThreshold", liquidationThreshold
-
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveConfiguration", reserve.get(1));
+                "getUserBasicReserveDataProxy", reserve.get(1), user.getAddress());
+
+//        doReturn(Map.of(
+//                "decimals", BigInteger.valueOf(6),
+//                "usageAsCollateralEnabled", true,
+//                "baseLTVasCollateral", baseLTVasCollateral,
+//                "liquidationThreshold", liquidationThreshold
+//
+//        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getReserveConfiguration", reserve.get(1));
         doReturn(ICX)
                 .when(scoreSpy).
                 call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
@@ -299,23 +309,30 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         BigInteger depositedBalance_icx = BigInteger.valueOf(100).multiply(ICX);
         BigInteger compoundedBorrowBalance_icx = BigInteger.ZERO;
         BigInteger originationFee_icx = BigInteger.ZERO;
-        doReturn(Map.of(
-                "underlyingBalance", depositedBalance_icx,
-                "compoundedBorrowBalance", compoundedBorrowBalance_icx,
-                "originationFee", originationFee_icx
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBasicReserveData", reserve.get(0), user.getAddress());
 
         BigInteger baseLTVasCollateral = BigInteger.valueOf(500000000000000000L);
         BigInteger liquidationThreshold = BigInteger.valueOf(650000000000000000L);
         doReturn(Map.of(
-                "decimals", BigInteger.valueOf(18),
+                "underlyingBalance", depositedBalance_icx,
+                "compoundedBorrowBalance", compoundedBorrowBalance_icx,
+                "originationFee", originationFee_icx,
+                "decimals",BigInteger.valueOf(18),
                 "usageAsCollateralEnabled", true,
                 "baseLTVasCollateral", baseLTVasCollateral,
                 "liquidationThreshold", liquidationThreshold
-
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveConfiguration", reserve.get(0));
+                "getUserBasicReserveDataProxy", reserve.get(0), user.getAddress());
+
+//        BigInteger baseLTVasCollateral = BigInteger.valueOf(500000000000000000L);
+//        BigInteger liquidationThreshold = BigInteger.valueOf(650000000000000000L);
+//        doReturn(Map.of(
+//                "decimals", BigInteger.valueOf(18),
+//                "usageAsCollateralEnabled", true,
+//                "baseLTVasCollateral", baseLTVasCollateral,
+//                "liquidationThreshold", liquidationThreshold
+//
+//        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getReserveConfiguration", reserve.get(0));
         doReturn(ICX)
                 .when(scoreSpy).
                 call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
@@ -328,18 +345,22 @@ public class LendingPoolDataProviderUnitTest extends AbstractLendingDataProvider
         doReturn(Map.of(
                 "underlyingBalance", depositedBalance_iusdc,
                 "compoundedBorrowBalance", compoundedBorrowBalance_iusdc,
-                "originationFee", originationFee_iusdc
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBasicReserveData", reserve.get(1), user.getAddress());
-
-        doReturn(Map.of(
+                "originationFee", originationFee_iusdc,
                 "decimals", BigInteger.valueOf(6),
                 "usageAsCollateralEnabled", true,
                 "baseLTVasCollateral", baseLTVasCollateral,
                 "liquidationThreshold", liquidationThreshold
-
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveConfiguration", reserve.get(1));
+                "getUserBasicReserveDataProxy", reserve.get(1), user.getAddress());
+
+//        doReturn(Map.of(
+//                "decimals", BigInteger.valueOf(6),
+//                "usageAsCollateralEnabled", true,
+//                "baseLTVasCollateral", baseLTVasCollateral,
+//                "liquidationThreshold", liquidationThreshold
+//
+//        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getReserveConfiguration", reserve.get(1));
         doReturn(ICX)
                 .when(scoreSpy).
                 call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",

@@ -140,16 +140,42 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     @External(readonly = true)
     public Map<String, Object> getReserveData(Address _reserve) {
         Map<String, Object> response = new HashMap<>();
-        if (checkReserve(_reserve)) {
+        if (isValidReserve(_reserve)) {
             String prefix = reservePrefix(_reserve);
             response = getDataFromReserve(prefix, reserve);
-            response.put("totalLiquidity", getReserveTotalLiquidity(_reserve));
-            response.put("availableLiquidity", getReserveAvailableLiquidity(_reserve));
-            response.put("totalBorrows", getReserveTotalBorrows(_reserve));
+            BigInteger availableLiquidity = getReserveAvailableLiquidity(_reserve);
+            BigInteger totalBorrows = getReserveTotalBorrows(_reserve);
+            BigInteger totalLiquidity = availableLiquidity.add(totalBorrows);
 
-            BigInteger totalLiquidity = (BigInteger) response.get("totalLiquidity");
-            BigInteger totalBorrows = (BigInteger) response.get("totalBorrows");
-            BigInteger borrowThreshold = (BigInteger) response.get("borrowThreshold");
+            response.put("totalLiquidity", totalLiquidity);
+            response.put("availableLiquidity", availableLiquidity);
+            response.put("totalBorrows", totalBorrows);
+
+            BigInteger borrowThreshold = reserve.borrowThreshold.at(prefix).get();
+
+            BigInteger availableBorrows = exaMultiply(borrowThreshold,
+                    totalLiquidity.subtract(totalBorrows));
+            response.put("availableBorrows", availableBorrows.max(BigInteger.ZERO));
+        }
+        return response;
+    }
+
+    // not rewuired
+    @External(readonly = true)
+    public Map<String, Object> getReserveDataProxy(Address _reserve) {
+        Map<String, Object> response = new HashMap<>();
+        if (isValidReserve(_reserve)) {
+            String prefix = reservePrefix(_reserve);
+
+            BigInteger availableLiquidity = getReserveAvailableLiquidity(_reserve);
+            BigInteger totalBorrows = getReserveTotalBorrows(_reserve);
+            BigInteger totalLiquidity = availableLiquidity.add(totalBorrows);
+
+            response.put("totalLiquidity", totalLiquidity);
+            response.put("availableLiquidity", availableLiquidity);
+            response.put("totalBorrows", totalBorrows);
+
+            BigInteger borrowThreshold = reserve.borrowThreshold.at(prefix).get();
 
             BigInteger availableBorrows = exaMultiply(borrowThreshold,
                     totalLiquidity.subtract(totalBorrows));
@@ -161,14 +187,16 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     @External(readonly = true)
     public Map<String,Object> getReserveValues(Address _reserve){
         Map<String, Object> response = new HashMap<>();
-        if (checkReserve(_reserve)) {
+        if (isValidReserve(_reserve)) {
             String prefix = reservePrefix(_reserve);
             response.put("isActive",reserve.isActive.at(prefix).get());
             response.put("isFreezed",reserve.isFreezed.at(prefix).get());
             response.put("oTokenAddress",reserve.oTokenAddress.at(prefix).get());
+            response.put("isReserveBorrowingEnabled",reserve.borrowingEnabled.at(prefix).get());
         }
         return response;
     }
+
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserReserveData(Address _reserve, Address _user) {
@@ -210,16 +238,19 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External(readonly = true)
     public Map<String, Object> getReserveConfiguration(Address _reserve) {
-        Map<String, Object> reserveData = getReserveData(_reserve);
-        return Map.of(
-                "decimals", reserveData.get("decimals"),
-                "baseLTVasCollateral", reserveData.get("baseLTVasCollateral"),
-                "liquidationThreshold", reserveData.get("liquidationThreshold"),
-                "usageAsCollateralEnabled", reserveData.get("usageAsCollateralEnabled"),
-                "isActive", reserveData.get("isActive"),
-                "borrowingEnabled", reserveData.get("borrowingEnabled"),
-                "liquidationBonus", reserveData.get("liquidationBonus")
-        );
+        Map<String, Object> response = new HashMap<>();
+        if (checkReserve(_reserve)) {
+            String prefix = reservePrefix(_reserve);
+            response.put("decimals",reserve.decimals.at(prefix).get());
+            response.put("baseLTVasCollateral", reserve.baseLTVasCollateral.at(prefix).get());
+            response.put("liquidationThreshold", reserve.liquidationThreshold.at(prefix).get());
+            response.put("usageAsCollateralEnabled", reserve.usageAsCollateralEnabled.at(prefix).get());
+            response.put("isActive",reserve.isActive.at(prefix).get());
+            response.put("borrowingEnabled", reserve.borrowingEnabled.at(prefix).get());
+            response.put("liquidationBonus",reserve.liquidationBonus.at(prefix).get());
+
+        }
+        return  response;
     }
 
     @External
@@ -375,6 +406,11 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         Map<String, BigInteger> userReserveData = getUserReserveData(_reserve, _user);
         return userReserveData.get("originationFee");
     }
+    @External(readonly = true)
+    public BigInteger getUserOriginationFeeProxy(Address _reserve, Address _user) {
+        String prefix = userReservePrefix(_reserve, _user);
+        return userReserve.originationFee.at(prefix).getOrDefault(BigInteger.ZERO);
+    }
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserBasicReserveData(Address _reserve, Address _user) {
@@ -384,6 +420,22 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
                 "underlyingBalance", underlyingBalance,
                 "compoundedBorrowBalance", compoundedBorrowBalance,
                 "originationFee", getUserOriginationFee(_reserve, _user)
+        );
+    }
+
+    @External(readonly = true)
+    public Map<String,Object> getUserBasicReserveDataProxy(Address _reserve, Address _user){
+        BigInteger underlyingBalance = getUserUnderlyingAssetBalance(_reserve, _user);
+        BigInteger compoundedBorrowBalance = getUserUnderlyingBorrowBalance(_reserve, _user);
+        String prefix = reservePrefix(_reserve);
+        return Map.of(
+                "underlyingBalance", underlyingBalance,
+                "compoundedBorrowBalance", compoundedBorrowBalance,
+                "originationFee", getUserOriginationFeeProxy(_reserve, _user),
+                "decimals", reserve.decimals.at(prefix).get(),
+                "baseLTVasCollateral", reserve.baseLTVasCollateral.at(prefix).get(),
+                "liquidationThreshold", reserve.liquidationThreshold.at(prefix).get(),
+                "usageAsCollateralEnabled", reserve.usageAsCollateralEnabled.at(prefix).get()
         );
     }
 
