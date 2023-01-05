@@ -195,8 +195,7 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
 
     protected void updateUserStateOnRepayInternal(Address reserve, Address user,
             BigInteger originationFeeRepaid) {
-        Map<String, BigInteger> userReserveData = getUserReserveData(reserve, user);
-        BigInteger originationFee = userReserveData.get("originationFee");
+        BigInteger originationFee = getUserOriginationFeeProxy(reserve,user);
         updateUserOriginationFee(reserve, user, originationFee.subtract(originationFeeRepaid));
         updateUserLastUpdateTimestamp(reserve, user, TimeConstants.getBlockTimestamp());
     }

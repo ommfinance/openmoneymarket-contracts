@@ -658,7 +658,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(Map.of(
                 "isActive",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX);
+                "getReserveValues", sICX);
 
         Executable call = ()-> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), repayMethod);
@@ -667,7 +667,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(Map.of(
                 "isActive",true
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX);
+                "getReserveValues", sICX);
         doReturn(Map.of(
                 "compoundedBorrowBalance",BigInteger.ZERO
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
@@ -696,10 +696,10 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 BigInteger.valueOf(10).multiply(ICX), repayMethod);
 
         verify(scoreSpy,times(3)).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX);
+                "getReserveValues", sICX);
         verify(scoreSpy,times(2)).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getUserBorrowBalances", sICX, notOwner.getAddress());
-        verify(scoreSpy,times(2)).call(Map.class, Contracts.LENDING_POOL_CORE,
+        verify(scoreSpy,times(1)).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getUserBasicReserveData", sICX, notOwner.getAddress());
         verify(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updateStateOnRepay"), eq(sICX), eq(notOwner.
                 getAddress()), eq(BigInteger.ZERO), any(BigInteger.class), eq(BigInteger.valueOf(7).

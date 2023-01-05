@@ -25,21 +25,16 @@ deployJar {
             to = rootProject.findProperty("contracts.lending-pool-core")
             nid = 0x53
         }
-//        mainnet {
-//            uri = 'https://ctz.solidwallet.io/api/v3'
-//            to = 'cxfb312bbd0a244b9e7bb5794c91f4e4acc41dea94'
-//            nid = 0x1
-//        }
-        lisbon {
-            uri = 'https://lisbon.net.solidwallet.io/api/v3'
-            to = 'cx198bdcb6d66356e9647628495b6aff1f24a8155b'
-            nid = 0x2
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            to = 'cxfb312bbd0a244b9e7bb5794c91f4e4acc41dea94'
+            nid = 0x1
         }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('addressProvider', 'cxaad5f58e963132fe8283cee10280a7e842e47cfe')
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
     }
 }
 

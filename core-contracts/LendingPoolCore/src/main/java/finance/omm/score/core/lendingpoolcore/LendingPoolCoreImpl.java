@@ -130,7 +130,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     public void addReserveData(ReserveAttributes _reserve) {
         onlyGovernance();
         ReserveDataObject reserveDataObj = createReserveDataObject(_reserve);
-        if (!checkReserve(reserveDataObj.reserveAddress)) {
+        if (!isValidReserve(reserveDataObj.reserveAddress)) {
             addNewReserve(reserveDataObj.reserveAddress);
         }
         String prefix = reservePrefix(reserveDataObj.reserveAddress);
@@ -160,7 +160,21 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         return response;
     }
 
-    // not rewuired
+
+    @External(readonly = true)
+    public Map<String,Object> getReserveValues(Address _reserve){
+        Map<String, Object> response = new HashMap<>();
+        if (isValidReserve(_reserve)) {
+            String prefix = reservePrefix(_reserve);
+            response.put("isActive",reserve.isActive.at(prefix).get());
+            response.put("isFreezed",reserve.isFreezed.at(prefix).get());
+            response.put("oTokenAddress",reserve.oTokenAddress.at(prefix).get());
+            response.put("isReserveBorrowingEnabled",reserve.borrowingEnabled.at(prefix).get());
+        }
+        return response;
+    }
+
+
     @External(readonly = true)
     public Map<String, Object> getReserveDataProxy(Address _reserve) {
         Map<String, Object> response = new HashMap<>();
@@ -184,24 +198,11 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         return response;
     }
 
-    @External(readonly = true)
-    public Map<String,Object> getReserveValues(Address _reserve){
-        Map<String, Object> response = new HashMap<>();
-        if (isValidReserve(_reserve)) {
-            String prefix = reservePrefix(_reserve);
-            response.put("isActive",reserve.isActive.at(prefix).get());
-            response.put("isFreezed",reserve.isFreezed.at(prefix).get());
-            response.put("oTokenAddress",reserve.oTokenAddress.at(prefix).get());
-            response.put("isReserveBorrowingEnabled",reserve.borrowingEnabled.at(prefix).get());
-        }
-        return response;
-    }
-
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserReserveData(Address _reserve, Address _user) {
         Map<String, BigInteger> response = new HashMap<>();
-        if (checkReserve(_reserve)) {
+        if (isValidReserve(_reserve)) {
             String prefix = userReservePrefix(_reserve, _user);
             response = getDataFromUserReserve(prefix, userReserve);
         }
@@ -239,7 +240,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     @External(readonly = true)
     public Map<String, Object> getReserveConfiguration(Address _reserve) {
         Map<String, Object> response = new HashMap<>();
-        if (checkReserve(_reserve)) {
+        if (isValidReserve(_reserve)) {
             String prefix = reservePrefix(_reserve);
             response.put("decimals",reserve.decimals.at(prefix).get());
             response.put("baseLTVasCollateral", reserve.baseLTVasCollateral.at(prefix).get());
@@ -408,8 +409,11 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     }
     @External(readonly = true)
     public BigInteger getUserOriginationFeeProxy(Address _reserve, Address _user) {
-        String prefix = userReservePrefix(_reserve, _user);
-        return userReserve.originationFee.at(prefix).getOrDefault(BigInteger.ZERO);
+        if (isValidReserve(_reserve)) {
+            String prefix = userReservePrefix(_reserve, _user);
+            return userReserve.originationFee.at(prefix).getOrDefault(BigInteger.ZERO);
+        }
+        return null;
     }
 
     @External(readonly = true)
@@ -438,6 +442,20 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
                 "usageAsCollateralEnabled", reserve.usageAsCollateralEnabled.at(prefix).get()
         );
     }
+
+    // method made for repay only
+    @External(readonly = true)
+    public Map<String,Object> getUserAndReserveBasicData(Address _reserve, Address _user){
+        Map<String, Object> reserveData = new HashMap<>() ;
+        if (isValidReserve(_reserve)){
+            String prefix = reservePrefix(_reserve);
+            reserveData.put("isActive", reserve.isActive.at(prefix).get());
+            reserveData.put("originationFee",getUserOriginationFeeProxy(_reserve,_user));
+            reserveData.put("borrowBalances",getUserBorrowBalances(_reserve,_user));
+        }
+        return  reserveData;
+    }
+
 
     @External(readonly = true)
     public Map<String, BigInteger> getUserBorrowBalances(Address _reserve, Address _user) {
