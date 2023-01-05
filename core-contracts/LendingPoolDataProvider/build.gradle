@@ -30,15 +30,16 @@ deployJar {
             to = rootProject.findProperty("contracts.data-provider")
             nid = 0x7
         }
-        mainnet {
-            uri = 'https://ctz.solidwallet.io/api/v3'
-            nid = 0x1
+        lisbon {
+            uri = 'https://lisbon.net.solidwallet.io/api/v3'
+            to = 'cx1a0d692ae099670519c71f577494deb5552d6f29'
+            nid = 0x2
         }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
     parameters {
-        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+        arg('addressProvider', 'cxaad5f58e963132fe8283cee10280a7e842e47cfe')
     }
 }
 

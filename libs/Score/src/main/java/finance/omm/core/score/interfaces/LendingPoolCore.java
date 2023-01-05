@@ -44,6 +44,8 @@ public interface LendingPoolCore {
 
     Map<String, Object> getReserveData(Address _reserve);
 
+    Map<String, Object> getReserveValues(Address _reserve);
+
     Map<String, BigInteger> getUserReserveData(Address _reserve, Address _user);
 
     BigInteger getNormalizedIncome(Address _reserve);

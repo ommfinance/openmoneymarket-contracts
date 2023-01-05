@@ -159,6 +159,18 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
     }
 
     @External(readonly = true)
+    public Map<String,Object> getReserveValues(Address _reserve){
+        Map<String, Object> response = new HashMap<>();
+        if (checkReserve(_reserve)) {
+            String prefix = reservePrefix(_reserve);
+            response.put("isActive",reserve.isActive.at(prefix).get());
+            response.put("isFreezed",reserve.isFreezed.at(prefix).get());
+            response.put("oTokenAddress",reserve.oTokenAddress.at(prefix).get());
+        }
+        return response;
+    }
+
+    @External(readonly = true)
     public Map<String, BigInteger> getUserReserveData(Address _reserve, Address _user) {
         Map<String, BigInteger> response = new HashMap<>();
         if (checkReserve(_reserve)) {
@@ -170,10 +182,16 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External(readonly = true)
     public BigInteger getNormalizedIncome(Address _reserve) {
-        Map<String, Object> reserveData = getReserveData(_reserve);
-        BigInteger interest = calculateLinearInterest((BigInteger) reserveData.get("liquidityRate"),
-                (BigInteger) reserveData.get("lastUpdateTimestamp"));
-        return exaMultiply(interest, (BigInteger) reserveData.get("liquidityCumulativeIndex"));
+        if (isValidReserve(_reserve)) {
+            String prefix = reservePrefix(_reserve);
+            BigInteger liquidityRate = reserve.liquidityRate.at(prefix).get();
+            BigInteger lastUpdateTimestamp = reserve.lastUpdateTimestamp.at(prefix).get();
+            BigInteger liquidityCumulativeIndex = reserve.liquidityCumulativeIndex.at(prefix).get();
+            BigInteger interest = calculateLinearInterest(liquidityRate,
+                    lastUpdateTimestamp);
+            return exaMultiply(interest, liquidityCumulativeIndex);
+        }
+        return null;
     }
 
     @External(readonly = true)

@@ -182,7 +182,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         verify(scoreSpy).call(Map.class,notoICX,"redeem",notOwner.getAddress(),
                 amountToRedeem);
         verify(scoreSpy,times(2)).call(Contracts.LENDING_POOL_CORE, "updateStateOnRedeem",
-                reserveAddres, notOwner.getAddress(), amountToRedeem);;
+                reserveAddres, notOwner.getAddress(), amountToRedeem);
     }
 
     @Test
@@ -423,7 +423,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 BigInteger.valueOf(10).multiply(ICX), invalidData);
         expectErrorMessage(call,TAG +" Invalid data: " + invalidData.toString());
 
-        byte[] invalidMethod = createByteArray("tokenFallback",null,null,null);
+        byte[] invalidMethod = createByteArray("tokenFallback");
         call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), invalidMethod);
         expectErrorMessage(call,TAG + " No valid method called, data: "+ invalidMethod.toString());
@@ -444,7 +444,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         Address collateral = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
         Address reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress();
 
-        byte[] liquidationCall = createByteArray("liquidationCall",collateral,reserve,
+        byte[] liquidationCall = createByteArrayLiquidation("liquidationCall",collateral,reserve,
                 notOwner.getAddress());
 
         doReturn(Map.of(
@@ -500,119 +500,156 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
     }
 
     @Test
-    void deposit_token(){
-        byte[] depositMethod = createByteArray("deposit",null,null,null);
-        Address sICX = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
-        BigInteger amount = BigInteger.valueOf(10).multiply(ICX);
+    void deposit_reserve_not_active(){
+        BigInteger amount = BigInteger.valueOf(100).multiply(ICX);
 
-        contextMock.when(caller()).thenReturn(sICX);
+        Address reserveAddress = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
 
+        contextMock.when(sendICX()).thenReturn(amount);
+
+        doReturn(BigInteger.valueOf(1).multiply(ICX)).when(scoreSpy).
+                call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+        // fee sharing not enabled
         doReturn(BigInteger.ZERO.multiply(ICX)).when(scoreSpy).
-                call(eq(BigInteger.class), eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), eq(sICX));
-
-
+                call(eq(BigInteger.class), eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), eq(notOwner.getAddress()));
         doReturn(Map.of(
                 "isActive",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX);
-        Executable call = ()-> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
-               amount, depositMethod);
+                "getReserveValues", reserveAddress);
+
+        Executable call = ()-> score.invoke(notOwner,"deposit", amount);
         expectErrorMessage(call,"Reserve is not active, deposit unsuccessful");
 
+        verify(scoreSpy,times(1)).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveValues", reserveAddress);
+        verify(scoreSpy,times(1)).
+                call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+        verify(scoreSpy,times(1)).call(eq(BigInteger.class),
+                eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), eq(notOwner.getAddress()));
+    }
 
+    @Test
+    void deposit_reserve_isFreezed(){
+        BigInteger amount = BigInteger.valueOf(100).multiply(ICX);
+
+        Address reserveAddress = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
+
+        contextMock.when(sendICX()).thenReturn(amount);
+
+        doReturn(BigInteger.valueOf(1).multiply(ICX)).when(scoreSpy).
+                call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+        // fee sharing not enabled
+        doReturn(BigInteger.ZERO.multiply(ICX)).when(scoreSpy).
+                call(eq(BigInteger.class), eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), eq(notOwner.getAddress()));
         doReturn(Map.of(
                 "isActive",true,
                 "isFreezed",true
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX);
-        call = ()-> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
-                amount, depositMethod);
+                "getReserveValues", reserveAddress);
+
+        Executable call = ()-> score.invoke(notOwner,"deposit", amount);
         expectErrorMessage(call,"Reserve is frozen, deposit unsuccessful");
 
-        Address oTokenAddr = MOCK_CONTRACT_ADDRESS.get(Contracts.oICX).getAddress();
+        verify(scoreSpy,times(1)).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveValues", reserveAddress);
+        verify(scoreSpy,times(1)).
+                call(BigInteger.class, Contracts.STAKING, "getTodayRate");
+        verify(scoreSpy,times(1)).call(eq(BigInteger.class),
+                eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), eq(notOwner.getAddress()));
+    }
 
+    @Test
+    void deposit_token(){
+        Account reserveAddress = MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC);
+        BigInteger amount = BigInteger.valueOf(100).multiply(ICX);
+        byte[] depositData = createByteArray("deposit");
+
+
+        doReturn(BigInteger.ZERO.multiply(ICX)).when(scoreSpy).
+                call(eq(BigInteger.class), eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), any(Address.class));
+
+        Address oTokenAddr = MOCK_CONTRACT_ADDRESS.get(Contracts.oIUSDC).getAddress();
         doReturn(Map.of(
                 "isActive",true,
                 "isFreezed",false,
                 "oTokenAddress",oTokenAddr
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX); // any
-        doNothing().when(scoreSpy). call(Contracts.LENDING_POOL_CORE, "updateStateOnDeposit", sICX,
-                notOwner.getAddress(), amount); // any
+        )).when(scoreSpy).call(eq(Map.class), eq(Contracts.LENDING_POOL_CORE),
+                eq("getReserveValues"), eq(reserveAddress.getAddress()));
+
+
+
+        doNothing().when(scoreSpy). call(Contracts.LENDING_POOL_CORE, "updateStateOnDeposit",
+                reserveAddress.getAddress(), notOwner.getAddress(), amount); // any
         doNothing().when(scoreSpy).call(oTokenAddr, "mintOnDeposit", notOwner.getAddress(), amount);
-        doNothing().when(scoreSpy).call(eq(sICX),eq("transfer"),any(Address.class),eq(amount));
+        doNothing().when(scoreSpy).call(eq(reserveAddress.getAddress()),eq("transfer"),
+                any(Address.class),eq(amount));
 
-        score.invoke(notOwner,"tokenFallback",notOwner.getAddress(), amount, depositMethod);
+        score.invoke(reserveAddress,"tokenFallback",notOwner.getAddress(), amount, depositData);
 
-
-        verify(scoreSpy).Deposit(eq(sICX),eq(notOwner.getAddress()),any(BigInteger.class));
-        verify(scoreSpy,times(3)).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX);
+        verify(scoreSpy).Deposit(eq(reserveAddress.getAddress()),eq(notOwner.getAddress()),any(BigInteger.class));
+        verify(scoreSpy,times(1)).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveValues", reserveAddress.getAddress());
         verify(scoreSpy,times(1)).call(oTokenAddr, "mintOnDeposit", notOwner.getAddress(), amount);
-        verify(scoreSpy).call(eq(sICX),eq("transfer"),any(Address.class),eq(amount));
+        verify(scoreSpy).call(eq(reserveAddress.getAddress()),eq("transfer"),any(Address.class),eq(amount));
+
 
     }
 
     @Test
-    void deposit_icx(){
-        BigInteger depositAmt = BigInteger.valueOf(10).multiply(ICX);
+    void deposit_icx_amount_not_equal(){
+        BigInteger amount = BigInteger.valueOf(100).multiply(ICX);
         contextMock.when(sendICX()).thenReturn(BigInteger.ONE);
 
-        Executable call = () -> score.invoke(notOwner,"deposit",depositAmt);
+        Executable call = () -> score.invoke(notOwner,"deposit",amount);
         expectErrorMessage(call,TAG + " : Amount in param " +
-                depositAmt + " doesnt match with the icx sent " + BigInteger.ONE + " to the Lending Pool");
+                amount + " doesnt match with the icx sent " + BigInteger.ONE + " to the Lending Pool");
+    }
+
+    @Test
+    void deposit_icx(){
+        BigInteger amount = BigInteger.valueOf(100).multiply(ICX);
 
         Address oTokenAddr = MOCK_CONTRACT_ADDRESS.get(Contracts.oICX).getAddress();
         Address sICX = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
         Address staking = MOCK_CONTRACT_ADDRESS.get(Contracts.STAKING).getAddress();
         Address lendingPoolCore = MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL_CORE).getAddress();
 
-        contextMock.when(staking(depositAmt,staking,lendingPoolCore)).thenReturn(BigInteger.ONE);
+        contextMock.when(sendICX()).thenReturn(BigInteger.valueOf(100).multiply(ICX));
 
-        contextMock.when(sendICX()).thenReturn(BigInteger.valueOf(10).multiply(ICX));
         doReturn(BigInteger.valueOf(1).multiply(ICX)).when(scoreSpy).
                 call(BigInteger.class, Contracts.STAKING, "getTodayRate");
-
-
         doReturn(BigInteger.ZERO.multiply(ICX)).when(scoreSpy).
                 call(eq(BigInteger.class), eq(Contracts.BRIDGE_O_TOKEN), eq("balanceOf"), eq(notOwner.getAddress()));
-
-        doReturn(Map.of(
-                "isActive",false
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX); // any
-
-        call = () -> score.invoke(notOwner,"deposit",depositAmt);
-        expectErrorMessage(call,"Reserve is not active, deposit unsuccessful");
-
-        doReturn(Map.of(
-                "isActive",true,
-                "isFreezed",true
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX); // any
-
-        call = () -> score.invoke(notOwner,"deposit",depositAmt);
-        expectErrorMessage(call,"Reserve is frozen, deposit unsuccessful");
-
         doReturn(Map.of(
                 "isActive",true,
                 "isFreezed",false,
                 "oTokenAddress",oTokenAddr
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICX); // any
+                "getReserveValues", sICX);
+
         doNothing().when(scoreSpy). call(Contracts.LENDING_POOL_CORE, "updateStateOnDeposit", sICX,
-                notOwner.getAddress(), depositAmt); // any
-        doNothing().when(scoreSpy).call(oTokenAddr, "mintOnDeposit", notOwner.getAddress(), depositAmt);
+                notOwner.getAddress(), amount);
+        doNothing().when(scoreSpy).call(oTokenAddr, "mintOnDeposit", notOwner.getAddress(), amount);
+
+        contextMock.when(staking(amount,staking,lendingPoolCore)).thenReturn(BigInteger.ONE);
+
+        score.invoke(notOwner,"deposit",amount);
+
+        verify(scoreSpy).Deposit(eq(sICX),eq(notOwner.getAddress()),any(BigInteger.class));
+        verify(scoreSpy,times(1)).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveValues", sICX);
+        verify(scoreSpy,times(1)).call(oTokenAddr, "mintOnDeposit", notOwner.getAddress(), amount);
+        verify(scoreSpy,times(1)).call(Contracts.LENDING_POOL_CORE, "updateStateOnDeposit", sICX,
+                notOwner.getAddress(), amount);
 
 
-        score.invoke(notOwner,"deposit",depositAmt);
     }
 
 
     @Test
     void repay(){
         Address sICX = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
-        byte[] repayMethod = createByteArray("repay",null,null,null);
+        byte[] repayMethod = createByteArray("repay");
         contextMock.when(caller()).thenReturn(sICX);
 
         doReturn(Map.of(
@@ -694,7 +731,15 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         return () -> Context.getCaller();
     }
 
-    private byte[] createByteArray(String methodName,Address collateral, Address reserve, Address user ) {
+    private byte[] createByteArray(String methodName) {
+
+        JsonObject jsonData = new JsonObject()
+                .add("method", methodName);
+
+        return jsonData.toString().getBytes();
+    }
+
+    private byte[] createByteArrayLiquidation(String methodName,Address collateral, Address reserve, Address user ) {
 
         JsonObject internalParameters = new JsonObject()
                 .add("_collateral", String.valueOf(collateral))

@@ -105,7 +105,7 @@ public abstract class AbstractLendingPool extends AddressProvider
         checkAndEnableFeeSharing();
 
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", reserve);
+                "getReserveValues", reserve);
 
         boolean isActive = (boolean) reserveData.get("isActive");
         if (! isActive) {
