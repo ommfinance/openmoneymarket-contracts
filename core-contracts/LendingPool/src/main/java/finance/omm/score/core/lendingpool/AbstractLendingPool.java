@@ -17,6 +17,7 @@ import score.Context;
 import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
+import scorex.util.HashMap;
 
 public abstract class AbstractLendingPool extends AddressProvider
         implements LendingPool, Authorization<LendingPoolException> {
@@ -175,26 +176,25 @@ public abstract class AbstractLendingPool extends AddressProvider
     }
 
     protected void repay(Address reserve, BigInteger amount, Address sender) {
-        Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveValues", reserve);
+
+        Map<String, Object> reserveData = new HashMap<>();
+        reserveData.putAll(
+                call(Map.class, Contracts.LENDING_POOL_CORE, "getUserAndReserveBasicData", reserve,sender));
+
         boolean isActive = (boolean) reserveData.get("isActive");
         if (! isActive) {
             throw LendingPoolException.reserveNotActive("Reserve is not active, withdraw unsuccessful");
         }
 
-        Map<String, BigInteger> borrowData = call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBorrowBalances", reserve, sender);
-
+        Map<String, BigInteger> borrowData = (Map<String, BigInteger>) reserveData.get("borrowBalances");
         BigInteger compoundedBorrowBalance = borrowData.get("compoundedBorrowBalance");
 
         if (compoundedBorrowBalance.compareTo(BigInteger.ZERO) <= 0) {
             throw LendingPoolException.unknown("The user does not have any borrow pending");
         }
 
-        Map<String, BigInteger> userBasicReserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBasicReserveData", reserve, sender); // getUserBasicReserveDataProxy
 
-        BigInteger originationFee = userBasicReserveData.get("originationFee");
+        BigInteger originationFee = (BigInteger) reserveData.get("originationFee");
         BigInteger paybackAmount = compoundedBorrowBalance.add(originationFee);
         BigInteger returnAmount = BigInteger.ZERO;
 

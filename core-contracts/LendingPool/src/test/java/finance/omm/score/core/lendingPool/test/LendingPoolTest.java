@@ -10,6 +10,7 @@ import score.Address;
 import score.Context;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.Map;
 
 import static finance.omm.score.core.lendingpool.AbstractLendingPool.TAG;
@@ -658,35 +659,46 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(Map.of(
                 "isActive",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveValues", sICX);
+                "getUserAndReserveBasicData", sICX,notOwner.getAddress());
 
         Executable call = ()-> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), repayMethod);
         expectErrorMessage(call,"Reserve is not active, withdraw unsuccessful");
 
+        Map<String,BigInteger> borrowData = new HashMap<>();
+        borrowData.put("compoundedBorrowBalance",BigInteger.valueOf(0).multiply(ICX));
+
+
         doReturn(Map.of(
-                "isActive",true
+                "isActive",true,
+                "borrowBalances",borrowData
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveValues", sICX);
-        doReturn(Map.of(
-                "compoundedBorrowBalance",BigInteger.ZERO
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBorrowBalances", sICX, notOwner.getAddress());
+                "getUserAndReserveBasicData", sICX,notOwner.getAddress());
+//        doReturn(Map.of(
+//                "compoundedBorrowBalance",BigInteger.ZERO
+//        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getUserBorrowBalances", sICX, notOwner.getAddress());
         call= () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), repayMethod);
         expectErrorMessage(call,"The user does not have any borrow pending");
 
-
-
+        borrowData.put("compoundedBorrowBalance",BigInteger.valueOf(20).multiply(ICX));
+        borrowData.put("borrowBalanceIncrease",BigInteger.valueOf(7).multiply(ICX));
         doReturn(Map.of(
-                "compoundedBorrowBalance",BigInteger.valueOf(20).multiply(ICX),
-                "borrowBalanceIncrease",BigInteger.valueOf(7).multiply(ICX)
+                "isActive",true,
+                "originationFee",BigInteger.valueOf(102).multiply(ICX),
+                "borrowBalances",borrowData
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBorrowBalances", sICX, notOwner.getAddress());
-        doReturn(Map.of(
-                "originationFee",BigInteger.valueOf(102).multiply(ICX)
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBasicReserveData", sICX, notOwner.getAddress());
+                "getUserAndReserveBasicData", sICX,notOwner.getAddress());
+//        doReturn(Map.of(
+//                "compoundedBorrowBalance",BigInteger.valueOf(20).multiply(ICX),
+//                "borrowBalanceIncrease",BigInteger.valueOf(7).multiply(ICX)
+//        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getUserBorrowBalances", sICX, notOwner.getAddress());
+//        doReturn(Map.of(
+//                "originationFee",BigInteger.valueOf(102).multiply(ICX)
+//        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getUserBasicReserveData", sICX, notOwner.getAddress());
 
         doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updateStateOnRepay"), eq(sICX),
                 eq(notOwner.getAddress()), eq(BigInteger.ZERO), any(BigInteger.class), eq(BigInteger.valueOf(7).multiply(ICX)), eq(false));
@@ -696,11 +708,11 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 BigInteger.valueOf(10).multiply(ICX), repayMethod);
 
         verify(scoreSpy,times(3)).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveValues", sICX);
-        verify(scoreSpy,times(2)).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBorrowBalances", sICX, notOwner.getAddress());
-        verify(scoreSpy,times(1)).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getUserBasicReserveData", sICX, notOwner.getAddress());
+                "getUserAndReserveBasicData", sICX,notOwner.getAddress());
+//        verify(scoreSpy,times(2)).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getUserBorrowBalances", sICX, notOwner.getAddress());
+//        verify(scoreSpy,times(1)).call(Map.class, Contracts.LENDING_POOL_CORE,
+//                "getUserBasicReserveData", sICX, notOwner.getAddress());
         verify(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updateStateOnRepay"), eq(sICX), eq(notOwner.
                 getAddress()), eq(BigInteger.ZERO), any(BigInteger.class), eq(BigInteger.valueOf(7).
                 multiply(ICX)), eq(false));
