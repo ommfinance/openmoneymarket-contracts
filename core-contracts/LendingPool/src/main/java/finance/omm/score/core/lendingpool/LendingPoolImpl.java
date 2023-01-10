@@ -15,7 +15,10 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
+import static finance.omm.utils.math.MathUtils.EIGHTEEN;
+import static finance.omm.utils.math.MathUtils.convertToExa;
 import static finance.omm.utils.math.MathUtils.exaDivide;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 public class LendingPoolImpl extends AbstractLendingPool {
 
@@ -113,7 +116,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
     @External
     public void borrow(Address _reserve, BigInteger _amount) {
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", _reserve);
+                "getReserveBorrowData", _reserve);
         BigInteger availableBorrows = (BigInteger) reserveData.get("availableBorrows");
 
         if (_amount.compareTo(availableBorrows) > 0) {
@@ -177,9 +180,12 @@ public class LendingPoolImpl extends AbstractLendingPool {
             throw LendingPoolException.unknown("Borrow error: borrow amount is very small");
         }
 
-        BigInteger amountOfCollateralNeededUSD = call(BigInteger.class, Contracts.LENDING_POOL_DATA_PROVIDER,
-                "calculateCollateralNeededUSD", _reserve, _amount, borrowFee, userBorrowBalanceUSD,
-                userTotalFeesUSD, currentLTV);
+        BigInteger decimals = (BigInteger) reserveData.get("decimals");
+        BigInteger todaySicxRate = (BigInteger) userData.get("todaySicxRate");
+
+
+        BigInteger amountOfCollateralNeededUSD = calculateCollateralNeededUSD(_reserve,_amount,decimals,
+                userBorrowBalanceUSD,userTotalFeesUSD,currentLTV,todaySicxRate);
 
         if (amountOfCollateralNeededUSD.compareTo(userCollateralBalanceUSD) > 0) {
             throw LendingPoolException.unknown("Borrow error: Insufficient collateral to cover new borrow");
@@ -188,9 +194,29 @@ public class LendingPoolImpl extends AbstractLendingPool {
         Map<String, Object> borrowData = call(Map.class, Contracts.LENDING_POOL_CORE, "updateStateOnBorrow",
                 _reserve, caller, _amount, borrowFee);
 
-        call(Contracts.LENDING_POOL_CORE, "transferToUser", _reserve, caller, _amount);
         Borrow(_reserve, caller, _amount, (BigInteger) borrowData.get("currentBorrowRate"),
                 borrowFee, (BigInteger) borrowData.get("balanceIncrease"));
+    }
+
+    protected BigInteger calculateCollateralNeededUSD(Address _reserve, BigInteger _amount, BigInteger decimals,
+                                                      BigInteger _userCurrentBorrowBalanceUSD,
+                                                      BigInteger _userCurrentFeesUSD, BigInteger _userCurrentLtv,
+                                                      BigInteger todaySicxRate){
+        String symbol = call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER,"getSymbol",_reserve);
+        BigInteger price = call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                symbol, "USD");
+
+        if (!decimals.equals(EIGHTEEN)) {
+            _amount = convertToExa(_amount, decimals);
+        }
+        if (symbol.equals("ICX")) {
+            price = exaMultiply(price, todaySicxRate);
+        }
+        BigInteger requestedBorrowUSD = exaMultiply(price, _amount);
+
+
+        return exaDivide(_userCurrentBorrowBalanceUSD.add(requestedBorrowUSD), _userCurrentLtv).add(
+                _userCurrentFeesUSD);
     }
 
     @External

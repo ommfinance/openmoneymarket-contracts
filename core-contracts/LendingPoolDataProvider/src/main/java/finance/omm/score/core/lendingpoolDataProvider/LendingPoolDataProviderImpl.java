@@ -142,7 +142,9 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
                         (BigInteger) userBasicReserveData.get("underlyingBalance"));
                 totalLiquidityBalanceUSD = totalLiquidityBalanceUSD.add(liquidityBalanceUSD);
 
-                if ( (boolean) userBasicReserveData.get("usageAsCollateralEnabled")) {
+                BigInteger baseLTVasCollateral = (BigInteger) userBasicReserveData.get("baseLTVasCollateral");
+                if ((boolean) userBasicReserveData.get("usageAsCollateralEnabled") &&
+                        baseLTVasCollateral.compareTo(BigInteger.ZERO) > 0) {
                     totalCollateralBalanceUSD = totalCollateralBalanceUSD.add(liquidityBalanceUSD);
                     currentLtv = currentLtv.add(exaMultiply(liquidityBalanceUSD,
                             (BigInteger) userBasicReserveData.get("baseLTVasCollateral")));
@@ -152,7 +154,7 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
 
             }
 
-            if (((BigInteger)userBasicReserveData.get("compoundedBorrowBalance")).compareTo(BigInteger.ZERO) > 0) {
+            if (((BigInteger) userBasicReserveData.get("compoundedBorrowBalance")).compareTo(BigInteger.ZERO) > 0) {
                 totalBorrowBalanceUSD = totalBorrowBalanceUSD.add(
                         exaMultiply(reserveUnitPrice,
                                 (BigInteger) userBasicReserveData.get("compoundedBorrowBalance")));
@@ -187,12 +189,21 @@ public class LendingPoolDataProviderImpl extends AbstractLendingPoolDataProvider
             availableBorrowsUSD = BigInteger.ZERO;
         }
 
-        return Map.of("totalLiquidityBalanceUSD", totalLiquidityBalanceUSD, "totalCollateralBalanceUSD",
-                totalCollateralBalanceUSD, "totalBorrowBalanceUSD", totalBorrowBalanceUSD, "totalFeesUSD", totalFeesUSD,
-                "availableBorrowsUSD", availableBorrowsUSD, "currentLtv", currentLtv, "currentLiquidationThreshold",
-                currentLiquidationThreshold, "healthFactor", healthFactor, "borrowingPower", borrowingPower,
-                "healthFactorBelowThreshold", healthFactorBelowThreshold);
+        Map<String, Object> response = new HashMap<>();
 
+        response.put("totalLiquidityBalanceUSD", totalLiquidityBalanceUSD);
+        response.put("totalCollateralBalanceUSD", totalCollateralBalanceUSD);
+        response.put("totalBorrowBalanceUSD", totalBorrowBalanceUSD );
+        response.put("totalFeesUSD", totalFeesUSD);
+        response.put("availableBorrowsUSD", availableBorrowsUSD);
+        response.put("currentLtv", currentLtv);
+        response.put("currentLiquidationThreshold", currentLiquidationThreshold );
+        response.put("healthFactor", healthFactor);
+        response.put("borrowingPower", borrowingPower);
+        response.put("healthFactorBelowThreshold", healthFactorBelowThreshold);
+        response.put("todaySicxRate", todaySicxRate);
+
+        return response;
     }
 
     @External(readonly = true)

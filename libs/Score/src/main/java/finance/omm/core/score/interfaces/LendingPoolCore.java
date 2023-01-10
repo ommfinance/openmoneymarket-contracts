@@ -43,6 +43,7 @@ public interface LendingPoolCore {
     void addReserveData(ReserveAttributes _reserve);
 
     Map<String, Object> getReserveData(Address _reserve);
+    Map<String, Object> getUserAndReserveBasicData(Address _reserve, Address _user);
 
     Map<String, Object> getReserveValues(Address _reserve);
 

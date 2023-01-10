@@ -151,7 +151,36 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
             response.put("availableLiquidity", availableLiquidity);
             response.put("totalBorrows", totalBorrows);
 
+            BigInteger borrowThreshold = (BigInteger) response.get("borrowThreshold");
+
+            BigInteger availableBorrows = exaMultiply(borrowThreshold,
+                    totalLiquidity.subtract(totalBorrows));
+            response.put("availableBorrows", availableBorrows.max(BigInteger.ZERO));
+        }
+        return response;
+    }
+
+    // for borrow only
+    @External(readonly = true)
+    public Map<String,Object> getReserveBorrowData(Address _reserve){
+        Map<String,Object> response = new HashMap<>();
+        if (isValidReserve(_reserve)){
+            String prefix = reservePrefix(_reserve);
+            response.put("isActive",reserve.isActive.at(prefix).get());
+            response.put("isFreezed",reserve.isFreezed.at(prefix).get());
+            response.put("borrowingEnabled",reserve.borrowingEnabled.at(prefix).get());
+            response.put("decimals",reserve.decimals.at(prefix).get());
+
+            BigInteger availableLiquidity = getReserveAvailableLiquidity(_reserve);
+            BigInteger totalBorrows = getReserveTotalBorrows(_reserve);
+
+            BigInteger totalLiquidity = availableLiquidity.add(totalBorrows);
+
             BigInteger borrowThreshold = reserve.borrowThreshold.at(prefix).get();
+
+            response.put("totalLiquidity", totalLiquidity);
+            response.put("availableLiquidity", availableLiquidity);
+            response.put("totalBorrows", totalBorrows);
 
             BigInteger availableBorrows = exaMultiply(borrowThreshold,
                     totalLiquidity.subtract(totalBorrows));
@@ -162,6 +191,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
 
     @External(readonly = true)
+    // deposit
     public Map<String,Object> getReserveValues(Address _reserve){
         Map<String, Object> response = new HashMap<>();
         if (isValidReserve(_reserve)) {
@@ -225,10 +255,17 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External(readonly = true)
     public BigInteger getNormalizedDebt(Address _reserve) {
-        Map<String, Object> reserveData = getReserveData(_reserve);
-        BigInteger interest = calculateCompoundedInterest((BigInteger) reserveData.get("borrowRate"),
-                (BigInteger) reserveData.get("lastUpdateTimestamp"));
-        return exaMultiply(interest, (BigInteger) reserveData.get("borrowCumulativeIndex"));
+        if (isValidReserve(_reserve)) {
+            String prefix = reservePrefix(_reserve);
+            BigInteger borrowRate = reserve.borrowRate.at(prefix).get();
+            BigInteger lastUpdateTimestamp = reserve.lastUpdateTimestamp.at(prefix).get();
+            BigInteger borrowCumulativeIndex = reserve.borrowCumulativeIndex.at(prefix).get();
+            BigInteger interest = calculateCompoundedInterest(borrowRate, lastUpdateTimestamp);
+
+            return exaMultiply(interest, borrowCumulativeIndex);
+        }
+
+        return null;
     }
 
     @External(readonly = true)
@@ -329,7 +366,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         updateReserveInterestRatesAndTimestampInternal(_reserve, BigInteger.ZERO, _amountBorrowed);
 
         BigInteger currentBorrowRate = getCurrentBorrowRate(_reserve);
-
+        call(_reserve, "transfer", _user, _amountBorrowed, "userBorrow".getBytes());
         return Map.of(
                 "currentBorrowRate", currentBorrowRate,
                 "balanceIncrease", balanceIncrease
@@ -427,6 +464,7 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         );
     }
 
+    // for borrow only
     @External(readonly = true)
     public Map<String,Object> getUserBasicReserveDataProxy(Address _reserve, Address _user){
         BigInteger underlyingBalance = getUserUnderlyingAssetBalance(_reserve, _user);

@@ -243,7 +243,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         BigInteger borrowAmount = BigInteger.valueOf(100);
         doReturn(Map.of(
                 "availableBorrows", borrowAmount
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", sICXReserve);
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveBorrowData", sICXReserve);
 
         Executable call= () -> score.invoke(notOwner,"borrow",sICXReserve,BigInteger.valueOf(1000));
         expectErrorMessage(call,TAG + "Amount requested 1000 is more then the 100");
@@ -253,7 +253,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "availableBorrows",BigInteger.valueOf(1000),
                 "isActive",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICXReserve);
+                "getReserveBorrowData", sICXReserve);
 
         call= () -> score.invoke(notOwner,"borrow",sICXReserve, borrowAmount);
         expectErrorMessage(call,"Reserve is not active, borrow unsuccessful");
@@ -264,7 +264,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "isActive",true,
                 "isFreezed",true
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICXReserve);
+                "getReserveBorrowData", sICXReserve);
 
         call= () -> score.invoke(notOwner,"borrow",sICXReserve, borrowAmount);
         expectErrorMessage(call,"Reserve is frozen, borrow unsuccessful");
@@ -276,9 +276,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "isFreezed",false,
                 "borrowingEnabled",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICXReserve);
-//        doReturn(false).when(scoreSpy).call(Boolean.class,
-//                Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", sICXReserve);
+                "getReserveBorrowData", sICXReserve);
 
         call= () -> score.invoke(notOwner,"borrow",sICXReserve, borrowAmount);
         expectErrorMessage(call,"Borrow error:borrowing not enabled in the reserve");
@@ -290,7 +288,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "isFreezed",false,
                 "borrowingEnabled",true,
                 "availableLiquidity",BigInteger.valueOf(10)
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", sICXReserve);
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveBorrowData", sICXReserve);
 
 
         call= () -> score.invoke(notOwner,"borrow",sICXReserve, borrowAmount);
@@ -304,7 +302,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "borrowingEnabled",true,
                 "availableLiquidity", borrowAmount,
                 "decimals",BigInteger.valueOf(18)
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", sICXReserve);
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveBorrowData", sICXReserve);
 
         doReturn(Map.of(
                 "totalCollateralBalanceUSD",BigInteger.valueOf(0),
@@ -331,13 +329,18 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         call = () -> score.invoke(notOwner,"borrow",sICXReserve, borrowAmount);
         expectErrorMessage(call,"Borrow error: Health factor is below threshold");
 
+        doReturn("ICX").
+                when(scoreSpy).call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER,"getSymbol",sICXReserve);
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "ICX", "USD");
 
         doReturn(Map.of(
-                "totalCollateralBalanceUSD",BigInteger.valueOf(2000),
+                "totalCollateralBalanceUSD",BigInteger.valueOf(1),
                 "totalBorrowBalanceUSD",BigInteger.valueOf(10),
                 "totalFeesUSD",BigInteger.valueOf(2),
                 "currentLtv",BigInteger.valueOf(65).multiply(ICX),
-                "healthFactorBelowThreshold",false
+                "healthFactorBelowThreshold",false,
+                "todaySicxRate",BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN)
         )).when(scoreSpy).call(eq(Map.class), eq(Contracts.LENDING_POOL_DATA_PROVIDER),
                 eq("getUserAccountData"), any());
         doReturn(BigInteger.ZERO).when(scoreSpy).call(BigInteger.class, Contracts.FEE_PROVIDER,
@@ -347,24 +350,18 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         expectErrorMessage(call,"Borrow error: borrow amount is very small");
 
 
-        doReturn(BigInteger.ONE).when(scoreSpy).call(BigInteger.class, Contracts.FEE_PROVIDER,
+        doReturn(BigInteger.TEN).when(scoreSpy).call(BigInteger.class, Contracts.FEE_PROVIDER,
                 "calculateOriginationFee", borrowAmount);
-        doReturn(BigInteger.valueOf(2001)).when(scoreSpy).call(eq(BigInteger.class), eq(Contracts.LENDING_POOL_DATA_PROVIDER),
-                eq("calculateCollateralNeededUSD"), any(), any(), any(),
-                any(), any(), eq(BigInteger.valueOf(65).multiply(ICX)));
 
         call = () -> score.invoke(notOwner,"borrow",sICXReserve, borrowAmount);
         expectErrorMessage(call,"Borrow error: Insufficient collateral to cover new borrow");
 
         verify(scoreSpy,times(9)).call(Map.class, Contracts.LENDING_POOL_CORE,
-                "getReserveData", sICXReserve);
+                "getReserveBorrowData", sICXReserve);
         verify(scoreSpy,times(4)).call(eq(Map.class), eq(Contracts.LENDING_POOL_DATA_PROVIDER),
                 eq("getUserAccountData"), eq(notOwner.getAddress()));
         verify(scoreSpy,times(2)).call(BigInteger.class, Contracts.FEE_PROVIDER,
                 "calculateOriginationFee", borrowAmount);
-        verify(scoreSpy,times(1)).call(eq(BigInteger.class), eq(Contracts.LENDING_POOL_DATA_PROVIDER),
-                eq("calculateCollateralNeededUSD"), eq(sICXReserve), eq(borrowAmount),
-                any(BigInteger.class), any(BigInteger.class), any(BigInteger.class), any(BigInteger.class));
     }
 
     @Test
@@ -379,7 +376,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "availableLiquidity",BigInteger.valueOf(100),
                 "borrowingEnabled",true,
                 "decimals",BigInteger.valueOf(18)
-        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveData", sICXReserve);
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE, "getReserveBorrowData", sICXReserve);
 
 //        doReturn(true).when(scoreSpy).call(Boolean.class,
 //                Contracts.LENDING_POOL_CORE, "isReserveBorrowingEnabled", sICXReserve);
@@ -388,17 +385,23 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "totalCollateralBalanceUSD",BigInteger.valueOf(2000),
                 "totalBorrowBalanceUSD",BigInteger.valueOf(10),
                 "totalFeesUSD",BigInteger.valueOf(2),
-                "currentLtV",BigInteger.valueOf(65).multiply(ICX),
-                "healthFactorBelowThreshold",false
+                "currentLtv",BigInteger.valueOf(65).multiply(ICX),
+                "healthFactorBelowThreshold",false,
+                "todaySicxRate",BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN)
         )).when(scoreSpy).call(eq(Map.class), eq(Contracts.LENDING_POOL_DATA_PROVIDER),
                 eq("getUserAccountData"), any());
 
         doReturn(BigInteger.ONE).when(scoreSpy).call(BigInteger.class, Contracts.FEE_PROVIDER,
                 "calculateOriginationFee", BigInteger.valueOf(100));
 
-        doReturn(BigInteger.valueOf(250)).when(scoreSpy).call(eq(BigInteger.class), eq(Contracts.LENDING_POOL_DATA_PROVIDER),
-                eq("calculateCollateralNeededUSD"), any(), any(), any(),
-                any(), any(), any());
+//        doReturn(BigInteger.valueOf(250)).when(scoreSpy).call(eq(BigInteger.class), eq(Contracts.LENDING_POOL_DATA_PROVIDER),
+//                eq("calculateCollateralNeededUSD"), any(), any(), any(),
+//                any(), any(), any());
+
+        doReturn("ICX").
+                when(scoreSpy).call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER,"getSymbol",sICXReserve);
+        doReturn(ICX).when(scoreSpy).call(BigInteger.class, Contracts.PRICE_ORACLE, "get_reference_data",
+                "ICX", "USD");
         doReturn(Map.of(
                 "currentBorrowRate",BigInteger.valueOf(10).multiply(ICX),
                 "balanceIncrease",BigInteger.valueOf(250)
@@ -410,8 +413,6 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
 
         score.invoke(notOwner,"borrow",sICXReserve,BigInteger.valueOf(100));
 
-        verify(scoreSpy).call(Contracts.LENDING_POOL_CORE, "transferToUser",
-                sICXReserve, notOwner.getAddress(), BigInteger.valueOf(100));
         verify(scoreSpy).call(eq(Map.class),eq( Contracts.LENDING_POOL_CORE), eq("updateStateOnBorrow"),
                 eq(sICXReserve), any(), any(), any());
         verify(scoreSpy).Borrow(sICXReserve, notOwner.getAddress(),BigInteger.valueOf(100),

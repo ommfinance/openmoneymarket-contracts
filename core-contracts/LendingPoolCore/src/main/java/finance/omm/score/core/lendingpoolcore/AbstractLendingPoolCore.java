@@ -133,9 +133,10 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
     }
 
     protected void updateCumulativeIndexes(Address _reserve) {
-        if (isValidReserve(_reserve)){
-            BigInteger totalBorrows = getReserveTotalBorrows(_reserve);
 
+        BigInteger totalBorrows = getReserveTotalBorrows(_reserve);
+
+        if (totalBorrows.compareTo(BigInteger.ZERO) > 0) {
             String prefix = reservePrefix(_reserve);
             BigInteger liquidityRate = reserve.liquidityRate.at(prefix).get();
             BigInteger lastUpdateTimestamp = reserve.lastUpdateTimestamp.at(prefix).get();
@@ -143,12 +144,11 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
             BigInteger borrowRate = reserve.borrowRate.at(prefix).get();
             BigInteger borrowCumulativeIndex = reserve.borrowCumulativeIndex.at(prefix).get();
 
-            if (totalBorrows.compareTo(BigInteger.ZERO) > 0) {
-                BigInteger cumulatedLiquidityInterest = calculateLinearInterest(liquidityRate, lastUpdateTimestamp);
-                updateLiquidityCumulativeIndex(_reserve, exaMultiply(cumulatedLiquidityInterest, liquidityCumulativeIndex));
-                BigInteger cumulatedBorrowInterest = calculateCompoundedInterest(borrowRate, lastUpdateTimestamp);
-                updateBorrowCumulativeIndex(_reserve, exaMultiply(cumulatedBorrowInterest, borrowCumulativeIndex));
-            }
+            BigInteger cumulatedLiquidityInterest = calculateLinearInterest(liquidityRate, lastUpdateTimestamp);
+            updateLiquidityCumulativeIndex(_reserve, exaMultiply(cumulatedLiquidityInterest, liquidityCumulativeIndex));
+            BigInteger cumulatedBorrowInterest = calculateCompoundedInterest(borrowRate, lastUpdateTimestamp);
+            updateBorrowCumulativeIndex(_reserve, exaMultiply(cumulatedBorrowInterest, borrowCumulativeIndex));
+
         }
     }
 
@@ -164,22 +164,21 @@ public abstract class AbstractLendingPoolCore extends AddressProvider
 
     protected void updateReserveInterestRatesAndTimestampInternal(Address _reserve, BigInteger liquidityAdded,
             BigInteger liquidityTaken) {
-        if (isValidReserve(_reserve)){
-            BigInteger totalBorrows = getReserveTotalBorrows(_reserve);
-            String prefix = reservePrefix(_reserve);
-            BigInteger liquidityCumulativeIndex = reserve.liquidityCumulativeIndex.at(prefix).get();
-            BigInteger borrowCumulativeIndex = reserve.borrowCumulativeIndex.at(prefix).get();
+        BigInteger totalBorrows = getReserveTotalBorrows(_reserve);
+        String prefix = reservePrefix(_reserve);
+        BigInteger liquidityCumulativeIndex = reserve.liquidityCumulativeIndex.at(prefix).get();
+        BigInteger borrowCumulativeIndex = reserve.borrowCumulativeIndex.at(prefix).get();
 
-            Map<String, BigInteger> rate = calculateInterestRates(_reserve, getReserveAvailableLiquidity(_reserve)
-                    .add(liquidityAdded)
-                    .subtract(liquidityTaken), totalBorrows);
-            updateLiquidityRate(_reserve, rate.get("liquidityRate"));
-            updateBorrowRate(_reserve, rate.get("borrowRate"));
-            updateLastUpdateTimestamp(_reserve, TimeConstants.getBlockTimestamp());
+        Map<String, BigInteger> rate = calculateInterestRates(_reserve, getReserveAvailableLiquidity(_reserve)
+                .add(liquidityAdded)
+                .subtract(liquidityTaken), totalBorrows);
+        updateLiquidityRate(_reserve, rate.get("liquidityRate"));
+        updateBorrowRate(_reserve, rate.get("borrowRate"));
+        updateLastUpdateTimestamp(_reserve, TimeConstants.getBlockTimestamp());
 
-            ReserveUpdated(_reserve, rate.get("liquidityRate"), rate.get("borrowRate"),liquidityCumulativeIndex,
-                    borrowCumulativeIndex);
-        }
+        ReserveUpdated(_reserve, rate.get("liquidityRate"), rate.get("borrowRate"),liquidityCumulativeIndex,
+                borrowCumulativeIndex);
+
     }
 
     protected BigInteger getCurrentBorrowRate(Address _reserve) {
