@@ -1,4 +1,4 @@
-package finance.omm.score.test.unit.LPStaker;
+package finance.omm.score.test.unit.LPInventory;
 
 import finance.omm.libs.address.Contracts;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class LPStakerTest extends AbstractLPStakerTest {
+public class LPInventoryTest extends AbstractLPInventoryTest {
 
     private final BigInteger id = BigInteger.valueOf(6);
 

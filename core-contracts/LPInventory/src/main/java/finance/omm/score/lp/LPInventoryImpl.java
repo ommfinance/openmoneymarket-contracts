@@ -11,8 +11,8 @@ import score.annotation.Optional;
 import java.math.BigInteger;
 import java.util.Map;
 
-public class LPStakerImpl extends AbstractLPStaker {
-    public LPStakerImpl(Address addressProvider) {
+public class LPInventoryImpl extends AbstractLPInventory {
+    public LPInventoryImpl(Address addressProvider) {
         super(addressProvider);
     }
 

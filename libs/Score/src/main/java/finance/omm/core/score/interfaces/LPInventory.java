@@ -7,7 +7,7 @@ import score.annotation.Optional;
 import java.math.BigInteger;
 import java.util.Map;
 
-public interface LPStaker {
+public interface LPInventory {
 
     String name();
 

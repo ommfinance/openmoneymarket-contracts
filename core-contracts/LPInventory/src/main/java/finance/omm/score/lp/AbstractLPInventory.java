@@ -1,7 +1,6 @@
 package finance.omm.score.lp;
 
-
-import finance.omm.core.score.interfaces.LPStaker;
+import finance.omm.core.score.interfaces.LPInventory;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.utils.exceptions.OMMException;
 import score.Address;
@@ -12,8 +11,8 @@ import score.annotation.External;
 
 import java.math.BigInteger;
 
-public abstract class AbstractLPStaker extends AddressProvider implements LPStaker {
-    public static final String TAG = "LP Staker";
+public abstract class AbstractLPInventory extends AddressProvider implements LPInventory {
+    public static final String TAG = "LP Inventory";
 
     public final VarDB<Address> admin = Context.newVarDB("admin", Address.class);
 
@@ -26,7 +25,7 @@ public abstract class AbstractLPStaker extends AddressProvider implements LPStak
 
     }
 
-    public AbstractLPStaker(Address addressProvider) {
+    public AbstractLPInventory(Address addressProvider) {
         super(addressProvider, false);
         if (admin.get() == null) {
             admin.set(Context.getCaller());

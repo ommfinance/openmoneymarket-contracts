@@ -1,4 +1,4 @@
-package finance.omm.score.test.unit.LPStaker;
+package finance.omm.score.test.unit.LPInventory;
 
 import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
@@ -6,7 +6,7 @@ import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.AddressDetails;
-import finance.omm.score.lp.LPStakerImpl;
+import finance.omm.score.lp.LPInventoryImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,13 +23,13 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.spy;
 
-public class AbstractLPStakerTest extends TestBase {
+public class AbstractLPInventoryTest extends TestBase {
     public static final ServiceManager sm = getServiceManager();
     protected Account owner;
 
     protected Account alice;
     protected Score score;
-    protected LPStakerImpl scoreSpy;
+    protected LPInventoryImpl scoreSpy;
 
     protected static MockedStatic<Context> contextMock;
 
@@ -59,9 +59,9 @@ public class AbstractLPStakerTest extends TestBase {
         owner = sm.createAccount(100);
         alice = sm.createAccount(100);
 
-        score = sm.deploy(owner, LPStakerImpl.class, MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress());
+        score = sm.deploy(owner, LPInventoryImpl.class, MOCK_CONTRACT_ADDRESS.get(Contracts.ADDRESS_PROVIDER).getAddress());
         setAddresses();
-        LPStakerImpl lpStaker = (LPStakerImpl) score.getInstance();
+        LPInventoryImpl lpStaker = (LPInventoryImpl) score.getInstance();
         scoreSpy = spy(lpStaker);
         score.setInstance(scoreSpy);
 
