@@ -10,7 +10,6 @@ import com.eclipsesource.json.JsonValue;
 import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.core.score.interfaces.FeeProvider;
-import finance.omm.core.score.interfaces.LPStaker;
 import finance.omm.core.score.interfaces.LendingPoolCore;
 import finance.omm.core.score.interfaces.OMMToken;
 import finance.omm.core.score.interfaces.RewardWeightController;
