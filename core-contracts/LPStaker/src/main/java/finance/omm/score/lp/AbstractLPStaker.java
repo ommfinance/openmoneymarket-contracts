@@ -36,8 +36,7 @@ public abstract class AbstractLPStaker extends AddressProvider implements LPStak
     @External
     public void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data) {
 
-//        this.stakeLP(_id,_value);
-        this.LPTokenReceived(_id, _value, Context.getCaller());
+        this.LPTokenReceived(_from, _id, _value);
     }
 
     @External
@@ -45,10 +44,10 @@ public abstract class AbstractLPStaker extends AddressProvider implements LPStak
         this.TokenReceived(_from, _value);
     }
 
-    protected void onlyAdmin(){
+    protected void onlyOwner(String msg) {
         Address caller = Context.getCaller();
-        if (!caller.equals(admin.get())){
-            throw OMMException.unknown("Only admin can unstake LP tokens");
+        if (!caller.equals(admin.get())) {
+            throw OMMException.unknown(msg);
         }
     }
 }
