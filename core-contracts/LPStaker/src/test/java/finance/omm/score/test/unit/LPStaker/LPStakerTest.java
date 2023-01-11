@@ -6,11 +6,15 @@ import org.junit.jupiter.api.function.Executable;
 import score.Address;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class LPStakerTest extends AbstractLPStakerTest {
@@ -19,7 +23,14 @@ public class LPStakerTest extends AbstractLPStakerTest {
 
     @Test
     void name() {
-        assertEquals("Omm LP Staker", score.call("name"));
+        assertEquals("Omm LP Inventory", score.call("name"));
+    }
+
+    @Test
+    void stakeLPToken_not_by_owner() {
+        Executable stake = () -> score.invoke(score.getAccount(), "stake", id, TEN);
+        expectErrorMessage(stake, "Only owner can stake LP tokens");
+
     }
 
     @Test
@@ -30,7 +41,7 @@ public class LPStakerTest extends AbstractLPStakerTest {
 
         doNothing().when(scoreSpy).call(Contracts.DEX, "transfer", stakedLp, TEN, id, data);
 
-        score.invoke(score.getAccount(), "stakeLP", id, TEN);
+        score.invoke(owner, "stake", id, TEN);
 
         verify(scoreSpy).call(Contracts.DEX, "transfer", stakedLp, TEN, id, data);
     }
@@ -39,7 +50,7 @@ public class LPStakerTest extends AbstractLPStakerTest {
     void unstakeLPToken() {
 
         doNothing().when(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), TEN);
-        score.invoke(owner, "unstakeLP", id, TEN);
+        score.invoke(owner, "unstake", id, TEN);
 
         verify(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), TEN);
     }
@@ -48,81 +59,72 @@ public class LPStakerTest extends AbstractLPStakerTest {
     void unstakeLPToken_not_by_owner() {
 
         doNothing().when(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), TEN);
-        Executable unstakeLp = ()-> score.invoke(alice, "unstakeLP", id, TEN);
-        expectErrorMessage(unstakeLp,"Only admin can unstake LP tokens");
+        Executable unstakeLp = () -> score.invoke(alice, "unstake", id, TEN);
+        expectErrorMessage(unstakeLp, "Only owner can unstake LP token");
 
     }
 
     @Test
     void transferLpToken() {
         byte[] data = "transfer LP".getBytes();
-        doNothing().when(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(),
-                TWO, id,data);
-        score.invoke(GOVERNANCE_SCORE, "transferLp", alice.getAddress(), TWO, id,data);
+        BigInteger amount = TWO;
 
-        verify(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(), TWO, id,data);
+        contextMock.when(mockScoreAddress()).thenReturn(score.getAddress());
+        doReturn(amount).when(scoreSpy)
+                .call(BigInteger.class, Contracts.DEX, "balanceOf", score.getAddress(), id);
+
+        doNothing().when(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(),
+                amount, id, data);
+        score.invoke(GOVERNANCE_SCORE, "transfer", alice.getAddress(), amount, id, data);
+
+        verify(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(), amount, id, data);
+        verify(scoreSpy, never()).call(eq(Contracts.STAKED_LP), eq("unstake"), any(), any());
+    }
+
+    @Test
+    void transferLpToken_less_than_available_balance() {
+        byte[] data = "transfer LP with unstake".getBytes();
+        BigInteger amount = BigInteger.valueOf(10);
+
+        contextMock.when(mockScoreAddress()).thenReturn(score.getAddress());
+
+        // available balance -> 2
+        doReturn(TWO).when(scoreSpy)
+                .call(BigInteger.class, Contracts.DEX, "balanceOf", score.getAddress(), id);
+        // transfer amount -> 10
+        doNothing().when(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(),
+                amount, id, data);
+        // required amount -> 8
+        doNothing().when(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), BigInteger.valueOf(8));
+        score.invoke(GOVERNANCE_SCORE, "transfer", alice.getAddress(), amount, id, data);
+
+        verify(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(), amount, id, data);
+        verify(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), BigInteger.valueOf(8));
     }
 
     @Test
     void transferLpToken_not_by_governance() {
         byte[] data = "transfer LP".getBytes();
 
-        Executable transferLp = () -> score.invoke(owner, "transferLp", alice.getAddress(), TWO, id,data);
-        expectErrorMessage(transferLp,"LP Staker | SenderNotGovernanceError: sender is not equals to governance");
+        Executable transferLp = () -> score.invoke(owner, "transfer", alice.getAddress(), TWO, id, data);
+        expectErrorMessage(transferLp, "LP Inventory | SenderNotGovernanceError: sender is not equals to governance");
 
     }
 
     @Test
     void checkBalanceOfLpToken() {
 
-        contextMock.when(mockScoreAddress()).thenReturn(score.getAddress());
+        doReturn(Map.of(
+                "poolID", id,
+                "userTotalBalance", TEN,
+                "userAvailableBalance", BigInteger.TWO,
+                "userStakedBalance", BigInteger.valueOf(8),
+                "totalStakedBalance", BigInteger.valueOf(100))
+        ).when(scoreSpy).call(Map.class, Contracts.STAKED_LP, "balanceOf", owner.getAddress(), id);
+        System.out.println(score.call("balanceOfLp", owner.getAddress(), id));
 
-        doReturn(TEN).when(scoreSpy).call(BigInteger.class, Contracts.DEX, "balanceOf",
-                score.getAddress(), id);
+        verify(scoreSpy).call(Map.class, Contracts.STAKED_LP, "balanceOf", owner.getAddress(), id);
 
-        assertEquals(TEN, score.call("balanceOfLp", id));
-
-
-    }
-
-    @Test
-    void transferFundsFromContract() {
-
-        byte[] data = "transferFund".getBytes();
-
-        contextMock.when(mockCaller()).thenReturn(GOVERNANCE_SCORE.getAddress());
-
-        Address ommAddress = MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN).getAddress();
-        doNothing().when(scoreSpy).call(ommAddress, "transfer", alice.getAddress(), BigInteger.TWO,data);
-
-        score.invoke(GOVERNANCE_SCORE, "transferFunds", alice.getAddress(), BigInteger.TWO,data);
-
-        verify(scoreSpy).call(ommAddress, "transfer", alice.getAddress(), BigInteger.TWO,data);
-
-    }
-
-    @Test
-    void transferFundsException() {
-        byte[] data = "transferFund".getBytes();
-
-        contextMock.when(mockCaller()).thenReturn(owner.getAddress());
-
-        Executable callerNotGovernance = () ->
-                score.invoke(owner, "transferFunds", alice.getAddress(), BigInteger.TWO,data);
-        expectErrorMessage(callerNotGovernance,
-                "LP Staker | SenderNotGovernanceError: sender is not equals to governance");
-
-    }
-
-
-    @Test
-    void claimRewards() {
-
-        doNothing().when(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards");
-
-        score.invoke(score.getAccount(),"claimRewards");
-
-        verify(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards");
     }
 
     @Test
@@ -130,15 +132,16 @@ public class LPStakerTest extends AbstractLPStakerTest {
 
         contextMock.when(mockCaller()).thenReturn(owner.getAddress());
 
-        score.invoke(owner, "onIRC31Received", owner.getAddress(), owner.getAddress(), id, TEN, "lp token received".getBytes());
-        verify(scoreSpy).LPTokenReceived(id, TEN, owner.getAddress());
+        score.invoke(owner, "onIRC31Received", owner.getAddress(), owner.getAddress(), id, TEN,
+                "lp token received".getBytes());
+        verify(scoreSpy).LPTokenReceived(owner.getAddress(), id, TEN);
     }
 
     @Test
-    void contractReceivesToken(){
+    void contractReceivesToken() {
         Address ommToken = MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN).getAddress();
         score.invoke(owner, "tokenFallback", ommToken, TEN.multiply(ICX), "ommToken received".getBytes());
-        verify(scoreSpy).FundReceived(ommToken, TEN.multiply(ICX));
+        verify(scoreSpy).TokenReceived(ommToken, TEN.multiply(ICX));
     }
 
 }
