@@ -37,7 +37,14 @@ public class LPStakerImpl extends AbstractLPStaker {
         onlyOrElseThrow(Contracts.GOVERNANCE,
                 OMMException.unknown(
                         TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
-        call(Contracts.DEX, "transfer", to, value, poolId,_data);
+        BigInteger availableBalance = call(BigInteger.class, Contracts.DEX, "balanceOf", Context.getAddress()
+                , poolId);
+        if (value.compareTo(availableBalance) > 0) {
+            BigInteger requiredBalance = value.subtract(availableBalance);
+            call(Contracts.STAKED_LP, "unstake", poolId.intValue(), requiredBalance);
+        }
+
+        call(Contracts.DEX, "transfer", to, value, poolId, _data);
     }
 
     @External(readonly = true)
