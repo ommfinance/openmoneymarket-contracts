@@ -6,8 +6,10 @@ import finance.omm.utils.exceptions.OMMException;
 import score.Address;
 import score.Context;
 import score.annotation.External;
+import score.annotation.Optional;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 public class LPStakerImpl extends AbstractLPStaker {
     public LPStakerImpl(Address addressProvider) {
@@ -21,7 +23,8 @@ public class LPStakerImpl extends AbstractLPStaker {
     }
 
     @External
-    public void stakeLP(BigInteger poolId, BigInteger value) {
+    public void stake(BigInteger poolId, BigInteger value) {
+        onlyOwner("Only owner can stake LP tokens");
         Address stakedLp = getAddress(Contracts.STAKED_LP.getKey());
 
         byte[] data = "{\"method\":\"stake\"}".getBytes();
@@ -30,7 +33,7 @@ public class LPStakerImpl extends AbstractLPStaker {
     }
 
     @External
-    public void transferLp(Address to, BigInteger value, BigInteger poolId,byte[] _data) {
+    public void transfer(Address to, BigInteger value, BigInteger poolId, @Optional byte[] _data) {
         onlyOrElseThrow(Contracts.GOVERNANCE,
                 OMMException.unknown(
                         TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
@@ -38,32 +41,16 @@ public class LPStakerImpl extends AbstractLPStaker {
     }
 
     @External(readonly = true)
-    public BigInteger balanceOfLp(BigInteger poolId) {
-        return call(BigInteger.class, Contracts.DEX, "balanceOf", Context.getAddress(), poolId);
+    public Map<String, BigInteger> balanceOfLp(Address owner, BigInteger poolId) {
+
+        return call(Map.class, Contracts.STAKED_LP, "balanceOf", owner, poolId);
     }
 
-    @External(readonly = true)
-    public void transferFunds(Address _to, BigInteger _value, byte[] _data) {
-        onlyOrElseThrow(Contracts.GOVERNANCE,
-                OMMException.unknown(
-                        TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
-
-        Address ommAddress = getAddress(Contracts.OMM_TOKEN.getKey());
-
-        if (ommAddress == null) {
-            Context.revert(TAG + "| omm address was not set");
-        }
-        call(ommAddress, "transfer", _to, _value, _data);
-    }
 
     @External
-    public void unstakeLP(BigInteger poolId, BigInteger value) {
-        onlyAdmin();
+    public void unstake(BigInteger poolId, BigInteger value) {
+        onlyOwner("Only owner can unstake LP token");
         call(Contracts.STAKED_LP, "unstake", poolId.intValue(), value);
     }
 
-    @External
-    public void claimRewards() {
-        call(Contracts.LENDING_POOL, "claimRewards");
-    }
 }

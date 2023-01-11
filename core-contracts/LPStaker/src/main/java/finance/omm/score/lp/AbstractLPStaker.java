@@ -18,11 +18,11 @@ public abstract class AbstractLPStaker extends AddressProvider implements LPStak
     public final VarDB<Address> admin = Context.newVarDB("admin", Address.class);
 
     @EventLog(indexed = 2)
-    public void FundReceived(Address reserve, BigInteger value) {
+    public void TokenReceived(Address reserve, BigInteger value) {
     }
 
     @EventLog(indexed = 3)
-    public void LPTokenReceived(BigInteger poolId, BigInteger value, Address from) {
+    public void LPTokenReceived(Address from, BigInteger poolId, BigInteger value) {
 
     }
 
@@ -42,7 +42,7 @@ public abstract class AbstractLPStaker extends AddressProvider implements LPStak
 
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
-        this.FundReceived(_from, _value);
+        this.TokenReceived(_from, _value);
     }
 
     protected void onlyAdmin(){
