@@ -39,19 +39,37 @@ public class LPStakerTest extends AbstractLPStakerTest {
     void unstakeLPToken() {
 
         doNothing().when(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), TEN);
-        score.invoke(score.getAccount(), "unstakeLP", id, TEN);
+        score.invoke(owner, "unstakeLP", id, TEN);
 
         verify(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), TEN);
     }
 
     @Test
+    void unstakeLPToken_not_by_owner() {
+
+        doNothing().when(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), TEN);
+        Executable unstakeLp = ()-> score.invoke(alice, "unstakeLP", id, TEN);
+        expectErrorMessage(unstakeLp,"Only admin can unstake LP tokens");
+
+    }
+
+    @Test
     void transferLpToken() {
-
+        byte[] data = "transfer LP".getBytes();
         doNothing().when(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(),
-                TWO, id);
-        score.invoke(score.getAccount(), "transferLp", alice.getAddress(), TWO, id);
+                TWO, id,data);
+        score.invoke(GOVERNANCE_SCORE, "transferLp", alice.getAddress(), TWO, id,data);
 
-        verify(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(), TWO, id);
+        verify(scoreSpy).call(Contracts.DEX, "transfer", alice.getAddress(), TWO, id,data);
+    }
+
+    @Test
+    void transferLpToken_not_by_governance() {
+        byte[] data = "transfer LP".getBytes();
+
+        Executable transferLp = () -> score.invoke(owner, "transferLp", alice.getAddress(), TWO, id,data);
+        expectErrorMessage(transferLp,"LP Staker | SenderNotGovernanceError: sender is not equals to governance");
+
     }
 
     @Test
@@ -70,23 +88,27 @@ public class LPStakerTest extends AbstractLPStakerTest {
     @Test
     void transferFundsFromContract() {
 
+        byte[] data = "transferFund".getBytes();
+
         contextMock.when(mockCaller()).thenReturn(GOVERNANCE_SCORE.getAddress());
 
         Address ommAddress = MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN).getAddress();
-        doNothing().when(scoreSpy).call(ommAddress, "transfer", alice.getAddress(), BigInteger.TWO);
+        doNothing().when(scoreSpy).call(ommAddress, "transfer", alice.getAddress(), BigInteger.TWO,data);
 
-        score.invoke(GOVERNANCE_SCORE, "transferFunds", alice.getAddress(), BigInteger.TWO);
+        score.invoke(GOVERNANCE_SCORE, "transferFunds", alice.getAddress(), BigInteger.TWO,data);
 
-        verify(scoreSpy).call(ommAddress, "transfer", alice.getAddress(), BigInteger.TWO);
+        verify(scoreSpy).call(ommAddress, "transfer", alice.getAddress(), BigInteger.TWO,data);
 
     }
 
     @Test
     void transferFundsException() {
+        byte[] data = "transferFund".getBytes();
+
         contextMock.when(mockCaller()).thenReturn(owner.getAddress());
 
         Executable callerNotGovernance = () ->
-                score.invoke(owner, "transferFunds", alice.getAddress(), BigInteger.TWO);
+                score.invoke(owner, "transferFunds", alice.getAddress(), BigInteger.TWO,data);
         expectErrorMessage(callerNotGovernance,
                 "LP Staker | SenderNotGovernanceError: sender is not equals to governance");
 
@@ -95,12 +117,12 @@ public class LPStakerTest extends AbstractLPStakerTest {
 
     @Test
     void claimRewards() {
-        contextMock.when(mockCaller()).thenReturn(owner.getAddress());
-        doNothing().when(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards", owner.getAddress());
+        contextMock.when(mockScoreAddress()).thenReturn(score.getAddress());
+        doNothing().when(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards", score.getAddress());
 
         score.call("claimRewards");
 
-        verify(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards", owner.getAddress());
+        verify(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards", score.getAddress());
     }
 
     @Test
@@ -108,14 +130,12 @@ public class LPStakerTest extends AbstractLPStakerTest {
 
         contextMock.when(mockCaller()).thenReturn(owner.getAddress());
 
-        stakeLPToken();
-
         score.invoke(owner, "onIRC31Received", owner.getAddress(), owner.getAddress(), id, TEN, "lp token received".getBytes());
         verify(scoreSpy).LPTokenReceived(id, TEN, owner.getAddress());
     }
 
     @Test
-    void contractReceivesReward() {
+    void contractReceivesToken(){
         Address ommToken = MOCK_CONTRACT_ADDRESS.get(Contracts.OMM_TOKEN).getAddress();
         score.invoke(owner, "tokenFallback", ommToken, TEN.multiply(ICX), "ommToken received".getBytes());
         verify(scoreSpy).FundReceived(ommToken, TEN.multiply(ICX));
