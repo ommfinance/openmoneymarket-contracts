@@ -30,8 +30,11 @@ public class LPStakerImpl extends AbstractLPStaker {
     }
 
     @External
-    public void transferLp(Address to, BigInteger value, BigInteger poolId) {
-        call(Contracts.DEX, "transfer", to, value, poolId);
+    public void transferLp(Address to, BigInteger value, BigInteger poolId,byte[] _data) {
+        onlyOrElseThrow(Contracts.GOVERNANCE,
+                OMMException.unknown(
+                        TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
+        call(Contracts.DEX, "transfer", to, value, poolId,_data);
     }
 
     @External(readonly = true)
@@ -40,7 +43,7 @@ public class LPStakerImpl extends AbstractLPStaker {
     }
 
     @External(readonly = true)
-    public void transferFunds(Address _address, BigInteger _value) {
+    public void transferFunds(Address _to, BigInteger _value, byte[] _data) {
         onlyOrElseThrow(Contracts.GOVERNANCE,
                 OMMException.unknown(
                         TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
@@ -50,8 +53,7 @@ public class LPStakerImpl extends AbstractLPStaker {
         if (ommAddress == null) {
             Context.revert(TAG + "| omm address was not set");
         }
-        System.out.println("omm " + Context.getCaller());
-        call(ommAddress, "transfer", _address, _value);
+        call(ommAddress, "transfer", _to, _value, _data);
     }
 
     @External

@@ -198,13 +198,6 @@ public class GovernanceImpl extends AbstractGovernance {
     }
 
     @External
-    public void transferOmmFromLPStaker(BigInteger _value, Address _address) {
-        onlyOwnerOrElseThrow(GovernanceException.notOwner());
-        LPStaker lpStaker = getInstance(LPStaker.class, Contracts.DAO_FUND);
-        lpStaker.transferFunds(_address, _value);
-    }
-
-    @External
     public void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to) {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
 

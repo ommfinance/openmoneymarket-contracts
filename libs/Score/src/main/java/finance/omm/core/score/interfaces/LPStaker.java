@@ -11,19 +11,19 @@ public interface LPStaker {
 
     void stakeLP(BigInteger poolId, BigInteger value);
 
-    void transferLp(Address to, BigInteger value, BigInteger poolId);
+    void transferLp(Address to, BigInteger value, BigInteger poolId,byte[] data);
 
     BigInteger balanceOfLp(BigInteger poolId);
 
-    void transferFunds(Address _address, BigInteger _value);
+    void transferFunds(Address address, BigInteger value,byte[] data);
 
     void unstakeLP(BigInteger poolId, BigInteger value);
 
     void claimRewards();
 
-    void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data);
+    void onIRC31Received(Address operator, Address from, BigInteger id, BigInteger value, byte[] data);
 
-    void tokenFallback(Address _from, BigInteger _value, byte[] _data);
+    void tokenFallback(Address from, BigInteger value, byte[] data);
 
     @EventLog(indexed = 2)
     void FundReceived(Address reserve, BigInteger value);
