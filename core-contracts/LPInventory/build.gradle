@@ -1,7 +1,7 @@
 version '0.0.1'
 
 optimizedJar {
-    mainClassName = 'finance.omm.score.lp.LPStakerImpl'
+    mainClassName = 'finance.omm.score.lp.LPInventoryImpl'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
