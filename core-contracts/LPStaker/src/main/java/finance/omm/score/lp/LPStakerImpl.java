@@ -56,6 +56,7 @@ public class LPStakerImpl extends AbstractLPStaker {
 
     @External
     public void unstakeLP(BigInteger poolId, BigInteger value) {
+        onlyAdmin();
         call(Contracts.STAKED_LP, "unstake", poolId.intValue(), value);
     }
 

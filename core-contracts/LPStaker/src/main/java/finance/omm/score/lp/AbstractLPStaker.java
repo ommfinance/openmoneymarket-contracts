@@ -3,6 +3,7 @@ package finance.omm.score.lp;
 
 import finance.omm.core.score.interfaces.LPStaker;
 import finance.omm.libs.address.AddressProvider;
+import finance.omm.utils.exceptions.OMMException;
 import score.Address;
 import score.Context;
 import score.VarDB;
@@ -35,12 +36,19 @@ public abstract class AbstractLPStaker extends AddressProvider implements LPStak
     @External
     public void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data) {
 
-        this.stakeLP(_id,_value);
+//        this.stakeLP(_id,_value);
         this.LPTokenReceived(_id, _value, Context.getCaller());
     }
 
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
         this.FundReceived(_from, _value);
+    }
+
+    protected void onlyAdmin(){
+        Address caller = Context.getCaller();
+        if (!caller.equals(admin.get())){
+            throw OMMException.unknown("Only admin can unstake LP tokens");
+        }
     }
 }
