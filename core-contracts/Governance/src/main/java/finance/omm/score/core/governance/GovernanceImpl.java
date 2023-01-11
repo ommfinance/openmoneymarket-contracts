@@ -10,6 +10,7 @@ import com.eclipsesource.json.JsonValue;
 import finance.omm.core.score.interfaces.BoostedToken;
 import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.core.score.interfaces.FeeProvider;
+import finance.omm.core.score.interfaces.LPStaker;
 import finance.omm.core.score.interfaces.LendingPoolCore;
 import finance.omm.core.score.interfaces.OMMToken;
 import finance.omm.core.score.interfaces.RewardWeightController;
@@ -194,6 +195,13 @@ public class GovernanceImpl extends AbstractGovernance {
         onlyOwnerOrElseThrow(GovernanceException.notOwner());
         DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
         daoFund.transferOmm(_value, _address, _data);
+    }
+
+    @External
+    public void transferOmmFromLPStaker(BigInteger _value, Address _address) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+        LPStaker lpStaker = getInstance(LPStaker.class, Contracts.DAO_FUND);
+        lpStaker.transferFunds(_address, _value);
     }
 
     @External
