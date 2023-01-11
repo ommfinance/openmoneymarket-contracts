@@ -117,12 +117,12 @@ public class LPStakerTest extends AbstractLPStakerTest {
 
     @Test
     void claimRewards() {
-        contextMock.when(mockScoreAddress()).thenReturn(score.getAddress());
-        doNothing().when(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards", score.getAddress());
 
-        score.call("claimRewards");
+        doNothing().when(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards");
 
-        verify(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards", score.getAddress());
+        score.invoke(score.getAccount(),"claimRewards");
+
+        verify(scoreSpy).call(Contracts.LENDING_POOL, "claimRewards");
     }
 
     @Test

@@ -64,6 +64,6 @@ public class LPStakerImpl extends AbstractLPStaker {
 
     @External
     public void claimRewards() {
-        call(Contracts.LENDING_POOL, "claimRewards", Context.getAddress());
+        call(Contracts.LENDING_POOL, "claimRewards");
     }
 }
