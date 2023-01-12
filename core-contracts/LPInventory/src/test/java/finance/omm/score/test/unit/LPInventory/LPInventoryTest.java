@@ -27,6 +27,25 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
     }
 
     @Test
+    void changeAdmin(){
+        assertEquals(owner.getAddress(),score.call("getAdmin"));
+
+        score.invoke(owner,"setAdmin",alice.getAddress());
+
+        assertEquals(alice.getAddress(),score.call("getAdmin"));
+        verify(scoreSpy).AdminChanged(owner.getAddress(),alice.getAddress());
+    }
+
+    @Test
+    void changeAdmin_not_by_owner(){
+
+        Executable changeAdmin= ()-> score.invoke(alice,"setAdmin",alice.getAddress());
+        expectErrorMessage(changeAdmin,"Only owner can set new admin");
+
+        verify(scoreSpy,never()).AdminChanged(any(),any());
+    }
+
+    @Test
     void stakeLPToken_not_by_owner() {
         Executable stake = () -> score.invoke(score.getAccount(), "stake", id, TEN);
         expectErrorMessage(stake, "Only owner can stake LP tokens");
