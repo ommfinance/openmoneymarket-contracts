@@ -1,5 +1,6 @@
 package finance.omm.core.score.interfaces;
 
+import foundation.icon.score.client.ScoreInterface;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.Optional;
@@ -7,6 +8,7 @@ import score.annotation.Optional;
 import java.math.BigInteger;
 import java.util.Map;
 
+@ScoreInterface(suffix = "Client")
 public interface LPInventory {
 
     String name();
@@ -28,4 +30,7 @@ public interface LPInventory {
 
     @EventLog(indexed = 3)
     void LPTokenReceived(Address from, BigInteger poolId, BigInteger value);
+
+    @EventLog(indexed = 2)
+    void AdminChanged(Address oldAdmin, Address newAdmin);
 }
