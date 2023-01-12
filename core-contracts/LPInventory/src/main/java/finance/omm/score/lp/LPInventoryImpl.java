@@ -1,5 +1,6 @@
 package finance.omm.score.lp;
 
+import com.eclipsesource.json.JsonObject;
 import finance.omm.libs.address.Contracts;
 
 import finance.omm.utils.exceptions.OMMException;
@@ -23,11 +24,27 @@ public class LPInventoryImpl extends AbstractLPInventory {
     }
 
     @External
+    public void setAdmin(Address newAdmin) {
+        onlyOwner("Only owner can set new admin");
+        Address oldAdmin = getAdmin();
+        this.admin.set(newAdmin);
+        AdminChanged(oldAdmin, newAdmin);
+    }
+
+    @External(readonly = true)
+    public Address getAdmin() {
+        return this.admin.get();
+    }
+
+    @External
     public void stake(BigInteger poolId, BigInteger value) {
         onlyOwner("Only owner can stake LP tokens");
         Address stakedLp = getAddress(Contracts.STAKED_LP.getKey());
 
-        byte[] data = "{\"method\":\"stake\"}".getBytes();
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.add("method", "stake");
+
+        byte[] data = jsonObject.toString().getBytes();
         call(Contracts.DEX, "transfer", stakedLp, value, poolId, data);
 
     }
@@ -37,8 +54,8 @@ public class LPInventoryImpl extends AbstractLPInventory {
         onlyOrElseThrow(Contracts.GOVERNANCE,
                 OMMException.unknown(
                         TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
-        BigInteger availableBalance = call(BigInteger.class, Contracts.DEX, "balanceOf", Context.getAddress()
-                , poolId);
+        BigInteger availableBalance = call(BigInteger.class, Contracts.DEX, "balanceOf",
+                Context.getAddress(),poolId);
         if (value.compareTo(availableBalance) > 0) {
             BigInteger requiredBalance = value.subtract(availableBalance);
             call(Contracts.STAKED_LP, "unstake", poolId.intValue(), requiredBalance);

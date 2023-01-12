@@ -22,7 +22,10 @@ public abstract class AbstractLPInventory extends AddressProvider implements LPI
 
     @EventLog(indexed = 3)
     public void LPTokenReceived(Address from, BigInteger poolId, BigInteger value) {
+    }
 
+    @EventLog(indexed = 2)
+    public void AdminChanged(Address oldAdmin, Address newAdmin) {
     }
 
     public AbstractLPInventory(Address addressProvider) {
