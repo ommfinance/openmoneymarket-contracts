@@ -30,10 +30,40 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
     void changeAdmin(){
         assertEquals(owner.getAddress(),score.call("getAdmin"));
 
+        // set admin condidate
         score.invoke(owner,"setAdmin",alice.getAddress());
+        assertEquals(alice.getAddress(),score.call("getCandidate"));
+        assertEquals(owner.getAddress(),score.call("getAdmin"));
 
+        // claim admin
+        score.invoke(alice,"claimAdminStatus");
         assertEquals(alice.getAddress(),score.call("getAdmin"));
-        verify(scoreSpy).AdminChanged(owner.getAddress(),alice.getAddress());
+
+        verify(scoreSpy).AdminCandidatePushed(alice.getAddress());
+        verify(scoreSpy).AdminStatusClaimed(alice.getAddress());
+    }
+
+    @Test
+    void changeAdmin_candidate_not_set(){
+        Executable adminStatus =()->score.invoke(owner,"claimAdminStatus");
+        expectErrorMessage(adminStatus,"LP Inventory | Candidate address is null");
+
+        verify(scoreSpy,never()).AdminStatusClaimed(any());
+    }
+
+    @Test
+    void changeAdmin_not_claim_by_candidate(){
+
+        score.invoke(owner,"setAdmin",alice.getAddress());
+        assertEquals(alice.getAddress(),score.call("getCandidate"));
+        assertEquals(owner.getAddress(),score.call("getAdmin"));
+
+        Executable adminCalim = ()->score.invoke(owner,"claimAdminStatus");
+        expectErrorMessage(adminCalim,"LP Inventory | The candidate's address and the caller do not match.");
+
+        verify(scoreSpy).AdminCandidatePushed(alice.getAddress());
+        verify(scoreSpy,never()).AdminStatusClaimed(any());
+
     }
 
     @Test
@@ -42,7 +72,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
         Executable changeAdmin= ()-> score.invoke(alice,"setAdmin",alice.getAddress());
         expectErrorMessage(changeAdmin,"Only owner can set new admin");
 
-        verify(scoreSpy,never()).AdminChanged(any(),any());
+        verify(scoreSpy,never()).AdminCandidatePushed(any());
     }
 
     @Test
