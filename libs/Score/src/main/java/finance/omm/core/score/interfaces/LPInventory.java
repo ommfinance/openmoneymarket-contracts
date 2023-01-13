@@ -13,6 +13,14 @@ public interface LPInventory {
 
     String name();
 
+    void setAdmin(Address admin);
+
+    Address getAdmin();
+
+    Address getCandidate();
+
+    void claimAdminStatus();
+
     void stake(BigInteger poolId, BigInteger value);
 
     void transfer(Address to, BigInteger value, BigInteger poolId, @Optional byte[] data);
@@ -31,6 +39,9 @@ public interface LPInventory {
     @EventLog(indexed = 3)
     void LPTokenReceived(Address from, BigInteger poolId, BigInteger value);
 
-    @EventLog(indexed = 2)
-    void AdminChanged(Address oldAdmin, Address newAdmin);
+    @EventLog(indexed = 1)
+    void AdminCandidatePushed(Address newAdmin);
+
+    @EventLog(indexed = 1)
+    void AdminStatusClaimed(Address newAdmin);
 }

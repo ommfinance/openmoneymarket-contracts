@@ -15,6 +15,7 @@ public abstract class AbstractLPInventory extends AddressProvider implements LPI
     public static final String TAG = "LP Inventory";
 
     public final VarDB<Address> admin = Context.newVarDB("admin", Address.class);
+    public final VarDB<Address> candidate = Context.newVarDB("admin-candidate", Address.class);
 
     @EventLog(indexed = 2)
     public void TokenReceived(Address reserve, BigInteger value) {
@@ -24,8 +25,12 @@ public abstract class AbstractLPInventory extends AddressProvider implements LPI
     public void LPTokenReceived(Address from, BigInteger poolId, BigInteger value) {
     }
 
-    @EventLog(indexed = 2)
-    public void AdminChanged(Address oldAdmin, Address newAdmin) {
+    @EventLog(indexed = 1)
+    public void AdminCandidatePushed(Address newAdmin) {
+    }
+
+    @EventLog(indexed = 1)
+    public void AdminStatusClaimed(Address newAdmin) {
     }
 
     public AbstractLPInventory(Address addressProvider) {

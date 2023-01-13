@@ -26,15 +26,34 @@ public class LPInventoryImpl extends AbstractLPInventory {
     @External
     public void setAdmin(Address newAdmin) {
         onlyOwner("Only owner can set new admin");
-        Address oldAdmin = getAdmin();
-        this.admin.set(newAdmin);
-        AdminChanged(oldAdmin, newAdmin);
+        candidate.set(newAdmin);
+        AdminCandidatePushed(newAdmin);
     }
 
     @External(readonly = true)
     public Address getAdmin() {
         return this.admin.get();
     }
+
+    @External(readonly = true)
+    public Address getCandidate() {
+        return this.candidate.get();
+    }
+
+    @External
+    public void claimAdminStatus() {
+        Address candidate = this.candidate.get();
+        if (candidate == null) {
+            throw OMMException.unknown(TAG + " | Candidate address is null");
+        }
+        if (!candidate.equals(Context.getCaller())) {
+            throw OMMException.unknown(TAG + " | The candidate's address and the caller do not match.");
+        }
+        this.candidate.set(null);
+        this.admin.set(candidate);
+        AdminStatusClaimed(candidate);
+    }
+
 
     @External
     public void stake(BigInteger poolId, BigInteger value) {
@@ -55,7 +74,7 @@ public class LPInventoryImpl extends AbstractLPInventory {
                 OMMException.unknown(
                         TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
         BigInteger availableBalance = call(BigInteger.class, Contracts.DEX, "balanceOf",
-                Context.getAddress(),poolId);
+                Context.getAddress(), poolId);
         if (value.compareTo(availableBalance) > 0) {
             BigInteger requiredBalance = value.subtract(availableBalance);
             call(Contracts.STAKED_LP, "unstake", poolId.intValue(), requiredBalance);
