@@ -1,18 +1,16 @@
 package finance.omm.score.lp;
 
-import com.eclipsesource.json.JsonObject;
 import finance.omm.libs.address.Contracts;
-
 import finance.omm.utils.exceptions.OMMException;
+import java.math.BigInteger;
+import java.util.Map;
 import score.Address;
 import score.Context;
 import score.annotation.External;
 import score.annotation.Optional;
 
-import java.math.BigInteger;
-import java.util.Map;
-
 public class LPInventoryImpl extends AbstractLPInventory {
+
     public LPInventoryImpl(Address addressProvider) {
         super(addressProvider);
     }
@@ -25,7 +23,7 @@ public class LPInventoryImpl extends AbstractLPInventory {
 
     @External
     public void setAdmin(Address newAdmin) {
-        onlyOwner("Only owner can set new admin");
+        onlyAdmin(TAG + " | Only current admin can set new admin");
         candidate.set(newAdmin);
         AdminCandidatePushed(newAdmin);
     }
@@ -41,7 +39,7 @@ public class LPInventoryImpl extends AbstractLPInventory {
     }
 
     @External
-    public void claimAdminStatus() {
+    public void claimAdminRole() {
         Address candidate = this.candidate.get();
         if (candidate == null) {
             throw OMMException.unknown(TAG + " | Candidate address is null");
@@ -50,20 +48,18 @@ public class LPInventoryImpl extends AbstractLPInventory {
             throw OMMException.unknown(TAG + " | The candidate's address and the caller do not match.");
         }
         this.candidate.set(null);
+        Address oldAdmin = this.admin.get();
         this.admin.set(candidate);
-        AdminStatusClaimed(candidate);
+        AdminRoleClaimed(oldAdmin, candidate);
     }
 
 
     @External
     public void stake(BigInteger poolId, BigInteger value) {
-        onlyOwner("Only owner can stake LP tokens");
+        onlyAdmin(TAG + " | Only admin can stake LP tokens");
         Address stakedLp = getAddress(Contracts.STAKED_LP.getKey());
 
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.add("method", "stake");
-
-        byte[] data = jsonObject.toString().getBytes();
+        byte[] data = "{\"method\":\"stake\"}".getBytes();
         call(Contracts.DEX, "transfer", stakedLp, value, poolId, data);
 
     }
@@ -71,10 +67,10 @@ public class LPInventoryImpl extends AbstractLPInventory {
     @External
     public void transfer(Address to, BigInteger value, BigInteger poolId, @Optional byte[] _data) {
         onlyOrElseThrow(Contracts.GOVERNANCE,
-                OMMException.unknown(
-                        TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
-        BigInteger availableBalance = call(BigInteger.class, Contracts.DEX, "balanceOf",
-                Context.getAddress(), poolId);
+                OMMException.unknown(TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
+
+        BigInteger availableBalance = call(BigInteger.class, Contracts.DEX, "balanceOf", Context.getAddress(), poolId);
+
         if (value.compareTo(availableBalance) > 0) {
             BigInteger requiredBalance = value.subtract(availableBalance);
             call(Contracts.STAKED_LP, "unstake", poolId.intValue(), requiredBalance);
@@ -84,15 +80,14 @@ public class LPInventoryImpl extends AbstractLPInventory {
     }
 
     @External(readonly = true)
-    public Map<String, BigInteger> balanceOfLp(Address owner, BigInteger poolId) {
-
+    public Map<String, BigInteger> balanceOf(Address owner, BigInteger poolId) {
         return call(Map.class, Contracts.STAKED_LP, "balanceOf", owner, poolId);
     }
 
 
     @External
     public void unstake(BigInteger poolId, BigInteger value) {
-        onlyOwner("Only owner can unstake LP token");
+        onlyAdmin(TAG + " | Only admin can unstake LP token");
         call(Contracts.STAKED_LP, "unstake", poolId.intValue(), value);
     }
 

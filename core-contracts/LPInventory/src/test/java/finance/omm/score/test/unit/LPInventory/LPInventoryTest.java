@@ -1,21 +1,19 @@
 package finance.omm.score.test.unit.LPInventory;
 
-import finance.omm.libs.address.Contracts;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
-import score.Address;
-
-import java.math.BigInteger;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+
+import finance.omm.libs.address.Contracts;
+import java.math.BigInteger;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import score.Address;
 
 public class LPInventoryTest extends AbstractLPInventoryTest {
 
@@ -27,52 +25,52 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
     }
 
     @Test
-    void changeAdmin(){
-        assertEquals(owner.getAddress(),score.call("getAdmin"));
+    void changeAdmin() {
+        assertEquals(owner.getAddress(), score.call("getAdmin"));
 
         // set admin condidate
-        score.invoke(owner,"setAdmin",alice.getAddress());
-        assertEquals(alice.getAddress(),score.call("getCandidate"));
-        assertEquals(owner.getAddress(),score.call("getAdmin"));
+        score.invoke(owner, "setAdmin", alice.getAddress());
+        assertEquals(alice.getAddress(), score.call("getCandidate"));
+        assertEquals(owner.getAddress(), score.call("getAdmin"));
 
         // claim admin
-        score.invoke(alice,"claimAdminStatus");
-        assertEquals(alice.getAddress(),score.call("getAdmin"));
+        score.invoke(alice, "claimAdminStatus");
+        assertEquals(alice.getAddress(), score.call("getAdmin"));
 
         verify(scoreSpy).AdminCandidatePushed(alice.getAddress());
-        verify(scoreSpy).AdminStatusClaimed(alice.getAddress());
+        verify(scoreSpy).AdminRoleClaimed(owner.getAddress(), alice.getAddress());
     }
 
     @Test
-    void changeAdmin_candidate_not_set(){
-        Executable adminStatus =()->score.invoke(owner,"claimAdminStatus");
-        expectErrorMessage(adminStatus,"LP Inventory | Candidate address is null");
+    void changeAdmin_candidate_not_set() {
+        Executable adminStatus = () -> score.invoke(owner, "claimAdminStatus");
+        expectErrorMessage(adminStatus, "LP Inventory | Candidate address is null");
 
-        verify(scoreSpy,never()).AdminStatusClaimed(any());
+        verify(scoreSpy, never()).AdminRoleClaimed(any(), any());
     }
 
     @Test
-    void changeAdmin_not_claim_by_candidate(){
+    void changeAdmin_not_claim_by_candidate() {
 
-        score.invoke(owner,"setAdmin",alice.getAddress());
-        assertEquals(alice.getAddress(),score.call("getCandidate"));
-        assertEquals(owner.getAddress(),score.call("getAdmin"));
+        score.invoke(owner, "setAdmin", alice.getAddress());
+        assertEquals(alice.getAddress(), score.call("getCandidate"));
+        assertEquals(owner.getAddress(), score.call("getAdmin"));
 
-        Executable adminCalim = ()->score.invoke(owner,"claimAdminStatus");
-        expectErrorMessage(adminCalim,"LP Inventory | The candidate's address and the caller do not match.");
+        Executable adminCalim = () -> score.invoke(owner, "claimAdminStatus");
+        expectErrorMessage(adminCalim, "LP Inventory | The candidate's address and the caller do not match.");
 
         verify(scoreSpy).AdminCandidatePushed(alice.getAddress());
-        verify(scoreSpy,never()).AdminStatusClaimed(any());
+        verify(scoreSpy, never()).AdminRoleClaimed(any(), any());
 
     }
 
     @Test
-    void changeAdmin_not_by_owner(){
+    void changeAdmin_not_by_owner() {
 
-        Executable changeAdmin= ()-> score.invoke(alice,"setAdmin",alice.getAddress());
-        expectErrorMessage(changeAdmin,"Only owner can set new admin");
+        Executable changeAdmin = () -> score.invoke(alice, "setAdmin", alice.getAddress());
+        expectErrorMessage(changeAdmin, "Only owner can set new admin");
 
-        verify(scoreSpy,never()).AdminCandidatePushed(any());
+        verify(scoreSpy, never()).AdminCandidatePushed(any());
     }
 
     @Test

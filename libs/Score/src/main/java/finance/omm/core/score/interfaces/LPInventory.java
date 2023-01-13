@@ -1,12 +1,11 @@
 package finance.omm.core.score.interfaces;
 
 import foundation.icon.score.client.ScoreInterface;
+import java.math.BigInteger;
+import java.util.Map;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.Optional;
-
-import java.math.BigInteger;
-import java.util.Map;
 
 @ScoreInterface(suffix = "Client")
 public interface LPInventory {
@@ -19,13 +18,13 @@ public interface LPInventory {
 
     Address getCandidate();
 
-    void claimAdminStatus();
+    void claimAdminRole();
 
     void stake(BigInteger poolId, BigInteger value);
 
     void transfer(Address to, BigInteger value, BigInteger poolId, @Optional byte[] data);
 
-    Map<String, BigInteger> balanceOfLp(Address owner, BigInteger poolId);
+    Map<String, BigInteger> balanceOf(Address owner, BigInteger poolId);
 
     void unstake(BigInteger poolId, BigInteger value);
 
@@ -43,5 +42,5 @@ public interface LPInventory {
     void AdminCandidatePushed(Address newAdmin);
 
     @EventLog(indexed = 1)
-    void AdminStatusClaimed(Address newAdmin);
+    void AdminRoleClaimed(Address oldAdmin, Address newAdmin);
 }

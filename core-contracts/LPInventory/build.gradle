@@ -23,17 +23,17 @@ deployJar {
     endpoints {
         sejong {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
-            to = rootProject.findProperty("contracts.lp-staker")
+            to = rootProject.findProperty("contracts.lp-inventory")
             nid = 0x53
         }
         berlin {
             uri = 'https://berlin.net.solidwallet.io/api/v3'
-            to = rootProject.findProperty("contracts.lp-staker")
+            to = rootProject.findProperty("contracts.lp-inventory")
             nid = 0x7
         }
         lisbon {
             uri = 'https://lisbon.net.solidwallet.io/api/v3'
-            to = rootProject.findProperty("contracts.lp-staker")
+            to = rootProject.findProperty("contracts.lp-inventory")
             nid = 0x2
         }
         mainnet {
