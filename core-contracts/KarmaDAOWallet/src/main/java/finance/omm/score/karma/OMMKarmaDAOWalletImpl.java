@@ -186,4 +186,18 @@ public class OMMKarmaDAOWalletImpl extends AbstractKarmaDAOWallet {
         this.TokenTransferred(token, to, value);
     }
 
+    @External
+    public void stakeLP(BigInteger poolId, BigInteger value) {
+        onlyOrElseThrow(admin.get(), KarmaDAOWalletException.notAdmin());
+        Address stakedLp = getAddress(Contracts.STAKED_LP.getKey());
+        byte[] data = "{\"method\":\"stake\"}".getBytes();
+        call(Contracts.DEX, "transfer", stakedLp, value, poolId, data);
+    }
+
+    @External
+    public void unstakeLP(BigInteger poolId, BigInteger value) {
+        onlyOrElseThrow(admin.get(), KarmaDAOWalletException.notAdmin());
+        call(Contracts.STAKED_LP, "unstake", poolId.intValue(), value);
+    }
+
 }
