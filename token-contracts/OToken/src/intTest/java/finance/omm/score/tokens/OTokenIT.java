@@ -100,12 +100,12 @@ public class OTokenIT implements ScoreIntegrationTest {
 
         Thread.sleep(1000L);
 
-        testClient.lendingPool.borrow(icxAddr, BigInteger.valueOf(300));
+        testClient.lendingPool.borrow(icxAddr, BigInteger.valueOf(30000));
         System.out.println(ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
 
         Thread.sleep(1000L);
 
-        testClient.lendingPool.borrow(icxAddr, BigInteger.valueOf(50));
+        testClient.lendingPool.borrow(icxAddr, BigInteger.valueOf(50000));
         System.out.println(ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
 
         Thread.sleep(1000L);

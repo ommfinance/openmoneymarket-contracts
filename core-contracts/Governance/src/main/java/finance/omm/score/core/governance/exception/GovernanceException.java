@@ -47,7 +47,7 @@ public class GovernanceException extends OMMException.Governance {
     }
 
     public static GovernanceException insufficientFee() {
-        return new GovernanceException(Code.ProposalNotActive, "Insufficient fee to create proposal");
+        return new GovernanceException(Code.InsufficientFee, "Insufficient fee to create proposal");
     }
 
 

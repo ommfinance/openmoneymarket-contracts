@@ -35,7 +35,7 @@ public class Release_1_0_0 extends Release {
         this.ommClient.lendingPoolDataProvider.setSymbol(addressMap.get("IUSDC"), "USDC");
         this.ommClient.lendingPoolDataProvider.setSymbol(addressMap.get("sICX"), "ICX");
 
-        ommClient.delegation.addAllContributors(Environment.preps.keySet().toArray(Address[]::new));
+        ommClient.delegation.addAllContributors(Environment.contributors.keySet().toArray(Address[]::new));
         ommClient.ommToken.setMinimumStake(Constant.MINIMUM_OMM_STAKE);
         ommClient.ommToken.setUnstakingPeriod(Constant.UNSTAKING_PERIOD);
         ommClient.staking.toggleStakingOn();
@@ -46,6 +46,7 @@ public class Release_1_0_0 extends Release {
                 BigInteger.valueOf(3).multiply(ICX).divide(BigInteger.TEN));
 
         ommClient.dummyPriceOracle.set_reference_data("USDC",ICX);
+
 
       /*
         initialized reserves
@@ -189,15 +190,15 @@ public class Release_1_0_0 extends Release {
 
     private void initReserve(ReserveConstant usdcReserve) {
         usdcReserve.optimalUtilizationRate = BigInteger.valueOf(8)
-                .multiply(MathUtils.ICX)
+                .multiply(ICX)
                 .divide(BigInteger.TEN);
         usdcReserve.baseBorrowRate = BigInteger.valueOf(2)
-                .multiply(MathUtils.ICX)
+                .multiply(ICX)
                 .divide(BigInteger.valueOf(100));
         usdcReserve.slopeRate1 = BigInteger.valueOf(6)
-                .multiply(MathUtils.ICX)
+                .multiply(ICX)
                 .divide(BigInteger.valueOf(100));
         usdcReserve.slopeRate2 = BigInteger.valueOf(2)
-                .multiply(MathUtils.ICX);
+                .multiply(ICX);
     }
 }

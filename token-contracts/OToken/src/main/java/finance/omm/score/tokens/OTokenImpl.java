@@ -351,6 +351,7 @@ public class OTokenImpl extends AddressProvider implements OToken {
             index = ZERO;
         }
 
+
         this.handleAction(_user, cumulated.get("previousPrincipalBalance"), beforeTotalSupply);
 
         this.Redeem(_user, amountToRedeem, balanceIncrease, index);

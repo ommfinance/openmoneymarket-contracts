@@ -19,8 +19,9 @@ public class OMMException extends UserRevertException {
         OMMToken(50),
         StakeLPException(60),
         LendingPool(65),
-        PriceOracle(70),
+        LiquidationManager(70),
         OMMWallet(75),
+        LendingPoolCore(75),
         RESERVED(80);
 
         int offset;
@@ -200,6 +201,19 @@ public class OMMException extends UserRevertException {
         }
     }
 
+    public static class LiquidationManager extends OMMException {
+
+        public LiquidationManager(int code, String message) {
+            super(Type.LiquidationManager, code, message);
+        }
+
+        public LiquidationManager(Coded code, String message) {
+            this(code.code(), message);
+        }
+
+
+    }
+
     public static class OMMToken extends OMMException {
 
         public OMMToken(int code, String message) {
@@ -207,17 +221,6 @@ public class OMMException extends UserRevertException {
         }
 
         public OMMToken(Coded code, String message) {
-            this(code.code(), message);
-        }
-    }
-
-    public static class PriceOracleException extends OMMException {
-
-        public PriceOracleException(int code, String message) {
-            super(Type.PriceOracle, code, message);
-        }
-
-        public PriceOracleException(Coded code, String message) {
             this(code.code(), message);
         }
     }
@@ -240,6 +243,17 @@ public class OMMException extends UserRevertException {
         }
 
         public LendingPool(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class LendingPoolCore extends OMMException {
+
+        public LendingPoolCore(int code, String message) {
+            super(Type.LendingPoolCore, code, message);
+        }
+
+        public LendingPoolCore(Coded code, String message) {
             this(code.code(), message);
         }
     }

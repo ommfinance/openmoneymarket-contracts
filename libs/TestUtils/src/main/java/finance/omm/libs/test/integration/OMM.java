@@ -94,7 +94,7 @@ public class OMM {
     public boolean isPRepRegistered() {
         try {
             SYSTEM_INTERFACE = new SystemInterfaceScoreClient(godClient);
-            Map<String, Object> result = SYSTEM_INTERFACE.getPReps(BigInteger.ONE, BigInteger.TWO);
+            Map<String, Object> result = SYSTEM_INTERFACE.getPReps(BigInteger.ONE, BigInteger.valueOf(10));
             List<Object> registeredPReps = (List<Object>) result.get("preps");
             if (registeredPReps.size() > 0) {
                 return true;

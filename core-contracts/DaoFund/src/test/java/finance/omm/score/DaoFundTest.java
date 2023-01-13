@@ -81,7 +81,7 @@ class DaoFundTest extends TestBase {
         ommToken.invoke(owner, "setOwner", ommToken.getAccount());
         ommToken.invoke(owner, "addTo", receiver);
         daoFund.invoke(accountGovernance, "transferOmm", amount,
-                receiver.getAddress());
+                receiver.getAddress(),"transfer".getBytes());
 
         assertEquals(amount, receiver.getBalance(Contracts.OMM_TOKEN.getKey()));
         assertEquals(totalSupply.subtract(amount), ommToken.getAccount().getBalance(Contracts.OMM_TOKEN.getKey()));

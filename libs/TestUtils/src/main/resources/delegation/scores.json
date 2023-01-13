@@ -37,6 +37,69 @@
     "order": 1.0
   },
   {
+    "name": "bridgeOToken",
+    "contract": "OMMToken",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "rewards",
+    "contract": "RewardDistribution",
+    "params": {
+      "bOMMRewardStartDate": 1646438400
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "rewardWeightController",
+    "contract": "RewardWeightController",
+    "params": {
+      "startTimestamp": 1646438400000000
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "daoFund",
+    "contract": "DaoFund",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "lendingPool",
+    "contract": "LendingPool",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+
+  {
+    "name": "workerToken",
+    "contract": "WorkerToken",
+    "params": {
+      "_initialSupply": 100,
+      "_decimals": 18
+    },
+    "order": 1.0
+  },
+
+  {
     "name": "sICX",
     "contract": "sICX",
     "params": {
@@ -45,5 +108,29 @@
       "_admin": "staking"
     },
     "order": 2.0
+  },
+  {
+    "name": "bOMM",
+    "contract": "VotingEscrowToken",
+    "params": {
+      "name": "Boosted OMM token",
+      "symbol": "bOMM"
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider",
+      "tokenAddress": "ommToken"
+    },
+    "order": 2.0
+  },
+
+  {
+    "name": "governance",
+    "contract": "Governance",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
   }
 ]

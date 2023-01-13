@@ -7,10 +7,12 @@ import java.math.BigInteger;
 public class MathUtils {
 
     public static BigInteger ICX = pow10(18);
+    public static BigInteger EIGHTEEN = BigInteger.valueOf(18);
     public static BigInteger HUNDRED_PERCENT = ICX;
     public static BigInteger HALF_ICX = ICX.divide(BigInteger.TWO);
     public static BigInteger MILLION = BigInteger.valueOf(1_000_000L).multiply(ICX);
     public static BigInteger HUNDRED_THOUSAND = BigInteger.valueOf(100_000L).multiply(ICX);
+    public static BigInteger SECONDS_PER_YEAR = BigInteger.valueOf(31536000);
 
 
     public static boolean isLessThan(BigInteger first, BigInteger second) {
@@ -46,6 +48,25 @@ public class MathUtils {
         return result;
     }
 
+    public static BigInteger exaPow(BigInteger x, BigInteger n) {
+        BigInteger z;
+        if (!n.mod(BigInteger.TWO).equals(BigInteger.ZERO)) {
+            z = x;
+        } else {
+            z = ICX;
+        }
+        n = n.divide(BigInteger.TWO);
+        while (!n.equals(BigInteger.ZERO)) {
+            x = exaMultiply(x, x);
+
+            if (!n.mod(BigInteger.TWO).equals(BigInteger.ZERO)) {
+                z = exaMultiply(z, x);
+            }
+            n = n.divide(BigInteger.TWO);
+        }
+        return z;
+    }
+
     public static BigInteger min(BigInteger[] list) {
         BigInteger min = list[0];
         for (BigInteger num : list) {
@@ -67,8 +88,8 @@ public class MathUtils {
     }
 
     /**
-     * If a=8*EXA and b=3*EXA ,it  returns 2666666666666666666
-     * If a=100*EXA and b=6*EXA , it returns 16666666666666666666
+     * If a=8*EXA and b=3*EXA ,it  returns 2666666666666666666 If a=100*EXA and b=6*EXA , it returns
+     * 16666666666666666666
      */
     public static BigInteger exaDivideFloor(BigInteger first, BigInteger second) {
         return first.multiply(ICX).divide(second);
@@ -94,7 +115,7 @@ public class MathUtils {
     }
 
     public static double percentageInHundred(BigInteger value) {
-        return 100*value.doubleValue()/ICX.doubleValue();
+        return 100 * value.doubleValue() / ICX.doubleValue();
     }
 
     public static BigInteger convertToNumber(JsonValue value) {

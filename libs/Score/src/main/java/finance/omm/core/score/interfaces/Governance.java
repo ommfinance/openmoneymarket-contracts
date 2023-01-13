@@ -49,7 +49,7 @@ public interface Governance extends AddressProvider {
 
     void transferOmmToDaoFund(BigInteger _value);
 
-    void transferOmmFromDaoFund(BigInteger _value, Address _address);
+    void transferOmmFromDaoFund(BigInteger _value, Address _address, @Optional byte[] _data);
 
     void transferFundFromFeeProvider(Address _token, BigInteger _value, Address _to);
 
@@ -75,6 +75,17 @@ public interface Governance extends AddressProvider {
 
     void cancelVote(int vote_index);
 
+    void addAllowedMethods(Address contract, String[] method);
+
+    void removeAllowedMethods(Address contract, String[] method);
+
+    List<String> getSupportedMethodsOfContract(Address contract);
+
+    List<Address> getSupportedContracts();
+
+    void tryExecuteTransactions(String transactions);
+
+    void executeTransactions(String transactions);
 
     BigInteger maxActions();
 

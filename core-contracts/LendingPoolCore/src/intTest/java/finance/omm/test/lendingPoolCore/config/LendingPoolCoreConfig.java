@@ -1,0 +1,11 @@
+package finance.omm.test.lendingPoolCore.config;
+
+import finance.omm.libs.test.integration.OMMClient;
+import finance.omm.libs.test.integration.configs.BaseConfig;
+
+public class LendingPoolCoreConfig extends BaseConfig {
+    @Override
+    public void call(OMMClient ommClient) {
+        super.call(ommClient);
+    }
+}
