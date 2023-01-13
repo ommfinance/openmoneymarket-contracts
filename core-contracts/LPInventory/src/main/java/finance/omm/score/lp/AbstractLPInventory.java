@@ -25,11 +25,11 @@ public abstract class AbstractLPInventory extends AddressProvider implements LPI
     public void LPTokenReceived(Address from, BigInteger poolId, BigInteger value) {
     }
 
-    @EventLog(indexed = 1)
-    public void AdminCandidatePushed(Address newAdmin) {
+    @EventLog
+    public void AdminCandidatePushed(Address oldAdmin, Address newAdmin) {
     }
 
-    @EventLog(indexed = 1)
+    @EventLog
     public void AdminRoleClaimed(Address oldAdmin, Address newAdmin) {
     }
 

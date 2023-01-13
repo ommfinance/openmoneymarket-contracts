@@ -38,9 +38,9 @@ public interface LPInventory {
     @EventLog(indexed = 3)
     void LPTokenReceived(Address from, BigInteger poolId, BigInteger value);
 
-    @EventLog(indexed = 1)
-    void AdminCandidatePushed(Address newAdmin);
+    @EventLog
+    void AdminCandidatePushed(Address oldAmin, Address newAdmin);
 
-    @EventLog(indexed = 1)
+    @EventLog
     void AdminRoleClaimed(Address oldAdmin, Address newAdmin);
 }

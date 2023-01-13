@@ -25,7 +25,7 @@ public class LPInventoryImpl extends AbstractLPInventory {
     public void setAdmin(Address newAdmin) {
         onlyAdmin(TAG + " | Only current admin can set new admin");
         candidate.set(newAdmin);
-        AdminCandidatePushed(newAdmin);
+        AdminCandidatePushed(Context.getCaller(),newAdmin);
     }
 
     @External(readonly = true)
