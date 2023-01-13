@@ -34,7 +34,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
         assertEquals(owner.getAddress(), score.call("getAdmin"));
 
         // claim admin
-        score.invoke(alice, "claimAdminStatus");
+        score.invoke(alice, "claimAdminRole");
         assertEquals(alice.getAddress(), score.call("getAdmin"));
 
         verify(scoreSpy).AdminCandidatePushed(alice.getAddress());
@@ -43,7 +43,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
 
     @Test
     void changeAdmin_candidate_not_set() {
-        Executable adminStatus = () -> score.invoke(owner, "claimAdminStatus");
+        Executable adminStatus = () -> score.invoke(owner, "claimAdminRole");
         expectErrorMessage(adminStatus, "LP Inventory | Candidate address is null");
 
         verify(scoreSpy, never()).AdminRoleClaimed(any(), any());
@@ -56,7 +56,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
         assertEquals(alice.getAddress(), score.call("getCandidate"));
         assertEquals(owner.getAddress(), score.call("getAdmin"));
 
-        Executable adminCalim = () -> score.invoke(owner, "claimAdminStatus");
+        Executable adminCalim = () -> score.invoke(owner, "claimAdminRole");
         expectErrorMessage(adminCalim, "LP Inventory | The candidate's address and the caller do not match.");
 
         verify(scoreSpy).AdminCandidatePushed(alice.getAddress());
@@ -68,7 +68,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
     void changeAdmin_not_by_owner() {
 
         Executable changeAdmin = () -> score.invoke(alice, "setAdmin", alice.getAddress());
-        expectErrorMessage(changeAdmin, "Only owner can set new admin");
+        expectErrorMessage(changeAdmin, "LP Inventory | Only current admin can set new admin");
 
         verify(scoreSpy, never()).AdminCandidatePushed(any());
     }
@@ -76,7 +76,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
     @Test
     void stakeLPToken_not_by_owner() {
         Executable stake = () -> score.invoke(score.getAccount(), "stake", id, TEN);
-        expectErrorMessage(stake, "Only owner can stake LP tokens");
+        expectErrorMessage(stake, "LP Inventory | Only admin can stake LP tokens");
 
     }
 
@@ -107,7 +107,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
 
         doNothing().when(scoreSpy).call(Contracts.STAKED_LP, "unstake", id.intValue(), TEN);
         Executable unstakeLp = () -> score.invoke(alice, "unstake", id, TEN);
-        expectErrorMessage(unstakeLp, "Only owner can unstake LP token");
+        expectErrorMessage(unstakeLp, "LP Inventory | Only admin can unstake LP token");
 
     }
 
@@ -168,7 +168,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
                 "userStakedBalance", BigInteger.valueOf(8),
                 "totalStakedBalance", BigInteger.valueOf(100))
         ).when(scoreSpy).call(Map.class, Contracts.STAKED_LP, "balanceOf", owner.getAddress(), id);
-        System.out.println(score.call("balanceOfLp", owner.getAddress(), id));
+        System.out.println(score.call("balanceOf", owner.getAddress(), id));
 
         verify(scoreSpy).call(Map.class, Contracts.STAKED_LP, "balanceOf", owner.getAddress(), id);
 
