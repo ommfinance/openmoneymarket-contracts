@@ -37,7 +37,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
         score.invoke(alice, "claimAdminRole");
         assertEquals(alice.getAddress(), score.call("getAdmin"));
 
-        verify(scoreSpy).AdminCandidatePushed(alice.getAddress());
+        verify(scoreSpy).AdminCandidatePushed(owner.getAddress(),alice.getAddress());
         verify(scoreSpy).AdminRoleClaimed(owner.getAddress(), alice.getAddress());
     }
 
@@ -59,7 +59,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
         Executable adminCalim = () -> score.invoke(owner, "claimAdminRole");
         expectErrorMessage(adminCalim, "LP Inventory | The candidate's address and the caller do not match.");
 
-        verify(scoreSpy).AdminCandidatePushed(alice.getAddress());
+        verify(scoreSpy).AdminCandidatePushed(owner.getAddress(),alice.getAddress());
         verify(scoreSpy, never()).AdminRoleClaimed(any(), any());
 
     }
@@ -70,7 +70,7 @@ public class LPInventoryTest extends AbstractLPInventoryTest {
         Executable changeAdmin = () -> score.invoke(alice, "setAdmin", alice.getAddress());
         expectErrorMessage(changeAdmin, "LP Inventory | Only current admin can set new admin");
 
-        verify(scoreSpy, never()).AdminCandidatePushed(any());
+        verify(scoreSpy, never()).AdminCandidatePushed(any(),any());
     }
 
     @Test
