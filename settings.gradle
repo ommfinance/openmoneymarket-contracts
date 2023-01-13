@@ -77,3 +77,6 @@ findProject(":LendingPoolCore").projectDir = file("core-contracts/LendingPoolCor
 
 include(":LendingPoolDataProvider")
 findProject(":LendingPoolDataProvider").projectDir = file("core-contracts/LendingPoolDataProvider")
+
+include(":LPInventory")
+findProject(":LPInventory").projectDir = file("core-contracts/LPInventory")
