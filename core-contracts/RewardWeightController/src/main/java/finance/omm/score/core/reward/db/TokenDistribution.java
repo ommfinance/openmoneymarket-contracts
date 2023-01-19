@@ -32,16 +32,16 @@ public class TokenDistribution {
         distributionCheckpoints.set(0, MILLION);
         dayCheckpoints.set(0, BigInteger.ZERO);
 
-        distributionCheckpoints.set(1, BigInteger.valueOf(400).multiply(HUNDRED_THOUSAND));
+        distributionCheckpoints.set(1, BigInteger.valueOf(4L).multiply(HUNDRED_THOUSAND));
         dayCheckpoints.set(1, BigInteger.valueOf(30));
 
-        distributionCheckpoints.set(2, BigInteger.valueOf(300).multiply(HUNDRED_THOUSAND));
+        distributionCheckpoints.set(2, BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND));
         dayCheckpoints.set(2, DAYS_PER_YEAR);
 
-        distributionCheckpoints.set(3, BigInteger.valueOf(200).multiply(HUNDRED_THOUSAND));
+        distributionCheckpoints.set(3, BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND));
         dayCheckpoints.set(3, DAYS_PER_YEAR.multiply(BigInteger.TWO));
 
-        distributionCheckpoints.set(4, BigInteger.valueOf(100).multiply(HUNDRED_THOUSAND));
+        distributionCheckpoints.set(4, HUNDRED_THOUSAND);
         dayCheckpoints.set(4, DAYS_PER_YEAR.multiply(BigInteger.valueOf(3)));
 
         checkpointCount.set(5);
