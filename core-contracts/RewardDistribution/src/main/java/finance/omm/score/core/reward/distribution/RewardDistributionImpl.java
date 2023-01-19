@@ -348,10 +348,6 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             }
         }
 
-        if (transferToContract.compareTo(amountToMint) > 0) {
-            throw RewardDistributionException.unknown("transfer to contract exceed total distribution");
-        }
-
     }
 
     /**

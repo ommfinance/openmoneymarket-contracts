@@ -1,34 +1,17 @@
 package finance.omm.score.core.reward;
 
-import static finance.omm.utils.constants.TimeConstants.DAYS_PER_YEAR;
-import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
-import static finance.omm.utils.constants.TimeConstants.DAY_IN_SECONDS;
-import static finance.omm.utils.constants.TimeConstants.MONTH_IN_SECONDS;
-import static finance.omm.utils.constants.TimeConstants.SECOND;
-import static finance.omm.utils.constants.TimeConstants.YEAR_IN_SECONDS;
-import static finance.omm.utils.constants.TimeConstants.getBlockTimestampInSecond;
-import static finance.omm.utils.math.MathUtils.HUNDRED_PERCENT;
-import static finance.omm.utils.math.MathUtils.HUNDRED_THOUSAND;
-import static finance.omm.utils.math.MathUtils.MILLION;
-import static finance.omm.utils.math.MathUtils.exaDivide;
-import static finance.omm.utils.math.MathUtils.exaMultiply;
-import static finance.omm.utils.math.MathUtils.pow;
-
 import finance.omm.core.score.interfaces.RewardWeightController;
 import finance.omm.libs.address.AddressProvider;
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.TypeWeightStruct;
 import finance.omm.libs.structs.WeightStruct;
 import finance.omm.score.core.reward.db.AssetWeightDB;
+import finance.omm.score.core.reward.db.TokenDistribution;
 import finance.omm.score.core.reward.db.TypeWeightDB;
 import finance.omm.score.core.reward.exception.RewardWeightException;
 import finance.omm.score.core.reward.model.Asset;
 import finance.omm.utils.constants.TimeConstants;
 import finance.omm.utils.constants.TimeConstants.Timestamp;
-import finance.omm.utils.math.MathUtils;
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
 import score.Address;
 import score.ArrayDB;
 import score.Context;
@@ -37,6 +20,18 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import scorex.util.HashMap;
+
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+
+import static finance.omm.utils.constants.TimeConstants.DAY_IN_MICRO_SECONDS;
+import static finance.omm.utils.constants.TimeConstants.DAY_IN_SECONDS;
+import static finance.omm.utils.constants.TimeConstants.SECOND;
+import static finance.omm.utils.constants.TimeConstants.getBlockTimestampInSecond;
+import static finance.omm.utils.math.MathUtils.HUNDRED_PERCENT;
+import static finance.omm.utils.math.MathUtils.exaDivide;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 public class RewardWeightControllerImpl extends AddressProvider implements RewardWeightController {
 
@@ -48,6 +43,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     public final AssetWeightDB assetWeightDB = new AssetWeightDB("assets");
 
     private final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
+    public final TokenDistribution tokenDistributionDB = new TokenDistribution("reward");
 
     public RewardWeightControllerImpl(Address addressProvider, BigInteger startTimestamp) {
         super(addressProvider, false);
@@ -55,6 +51,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
             TimeConstants.checkIsValidTimestamp(startTimestamp, Timestamp.MICRO_SECONDS);
             this._timestampAtStart.set(startTimestamp);
         }
+        tokenDistributionDB.init();
     }
 
     @External(readonly = true)
@@ -142,27 +139,17 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External(readonly = true)
     public BigInteger tokenDistributionPerDay(BigInteger _day) {
-        if (MathUtils.isLessThan(_day, BigInteger.ZERO)) {
-            return BigInteger.ZERO;
-        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(30L))) {
-            return MILLION;
-        } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR)) {
-            return BigInteger.valueOf(4L).multiply(HUNDRED_THOUSAND);
-        } else if (MathUtils.isLessThan(_day, DAYS_PER_YEAR.multiply(BigInteger.TWO))) {
-            return BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND);
-        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(3L).multiply(DAYS_PER_YEAR))) {
-            return BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND);
-        } else if (MathUtils.isLessThan(_day, BigInteger.valueOf(4L).multiply(DAYS_PER_YEAR))) {
-            return HUNDRED_THOUSAND;
-        } else {
-            BigInteger index = _day.divide(DAYS_PER_YEAR).subtract(BigInteger.valueOf(4L));
-            return pow(BigInteger.valueOf(103L), (index.intValue()))
-                    .multiply(BigInteger.valueOf(3L))
-                    .multiply(BigInteger.valueOf(383L).multiply(MILLION))
-                    .divide(DAYS_PER_YEAR)
-                    .divide(pow(BigInteger.valueOf(100L),
-                            (index.intValue() + 1)));
-        }
+        return tokenDistributionDB.getTokenDistribution(_day).get("totalDistribution");
+    }
+
+    @External(readonly = true)
+    public int getDayCount() {
+        return tokenDistributionDB.getCheckpointCount();
+    }
+
+    @External(readonly = true)
+    public Map<String, BigInteger> getTokenDistributionInfo(BigInteger day) {
+        return tokenDistributionDB.getTokenDistribution(day);
     }
 
     @External(readonly = true)
@@ -183,35 +170,32 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     rateChangeOn=100;
      */
     public Map<String, BigInteger> getInflationRateByTimestamp(BigInteger tInSeconds) {
-        BigInteger rateChangedOn;
-        BigInteger startTimestampInSeconds = rateChangedOn = getStartTimestamp().divide(SECOND);
-        if (tInSeconds.compareTo(rateChangedOn) <= 0) {
-            return Map.of(
-                    "rateChangedOn", rateChangedOn,
-                    "ratePerSecond", getInflationRate(BigInteger.ZERO)
-            );
-        }
+        BigInteger startTimestampInSeconds = getStartTimestamp().divide(SECOND);
+        BigInteger numberOfDay = tInSeconds.subtract(startTimestampInSeconds)
+                .divide(DAY_IN_SECONDS)
+                .max(BigInteger.ZERO);
 
-        BigInteger timeDelta = tInSeconds.subtract(rateChangedOn);
-
-        BigInteger numberOfYears = timeDelta.divide(YEAR_IN_SECONDS);
-
-        if (numberOfYears.equals(BigInteger.ZERO) && timeDelta.compareTo(MONTH_IN_SECONDS) > 0) {
-            rateChangedOn = rateChangedOn.add(MONTH_IN_SECONDS);
-        }
-        rateChangedOn = rateChangedOn.add(numberOfYears.multiply(YEAR_IN_SECONDS));
-
-        BigInteger numberOfDay = tInSeconds.subtract(startTimestampInSeconds).divide(DAY_IN_SECONDS);
-
+        Map<String, BigInteger> tokenDistribution = tokenDistributionDB.getTokenDistribution(numberOfDay);
+        BigInteger distribution = tokenDistribution.get("totalDistribution");
+        BigInteger distributionChangedOn = tokenDistribution.get("distributionChangedOn");
         return Map.of(
-                "rateChangedOn", rateChangedOn,
-                "ratePerSecond", getInflationRate(numberOfDay)
+                "rateChangedOn", distributionChangedOn.multiply(DAY_IN_SECONDS).add(startTimestampInSeconds),
+                "ratePerSecond", distribution.divide(DAY_IN_SECONDS)
         );
     }
 
-    private BigInteger getInflationRate(BigInteger _day) {
-        return tokenDistributionPerDay(_day).divide(DAY_IN_SECONDS);
+
+    @External
+    public void updateTokenDistribution(BigInteger day, BigInteger value) {
+        onlyOrElseThrow(Contracts.GOVERNANCE,
+                RewardWeightException.notAuthorized("Only Governance contract can call set type method"));
+        if (getDay().compareTo(day) >= 0) {
+            throw RewardWeightException.unknown(TAG + " | Cannot change token distribution of previous or today");
+        }
+        tokenDistributionDB.updateTokenDistribution(day, value);
+        TokenDistributionUpdated(day, value);
     }
+
 
     @External(readonly = true)
     public Map<String, BigInteger> getEmissionRate(@Optional BigInteger timestamp) {
@@ -242,7 +226,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External(readonly = true)
     public BigInteger calculateIntegrateIndex(Address assetAddr, BigInteger totalSupply, BigInteger fromInSeconds,
-            BigInteger toInSeconds) {
+                                              BigInteger toInSeconds) {
         if (totalSupply.compareTo(BigInteger.ZERO) <= 0) {
             return BigInteger.ZERO;
         }
@@ -278,7 +262,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
 
     private Map<String, BigInteger> calculateRewardDistribution(Asset asset, BigInteger fromTimestamp,
-            BigInteger toTimestamp) {
+                                                                BigInteger toTimestamp) {
         Map<String, BigInteger> assetWeight = assetWeightDB.searchAssetWeight(asset, toTimestamp);
         BigInteger aTimestamp = assetWeight.get("timestamp");
         BigInteger aWeight = assetWeight.get("value");
@@ -498,6 +482,10 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @EventLog(indexed = 2)
     public void SetAssetWeight(String type, BigInteger timestamp, String message) {
+    }
+
+    @EventLog(indexed = 2)
+    public void TokenDistributionUpdated(BigInteger day, BigInteger value) {
     }
 
 }
