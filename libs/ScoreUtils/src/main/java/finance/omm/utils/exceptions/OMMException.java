@@ -20,6 +20,7 @@ public class OMMException extends UserRevertException {
         StakeLPException(60),
         LendingPool(65),
         LiquidationManager(70),
+        OMMWallet(75),
         LendingPoolCore(75),
         RESERVED(80);
 
@@ -224,6 +225,16 @@ public class OMMException extends UserRevertException {
         }
     }
 
+    public static class OMMWalletException extends OMMException {
+
+        public OMMWalletException(int code, String message) {
+            super(Type.OMMWallet, code, message);
+        }
+
+        public OMMWalletException(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
 
     public static class LendingPool extends OMMException {
 
