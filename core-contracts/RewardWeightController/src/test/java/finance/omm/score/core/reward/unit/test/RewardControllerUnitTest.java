@@ -2,6 +2,7 @@ package finance.omm.score.core.reward.unit.test;
 
 
 import static finance.omm.utils.constants.TimeConstants.SECOND;
+import static finance.omm.utils.math.MathUtils.HUNDRED_THOUSAND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -107,19 +108,20 @@ public class RewardControllerUnitTest extends TestBase {
         score.invoke(account, "addType", key, Boolean.FALSE, Account.newScoreAccount(0).getAddress());
     }
 
-    @DisplayName("verify token inflation rate")
-    @Test
-    public void testTokenDistributionPerDay() {
-        BigInteger tokenIn5Years = (BigInteger) this.score.call("tokenDistributionPerDay", BigInteger.valueOf(5 * 365));
-        BigInteger tokenIn6Years = (BigInteger) this.score.call("tokenDistributionPerDay", BigInteger.valueOf(6 * 365));
-        BigDecimal inflation_56 = new BigDecimal(tokenIn6Years.subtract(tokenIn5Years)).divide(
-                new BigDecimal(tokenIn5Years), 2, RoundingMode.HALF_UP);
-        assertEquals(0.03, inflation_56.doubleValue());
-        BigInteger tokenIn7Years = (BigInteger) this.score.call("tokenDistributionPerDay", BigInteger.valueOf(7 * 365));
-        BigDecimal inflation_67 = new BigDecimal(tokenIn7Years.subtract(tokenIn6Years)).divide(
-                new BigDecimal(tokenIn6Years), 2, RoundingMode.HALF_UP);
-        assertEquals(0.03, inflation_67.doubleValue());
-    }
+    // token inflation not needed after update
+//    @DisplayName("verify token inflation rate")
+//    @Test
+//    public void testTokenDistributionPerDay() {
+//        BigInteger tokenIn5Years = (BigInteger) this.score.call("tokenDistributionPerDay", BigInteger.valueOf(5 * 365));
+//        BigInteger tokenIn6Years = (BigInteger) this.score.call("tokenDistributionPerDay", BigInteger.valueOf(6 * 365));
+//        BigDecimal inflation_56 = new BigDecimal(tokenIn6Years.subtract(tokenIn5Years)).divide(
+//                new BigDecimal(tokenIn5Years), 2, RoundingMode.HALF_UP);
+//        assertEquals(0.03, inflation_56.doubleValue());
+//        BigInteger tokenIn7Years = (BigInteger) this.score.call("tokenDistributionPerDay", BigInteger.valueOf(7 * 365));
+//        BigDecimal inflation_67 = new BigDecimal(tokenIn7Years.subtract(tokenIn6Years)).divide(
+//                new BigDecimal(tokenIn6Years), 2, RoundingMode.HALF_UP);
+//        assertEquals(0.03, inflation_67.doubleValue());
+//    }
 
     @DisplayName("add type")
     @Test
@@ -677,6 +679,72 @@ public class RewardControllerUnitTest extends TestBase {
         //31st and 32nd day (30 400k)
         total = total.add(ICX.multiply(BigInteger.valueOf(400_000).multiply(BigInteger.TWO)));
         assertEquals(total, result.get("amountToMint"));
+
+    }
+
+
+    @Test
+    public void updateTokenDistribution_2000_day_then_300_day(){
+        BigInteger day_2000 = BigInteger.valueOf(2000);
+        assertEquals(5, score.call("getDayCount"));
+
+        assertEquals(HUNDRED_THOUSAND,
+                score.call("tokenDistributionPerDay",day_2000));
+
+        // day->2000
+        BigInteger value_2000 = BigInteger.valueOf(20).multiply(HUNDRED_THOUSAND);
+        score.invoke(mockAddress.get(Contracts.GOVERNANCE),"updateTokenDistribution",day_2000,value_2000);
+
+        assertEquals(6, score.call("getDayCount"));
+        assertEquals(value_2000,score.call("tokenDistributionPerDay",day_2000));
+
+        // day -> 365
+        BigInteger day_365 = BigInteger.valueOf(365);
+        BigInteger value_365 = BigInteger.valueOf(100).multiply(HUNDRED_THOUSAND);
+        score.invoke(mockAddress.get(Contracts.GOVERNANCE),"updateTokenDistribution",day_365,value_365);
+
+        assertEquals(3, score.call("getDayCount"));
+        assertEquals(value_365,score.call("tokenDistributionPerDay",day_2000));
+        assertEquals(value_365,score.call("tokenDistributionPerDay",day_365));
+
+
+    }
+
+    @Test
+    public void updateTokenDistribution_400_day(){
+        BigInteger day_400 = BigInteger.valueOf(400);
+        assertEquals(5, score.call("getDayCount"));
+
+        assertEquals(BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND),
+                score.call("tokenDistributionPerDay",day_400));
+
+        BigInteger value = BigInteger.valueOf(100).multiply(HUNDRED_THOUSAND);
+        score.invoke(mockAddress.get(Contracts.GOVERNANCE),"updateTokenDistribution",day_400,value);
+
+        assertEquals(4, score.call("getDayCount"));
+        assertEquals(value,score.call("tokenDistributionPerDay",day_400));
+        assertEquals(value,score.call("tokenDistributionPerDay",day_400.add(BigInteger.ONE)));
+        assertEquals(value,score.call("tokenDistributionPerDay",BigInteger.valueOf(200000)));
+        assertEquals(BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND),
+                score.call("tokenDistributionPerDay",day_400.subtract(BigInteger.ONE)));
+
+    }
+
+    @Test
+    void updateTokenDistribution_365_day(){
+        BigInteger day_365 = BigInteger.valueOf(365);
+        assertEquals(5, score.call("getDayCount"));
+
+        assertEquals(BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND),
+                score.call("tokenDistributionPerDay",day_365));
+
+        BigInteger value = BigInteger.valueOf(50).multiply(HUNDRED_THOUSAND);
+        score.invoke(mockAddress.get(Contracts.GOVERNANCE),"updateTokenDistribution",day_365,value);
+
+        assertEquals(value, score.call("tokenDistributionPerDay",day_365));
+        assertEquals(value, score.call("tokenDistributionPerDay",day_365.add(BigInteger.ONE)));
+        assertEquals(3, score.call("getDayCount"));
+
 
     }
 
