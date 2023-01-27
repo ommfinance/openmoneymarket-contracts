@@ -187,8 +187,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External
     public void updateTokenDistribution(BigInteger day, BigInteger value) {
-        onlyOrElseThrow(Contracts.GOVERNANCE,
-                RewardWeightException.notAuthorized("Only Governance contract can call set type method"));
+        onlyOwner("Only owner can call update token distribution method");
         if (getDay().compareTo(day) >= 0) {
             throw RewardWeightException.unknown(TAG + " | Cannot change token distribution of previous or today");
         }
@@ -475,6 +474,11 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
         return response;
     }
 
+    private void onlyOwner(String msg){
+        if (!Context.getOwner().equals(Context.getCaller())) {
+            throw RewardWeightException.unknown(msg);
+        }
+    }
 
     @EventLog(indexed = 2)
     public void SetTypeWeight(BigInteger timestamp, String message) {

@@ -20,9 +20,9 @@ public class TokenDistribution {
     private final DictDB<Integer, BigInteger> dayCheckpoints;
 
     public TokenDistribution(String key) {
-        this.distributionCheckpoints = Context.newDictDB(key + "-distribution-checkpoints-11", BigInteger.class);
-        this.checkpointCount = Context.newVarDB(key + "-checkpoint-count-11", Integer.class);
-        this.dayCheckpoints = Context.newDictDB(key + "-day-checkpoints-11", BigInteger.class);
+        this.distributionCheckpoints = Context.newDictDB(key + "-distribution-checkpoints", BigInteger.class);
+        this.checkpointCount = Context.newVarDB(key + "-checkpoint-count", Integer.class);
+        this.dayCheckpoints = Context.newDictDB(key + "-day-checkpoints", BigInteger.class);
     }
 
     public void init() {
@@ -38,13 +38,16 @@ public class TokenDistribution {
         distributionCheckpoints.set(2, BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND));
         dayCheckpoints.set(2, DAYS_PER_YEAR);
 
-        distributionCheckpoints.set(3, BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND));
-        dayCheckpoints.set(3, DAYS_PER_YEAR.multiply(BigInteger.TWO));
+        distributionCheckpoints.set(3,BigInteger.ZERO);
+        dayCheckpoints.set(3,BigInteger.valueOf(535));
 
-        distributionCheckpoints.set(4, HUNDRED_THOUSAND);
-        dayCheckpoints.set(4, DAYS_PER_YEAR.multiply(BigInteger.valueOf(3)));
+        distributionCheckpoints.set(4, BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND));
+        dayCheckpoints.set(4, DAYS_PER_YEAR.multiply(BigInteger.TWO));
 
-        checkpointCount.set(5);
+        distributionCheckpoints.set(5, HUNDRED_THOUSAND);
+        dayCheckpoints.set(5, DAYS_PER_YEAR.multiply(BigInteger.valueOf(3)));
+
+        checkpointCount.set(6);
     }
 
     public Integer getCheckpointCount() {
