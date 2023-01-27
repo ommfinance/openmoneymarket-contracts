@@ -319,17 +319,17 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         }
         BigInteger amountToMint = (BigInteger) precomputeInfo.get("amountToMint");
 
-        if (amountToMint.equals(BigInteger.ZERO)) {
-            throw RewardDistributionException.unknown("no token to mint " + amountToMint);
-        }
 
         BigInteger newDay = (BigInteger) precomputeInfo.get("day");
 
         BigInteger toTimestamp = (BigInteger) precomputeInfo.get("timestamp");
 
+        if (amountToMint.compareTo(BigInteger.ZERO) >0) {
+            call(Contracts.OMM_TOKEN, "mint", amountToMint);
+            OmmTokenMinted(newDay, amountToMint, newDay.subtract(day));
+        }
+
         distributedDay.set(newDay);
-        call(Contracts.OMM_TOKEN, "mint", amountToMint);
-        OmmTokenMinted(newDay, amountToMint, newDay.subtract(day));
 
         BigInteger transferToContract = BigInteger.ZERO;
 
