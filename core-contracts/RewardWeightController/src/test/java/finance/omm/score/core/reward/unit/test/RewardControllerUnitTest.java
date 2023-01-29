@@ -686,22 +686,22 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     public void updateTokenDistribution_2000_day_then_300_day(){
         BigInteger day_2000 = BigInteger.valueOf(2000);
-        assertEquals(5, score.call("getDayCount"));
+        assertEquals(6, score.call("getDayCount"));
 
         assertEquals(HUNDRED_THOUSAND,
                 score.call("tokenDistributionPerDay",day_2000));
 
         // day->2000
         BigInteger value_2000 = BigInteger.valueOf(20).multiply(HUNDRED_THOUSAND);
-        score.invoke(mockAddress.get(Contracts.GOVERNANCE),"updateTokenDistribution",day_2000,value_2000);
+        score.invoke(owner,"updateTokenDistribution",day_2000,value_2000);
 
-        assertEquals(6, score.call("getDayCount"));
+        assertEquals(7, score.call("getDayCount"));
         assertEquals(value_2000,score.call("tokenDistributionPerDay",day_2000));
 
         // day -> 365
         BigInteger day_365 = BigInteger.valueOf(365);
         BigInteger value_365 = BigInteger.valueOf(100).multiply(HUNDRED_THOUSAND);
-        score.invoke(mockAddress.get(Contracts.GOVERNANCE),"updateTokenDistribution",day_365,value_365);
+        score.invoke(owner,"updateTokenDistribution",day_365,value_365);
 
         assertEquals(3, score.call("getDayCount"));
         assertEquals(value_365,score.call("tokenDistributionPerDay",day_2000));
@@ -713,13 +713,13 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     public void updateTokenDistribution_400_day(){
         BigInteger day_400 = BigInteger.valueOf(400);
-        assertEquals(5, score.call("getDayCount"));
+        assertEquals(6, score.call("getDayCount"));
 
         assertEquals(BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND),
                 score.call("tokenDistributionPerDay",day_400));
 
         BigInteger value = BigInteger.valueOf(100).multiply(HUNDRED_THOUSAND);
-        score.invoke(mockAddress.get(Contracts.GOVERNANCE),"updateTokenDistribution",day_400,value);
+        score.invoke(owner,"updateTokenDistribution",day_400,value);
 
         assertEquals(4, score.call("getDayCount"));
         assertEquals(value,score.call("tokenDistributionPerDay",day_400));
@@ -733,13 +733,13 @@ public class RewardControllerUnitTest extends TestBase {
     @Test
     void updateTokenDistribution_365_day(){
         BigInteger day_365 = BigInteger.valueOf(365);
-        assertEquals(5, score.call("getDayCount"));
+        assertEquals(6, score.call("getDayCount"));
 
         assertEquals(BigInteger.valueOf(3L).multiply(HUNDRED_THOUSAND),
                 score.call("tokenDistributionPerDay",day_365));
 
         BigInteger value = BigInteger.valueOf(50).multiply(HUNDRED_THOUSAND);
-        score.invoke(mockAddress.get(Contracts.GOVERNANCE),"updateTokenDistribution",day_365,value);
+        score.invoke(owner,"updateTokenDistribution",day_365,value);
 
         assertEquals(value, score.call("tokenDistributionPerDay",day_365));
         assertEquals(value, score.call("tokenDistributionPerDay",day_365.add(BigInteger.ONE)));

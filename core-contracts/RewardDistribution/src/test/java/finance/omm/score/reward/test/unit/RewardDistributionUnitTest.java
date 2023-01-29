@@ -432,22 +432,66 @@ public class RewardDistributionUnitTest extends RewardDistributionAbstractTest {
         }
     }
 
+//    @DisplayName("test distribute")
+//    @Test
+//    void testDistribute_forZEROday() {
+//        Class<Map<String, ?>> clazz = (Class) Map.class;
+//        Map<String, ?> result = new HashMap<>() {{
+//            put("isValid", true);
+//            put("amountToMint", BigInteger.ZERO);
+//            put("day", BigInteger.ZERO);
+//            put("timestamp", sm.getBlock().getTimestamp() / 1_000_000);
+//        }};
+//        doReturn(result).when(scoreSpy)
+//                .call(eq(clazz), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("precompute"),
+//                        any(BigInteger.class));
+//        Executable call = () -> score.invoke(owner, "distribute");
+//        expectErrorMessage(call, "no token to mint 0");
+//
+//
+//    }
+
     @DisplayName("test distribute")
     @Test
-    void testDistribute_forZEROday() {
+    void testDistribute_forZEROmint() {
+
+        VarargAnyMatcher<Object> matcher = new VarargAnyMatcher<>();
+        doNothing().when(scoreSpy)
+                .call(eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("addType"),
+                        ArgumentMatchers.<Object>argThat(matcher));
+
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addType", "daoFund", Boolean.TRUE);
+
+        score.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.GOVERNANCE), "addType", "workerToken", Boolean.TRUE);
+
         Class<Map<String, ?>> clazz = (Class) Map.class;
         Map<String, ?> result = new HashMap<>() {{
             put("isValid", true);
             put("amountToMint", BigInteger.ZERO);
             put("day", BigInteger.ZERO);
-            put("timestamp", sm.getBlock().getTimestamp() / 1_000_000);
+            put("timestamp",getBlockTimestampInSecond().divide(DAY_IN_SECONDS).multiply(DAY_IN_SECONDS));
         }};
         doReturn(result).when(scoreSpy)
                 .call(eq(clazz), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("precompute"),
                         any(BigInteger.class));
-        Executable call = () -> score.invoke(owner, "distribute");
-        expectErrorMessage(call, "no token to mint 0");
 
+        mockTokenDistribution();
+
+        doReturn(BigInteger.ZERO).when(scoreSpy)
+                .call(eq(BigInteger.class), eq(Contracts.REWARD_WEIGHT_CONTROLLER), eq("calculateIntegrateIndex"),
+                        any(Address.class),
+                        eq(ICX), any(BigInteger.class), any(BigInteger.class));
+
+        sm.getBlock().increase(86400);
+        score.invoke(owner,"distribute");
+
+
+        verify(scoreSpy,never()).OmmTokenMinted((BigInteger) result.get("day"), (BigInteger) result.get("amountToMint"),
+                ((BigInteger) result.get("day")).subtract(BigInteger.ZERO));
+        verify(scoreSpy).Distribution(eq("daoFund"), eq(MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress()),
+                Mockito.any(BigInteger.class));
+        verify(scoreSpy, never()).AssetIndexUpdated(any(), eq(BigInteger.ZERO),
+                eq(BigInteger.ZERO));
 
     }
 
