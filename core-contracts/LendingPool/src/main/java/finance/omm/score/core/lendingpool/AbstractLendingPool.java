@@ -235,6 +235,10 @@ public abstract class AbstractLendingPool extends AddressProvider
 
     protected void liquidationCall(Address collateral, Address reserve, Address user,
                                    BigInteger purchaseAmount, Address sender) {
+        if (!isLiquidationEnabled()){
+            throw LendingPoolException.liquidationDisabled("Liquidation is not enabled,liquidation unsuccessful");
+        }
+
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
         Map<String, Object> collateralData = call(Map.class, Contracts.LENDING_POOL_CORE,
@@ -248,9 +252,6 @@ public abstract class AbstractLendingPool extends AddressProvider
         boolean isCollateralActive = (boolean) collateralData.get("isActive");
         if (! isCollateralActive) {
             throw LendingPoolException.reserveNotActive("Collateral reserve is not active,liquidation unsuccessful");
-        }
-        if (!isLiquidationEnabled()){
-            throw LendingPoolException.liquidationDisabled("Liquidation is not enabled,liquidation unsuccessful");
         }
         Map<String, BigInteger> liquidation = call(Map.class, Contracts.LIQUIDATION_MANAGER, "liquidationCall",
                 collateral, reserve, user, purchaseAmount);

@@ -35,14 +35,14 @@ public class LendingPoolImpl extends AbstractLendingPool {
     }
 
     @External
-    public void setLiquidationStatus(boolean status){
+    public void setLiquidationStatus(boolean _status){
         onlyOwnerOrElseThrow(LendingPoolException.notOwner());
-        liquidationStatus.set(status);
+        liquidationStatus.set(_status);
     }
 
-    @External
+    @External(readonly = true)
     public boolean isLiquidationEnabled(){
-        return this.liquidationStatus.get();
+        return this.liquidationStatus.getOrDefault(false);
     }
 
     @External(readonly = true)
