@@ -15,9 +15,11 @@ public interface LendingPool {
 
     void setFeeSharingTxnLimit(BigInteger _limit);
 
+    void setLiquidationStatus(boolean status);
     BigInteger getFeeSharingTxnLimit();
 
     boolean isFeeSharingEnable(Address _user);
+    boolean isLiquidationEnabled();
 
     List<Address> getDepositWallets(int _index);
 

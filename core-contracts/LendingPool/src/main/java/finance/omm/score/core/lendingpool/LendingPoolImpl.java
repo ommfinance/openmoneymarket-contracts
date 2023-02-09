@@ -34,6 +34,17 @@ public class LendingPoolImpl extends AbstractLendingPool {
         bridgeFeeThreshold.set(_amount);
     }
 
+    @External
+    public void setLiquidationStatus(boolean status){
+        onlyOwnerOrElseThrow(LendingPoolException.notOwner());
+        liquidationStatus.set(status);
+    }
+
+    @External
+    public boolean isLiquidationEnabled(){
+        return this.liquidationStatus.get();
+    }
+
     @External(readonly = true)
     public BigInteger getBridgeFeeThreshold() {
         return bridgeFeeThreshold.getOrDefault(BigInteger.ZERO);
