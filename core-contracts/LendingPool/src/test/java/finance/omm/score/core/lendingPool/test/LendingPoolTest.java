@@ -182,7 +182,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         verify(scoreSpy).call(Map.class,notoICX,"redeem",notOwner.getAddress(),
                 amountToRedeem);
         verify(scoreSpy,times(2)).call(Contracts.LENDING_POOL_CORE, "updateStateOnRedeem",
-                reserveAddres, notOwner.getAddress(), amountToRedeem);;
+                reserveAddres, notOwner.getAddress(), amountToRedeem);
     }
 
     @Test
@@ -472,6 +472,13 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(Map.of(
                 "isActive",true)).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", collateral);
+        doReturn(false).when(scoreSpy).isLiquidationEnabled();
+
+        call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
+                BigInteger.valueOf(10).multiply(ICX), liquidationCall);
+        expectErrorMessage(call,"Liquidation is not enabled,liquidation unsuccessful");
+
+        doReturn(true).when(scoreSpy).isLiquidationEnabled();
         doReturn(Map.of(
                 "actualAmountToLiquidate",BigInteger.TWO.multiply(ICX),
                 "maxCollateralToLiquidate",BigInteger.TWO.multiply(ICX)
@@ -488,7 +495,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         score.invoke(notOwner,"tokenFallback",notOwner.getAddress(), BigInteger.valueOf(10).multiply(ICX),
                 liquidationCall);
 
-        verify(scoreSpy,times(3)).call(Map.class, Contracts.LENDING_POOL_CORE,
+        verify(scoreSpy,times(4)).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", collateral);
         verify(scoreSpy).call(reserve, "transfer", notOwner.getAddress(), BigInteger.valueOf(8).
                 multiply(ICX));
