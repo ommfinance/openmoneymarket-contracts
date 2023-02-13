@@ -720,6 +720,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
 
                             // set price of ICX to 1$
                             ommClient.dummyPriceOracle.set_reference_data("ICX", ICX);
+//                            ommClient.lendingPool.setLiquidationStatus(true);
 
                             // reserve initialization
                             depositIUSDC(ommClient, BigInteger.valueOf(100).multiply(BigInteger.valueOf(1000_000)));

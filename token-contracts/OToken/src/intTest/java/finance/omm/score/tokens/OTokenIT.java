@@ -118,6 +118,7 @@ public class OTokenIT implements ScoreIntegrationTest {
     void liquidation() {
 
         ommClient.dummyPriceOracle.set_reference_data("ICX", ICX);
+        ommClient.lendingPool.setLiquidationStatus(true);
 
         //100 deposit icx 40 borrow usdc
         _deposit(testClient, 100);
