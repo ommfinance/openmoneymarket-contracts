@@ -192,6 +192,8 @@ public class DTokenIT implements ScoreIntegrationTest {
     void liquidation() {
         depositICX(testClient, BigInteger.valueOf(100));
 
+        ommClient.lendingPool.setLiquidationStatus(true);
+
         Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
         BigInteger amountToBorrowIUSDC = BigInteger.valueOf(100).multiply(BigInteger.valueOf(100_000));
 
