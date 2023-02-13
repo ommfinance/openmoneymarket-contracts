@@ -15,7 +15,7 @@ public interface LendingPool {
 
     void setFeeSharingTxnLimit(BigInteger _limit);
 
-    void setLiquidationStatus(boolean status);
+    void setLiquidationStatus(boolean _status);
     BigInteger getFeeSharingTxnLimit();
 
     boolean isFeeSharingEnable(Address _user);
