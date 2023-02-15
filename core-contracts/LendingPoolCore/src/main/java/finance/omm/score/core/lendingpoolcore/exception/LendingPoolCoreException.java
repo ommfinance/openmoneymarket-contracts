@@ -1,6 +1,7 @@
 package finance.omm.score.core.lendingpoolcore.exception;
 
 import finance.omm.utils.exceptions.OMMException;
+import score.Address;
 
 public class LendingPoolCoreException extends OMMException.LendingPoolCore {
 
@@ -16,9 +17,6 @@ public class LendingPoolCoreException extends OMMException.LendingPoolCore {
         return new LendingPoolCoreException(Code.Unknown, message);
     }
 
-    public static LendingPoolCoreException notOwner() {
-        return new LendingPoolCoreException(Code.NotOwner, "require owner access" );
-    }
 
     public static LendingPoolCoreException reserveNotActive(String msg) {
         return new LendingPoolCoreException(Code.ReserveNotActive, msg);
@@ -28,12 +26,13 @@ public class LendingPoolCoreException extends OMMException.LendingPoolCore {
         return new LendingPoolCoreException(Code.UnAuthorized, msg);
     }
 
-
-
+    public static LendingPoolCoreException invalidReserve(Address _reserve) {
+        return new LendingPoolCoreException(Code.InvalidReserve, "Invalid reserve :: " + _reserve.toString());
+    }
 
 
     public enum Code implements Coded {
-        Unknown(0),NotOwner(1),ReserveNotActive(2), UnAuthorized(3);
+        Unknown(0), InvalidReserve(1), ReserveNotActive(2), UnAuthorized(3);
 
         final int code;
 
