@@ -36,6 +36,7 @@ public abstract class AbstractLendingPool extends AddressProvider
     public static final String FEE_SHARING_USERS = "feeSharingUsers";
     public static final String FEE_SHARING_TXN_LIMIT = "feeSharingTxnLimit";
     public static final String BRIDGE_FEE_THRESHOLD = "bridgeFeeThreshold";
+    public static final String LIQUIDATION_STATUS = "liquidationStatus";
 
     public final ArrayDB<Address> borrowWallets = Context.newArrayDB(BORROW_WALLETS, Address.class);
     public final ArrayDB<Address> depositWallets = Context.newArrayDB(DEPOSIT_WALLETS, Address.class);
@@ -44,6 +45,7 @@ public abstract class AbstractLendingPool extends AddressProvider
     public final BranchDB<Address, DictDB<String, BigInteger>> feeSharingUsers = Context.newBranchDB(FEE_SHARING_USERS, BigInteger.class);
     public final VarDB<BigInteger> feeSharingTxnLimit = Context.newVarDB(FEE_SHARING_TXN_LIMIT, BigInteger.class);
     public final VarDB<BigInteger> bridgeFeeThreshold = Context.newVarDB(BRIDGE_FEE_THRESHOLD, BigInteger.class);
+    public final VarDB<Boolean> liquidationStatus = Context.newVarDB(LIQUIDATION_STATUS,Boolean.class);
 
     public AbstractLendingPool(Address addressProvider) {
         super(addressProvider, false);
@@ -241,6 +243,10 @@ public abstract class AbstractLendingPool extends AddressProvider
 
     protected void liquidationCall(Address collateral, Address reserve, Address user,
                                    BigInteger purchaseAmount, Address sender) {
+        if (!isLiquidationEnabled()){
+            throw LendingPoolException.liquidationDisabled("Liquidation is not enabled,liquidation unsuccessful");
+        }
+
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
         if (reserveData.isEmpty()) {
@@ -263,7 +269,6 @@ public abstract class AbstractLendingPool extends AddressProvider
         if (!isCollateralActive) {
             throw LendingPoolException.reserveNotActive("Collateral reserve is not active,liquidation unsuccessful");
         }
-
         Map<String, BigInteger> liquidation = call(Map.class, Contracts.LIQUIDATION_MANAGER, "liquidationCall",
                 collateral, reserve, user, purchaseAmount);
         BigInteger amountToLiquidate = liquidation.get("actualAmountToLiquidate");

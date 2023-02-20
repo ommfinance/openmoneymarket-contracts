@@ -33,5 +33,9 @@ public interface LendingPool {
     List<Address> getDepositWallets(int _index);
 
     List<Address> getBorrowWallets(int _index);
+
+    void setLiquidationStatus(boolean _status);
+
+    boolean isLiquidationEnabled();
     
 }

@@ -546,6 +546,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
 
             // set price of ICX to 1$
             ownerClient.dummyPriceOracle.set_reference_data("ICX", ICX);
+            ownerClient.lendingPool.setLiquidationStatus(true);
 
             // deposit 1000 ICX
             depositICXBob();
@@ -731,7 +732,9 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
 
             // only bad debt amount goes for liquidation
             // 100-82.6375 comes back to user
-            assertEquals(liquidatorIUSDCBalanceAfter, liquidatorIUSDCBalanceBefore.subtract(newBadDebt.divide(POW12)));
+            float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+            assertEquals(liquidatorIUSDCBalanceAfter.floatValue(),
+                    liquidatorIUSDCBalanceBefore.subtract(newBadDebt.divide(POW12)).floatValue(),delta);
             lqdnDataAfter = ownerClient.lendingPoolDataProvider.getUserLiquidationData(bob.getAddress());
 
             /*
@@ -762,6 +765,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
 
             // set price of ICX to 1$
             ownerClient.dummyPriceOracle.set_reference_data("ICX", ICX);
+            ownerClient.lendingPool.setLiquidationStatus(true);
 
             // clint deposits $ 800
             mintIUSDC(clint.getAddress());

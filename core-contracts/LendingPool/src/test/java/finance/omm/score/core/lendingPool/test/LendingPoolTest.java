@@ -468,11 +468,19 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         byte[] liquidationCall = createByteArray("liquidationCall",collateral,reserve,
                 notOwner.getAddress());
 
+        doReturn(false).when(scoreSpy).isLiquidationEnabled();
+
+        Executable call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
+                BigInteger.valueOf(10).multiply(ICX), liquidationCall);
+        expectErrorMessage(call,"Liquidation is not enabled,liquidation unsuccessful");
+
+        doReturn(true).when(scoreSpy).isLiquidationEnabled();
+
         doReturn(Map.of(
                 "isActive",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
-        Executable call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
+        call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), liquidationCall);
         expectErrorMessage(call,"Borrow reserve is not active,liquidation unsuccessful");
 
