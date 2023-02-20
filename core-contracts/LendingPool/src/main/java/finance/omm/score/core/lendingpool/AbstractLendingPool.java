@@ -7,7 +7,6 @@ import finance.omm.libs.address.Authorization;
 import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.lendingpool.exception.LendingPoolException;
 import java.math.BigInteger;
-import scorex.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import score.Address;
@@ -17,6 +16,7 @@ import score.Context;
 import score.DictDB;
 import score.VarDB;
 import score.annotation.EventLog;
+import scorex.util.ArrayList;
 
 public abstract class AbstractLendingPool extends AddressProvider
         implements LendingPool, Authorization<LendingPoolException> {
@@ -109,8 +109,12 @@ public abstract class AbstractLendingPool extends AddressProvider
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
 
+        if (reserveData.isEmpty()) {
+            throw LendingPoolException.unknown(TAG + "reserve data is empty :: " + reserve);
+        }
+
         boolean isActive = (boolean) reserveData.get("isActive");
-        if (! isActive) {
+        if (!isActive) {
             throw LendingPoolException.reserveNotActive("Reserve is not active, deposit unsuccessful");
         }
 
@@ -180,8 +184,12 @@ public abstract class AbstractLendingPool extends AddressProvider
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
 
+        if (reserveData.isEmpty()) {
+            throw LendingPoolException.unknown(TAG + "reserve data is empty :: " + reserve);
+        }
+
         boolean isActive = (boolean) reserveData.get("isActive");
-        if (! isActive) {
+        if (!isActive) {
             throw LendingPoolException.reserveNotActive("Reserve is not active, withdraw unsuccessful");
         }
 
@@ -241,16 +249,24 @@ public abstract class AbstractLendingPool extends AddressProvider
 
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
+        if (reserveData.isEmpty()) {
+            throw LendingPoolException.unknown(TAG + "reserve data is empty :: " + reserve);
+        }
+
         Map<String, Object> collateralData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", collateral);
 
+        if (collateralData.isEmpty()) {
+            throw LendingPoolException.unknown(TAG + "collateral data is empty :: " + reserve);
+        }
+
         boolean isReserveActive = (boolean) reserveData.get("isActive");
-        if (! isReserveActive) {
+        if (!isReserveActive) {
             throw LendingPoolException.reserveNotActive("Borrow reserve is not active,liquidation unsuccessful");
         }
 
         boolean isCollateralActive = (boolean) collateralData.get("isActive");
-        if (! isCollateralActive) {
+        if (!isCollateralActive) {
             throw LendingPoolException.reserveNotActive("Collateral reserve is not active,liquidation unsuccessful");
         }
         Map<String, BigInteger> liquidation = call(Map.class, Contracts.LIQUIDATION_MANAGER, "liquidationCall",

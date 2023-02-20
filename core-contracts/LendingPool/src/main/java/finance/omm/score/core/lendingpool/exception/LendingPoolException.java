@@ -24,6 +24,9 @@ public class LendingPoolException extends OMMException.LendingPool {
         return new LendingPoolException(Code.ReserveNotActive, msg);
     }
 
+    public static LendingPoolException reserveNotValid(String msg) {
+        return new LendingPoolException(Code.ReserveNotValid, msg);
+    }
 
     public static LendingPoolException liquidationDisabled(String msg) {
         return new LendingPoolException(Code.LiquidationDisabled, msg);
@@ -31,7 +34,7 @@ public class LendingPoolException extends OMMException.LendingPool {
 
 
     public enum Code implements Coded {
-        Unknown(0), NotOwner(1), ReserveNotActive(2), LiquidationDisabled(4);
+        Unknown(0), NotOwner(1), ReserveNotActive(2), ReserveNotValid(3), LiquidationDisabled(4);
 
         final int code;
 

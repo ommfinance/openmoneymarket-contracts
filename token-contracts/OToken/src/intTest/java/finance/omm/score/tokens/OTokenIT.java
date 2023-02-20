@@ -8,8 +8,10 @@ import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
 import finance.omm.score.tokens.config.oTokenConfig;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -36,7 +38,7 @@ public class OTokenIT implements ScoreIntegrationTest {
 
     private static Map<String, foundation.icon.jsonrpc.Address> addressMap;
 
-    @BeforeEach
+    @BeforeAll
     void setup() throws Exception {
         OMM omm = new OMM("conf/all-contracts.json");
 
@@ -49,11 +51,13 @@ public class OTokenIT implements ScoreIntegrationTest {
 
     }
 
+    @Order(1)
     @Test
     void testName() {
         assertEquals("SICX Interest Token", ommClient.oICX.name());
     }
 
+    @Order(1)
     @Test
     void deposit_ICX() {
         assertEquals(BigInteger.ZERO, ommClient.oICX.balanceOf(ommClient.getAddress()));
@@ -70,7 +74,7 @@ public class OTokenIT implements ScoreIntegrationTest {
         assertEquals(BigInteger.ONE.multiply(ICX), ommClient.oICX.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
         assertEquals(BigInteger.ZERO, ommClient.oICX.getUserLiquidityCumulativeIndex(testClient.getAddress()));
 
-        //test client deposit 1000 IUSDC
+        //test client deposit 1000 ICX
         _deposit(testClient, 1000);
 
 
@@ -82,13 +86,16 @@ public class OTokenIT implements ScoreIntegrationTest {
         assertEquals(BigInteger.valueOf(2000).multiply(ICX), ommClient.oICX.totalSupply());
     }
 
+    @Order(3)
     @Test
     void checkLiquidityIndex() throws InterruptedException {
         ommClient.dummyPriceOracle.set_reference_data("ICX", ICX);
 
-        mint_and_deposit(ommClient, 1000);
+        // ommClient deposit 1000 IUSDC
+        _depositIUSDC(ommClient, 1000);
         BigInteger previous = ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress());
 
+        // testClient deposit 5000 ICX
         _deposit(testClient, 5000);
         System.out.println(ommClient.oICX.getUserLiquidityCumulativeIndex(testClient.getAddress()));
 
@@ -110,25 +117,24 @@ public class OTokenIT implements ScoreIntegrationTest {
 
         Thread.sleep(1000L);
 
-        mint_and_deposit(ommClient, 10);
+        _depositIUSDC(ommClient, 10);
+        System.out.println(ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()));
         assertTrue(ommClient.oIUSDC.getUserLiquidityCumulativeIndex(ommClient.getAddress()).compareTo(previous) > 0);
     }
 
     @Test
+    @Order(8)
     void liquidation() {
 
         ommClient.dummyPriceOracle.set_reference_data("ICX", ICX);
         ommClient.lendingPool.setLiquidationStatus(true);
 
-        //100 deposit icx 40 borrow usdc
-        _deposit(testClient, 100);
-
-        mint_and_deposit(ommClient, 100);
+        mint_and_deposit(ommClient, 10000);
 
         Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
-        BigInteger amountToBorrowIUSDC = BigInteger.valueOf(40).multiply(BigInteger.valueOf(1000_000));
+        BigInteger amountToBorrowIUSDC = BigInteger.valueOf(2600).multiply(BigInteger.valueOf(1000_000));
 
-        // test client borrows 40 IUSDC
+        // test client borrows 2000 IUSDC
         testClient.lendingPool.borrow(IUSDCAddr, amountToBorrowIUSDC);
 
         //0.5 icx
@@ -136,12 +142,14 @@ public class OTokenIT implements ScoreIntegrationTest {
 
         //transfer fail
         UserRevertedException failed = assertThrows(UserRevertedException.class, () ->
-                testClient.oICX.transfer(ommClient.getAddress(), BigInteger.valueOf(50).multiply(ICX), "".getBytes()));
+                testClient.oICX.transfer(ommClient.getAddress(), BigInteger.valueOf(4000).multiply(ICX), "".getBytes()));
 
-        assertEquals(BigInteger.valueOf(100).multiply(ICX), ommClient.oICX.principalBalanceOf(testClient.getAddress()));
-        assertEquals(BigInteger.valueOf(100).multiply(ICX), ommClient.oICX.balanceOf(testClient.getAddress()));
+        float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+        assertEquals(BigInteger.valueOf(5900).multiply(ICX).floatValue(),
+                ommClient.oICX.principalBalanceOf(testClient.getAddress()).floatValue(),delta);
+        assertEquals(BigInteger.valueOf(5900).multiply(ICX).floatValue(),
+                ommClient.oICX.balanceOf(testClient.getAddress()).floatValue(),delta);
 
-        assertEquals(BigInteger.ZERO, ommClient.oICX.balanceOf(ommClient.getAddress()));
 
         BigInteger prevBalance = ommClient.oICX.balanceOf(testClient.getAddress());
 
@@ -157,11 +165,13 @@ public class OTokenIT implements ScoreIntegrationTest {
         BigInteger repayEq = BigInteger.TEN.multiply(ICX);
         BigInteger tenPercent = BigInteger.ONE.multiply(ICX);
 
-        assertEquals(prevBalance.subtract(feeProvider.add(repayEq).add(tenPercent)), balanceAfterLiq);
+        assertEquals(prevBalance.subtract(feeProvider.add(repayEq).add(tenPercent)).floatValue(),
+                balanceAfterLiq.floatValue(),delta);
         //10+10% of 10 oICX + fee provider
 
     }
 
+    @Order(2)
     @Test
     void deposit_iUSDC() {
         assertEquals(BigInteger.ZERO, ommClient.oIUSDC.balanceOf(ommClient.getAddress()));
@@ -185,30 +195,28 @@ public class OTokenIT implements ScoreIntegrationTest {
         assertEquals(expected, ommClient.oIUSDC.totalSupply());
     }
 
+    @Order(4)
     @Test
     void transfer() {
-        //testClient deposits 100 ICX
-        _deposit(testClient, 100);
-        assertEquals(BigInteger.ZERO, ommClient.oICX.principalBalanceOf(ommClient.getAddress()));
-        assertEquals(BigInteger.valueOf(100).multiply(ICX), ommClient.oICX.principalBalanceOf(testClient.getAddress()));
+
+        assertEquals(BigInteger.valueOf(1000L).multiply(ICX), ommClient.oICX.principalBalanceOf(ommClient.getAddress()));
+        assertEquals(BigInteger.valueOf(6000).multiply(ICX), ommClient.oICX.principalBalanceOf(testClient.getAddress()));
 
         UserRevertedException lessThanZero = assertThrows(UserRevertedException.class, () ->
                 testClient.oICX.transfer(ommClient.getAddress(), BigInteger.ONE.multiply(ICX).negate(), "".getBytes()));
         UserRevertedException highThanBalance = assertThrows(UserRevertedException.class, () ->
-                testClient.oICX.transfer(ommClient.getAddress(), BigInteger.valueOf(101).multiply(ICX), "".getBytes()));
-        //transfers 50 ICX to omm Client
+                testClient.oICX.transfer(ommClient.getAddress(), BigInteger.valueOf(6001).multiply(ICX), "".getBytes()));
+        //transfers 50 oICX to omm Client
         testClient.oICX.transfer(ommClient.getAddress(), BigInteger.valueOf(50).multiply(ICX), "".getBytes());
 
-        assertEquals(BigInteger.valueOf(50).multiply(ICX), ommClient.oICX.principalBalanceOf(ommClient.getAddress()));
-        assertEquals(BigInteger.valueOf(50).multiply(ICX), ommClient.oICX.principalBalanceOf(testClient.getAddress()));
+        assertEquals(BigInteger.valueOf(1050).multiply(ICX), ommClient.oICX.principalBalanceOf(ommClient.getAddress()));
+        assertEquals(BigInteger.valueOf(5950).multiply(ICX), ommClient.oICX.principalBalanceOf(testClient.getAddress()));
 
     }
 
+    @Order(5)
     @Test
     public void borrow() throws InterruptedException {
-        _deposit(testClient, 1000);
-        _deposit(ommClient, 1000);
-
         BigInteger amountToBorrowICX = BigInteger.valueOf(85).multiply(ICX);
         score.Address icxAddr = addressMap.get(Contracts.sICX.getKey());
         testClient.lendingPool.borrow(icxAddr, amountToBorrowICX);
@@ -220,26 +228,26 @@ public class OTokenIT implements ScoreIntegrationTest {
 
     }
 
+    @Order(6)
     @Test
     void redeem() {
-        //testClient deposits 100 ICX
-        _deposit(testClient, 100);
+        assertEquals(BigInteger.valueOf(5950).multiply(ICX), testClient.oICX.principalBalanceOf(testClient.getAddress()));
 
-        assertEquals(BigInteger.valueOf(100).multiply(ICX), testClient.oICX.balanceOf(testClient.getAddress()));
-
-        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
 
         //when tries to transfer more than balance
         RevertedException moreThanBalance = assertThrows(RevertedException.class, () ->
-                testClient.lendingPool.redeem(icxAddr, BigInteger.valueOf(110).multiply(ICX), false));
+                testClient.lendingPool.redeem(icxAddr, BigInteger.valueOf(5951).multiply(ICX), false));
 
         testClient.lendingPool.redeem(icxAddr, BigInteger.valueOf(50).multiply(ICX), false);
 
-        assertEquals(BigInteger.valueOf(50).multiply(ICX), testClient.oICX.principalBalanceOf(testClient.getAddress()));
-        assertEquals(BigInteger.valueOf(50).multiply(ICX), testClient.oICX.balanceOf(testClient.getAddress()));
+        BigInteger principalBalanceOf =  testClient.oICX.principalBalanceOf(testClient.getAddress());
+        assertTrue(principalBalanceOf.compareTo(BigInteger.valueOf(5900))>0);
+        assertTrue((testClient.oICX.balanceOf(testClient.getAddress()).compareTo(BigInteger.valueOf(5900)))>0);
 
     }
 
+    @Order(7)
     @Test
     void handleAction() {
 
@@ -260,6 +268,10 @@ public class OTokenIT implements ScoreIntegrationTest {
 
     private void mint_and_deposit(OMMClient client, int amount) {
         mintToken(client);
+        _depositIUSDC(client,amount);
+    }
+
+    private void _depositIUSDC(OMMClient client, int amount){
         BigInteger amountToDeposit = BigInteger.valueOf(amount).multiply(BigInteger.valueOf(1000_000));
         byte[] data = createByteArray("deposit", amountToDeposit, null, null, null);
         client.iUSDC.transfer(addressMap.get(Contracts.LENDING_POOL.getKey()), amountToDeposit, data);

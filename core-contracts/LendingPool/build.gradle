@@ -48,7 +48,6 @@ test {
     useJUnitPlatform()
 }
 
-
 task integrationTest(type: Test) {
     useJUnitPlatform()
 
