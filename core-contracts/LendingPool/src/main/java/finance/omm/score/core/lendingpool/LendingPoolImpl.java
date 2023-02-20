@@ -82,13 +82,18 @@ public class LendingPoolImpl extends AbstractLendingPool {
     }
 
     @External
-    public void redeem(Address _oToken, BigInteger _amount, @Optional boolean _waitForUnstaking) {
+    public void redeem(Address _reserve, BigInteger _amount, @Optional boolean _waitForUnstaking) {
         checkAndEnableFeeSharing();
         Address caller = Context.getCaller();
-        Map<String, Object> redeemParams = call(Map.class, _oToken, "redeem", caller, _amount);
+        Address oToken = call(Address.class, Contracts.LENDING_POOL_CORE,
+                "getReserveOTokenAddress", _reserve);
+        if (oToken == null) {
+            throw LendingPoolException.reserveNotValid(TAG + " " + _reserve.toString() + " is not valid");
+        }
+        Map<String, Object> redeemParams = call(Map.class, oToken, "redeem", caller, _amount);
         Address reserve = (Address) redeemParams.get("reserve");
         BigInteger amount = (BigInteger) redeemParams.get("amountToRedeem");
-        redeemUnderlying(reserve, caller, _oToken, amount, _waitForUnstaking);
+        redeemUnderlying(reserve, caller, oToken, amount, _waitForUnstaking);
     }
 
     @External

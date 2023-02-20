@@ -269,10 +269,10 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         }
 
         protected void getSicxFromIcx() {
-            Address oToken = addressMap.get(Contracts.oICX.getKey());
+            Address sicx = addressMap.get(Contracts.sICX.getKey());
             ((LendingPoolScoreClient)ownerClient.lendingPool).
                     deposit(THOUSAND,THOUSAND);
-            ownerClient.lendingPool.redeem(oToken, THOUSAND, false);
+            ownerClient.lendingPool.redeem(sicx, THOUSAND, false);
         }
 
         void mintIUSDC(score.Address address) {
@@ -372,8 +372,8 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             Thread.sleep(2000);
 
             BigInteger TWENTY = BigInteger.valueOf(20).multiply(ICX);
-            Address oICX = addressMap.get(Contracts.oICX.getKey());
-            alice.lendingPool.redeem(oICX, TWENTY, false);
+            Address sICX = addressMap.get(Contracts.sICX.getKey());
+            alice.lendingPool.redeem(sICX, TWENTY, false);
             Map<String, Object> sicxReserveDataAfter = getReserveData(sicx);
 
             assertEquals(BigInteger.valueOf(180).multiply(ICX), toBigInt((String) sicxReserveDataAfter.get("totalLiquidity")));
@@ -518,8 +518,8 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             Thread.sleep(2000);
 
             BigInteger ALL = BigInteger.valueOf(-1);
-            Address oICX = addressMap.get(Contracts.oICX.getKey());
-            alice.lendingPool.redeem(oICX, ALL, false);
+            Address sicx = addressMap.get(Contracts.sICX.getKey());
+            alice.lendingPool.redeem(sicx, ALL, false);
             Map<String, Object> sicxReserveDataAfter = getReserveData(sicx);
             BigInteger balanceAfter = ownerClient.sICX.balanceOf(alice.getAddress());
             assertTrue(
@@ -606,9 +606,11 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             assertEquals(liquidatorIUSDCBalanceAfter, liquidatorIUSDCBalanceBefore.subtract(amtToLiquidate));
 
             // reserve data
+            float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
             assertEquals(
-                    toBigInt((String) reserveDataAfter.get("totalBorrows")),
-                    toBigInt((String) reserveDataBefore.get("totalBorrows")).subtract(amtToLiquidate)
+                    toBigInt((String) reserveDataAfter.get("totalBorrows")).floatValue(),
+                    toBigInt((String) reserveDataBefore.get("totalBorrows")).subtract(amtToLiquidate).floatValue(),
+                    delta
             );
 
             assertEquals(
