@@ -257,7 +257,7 @@ public abstract class AbstractLendingPool extends AddressProvider
                 "getReserveData", collateral);
 
         if (collateralData.isEmpty()) {
-            throw LendingPoolException.unknown(TAG + "collateral data is empty :: " + reserve);
+            throw LendingPoolException.unknown(TAG + "collateral data is empty :: " + collateral);
         }
 
         boolean isReserveActive = (boolean) reserveData.get("isActive");
