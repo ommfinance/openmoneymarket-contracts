@@ -1,21 +1,20 @@
 package finance.omm.score.core.lendingpool;
 
+import static finance.omm.utils.math.MathUtils.exaDivide;
+
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import finance.omm.libs.address.Contracts;
 import finance.omm.score.core.lendingpool.exception.LendingPoolException;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
 import score.Address;
 import score.Context;
 import score.annotation.External;
 import score.annotation.Optional;
 import score.annotation.Payable;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-
-import static finance.omm.utils.math.MathUtils.exaDivide;
 
 public class LendingPoolImpl extends AbstractLendingPool {
 
@@ -72,7 +71,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
     public void deposit(BigInteger _amount) {
         BigInteger icxValue = Context.getValue();
         // check this condition
-        if (! icxValue.equals(_amount)) {
+        if (!icxValue.equals(_amount)) {
             throw LendingPoolException.unknown(TAG + " : Amount in param " +
                     _amount + " doesnt match with the icx sent " + icxValue + " to the Lending Pool");
         }
@@ -83,13 +82,18 @@ public class LendingPoolImpl extends AbstractLendingPool {
     }
 
     @External
-    public void redeem(Address _oToken, BigInteger _amount, @Optional boolean _waitForUnstaking) {
+    public void redeem(Address _reserve, BigInteger _amount, @Optional boolean _waitForUnstaking) {
         checkAndEnableFeeSharing();
         Address caller = Context.getCaller();
-        Map<String, Object> redeemParams = call(Map.class, _oToken, "redeem", caller, _amount);
+        Address oToken = call(Address.class, Contracts.LENDING_POOL_CORE,
+                "getReserveOTokenAddress", _reserve);
+        if (oToken == null) {
+            throw LendingPoolException.reserveNotValid(TAG + " " + _reserve.toString() + " is not valid");
+        }
+        Map<String, Object> redeemParams = call(Map.class, oToken, "redeem", caller, _amount);
         Address reserve = (Address) redeemParams.get("reserve");
         BigInteger amount = (BigInteger) redeemParams.get("amountToRedeem");
-        redeemUnderlying(reserve, caller, _oToken, amount, _waitForUnstaking);
+        redeemUnderlying(reserve, caller, oToken, amount, _waitForUnstaking);
     }
 
     @External
@@ -222,7 +226,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
             String reserve = param.getString("_reserve", null);
             String user = param.getString("_user", null);
 
-            if (collateral== null || reserve == null || user == null) {
+            if (collateral == null || reserve == null || user == null) {
                 throw LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
                         " Reserve: " + reserve + " User: " + user);
             }

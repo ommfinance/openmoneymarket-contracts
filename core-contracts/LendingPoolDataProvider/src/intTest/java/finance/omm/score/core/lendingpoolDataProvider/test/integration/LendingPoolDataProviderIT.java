@@ -478,7 +478,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                     @Order(8)
                     void redeem_icx() {
 
-                        Address oICX = addressMap.get(Contracts.oICX.getKey());
+                        Address sICX = addressMap.get(Contracts.sICX.getKey());
                         Map<String, Object> reserveData = getReserveData(icx_reserve);
 
                         Map<String, BigInteger> userReserveDataBefore = userReserveDataTest(icx_reserve, testClient.getAddress());
@@ -489,7 +489,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
 
                         BigInteger redeem_amount = BigInteger.valueOf(4).multiply(ICX);
                         BigInteger redeem_amount_USD = exaMultiply(redeem_amount, BigInteger.valueOf(3).multiply(ICX).divide(BigInteger.TEN));
-                        testClient.lendingPool.redeem(oICX, redeem_amount, false);
+                        testClient.lendingPool.redeem(sICX, redeem_amount, false);
 
                         Map<String, Object> icxReserveDataAfter = getReserveData(icx_reserve);
                         Map<String, BigInteger> userReserveDataAfter = userReserveDataTest(icx_reserve, testClient.getAddress());
@@ -534,7 +534,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                     @Order(9)
                     void redeem_iusdc() {
 
-                        Address oIUSDC = addressMap.get(Contracts.oIUSDC.getKey());
+                        Address IUSDC = addressMap.get(Contracts.IUSDC.getKey());
                         Map<String, Object> reserveData = getReserveData(iusdc_addr);
 
                         Map<String, BigInteger> userReserveDataBefore = userReserveDataTest(iusdc_addr, testClient.getAddress());
@@ -546,7 +546,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
 
                         BigInteger redeem_amount = BigInteger.valueOf(4).multiply(BigInteger.valueOf(1000_00));
                         BigInteger redeem_amount_USD = exaMultiply(convertToExa(redeem_amount, BigInteger.valueOf(6)), ICX);
-                        testClient.lendingPool.redeem(oIUSDC, redeem_amount, false);
+                        testClient.lendingPool.redeem(IUSDC, redeem_amount, false);
 
                         Map<String, Object> iusdcReserveDataAfter = getReserveData(iusdc_addr);
                         Map<String, BigInteger> userReserveDataAfter = userReserveDataTest(iusdc_addr, testClient.getAddress());
@@ -588,10 +588,10 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
                     @DisplayName("redeem icx with staking ")
                     @Order(9)
                     void redeem_icx_staking_true() {
-                        Address oICX = addressMap.get(Contracts.oICX.getKey());
+                        Address sICX = addressMap.get(Contracts.sICX.getKey());
 
                         BigInteger redeem_amount = BigInteger.valueOf(4).multiply(ICX);
-                        testClient.lendingPool.redeem(oICX, redeem_amount, true);
+                        testClient.lendingPool.redeem(sICX, redeem_amount, true);
 
 
                         List<Map<String, BigInteger>> unstake_info = ommClient.lendingPoolDataProvider.
