@@ -732,7 +732,6 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
 
             // only bad debt amount goes for liquidation
             // 100-82.6375 comes back to user
-            float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
             assertEquals(liquidatorIUSDCBalanceAfter.floatValue(),
                     liquidatorIUSDCBalanceBefore.subtract(newBadDebt.divide(POW12)).floatValue(),delta);
             lqdnDataAfter = ownerClient.lendingPoolDataProvider.getUserLiquidationData(bob.getAddress());
