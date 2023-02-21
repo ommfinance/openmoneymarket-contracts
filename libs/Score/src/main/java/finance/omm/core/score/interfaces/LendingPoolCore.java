@@ -4,12 +4,11 @@ import finance.omm.libs.structs.Constant;
 import finance.omm.libs.structs.PrepDelegations;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import foundation.icon.score.client.ScoreInterface;
-import score.Address;
-import score.annotation.Optional;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import score.Address;
+import score.annotation.Optional;
 
 @ScoreInterface(suffix = "Client")
 public interface LendingPoolCore {
@@ -93,6 +92,5 @@ public interface LendingPoolCore {
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
-    void fallback();
 
 }
