@@ -455,24 +455,52 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), invalidParams);
         expectErrorMessage(call,TAG +" Invalid data: Collateral: " + collateral +
-                " Reserve: "+null+ " User: "+ null);
+                " User: "+ null);
     }
 
 
 
     @Test
     void liquidationCall(){
-        Address collateral = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
-        Address reserve = MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC).getAddress();
+        Account collateralAccount = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX);
+        Account reserveAccount =  MOCK_CONTRACT_ADDRESS.get(Contracts.IUSDC);
+        Address collateral = collateralAccount.getAddress();
+        Address reserve = reserveAccount.getAddress();
 
         byte[] liquidationCall = createByteArray("liquidationCall",collateral,reserve,
                 notOwner.getAddress());
+
+        doReturn(false).when(scoreSpy).isLiquidationEnabled();
+
+        Executable call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
+                BigInteger.valueOf(10).multiply(ICX), liquidationCall);
+        expectErrorMessage(call,"Liquidation is not enabled,liquidation unsuccessful");
+
+        doReturn(true).when(scoreSpy).isLiquidationEnabled();
+
+        doReturn(Map.of()).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveData", reserve);
+        call = () -> score.invoke(reserveAccount,"tokenFallback",notOwner.getAddress(),
+                BigInteger.valueOf(10).multiply(ICX), liquidationCall);
+        expectErrorMessage(call,TAG + "reserve data is empty :: " + reserve);
 
         doReturn(Map.of(
                 "isActive",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", reserve);
-        Executable call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
+
+        doReturn(Map.of()).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveData", collateral);
+        call = () -> score.invoke(reserveAccount,"tokenFallback",notOwner.getAddress(),
+                BigInteger.valueOf(10).multiply(ICX), liquidationCall);
+        expectErrorMessage(call,TAG + "collateral data is empty :: " + collateral);
+
+        doReturn(Map.of(
+                "isActive",false
+        )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
+                "getReserveData", collateral);
+
+        call = () -> score.invoke(reserveAccount,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), liquidationCall);
         expectErrorMessage(call,"Borrow reserve is not active,liquidation unsuccessful");
 
@@ -484,7 +512,7 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(Map.of(
                 "isActive",false)).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", collateral);
-        call = () -> score.invoke(notOwner,"tokenFallback",notOwner.getAddress(),
+        call = () -> score.invoke(reserveAccount,"tokenFallback",notOwner.getAddress(),
                 BigInteger.valueOf(10).multiply(ICX), liquidationCall);
         expectErrorMessage(call,"Collateral reserve is not active,liquidation unsuccessful");
 
@@ -506,10 +534,10 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doNothing().when(scoreSpy).call(reserve, "transfer", notOwner.getAddress(), BigInteger.valueOf(8).
                 multiply(ICX));
 
-        score.invoke(notOwner,"tokenFallback",notOwner.getAddress(), BigInteger.valueOf(10).multiply(ICX),
+        score.invoke(reserveAccount,"tokenFallback",notOwner.getAddress(), BigInteger.valueOf(10).multiply(ICX),
                 liquidationCall);
 
-        verify(scoreSpy,times(3)).call(Map.class, Contracts.LENDING_POOL_CORE,
+        verify(scoreSpy,times(4)).call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", collateral);
         verify(scoreSpy).call(reserve, "transfer", notOwner.getAddress(), BigInteger.valueOf(8).
                 multiply(ICX));

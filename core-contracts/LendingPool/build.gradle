@@ -43,6 +43,7 @@ deployJar {
         arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
     }
 }
+
 test {
     useJUnitPlatform()
 }

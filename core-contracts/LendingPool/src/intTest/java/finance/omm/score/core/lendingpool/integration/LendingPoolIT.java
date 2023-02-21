@@ -213,6 +213,7 @@ public class LendingPoolIT implements ScoreIntegrationTest {
         byte[] data = createByteArray("liquidationCall", null, collateral, reserve, user);
         BigInteger value = BigInteger.valueOf(50).multiply(BigInteger.valueOf(1000_000));
 
+        ommClient.lendingPool.setLiquidationStatus(true);
 
         Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
         ommClient.governance.setReserveActiveStatus(iusdcAddr, false);

@@ -33,6 +33,17 @@ public class LendingPoolImpl extends AbstractLendingPool {
         bridgeFeeThreshold.set(_amount);
     }
 
+    @External
+    public void setLiquidationStatus(boolean _status){
+        onlyOwnerOrElseThrow(LendingPoolException.notOwner());
+        liquidationStatus.set(_status);
+    }
+
+    @External(readonly = true)
+    public boolean isLiquidationEnabled(){
+        return this.liquidationStatus.getOrDefault(false);
+    }
+
     @External(readonly = true)
     public BigInteger getBridgeFeeThreshold() {
         return bridgeFeeThreshold.getOrDefault(BigInteger.ZERO);
@@ -119,6 +130,11 @@ public class LendingPoolImpl extends AbstractLendingPool {
     public void borrow(Address _reserve, BigInteger _amount) {
         Map<String, Object> reserveData = call(Map.class, Contracts.LENDING_POOL_CORE,
                 "getReserveData", _reserve);
+
+        if (reserveData.isEmpty()) {
+            throw LendingPoolException.unknown(TAG + "reserve data is empty :: " + _reserve);
+        }
+
         BigInteger availableBorrows = (BigInteger) reserveData.get("availableBorrows");
 
         if (_amount.compareTo(availableBorrows) > 0) {
@@ -214,24 +230,22 @@ public class LendingPoolImpl extends AbstractLendingPool {
             throw LendingPoolException.unknown(TAG + " Invalid data: " + _data.toString());
         }
 
-        Address caller = Context.getCaller();
+        Address reserve = Context.getCaller();
 
         if (method.equals("deposit")) {
-            deposit(caller, _value, _from);
+            deposit(reserve, _value, _from);
         } else if (method.equals("repay")) {
-            repay(caller, _value, _from);
+            repay(reserve, _value, _from);
         } else if (method.equals("liquidationCall") && params != null) {
             JsonObject param = params.asObject();
             String collateral = param.getString("_collateral", null);
-            String reserve = param.getString("_reserve", null);
             String user = param.getString("_user", null);
 
-            if (collateral == null || reserve == null || user == null) {
-                throw LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral +
-                        " Reserve: " + reserve + " User: " + user);
+            if (collateral == null || user == null) {
+                throw LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral + " User: " + user);
             }
             liquidationCall(Address.fromString(collateral),
-                    Address.fromString(reserve),
+                    reserve,
                     Address.fromString(user),
                     _value, _from);
 
