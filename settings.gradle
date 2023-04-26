@@ -80,3 +80,6 @@ findProject(":LendingPoolDataProvider").projectDir = file("core-contracts/Lendin
 
 include(":LPInventory")
 findProject(":LPInventory").projectDir = file("core-contracts/LPInventory")
+
+include(":FeeDistribution")
+findProject(":FeeDistribution").projectDir = file("core-contracts/FeeDistribution")
