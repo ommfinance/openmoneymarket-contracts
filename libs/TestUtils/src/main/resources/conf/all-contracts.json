@@ -120,7 +120,7 @@
     },
     "addressParams": {
       "_addressProvider": "addressProvider"
-  },
+    },
     "order": 1.0
   },
   {
@@ -147,6 +147,16 @@
   {
     "name": "feeProvider",
     "contract": "FeeProvider",
+    "params": {
+    },
+    "addressParams": {
+      "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "feeDistribution",
+    "contract": "FeeDistribution",
     "params": {
     },
     "addressParams": {

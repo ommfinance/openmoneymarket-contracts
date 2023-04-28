@@ -12,8 +12,8 @@ import static finance.omm.utils.math.MathUtils.ICX;
 
 public class FeeDistributionImpl extends AbstractFeeDistribution {
 
-    public FeeDistributionImpl(Address addressProvider) {
-        super(addressProvider);
+    public FeeDistributionImpl(Address _addressProvider) {
+        super(_addressProvider);
     }
 
     @External(readonly = true)
@@ -35,7 +35,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     public void setFeeDistribution(Address[] addresses, BigInteger[] weights){ // weight -> 10^18
         onlyOwner();
         if (!(addresses.length == weights.length)){
-            throw FeeDistributionException.unknown(TAG + "Invalid pair length of arrays");
+            throw FeeDistributionException.unknown(TAG + " Invalid pair length of arrays");
         }
         BigInteger totalWeight = BigInteger.ZERO;
         for (int i = 0; i < addresses.length; i++) {
@@ -45,7 +45,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         }
 
         if (!totalWeight.equals(ICX.multiply(BigInteger.valueOf(100)))){
-            throw FeeDistributionException.unknown(TAG + "sum of percentages not equal to 100 " + totalWeight);
+            throw FeeDistributionException.unknown(TAG + " sum of percentages not equal to 100 " + totalWeight);
         }
     }
 

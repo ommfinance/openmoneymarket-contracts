@@ -62,7 +62,6 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
         for (String validator : ommValidators.keySet()){
             BigInteger feePortion = (ommValidators.get(validator).divide(BigInteger.valueOf(100)).multiply(amount)).divide(ICX);
             BigInteger feeAccumulatedAfterClaim = validatorsFee.getOrDefault(Address.fromString(validator),BigInteger.ZERO);
-            System.out.println("dsdsdasds");
             validatorsFee.set(Address.fromString(validator),feeAccumulatedAfterClaim.add(feePortion));
 
         }
