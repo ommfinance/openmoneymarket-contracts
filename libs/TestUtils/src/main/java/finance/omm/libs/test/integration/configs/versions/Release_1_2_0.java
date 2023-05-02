@@ -56,6 +56,12 @@ public class Release_1_2_0 extends Release {
                 Contracts.BOOSTED_OMM.getKey(),
         });
 
+        ommClient.addressManager.addAddressToScore(Contracts.FEE_DISTRIBUTION.getKey(),new String[]{
+                Contracts.sICX.getKey(),
+                Contracts.STAKING.getKey(),
+                Contracts.LENDING_POOL_CORE.getKey(),
+        });
+
         ommClient.governance.addType("daoFund", true);
         ommClient.governance.addType("workerToken", true);
         ommClient.governance.addType("OMMLocking", false);
