@@ -41,6 +41,8 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
     Set<Map.Entry<score.Address, String>> contributor = Environment.contributors.entrySet();
     private final Map<String,OMMClient> clientMap = new HashMap<>(){};
 
+    boolean transfer = false;
+
     @BeforeAll
     void setup() throws Exception {
         OMM omm = new OMM("conf/all-contracts.json");
@@ -110,20 +112,21 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         ownerClient.sICX.transfer(to,amount,"transfer".getBytes());
     }
 
-    private void setOmmDelegations(){
+    private void setOmmDelegations(OMMClient client, int n){
         Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
         sendSicxInFeeDistribution(lendingPoolCore,BigInteger.TEN.multiply(ICX));
         assertEquals(BigInteger.ZERO,
                 ownerClient.sICX.balanceOf(ownerClient.getAddress()));
 
-        PrepDelegations[] prepDelegations = prepDelegations(5);
-        ownerClient.delegation.updateDelegations(prepDelegations,ownerClient.getAddress());
+        PrepDelegations[] prepDelegations = prepDelegations(n);
+        client.delegation.updateDelegations(prepDelegations,client.getAddress());
     }
 
     @Order(2)
     @Test
     public void sicxDistribution(){
-        userLockOMM();
+        userLockOMM(ownerClient);
+//        setOmmDelegations();
         // send feeDistribution -> 1000 sICX
         // address1-> 10% -> 100 sICX
         // address2 -> 90% ->900 sICX -> gets distributed
@@ -131,7 +134,6 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         Address feeDistribution = addressMap.get(Contracts.FEE_DISTRIBUTION.getKey());
         sendSicxInFeeDistribution(feeDistribution,amount);
 
-        setOmmDelegations();
 
         assertEquals(BigInteger.valueOf(100).multiply(ICX),
                 ownerClient.feeDistribution.getFeeDistributed(feeAddress.get("fee-1")));
@@ -163,6 +165,76 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
                 getFeeDistributed(testClient.getAddress()));
         assertEquals(BigInteger.ZERO,ownerClient.feeDistribution.
                 getFeeDistributed(contributor2.getAddress()));
+
+        // can claim when there is collected amount is zero
+        contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
+        assertEquals(BigInteger.valueOf(225).multiply(ICX),ownerClient.feeDistribution.
+                getFeeDistributed(contributor1.getAddress()));
+
+    }
+
+    @Test
+    @Order(4)
+    public void distributeSicx_again(){
+        /*
+        * now the delgation of lendingPoolCore has changed
+        * another user comes and delegates to only same contributors
+        * 900ICX -> 4 contributors -> 225 ICX each
+        *
+        */
+        userLockOMM(testClient);
+        setOmmDelegations(testClient,4);
+
+        BigInteger amount = BigInteger.valueOf(1000).multiply(ICX);
+        Address feeDistribution = addressMap.get(Contracts.FEE_DISTRIBUTION.getKey());
+        sendSicxInFeeDistribution(feeDistribution,amount);
+
+        assertEquals(BigInteger.valueOf(200).multiply(ICX),
+                ownerClient.feeDistribution.getFeeDistributed(feeAddress.get("fee-1")));
+        assertEquals(BigInteger.valueOf(200).multiply(ICX),
+                ownerClient.sICX.balanceOf(feeAddress.get("fee-1")));
+
+        OMMClient contributor1 = clientMap.get("860d07529b385759c211cbfebf4478c1b463c19591fd1e8bb6f481dcf97c3f74");
+
+        // contributor 1 claims reward in their own address
+        contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
+
+        // 225+225
+        assertEquals(BigInteger.valueOf(450).multiply(ICX),ownerClient.feeDistribution.
+                getFeeDistributed(contributor1.getAddress()));
+
+    }
+
+    @Test
+    @Order(5)
+    public void distributeSicx_again_only_one_prep(){
+        /*
+         * now the delgation of lendingPoolCore has changed
+         * test user comes and delegates to only one of the contributors
+         * 900ICX -> 3 contributors -> same amount
+         * 900ICX -> 1 contributor -> different -> around 112 ICX more
+         */
+        setOmmDelegations(testClient,1);
+
+        BigInteger amount = BigInteger.valueOf(1000).multiply(ICX);
+        Address feeDistribution = addressMap.get(Contracts.FEE_DISTRIBUTION.getKey());
+        sendSicxInFeeDistribution(feeDistribution,amount);
+
+        OMMClient contributor1 = clientMap.get("393f6548d472787138ebc6ac54ee38ace1b8a4dd46c3edfb3122b35db589286f");
+        OMMClient contributor2 = clientMap.get("f639b497bbf871d4f0bdeb6b86a72282edb1bfb30f6ee7e78cfdc95a6ddc5d43");
+        OMMClient contributor3 = clientMap.get("6736efad6c84269c6615921c43d3885cf2c6be20e8358ada8e776ada6a26a2dd");
+        OMMClient contributor4 = clientMap.get("860d07529b385759c211cbfebf4478c1b463c19591fd1e8bb6f481dcf97c3f74");
+
+        // contributor claimRewards
+        contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
+        contributor2.feeDistribution.claimValidatorsRewards(contributor2.getAddress());
+        contributor3.feeDistribution.claimValidatorsRewards(contributor3.getAddress());
+        contributor4.feeDistribution.claimValidatorsRewards(contributor4.getAddress());
+
+        System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor1.getAddress()));
+        System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor2.getAddress()));
+        System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor3.getAddress()));
+        System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor4.getAddress()));
 
     }
 
@@ -205,17 +277,21 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
                 "transfer to testClient".getBytes());
     }
 
-    private void userLockOMM(){
+    private void userLockOMM(OMMClient client){
         // testClientLocks OMM -> default delagation -> contributors
-        transferOmm();
 
+        if (!transfer){
+            transferOmm();
+
+        }
+        transfer = true;
         Address to = addressMap.get(Contracts.BOOSTED_OMM.getKey());
         BigInteger value = BigInteger.valueOf(10).multiply(ICX);
 
         BigInteger unlockTimeMicro = getTimeAfter(2);
 
         byte[] data =createByteArray("createLock",unlockTimeMicro);
-        testClient.ommToken.transfer(to,value,data);
+        client.ommToken.transfer(to,value,data);
     }
 
     private BigInteger getTimeAfter(int n){
