@@ -139,6 +139,12 @@ public class OMM {
         return client;
     }
 
+    public OMMClient customClient(String privateKey){
+        OMMClient client = new OMMClient(this,KeyWallet.load(new Bytes(privateKey)));
+        ommClients.put(client.getAddress(),client);
+        return client;
+    }
+
     public OMMClient newClient() throws Exception {
         return newClient(BigInteger.TEN.pow(24));
     }
