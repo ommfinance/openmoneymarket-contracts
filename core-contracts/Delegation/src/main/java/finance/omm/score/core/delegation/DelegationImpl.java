@@ -178,12 +178,15 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     private void resetUserVotes(Address _user) {
-        BigInteger userWorkingBalance = workingBalance.getOrDefault(_user, BigInteger.ZERO);
+        BigInteger userWorkingBalance = workingBalance.getOrDefault(_user, BigInteger.ZERO); // working balance id the bOMM balance
 
         DictDB<Integer, Address> userPrep = _userPreps.at(_user);
         DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 100; i++) {
+            if (userPrep.get(i) == null ){ // to prevent 100 loops if user has not delegated to 100 prep
+                break;
+            }
             BigInteger prepVote = exaMultiply(percentageDelegationsOfUser
                     .getOrDefault(i, BigInteger.ZERO), userWorkingBalance);
 
@@ -256,9 +259,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             userDelegations = getUserDelegationDetails(_user);
         } else {
             int delegationsLength = _delegations.length;
-            if (delegationsLength > 5) {
+            if (delegationsLength > 100) {
                 throw DelegationException.unknown(TAG +
-                        " updating delegation unsuccessful, more than 5 preps provided by user" +
+                        " updating delegation unsuccessful, more than 100 preps provided by user" +
                         " delegations provided " + delegationsLength);
             }
             userDelegations = _delegations;
@@ -387,13 +390,15 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
         DictDB<Integer, Address> userPreps = _userPreps.at(_user);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 100; i++) {
             Address prep = userPreps.getOrDefault(i, ZERO_SCORE_ADDRESS);
-            if (!prep.equals(ZERO_SCORE_ADDRESS)) {
-                BigInteger votesInPer = percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO);
-                PrepDelegations prepDelegation = new PrepDelegations(prep, votesInPer);
-                userDetails.add(prepDelegation);
+            if (prep.equals(ZERO_SCORE_ADDRESS)){
+                break;
             }
+            BigInteger votesInPer = percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO);
+            PrepDelegations prepDelegation = new PrepDelegations(prep, votesInPer);
+            userDetails.add(prepDelegation);
+
         }
 
         return getPrepDelegations(userDetails);
