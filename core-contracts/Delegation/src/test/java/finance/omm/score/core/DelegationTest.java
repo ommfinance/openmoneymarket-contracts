@@ -597,19 +597,19 @@ public class DelegationTest extends TestBase {
         }
     }
 
-    @DisplayName("user provides more than 5 delegation preferences")
+    @DisplayName("user provides more than 100 delegation preferences")
     @Test
     /*
      * Tested Conditions
-     * Check when user tries to delegate to more than 5 preps
+     * Check when user tries to delegate to more than 100 preps
      */
-    public void moreThanFiveDelegation() {
+    public void moreThanHundredDelegation() {
 
-        PrepDelegations[] delegations = new PrepDelegations[7];
+        PrepDelegations[] delegations = new PrepDelegations[101];
 
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 101; i++) {
             Address prep = sm.createAccount().getAddress();
-            BigInteger votesInPer = BigInteger.valueOf(25).multiply(BigInteger.valueOf(10).pow(16));
+            BigInteger votesInPer = BigInteger.valueOf(1).multiply(BigInteger.valueOf(10).pow(16));
             delegations[i] = new PrepDelegations(prep, votesInPer);
         }
 
@@ -630,8 +630,8 @@ public class DelegationTest extends TestBase {
         Executable call = () -> delegationScore.invoke(owner, "updateDelegations", delegations, owner.getAddress());
 
         String expectedErrorMessage = "Delegation" +
-                " updating delegation unsuccessful, more than 5 preps provided by user" +
-                " delegations provided " + 7;
+                " updating delegation unsuccessful, more than 100 preps provided by user" +
+                " delegations provided " + 101;
         expectErrorMessage(call, expectedErrorMessage);
     }
 

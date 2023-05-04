@@ -119,13 +119,48 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
         assertEquals(4,prepDelegatedList.size());
 
-        PrepDelegations[] delegations = prepDelegations(5);
+        PrepDelegations[] delegations = prepDelegations(10);
         List<PrepDelegations> expectedList = new ArrayList<>(Arrays.asList(delegations));
 
         testClient.delegation.updateDelegations(delegations,testClient.getAddress());
 
         prepDelegatedList=  testClient.delegation.getPrepList();
-        assertEquals(9,prepDelegatedList.size());
+        assertEquals(10,prepDelegatedList.size());
+
+        PrepDelegations[] computedDelegation = testClient.delegation.computeDelegationPercentages();
+        assertEquals(expectedList.size(),computedDelegation.length);
+
+        for (int i = 0; i < expectedList.size(); i++) {
+            assertEquals(expectedList.get(i)._address,computedDelegation[i]._address);
+            float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+            assertEquals(expectedList.get(i)._votes_in_per.multiply(BigInteger.valueOf(100L)).longValue()/ICX.longValue(),
+                    computedDelegation[i]._votes_in_per.longValue()/ICX.longValue(),delta);
+        }
+
+        PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
+        assertEquals(delegations.length,userDelegations.length);
+        for (int i = 0; i < delegations.length; i++) {
+            assertEquals(delegations[i]._address,userDelegations[i]._address);
+            assertEquals(delegations[i]._votes_in_per,userDelegations[i]._votes_in_per);
+        }
+    }
+
+    @Test
+    @Order(5)
+    void updateDelagationHundredPrep(){
+
+        // testClient has delegated to 10 preps
+        List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
+        assertEquals(10,prepDelegatedList.size());
+
+        // now to 100 preps
+        PrepDelegations[] delegations = prepDelegations(100);
+        List<PrepDelegations> expectedList = new ArrayList<>(Arrays.asList(delegations));
+
+        testClient.delegation.updateDelegations(delegations,testClient.getAddress());
+
+        prepDelegatedList=  testClient.delegation.getPrepList();
+        assertEquals(100,prepDelegatedList.size());
 
         PrepDelegations[] computedDelegation = testClient.delegation.computeDelegationPercentages();
         assertEquals(expectedList.size(),computedDelegation.length);
@@ -164,7 +199,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
                 () ->   testClient.delegation.updateDelegations(delegation,testClient.getAddress()),null);
 
 
-        PrepDelegations[] delegations = prepDelegations(6);
+        PrepDelegations[] delegations = prepDelegations(101);
 
         assertUserRevert(DelegationException.unknown(TAG + "updating delegation unsuccessful, more than 5 preps provided by user" +
                         "delegations provided" + delegations.length),
@@ -318,7 +353,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         PrepDelegations[] delegations = new PrepDelegations[n];
         BigInteger total = BigInteger.ZERO;
         for (int i = 0; i < n; i++) {
-            score.Address prep = prepSet[i +4];
+            score.Address prep = prepSet[i];
 
             BigInteger votesInPer = ICX.divide(BigInteger.valueOf(n));
 
