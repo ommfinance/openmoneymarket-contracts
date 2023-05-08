@@ -61,8 +61,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         ownerClient = omm.defaultClient();
         testClient = omm.testClient();
 
-        ((LendingPoolScoreClient)ownerClient.lendingPool).
-                deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
+        ownerClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
+
 
 
     }
@@ -91,6 +91,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     check if user has default delegation after locking omm
      */
     void checkUserDefaultDelegation(){
+        ((LendingPoolScoreClient)ownerClient.lendingPool).
+                deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
         userLockOMM();
         boolean expected = testClient.delegation.userDefaultDelegation(testClient.getAddress());
         assertTrue(expected);
@@ -178,6 +180,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
             assertEquals(delegations[i]._address,userDelegations[i]._address);
             assertEquals(delegations[i]._votes_in_per,userDelegations[i]._votes_in_per);
         }
+        assertEquals(100,userDelegations.length);
     }
 
     @Test
