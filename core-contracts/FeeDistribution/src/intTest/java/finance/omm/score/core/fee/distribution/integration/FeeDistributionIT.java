@@ -71,7 +71,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
     @Test
     @Order(1)
     public void name() {
-        assertEquals("Omm Fee Distribution", ownerClient.feeDistribution.name());
+        assertEquals("OMM Fee Distribution", ownerClient.feeDistribution.name());
     }
 
     @Test

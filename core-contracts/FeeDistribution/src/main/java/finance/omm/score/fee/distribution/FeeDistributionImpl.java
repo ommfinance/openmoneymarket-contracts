@@ -18,7 +18,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
 
     @External(readonly = true)
     public String name() {
-        return "Omm " + TAG;
+        return "OMM " + TAG;
     }
 
     @External(readonly = true)
