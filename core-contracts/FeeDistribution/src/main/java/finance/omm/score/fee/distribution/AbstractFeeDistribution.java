@@ -44,10 +44,9 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             }
             else {
                 call(Contracts.sICX,"transfer",receiver,amountToDistribute);
+                BigInteger feeCollected = collectedFee.getOrDefault(receiver,BigInteger.ZERO);
+                collectedFee.set(receiver,feeCollected.add(amountToDistribute));
             }
-
-            BigInteger feeCollected = collectedFee.getOrDefault(receiver,BigInteger.ZERO);
-            collectedFee.set(receiver,feeCollected.add(amountToDistribute));
 
             FeeDistributed(receiver,amountToDistribute);
         }
