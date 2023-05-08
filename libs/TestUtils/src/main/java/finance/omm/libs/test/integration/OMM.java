@@ -47,49 +47,25 @@ public class OMM {
 
     public void setupOMM() throws Exception {
         deployPrep();
-        makeDecetralized();
+
+        setStakeOfPreps();
+        setDelegationOfPreps();
+        setBonderList();
+        setBondsofPreps();
+        setGodStake();
+
         this.addresses = new ScoreDeployer(this, contracts).deployContracts();
 
         ownerClient = new OMMClient(this, owner);
         testClient = new OMMClient(this, createWalletWithBalance(BigInteger.TEN.pow(24)));
     }
 
-    public void makeDecetralized(){
-        if (!isDecentralized()){
-            return;
-        }
-        try {
-            setStakeOfPreps();
-            setDelegationOfPreps();
-            setBonderList();
-            setBondsofPreps();
-            registerGodClient();
-            setGodStake();
-        }
-        catch (Exception e) {
-
-        }
-    }
-
-    public boolean isDecentralized(){
-        try {
-            setStakeOfPreps();
-            setDelegationOfPreps();
-            setBonderList();
-            setBondsofPreps();
-            registerGodClient();
-            setGodStake();
-            return true;
-        }
-        catch (Exception e) {
-
-        }
-        return false;
-    }
-
     public void setStakeOfPreps(){
         int count = 0;
         for (Entry<Address, String> prep : preps.entrySet()) {
+            if (prep.getKey().equals(Address.fromString("hxb6b5791be0b5ef67063b3c10b840fb81514db2fd"))){
+                continue;
+            }
             if (count < 7) {
                 KeyWallet wallet = KeyWallet.load(new Bytes(prep.getValue()));
                 var client = new DefaultScoreClient(
@@ -112,6 +88,9 @@ public class OMM {
     public void setDelegationOfPreps(){
         int count = 0;
         for (Entry<Address, String> prep : preps.entrySet()) {
+            if (prep.getKey().equals(Address.fromString("hxb6b5791be0b5ef67063b3c10b840fb81514db2fd"))){
+                continue;
+            }
             if (count < 7) {
                 KeyWallet wallet = KeyWallet.load(new Bytes(prep.getValue()));
                 SystemInterface.Delegation[] delegations = new SystemInterface.Delegation[1];
@@ -139,6 +118,9 @@ public class OMM {
     public void setBonderList(){
         int count = 0;
         for (Entry<Address, String> prep : preps.entrySet()) {
+            if (prep.getKey().equals(Address.fromString("hxb6b5791be0b5ef67063b3c10b840fb81514db2fd"))){
+                continue;
+            }
             if (count < 7) {
                 KeyWallet wallet = KeyWallet.load(new Bytes(prep.getValue()));
                 score.Address[] bonderList = new score.Address[1];
@@ -164,6 +146,9 @@ public class OMM {
     public void setBondsofPreps(){
         int count = 0;
         for (Entry<Address, String> prep : preps.entrySet()) {
+            if (prep.getKey().equals(Address.fromString("hxb6b5791be0b5ef67063b3c10b840fb81514db2fd"))){
+                continue;
+            }
             if (count<7){
                 KeyWallet wallet = KeyWallet.load(new Bytes(prep.getValue()));
                 SystemInterface.Bond[] bond = new SystemInterface.Bond[1];
@@ -196,7 +181,7 @@ public class OMM {
                 "USA",
                 "New York", "https://icon.kokoa.com", "https://icon.kokoa.com/json/details.json",
                 "localhost:9082");
-        System.out.println("god client prep");
+        System.out.println("god client prep done");
     }
 
 
