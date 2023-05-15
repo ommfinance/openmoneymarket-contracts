@@ -10,13 +10,16 @@ public class FeeDistributionException extends OMMException.FeeDistributionExcept
     public FeeDistributionException(Coded code, String message) {
         super(code, message);
     }
-    public static DelegationException notOwner() {
-        return new DelegationException(Code.NotOwner, "require owner access");
+    public static FeeDistributionException notOwner() {
+        return new FeeDistributionException(Code.NotOwner, "require owner access");
+    }
+    public static FeeDistributionException unauthorized() {
+        return new FeeDistributionException(Code.Unauthorized, "Token Fallback: Only sicx contract is allowed to call");
     }
 
     //OMMException.FeeDistribution => 85~
     public enum Code implements Coded {
-        Unknown(0), NotOwner(1);
+        Unknown(0), NotOwner(1), Unauthorized(2);
 
         final int code;
 

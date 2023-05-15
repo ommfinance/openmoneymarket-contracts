@@ -19,9 +19,6 @@ import static finance.omm.utils.math.MathUtils.ICX;
 public abstract class AbstractFeeDistribution extends AddressProvider implements FeeDistribution {
 
     public static final String TAG = "Fee Distribution";
-    private final VarDB<Address> sicxAddress = Context.newVarDB("sicx_address", Address.class);
-    private final VarDB<Address> staking = Context.newVarDB("staking_address", Address.class);
-    private final VarDB<Address> ommLendingPoolCore = Context.newVarDB("lending_pool_address", Address.class);
     protected final DictDB<Address, BigInteger> collectedFee = Context.newDictDB("fee_collected",BigInteger.class);
     protected final DictDB<Address,BigInteger> validatorsFee = Context.newDictDB("validators_fee",BigInteger.class);
     protected final EnumerableDictDB<Address,BigInteger> feeDistribution = new EnumerableDictDB<>("fee_distribution",
@@ -35,7 +32,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     protected void distributeFee(BigInteger amount){
         for (Address receiver: feeDistribution.keySet()) {
             BigInteger percentageToDistribute = feeDistribution.get(receiver);
-            BigInteger amountToDistribute = (percentageToDistribute.divide(BigInteger.valueOf(100)).multiply(amount)).divide(ICX);
+            BigInteger amountToDistribute = (percentageToDistribute.multiply(amount)).divide(ICX);
 
             Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
             if (receiver.equals(lendingPoolCoreAddr)){
@@ -47,9 +44,8 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 BigInteger feeCollected = collectedFee.getOrDefault(receiver,BigInteger.ZERO);
                 collectedFee.set(receiver,feeCollected.add(amountToDistribute));
             }
-
-            FeeDistributed(receiver,amountToDistribute);
         }
+        FeeDistributed(amount);
     }
 
 
@@ -70,8 +66,8 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     @EventLog(indexed = 3)
     public void FeeClaimed(Address caller, Address receiver,BigInteger amount){}
 
-    @EventLog(indexed = 2)
-    public void FeeDistributed(Address _to, BigInteger _value) {
+    @EventLog(indexed = 1)
+    public void FeeDistributed( BigInteger _value) {
     }
 
     protected void onlyOwner() {
