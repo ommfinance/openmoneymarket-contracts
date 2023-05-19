@@ -32,7 +32,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     }
 
     @External
-    public void setFeeDistribution(Address[] addresses, BigInteger[] weights){ // weight -> 10^16
+    public void setFeeDistribution(Address[] addresses, BigInteger[] weights){
         onlyOwner();
         if (!(addresses.length == weights.length)){
             throw FeeDistributionException.unknown(TAG + " :: Invalid pair length of arrays");
