@@ -1,0 +1,68 @@
+version '0.0.1'
+
+optimizedJar {
+    mainClassName = 'finanace.omm.score.core.multicall.Multicall'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    enableDebug = false
+}
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
+    implementation project(path: ':AddressProvider')
+
+    testImplementation project(':TestUtils')
+
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.3.0'
+}
+
+deployJar {
+    endpoints {
+        lisbon {
+            uri = 'https://lisbon.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.multicall")
+            nid = 0x2
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+//            to = rootProject.findProperty("contracts.mainnet.multicall")
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
+task integrationTest(type: Test) {
+    useJUnitPlatform()
+
+
+    rootProject.allprojects {
+        if (it.getTasks().findByName('optimizedJar')) {
+            dependsOn(it.getTasks().getByName('optimizedJar'))
+        }
+    }
+
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+    }
+
+}
