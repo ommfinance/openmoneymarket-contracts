@@ -2,6 +2,7 @@ package finance.omm.core.score.interfaces;
 
 import foundation.icon.score.client.ScoreInterface;
 import score.Address;
+import score.annotation.Optional;
 
 import java.math.BigInteger;
 
@@ -18,5 +19,5 @@ public interface FeeDistribution {
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
-    void claimValidatorsRewards(Address receiverAddress);
+    void claimRewards(@Optional Address receiverAddress);
 }

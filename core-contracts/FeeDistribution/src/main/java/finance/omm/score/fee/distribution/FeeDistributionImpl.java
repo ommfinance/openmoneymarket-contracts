@@ -5,6 +5,7 @@ import finance.omm.score.fee.distribution.exception.FeeDistributionException;
 import score.Address;
 import score.Context;
 import score.annotation.External;
+import score.annotation.Optional;
 
 import java.math.BigInteger;
 
@@ -62,17 +63,20 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     }
 
     @External
-    public void claimValidatorsRewards(Address receiverAddress){
+    public void claimRewards(@Optional Address receiverAddress){
 
         Address caller = Context.getCaller();
+        if (receiverAddress == null) {
+            receiverAddress = caller;
+        }
 
-        BigInteger amountToClaim = validatorsFee.getOrDefault(caller,BigInteger.ZERO);
+        BigInteger amountToClaim = accumulatedFee.getOrDefault(caller,BigInteger.ZERO);
 
         if (amountToClaim.compareTo(BigInteger.ZERO)<=0){
             throw FeeDistributionException.unknown(TAG + " :: Caller has no reward to claim");
         }
 
-        validatorsFee.set(caller,BigInteger.ZERO);
+        accumulatedFee.set(caller,null);
 
         BigInteger feeCollected = collectedFee.getOrDefault(receiverAddress,BigInteger.ZERO);
         collectedFee.set(receiverAddress,feeCollected.add(amountToClaim));

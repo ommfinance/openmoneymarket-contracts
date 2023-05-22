@@ -1,5 +1,6 @@
 package finance.omm.score.core.test;
 
+import com.iconloop.score.test.Account;
 import finance.omm.libs.address.Contracts;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -77,12 +78,13 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         // test 3 -> 67.5 ICX (validator)
 
         Address validator = MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL_CORE).getAddress();
+        Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
         BigInteger HUNDRED = BigInteger.valueOf(100);
         BigInteger weight1 = BigInteger.TEN.multiply(ICX).divide(HUNDRED);
         BigInteger weight2 = (BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN)).divide(HUNDRED);
         BigInteger weight3 = (BigInteger.valueOf(675).multiply(ICX).divide(BigInteger.TEN)).divide(HUNDRED);
 
-        Address[] receiverAddr = new Address[]{testScore.getAddress(),testScore1.getAddress(),validator};
+        Address[] receiverAddr = new Address[]{testScore.getAddress(),daoFund,validator};
         BigInteger[] weight = new BigInteger[]{weight1,weight2,weight3};
 
         doNothing().when(spyScore).call(any(Contracts.class),eq("transfer"),any(),any());
@@ -102,10 +104,10 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         score.invoke(owner,"tokenFallback",owner.getAddress(),feeAmount,"b".getBytes());
 
 
-        BigInteger val = BigInteger.valueOf(10).multiply(ICX);
-        assertEquals(val,score.call("getFeeDistributed",testScore.getAddress()));
-        val = BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN);
-        assertEquals(val,score.call("getFeeDistributed",testScore1.getAddress()));
+//        BigInteger val = BigInteger.valueOf(10).multiply(ICX);
+//        assertEquals(val,score.call("getFeeDistributed",testScore.getAddress()));
+        BigInteger val = BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN);
+        assertEquals(val,score.call("getFeeDistributed",daoFund));
 
 
         verify(spyScore).FeeDistributed(BigInteger.valueOf(100).multiply(ICX));
@@ -122,6 +124,8 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         // validator 2 = 90% of 67.5 = 60.75 ICX
         tokenFallback();
 
+        BigInteger calimSicx = BigInteger.valueOf(10).multiply(ICX);
+        Account sicx_calim_address = testScore;
 
         BigInteger calimAmountValidator1 = BigInteger.valueOf(675).multiply(ICX).divide(BigInteger.valueOf(100));
         BigInteger calimAmountValidator2 = BigInteger.valueOf(6075).multiply(ICX).divide(BigInteger.valueOf(100));
@@ -129,17 +133,22 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         Address validator1_claim_address = sm.createAccount().getAddress();
 
         contextMock.when(mockCaller()).thenReturn(validator1.getAddress());
-        score.invoke(validator1,"claimValidatorsRewards",validator1_claim_address);
+        score.invoke(validator1,"claimRewards",validator1_claim_address);
 
         contextMock.when(mockCaller()).thenReturn(validator2.getAddress());
-        score.invoke(validator2,"claimValidatorsRewards",validator2.getAddress());
+        score.invoke(validator2,"claimRewards",validator2.getAddress());
+
+        contextMock.when(mockCaller()).thenReturn(sicx_calim_address.getAddress());
+        score.invoke(sicx_calim_address,"claimRewards",sicx_calim_address.getAddress());
 
         assertEquals(calimAmountValidator1,score.call("getFeeDistributed",validator1_claim_address));
         assertEquals(calimAmountValidator2,score.call("getFeeDistributed",validator2.getAddress()));
+        assertEquals(calimSicx,score.call("getFeeDistributed",sicx_calim_address.getAddress()));
 
 
         verify(spyScore).FeeClaimed(validator1.getAddress(),validator1_claim_address,calimAmountValidator1);
         verify(spyScore).FeeClaimed(validator2.getAddress(),validator2.getAddress(),calimAmountValidator2);
+        verify(spyScore).FeeClaimed(sicx_calim_address.getAddress(),sicx_calim_address.getAddress(),calimSicx);
 
 
 
@@ -147,7 +156,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
     @Test
     public void claimZeroReward(){
-        Executable call = () -> score.invoke(validator2,"claimValidatorsRewards",validator2.getAddress());
+        Executable call = () -> score.invoke(validator2,"claimRewards",validator2.getAddress());
         expectErrorMessage(call,"Fee Distribution :: Caller has no reward to claim");
     }
 }

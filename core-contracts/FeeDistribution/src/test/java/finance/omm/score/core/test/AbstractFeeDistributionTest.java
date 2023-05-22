@@ -15,7 +15,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import score.Context;
 
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,6 +43,7 @@ public class AbstractFeeDistributionTest extends TestBase {
         put(Contracts.sICX, Account.newScoreAccount(104));
         put(Contracts.STAKING, Account.newScoreAccount(105));
         put(Contracts.LENDING_POOL_CORE, Account.newScoreAccount(105));
+        put(Contracts.DAO_FUND, Account.newScoreAccount(106));
     }};
 
     @BeforeAll
