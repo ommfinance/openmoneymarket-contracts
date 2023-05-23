@@ -71,7 +71,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
     @Test
     @Order(1)
     public void name() {
-        assertEquals("Omm Fee Distribution", ownerClient.feeDistribution.name());
+        assertEquals("OMM Fee Distribution", ownerClient.feeDistribution.name());
     }
 
     @Test
@@ -87,6 +87,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
 
         assertEquals(weight1,ownerClient.feeDistribution.getFeeDistributionOf(feeAddress.get("fee-1")));
         assertEquals(weight2,ownerClient.feeDistribution.getFeeDistributionOf(lendingPoolCore));
+        ownerClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
     }
 
     @Test
@@ -137,9 +138,10 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
 
         assertEquals(BigInteger.valueOf(100).multiply(ICX),
                 ownerClient.feeDistribution.getFeeDistributed(feeAddress.get("fee-1")));
-
         assertEquals(BigInteger.valueOf(100).multiply(ICX),
                 ownerClient.sICX.balanceOf(feeAddress.get("fee-1")));
+        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
+        assertEquals(BigInteger.ZERO, ownerClient.feeDistribution.getFeeDistributed(lendingPoolCore));
     }
 
 
@@ -150,7 +152,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         // each contributor -> 25% of 900ICX -> 225ICX
 
         // loaded from contributor.json
-        OMMClient contributor1 = clientMap.get("860d07529b385759c211cbfebf4478c1b463c19591fd1e8bb6f481dcf97c3f74");
+        OMMClient contributor1 = clientMap.get("393f6548d472787138ebc6ac54ee38ace1b8a4dd46c3edfb3122b35db589286f");
         OMMClient contributor2 = clientMap.get("6736efad6c84269c6615921c43d3885cf2c6be20e8358ada8e776ada6a26a2dd");
 
         // contributor 1 claims reward in their own address
@@ -194,7 +196,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         assertEquals(BigInteger.valueOf(200).multiply(ICX),
                 ownerClient.sICX.balanceOf(feeAddress.get("fee-1")));
 
-        OMMClient contributor1 = clientMap.get("860d07529b385759c211cbfebf4478c1b463c19591fd1e8bb6f481dcf97c3f74");
+        OMMClient contributor1 = clientMap.get("393f6548d472787138ebc6ac54ee38ace1b8a4dd46c3edfb3122b35db589286f");
 
         // contributor 1 claims reward in their own address
         contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
@@ -223,17 +225,18 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         OMMClient contributor1 = clientMap.get("393f6548d472787138ebc6ac54ee38ace1b8a4dd46c3edfb3122b35db589286f");
         OMMClient contributor2 = clientMap.get("f639b497bbf871d4f0bdeb6b86a72282edb1bfb30f6ee7e78cfdc95a6ddc5d43");
         OMMClient contributor3 = clientMap.get("6736efad6c84269c6615921c43d3885cf2c6be20e8358ada8e776ada6a26a2dd");
-        OMMClient contributor4 = clientMap.get("860d07529b385759c211cbfebf4478c1b463c19591fd1e8bb6f481dcf97c3f74");
+        OMMClient contributor4 = clientMap.get("f35ff7cf4f5759cb0878088d0887574a896f7f0fc2a73898d88be1fe52977dbd");
 
         // contributor claimRewards
         contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
         contributor2.feeDistribution.claimValidatorsRewards(contributor2.getAddress());
         contributor3.feeDistribution.claimValidatorsRewards(contributor3.getAddress());
-        contributor4.feeDistribution.claimValidatorsRewards(contributor4.getAddress());
+//        contributor4.feeDistribution.claimValidatorsRewards(contributor4.getAddress());
 
         System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor1.getAddress()));
         System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor2.getAddress()));
         System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor3.getAddress()));
+        System.out.println(ownerClient.feeDistribution.getFeeDistributed(testClient.getAddress()));
         System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor4.getAddress()));
 
     }
