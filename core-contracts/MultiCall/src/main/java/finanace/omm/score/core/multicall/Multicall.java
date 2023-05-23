@@ -1,6 +1,6 @@
 package finanace.omm.score.core.multicall;
 
-import finance.omm.libs.address.AddressProvider;
+import finance.omm.core.score.interfaces.MultiCall;
 import score.Address;
 import score.Context;
 import score.annotation.External;
@@ -9,18 +9,11 @@ import score.annotation.Keep;
 import java.math.BigInteger;
 import java.util.Map;
 
-public class Multicall extends AddressProvider {
+public class Multicall implements MultiCall {
 
     public static final String TAG = "Multicall";
 
-    public Multicall(Address addressProvider) {
-        super(addressProvider,false);
-    }
-
-    public static class Call {
-        public Address target;
-        public String method;
-        public String[] params;
+    public Multicall() {
     }
 
     public static class Result {
