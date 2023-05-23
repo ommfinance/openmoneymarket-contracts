@@ -53,6 +53,7 @@ public class LendingPoolIT implements ScoreIntegrationTest {
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
         alice = omm.newClient(BigInteger.TEN.pow(24));
+        ommClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
         mintToken();
         reserveSetup();
     }
