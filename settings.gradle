@@ -83,3 +83,6 @@ findProject(":LPInventory").projectDir = file("core-contracts/LPInventory")
 
 include(":FeeDistribution")
 findProject(":FeeDistribution").projectDir = file("core-contracts/FeeDistribution")
+
+include(":Staking")
+findProject(":Staking").projectDir = file("core-contracts/Staking")
