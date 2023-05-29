@@ -1,6 +1,7 @@
 package finance.omm.libs.test.integration.scores;
 
 import finance.omm.libs.structs.PrepDelegations;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,11 @@ import score.annotation.Payable;
 
 
 public interface Staking {
+    String name();
+
+    BigInteger getFeePercentage();
+
+    BigInteger getPrepProductivity();
 
     BigInteger getTodayRate();
 
@@ -62,4 +68,7 @@ public interface Staking {
 
     @External(readonly = true)
     BigInteger totalClaimableIcx();
+
+    @External(readonly = true)
+    Map<String, BigInteger> getbOMMDelegations();
 }
