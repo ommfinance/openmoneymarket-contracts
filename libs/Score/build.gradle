@@ -4,6 +4,7 @@ optimizedJar.enabled = false
 
 dependencies {
     implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
 }
 
 test {
