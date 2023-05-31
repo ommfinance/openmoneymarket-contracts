@@ -63,6 +63,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
         alice = omm.newClient(BigInteger.TEN.pow(24));
         bob = omm.newClient(BigInteger.TEN.pow(24));
         ommClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
+        ommClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
         mintToken();
     }
 

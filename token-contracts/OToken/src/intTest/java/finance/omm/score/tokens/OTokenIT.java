@@ -48,6 +48,7 @@ public class OTokenIT implements ScoreIntegrationTest {
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
         ommClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
+        ommClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
 
     }
 
