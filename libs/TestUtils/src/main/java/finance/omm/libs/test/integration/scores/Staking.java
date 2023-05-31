@@ -33,6 +33,9 @@ public interface Staking {
     @External
     void setSicxAddress(Address _address);
 
+    @External
+    void setFeeDistributionAddress(Address _address);
+
     @External(readonly = true)
     Map<String, BigInteger> getPrepDelegations();
 
