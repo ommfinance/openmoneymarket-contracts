@@ -43,6 +43,9 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
 
     boolean transfer = false;
 
+    private static Address lendingPoolCore;
+    private static Address daoFund;
+
     @BeforeAll
     void setup() throws Exception {
         OMM omm = new OMM("conf/all-contracts.json");
@@ -61,6 +64,9 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
             clientMap.put(privKey,alice);
         }
 
+        lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
+        daoFund = addressMap.get(Contracts.DAO_FUND.getKey());
+
     }
 
     private final Map<String, Address> feeAddress = new HashMap<>() {{
@@ -78,15 +84,17 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
     @Order(1)
     public void ownerSetFeeDistribution(){
 
-        BigInteger weight1 = BigInteger.TEN.multiply(ICX);
-        BigInteger weight2 = BigInteger.valueOf(90).multiply(ICX);
-        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
-        Address[] addresses = new Address[]{feeAddress.get("fee-1"),lendingPoolCore};
-        BigInteger[] weights = new BigInteger[]{weight1,weight2};
+        BigInteger weight1 = BigInteger.TEN.multiply(ICX).divide(BigInteger.valueOf(100));
+        BigInteger weight2 = BigInteger.TEN.multiply(ICX).divide(BigInteger.valueOf(100));
+        BigInteger weight3 = BigInteger.valueOf(80).multiply(ICX).divide(BigInteger.valueOf(100));
+//        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
+        Address[] addresses = new Address[]{feeAddress.get("fee-1"),daoFund,lendingPoolCore};
+        BigInteger[] weights = new BigInteger[]{weight1,weight2,weight3};
         ownerClient.feeDistribution.setFeeDistribution(addresses,weights);
 
         assertEquals(weight1,ownerClient.feeDistribution.getFeeDistributionOf(feeAddress.get("fee-1")));
-        assertEquals(weight2,ownerClient.feeDistribution.getFeeDistributionOf(lendingPoolCore));
+        assertEquals(weight2,ownerClient.feeDistribution.getFeeDistributionOf(daoFund));
+        assertEquals(weight3,ownerClient.feeDistribution.getFeeDistributionOf(lendingPoolCore));
         ownerClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
     }
 
@@ -114,7 +122,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
     }
 
     private void setOmmDelegations(OMMClient client, int n){
-        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
+//        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
         sendSicxInFeeDistribution(lendingPoolCore,BigInteger.TEN.multiply(ICX));
         assertEquals(BigInteger.ZERO,
                 ownerClient.sICX.balanceOf(ownerClient.getAddress()));
@@ -130,17 +138,18 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
 //        setOmmDelegations();
         // send feeDistribution -> 1000 sICX
         // address1-> 10% -> 100 sICX
-        // address2 -> 90% ->900 sICX -> gets distributed
+        // address2-> 10% -> 100 sICX
+        // address3 -> 80% ->800 sICX -> gets distributed
         BigInteger amount = BigInteger.valueOf(1000).multiply(ICX);
         Address feeDistribution = addressMap.get(Contracts.FEE_DISTRIBUTION.getKey());
         sendSicxInFeeDistribution(feeDistribution,amount);
 
-
+        System.out.println("daaa " + daoFund);
         assertEquals(BigInteger.valueOf(100).multiply(ICX),
-                ownerClient.feeDistribution.getFeeDistributed(feeAddress.get("fee-1")));
+                ownerClient.feeDistribution.getFeeDistributed(daoFund));
         assertEquals(BigInteger.valueOf(100).multiply(ICX),
-                ownerClient.sICX.balanceOf(feeAddress.get("fee-1")));
-        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
+                ownerClient.sICX.balanceOf(daoFund));
+//        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
         assertEquals(BigInteger.ZERO, ownerClient.feeDistribution.getFeeDistributed(lendingPoolCore));
     }
 
@@ -148,29 +157,33 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
     @Order(3)
     @Test
     public void calimFee(){
-        // 900 ICX -> 4 contributors equally
-        // each contributor -> 25% of 900ICX -> 225ICX
+        // 800 ICX -> 4 contributors equally
+        // each contributor -> 25% of 800ICX -> 200ICX
 
         // loaded from contributor.json
         OMMClient contributor1 = clientMap.get("393f6548d472787138ebc6ac54ee38ace1b8a4dd46c3edfb3122b35db589286f");
         OMMClient contributor2 = clientMap.get("6736efad6c84269c6615921c43d3885cf2c6be20e8358ada8e776ada6a26a2dd");
 
         // contributor 1 claims reward in their own address
-        contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
+        contributor1.feeDistribution.claimRewards(contributor1.getAddress());
 
         // contributor 2 calims reward in testClient
-        contributor2.feeDistribution.claimValidatorsRewards(testClient.getAddress());
+        contributor2.feeDistribution.claimRewards(testClient.getAddress());
 
-        assertEquals(BigInteger.valueOf(225).multiply(ICX),ownerClient.feeDistribution.
+        assertEquals(BigInteger.valueOf(200).multiply(ICX),ownerClient.feeDistribution.
                 getFeeDistributed(contributor1.getAddress()));
-        assertEquals(BigInteger.valueOf(225).multiply(ICX),ownerClient.feeDistribution.
+        assertEquals(BigInteger.valueOf(200).multiply(ICX),ownerClient.feeDistribution.
                 getFeeDistributed(testClient.getAddress()));
         assertEquals(BigInteger.ZERO,ownerClient.feeDistribution.
                 getFeeDistributed(contributor2.getAddress()));
 
-        // can claim when there is collected amount is zero
-        contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
-        assertEquals(BigInteger.valueOf(225).multiply(ICX),ownerClient.feeDistribution.
+        // can not claim when there is collected amount is zero
+        assertUserRevert(FeeDistributionException.unknown(
+                        "Fee Distribution :: Caller has no reward to claim"),
+                () -> contributor1.feeDistribution.claimRewards(contributor1.getAddress()), null);
+
+
+        assertEquals(BigInteger.valueOf(200).multiply(ICX),ownerClient.feeDistribution.
                 getFeeDistributed(contributor1.getAddress()));
 
     }
@@ -181,7 +194,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         /*
         * now the delgation of lendingPoolCore has changed
         * another user comes and delegates to only same contributors
-        * 900ICX -> 4 contributors -> 225 ICX each
+        * 800ICX -> 4 contributors -> 200 ICX each
         *
         */
         userLockOMM(testClient);
@@ -192,17 +205,17 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         sendSicxInFeeDistribution(feeDistribution,amount);
 
         assertEquals(BigInteger.valueOf(200).multiply(ICX),
-                ownerClient.feeDistribution.getFeeDistributed(feeAddress.get("fee-1")));
+                ownerClient.feeDistribution.getFeeDistributed(daoFund));
         assertEquals(BigInteger.valueOf(200).multiply(ICX),
-                ownerClient.sICX.balanceOf(feeAddress.get("fee-1")));
+                ownerClient.sICX.balanceOf(daoFund));
 
         OMMClient contributor1 = clientMap.get("393f6548d472787138ebc6ac54ee38ace1b8a4dd46c3edfb3122b35db589286f");
 
         // contributor 1 claims reward in their own address
-        contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
+        contributor1.feeDistribution.claimRewards(contributor1.getAddress());
 
-        // 225+225
-        assertEquals(BigInteger.valueOf(450).multiply(ICX),ownerClient.feeDistribution.
+        // 200+200
+        assertEquals(BigInteger.valueOf(400).multiply(ICX),ownerClient.feeDistribution.
                 getFeeDistributed(contributor1.getAddress()));
 
     }
@@ -213,8 +226,8 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         /*
          * now the delgation of lendingPoolCore has changed
          * test user comes and delegates to only one of the contributors
-         * 900ICX -> 3 contributors -> same amount
-         * 900ICX -> 1 contributor -> different -> around 112 ICX more
+         * 800ICX -> 3 contributors -> same amount
+         * 800ICX -> 1 contributor -> different -> around 226 ICX more
          */
         setOmmDelegations(testClient,1);
 
@@ -228,16 +241,20 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         OMMClient contributor4 = clientMap.get("f35ff7cf4f5759cb0878088d0887574a896f7f0fc2a73898d88be1fe52977dbd");
 
         // contributor claimRewards
-        contributor1.feeDistribution.claimValidatorsRewards(contributor1.getAddress());
-        contributor2.feeDistribution.claimValidatorsRewards(contributor2.getAddress());
-        contributor3.feeDistribution.claimValidatorsRewards(contributor3.getAddress());
+        contributor1.feeDistribution.claimRewards(contributor1.getAddress());
+        contributor2.feeDistribution.claimRewards(contributor2.getAddress());
+        contributor3.feeDistribution.claimRewards(contributor3.getAddress());
 //        contributor4.feeDistribution.claimValidatorsRewards(contributor4.getAddress());
 
         System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor1.getAddress()));
         System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor2.getAddress()));
         System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor3.getAddress()));
-        System.out.println(ownerClient.feeDistribution.getFeeDistributed(testClient.getAddress()));
-        System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor4.getAddress()));
+
+        assertEquals(BigInteger.valueOf(200).multiply(ICX),
+                ownerClient.feeDistribution.getFeeDistributed(testClient.getAddress()));
+
+        // has not claimed
+        assertEquals(BigInteger.ZERO,ownerClient.feeDistribution.getFeeDistributed(contributor4.getAddress()));
 
     }
 

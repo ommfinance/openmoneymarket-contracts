@@ -47,6 +47,7 @@ public class DTokenIT implements ScoreIntegrationTest {
         omm.runConfig(config);
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
+        ommClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
         mintToken();
         reserveSetup();
     }

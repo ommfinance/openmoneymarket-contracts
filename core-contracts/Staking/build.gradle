@@ -1,0 +1,75 @@
+version '0.0.1'
+
+optimizedJar {
+    mainClassName = 'finance.omm.score.staking.StakingImpl'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    enableDebug = false
+}
+
+dependencies {
+    implementation project(':AddressProvider')
+    implementation project(':OMMStruct')
+    implementation project(':ScoreUtils')
+    implementation project(':Score')
+
+    annotationProcessor("foundation.icon:javaee-score-data:0.9.0")
+    compileOnly("foundation.icon:javaee-score-data:0.9.0")
+
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.13.3")
+
+    testImplementation project(':TestUtils')
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.3.0'
+
+    intTestAnnotationProcessor("com.fasterxml.jackson.core:jackson-databind:2.13.2")
+    intTestImplementation("com.fasterxml.jackson.core:jackson-databind:2.13.2")
+
+
+}
+
+deployJar {
+    endpoints {
+        lisbon {
+            uri = 'https://lisbon.net.solidwallet.io/api/v3'
+            to = rootProject.findProperty("contracts.staking")
+            nid = 0x2
+        }
+        mainnet {
+            uri = 'https://ctz.solidwallet.io/api/v3'
+            nid = 0x1
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+//        arg('addressProvider', rootProject.findProperty("contracts.address-provider") as String)
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
+task integrationTest(type: Test) {
+    useJUnitPlatform()
+
+
+    rootProject.allprojects {
+        if (it.getTasks().findByName('optimizedJar')) {
+            dependsOn(it.getTasks().getByName('optimizedJar'))
+        }
+    }
+
+    options {
+        testLogging.showStandardStreams = true
+        description = 'Runs integration tests.'
+        group = 'verification'
+
+        testClassesDirs = sourceSets.intTest.output.classesDirs
+        classpath = sourceSets.intTest.runtimeClasspath
+    }
+
+}

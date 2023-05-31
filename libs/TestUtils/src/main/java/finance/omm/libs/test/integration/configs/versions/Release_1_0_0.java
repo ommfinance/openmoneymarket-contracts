@@ -38,7 +38,7 @@ public class Release_1_0_0 extends Release {
         ommClient.delegation.addAllContributors(Environment.contributors.keySet().toArray(Address[]::new));
         ommClient.ommToken.setMinimumStake(Constant.MINIMUM_OMM_STAKE);
         ommClient.ommToken.setUnstakingPeriod(Constant.UNSTAKING_PERIOD);
-//        ommClient.staking.toggleStakingOn();
+        ommClient.staking.toggleStakingOn();
         ommClient.lendingPool.setFeeSharingTxnLimit(BigInteger.valueOf(50));
         ommClient.staking.setSicxAddress(addressMap.get(Contracts.sICX.getKey()));
 
