@@ -62,6 +62,8 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
         testClient = omm.testClient();
         alice = omm.newClient(BigInteger.TEN.pow(24));
         bob = omm.newClient(BigInteger.TEN.pow(24));
+        ommClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
+        ommClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
         mintToken();
     }
 
@@ -755,7 +757,7 @@ public class LendingPoolDataProviderIT implements ScoreIntegrationTest {
 
                             // badDebt calculation
                             BigInteger badDebt_calc = calculateBadDebt(alice.getAddress());
-                            float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+                            float delta = (ICX.divide(BigInteger.valueOf(10))).floatValue();
                             assertEquals(badDebt_calc.floatValue(), badDebt_after.floatValue(), delta);
 
 

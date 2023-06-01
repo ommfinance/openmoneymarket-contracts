@@ -22,7 +22,8 @@ public class OMMException extends UserRevertException {
         LiquidationManager(70),
         OMMWallet(75),
         LendingPoolCore(75),
-        RESERVED(80);
+        FeeDistribution(80),
+        RESERVED(85);
 
         int offset;
 
@@ -254,6 +255,17 @@ public class OMMException extends UserRevertException {
         }
 
         public LendingPoolCore(Coded code, String message) {
+            this(code.code(), message);
+        }
+    }
+
+    public static class FeeDistributionException extends OMMException {
+
+        public FeeDistributionException(int code, String message) {
+            super(Type.FeeDistribution, code, message);
+        }
+
+        public FeeDistributionException(Coded code, String message) {
             this(code.code(), message);
         }
     }

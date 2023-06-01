@@ -13,6 +13,8 @@ import finance.omm.core.score.interfaces.DAOFund;
 import finance.omm.core.score.interfaces.DAOFundScoreClient;
 import finance.omm.core.score.interfaces.Delegation;
 import finance.omm.core.score.interfaces.DelegationScoreClient;
+import finance.omm.core.score.interfaces.FeeDistribution;
+import finance.omm.core.score.interfaces.FeeDistributionScoreClient;
 import finance.omm.core.score.interfaces.FeeProvider;
 import finance.omm.core.score.interfaces.FeeProviderScoreClient;
 import finance.omm.core.score.interfaces.Governance;
@@ -87,6 +89,8 @@ public class OMMClient {
     public OMMToken ommToken;
     @ScoreClient
     public BoostedToken bOMM;
+    @ScoreClient
+    public FeeDistribution feeDistribution;
 
     //python
     @ScoreClient
@@ -253,6 +257,10 @@ public class OMMClient {
 
                 case "dex":
                     dex = new DummyDEXScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
+                            entry.getValue());
+                    break;
+                case "feeDistribution":
+                    feeDistribution = new FeeDistributionScoreClient(chain.getEndpointURL(), chain.networkId, wallet,
                             entry.getValue());
                     break;
                 case "owner":

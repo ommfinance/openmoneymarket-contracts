@@ -9,7 +9,6 @@ import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
 import finance.omm.score.tokens.config.oTokenConfig;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -48,6 +47,8 @@ public class OTokenIT implements ScoreIntegrationTest {
         omm.runConfig(config);
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
+        ommClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
+        ommClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
 
     }
 
