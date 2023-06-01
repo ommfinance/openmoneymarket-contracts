@@ -66,6 +66,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
 
         lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
         daoFund = addressMap.get(Contracts.DAO_FUND.getKey());
+        ownerClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
 
     }
 

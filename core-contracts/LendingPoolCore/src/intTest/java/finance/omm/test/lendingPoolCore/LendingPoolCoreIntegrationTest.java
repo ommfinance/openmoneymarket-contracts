@@ -59,6 +59,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
 
         // approve owner as issuer to iusdc
         ownerClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
+        ownerClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
         ownerClient.iUSDC.addIssuer(ownerClient.getAddress());
         ownerClient.iUSDC.approve(ownerClient.getAddress(), BigInteger.TEN.multiply(ICX));
     }

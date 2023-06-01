@@ -67,6 +67,7 @@ public class StakingIT implements ScoreIntegrationTest {
         lendingPoolCore= addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
 
         ownerClient.staking.setOmmLendingPoolCore(lendingPoolCore);
+        ownerClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
 
     }
 

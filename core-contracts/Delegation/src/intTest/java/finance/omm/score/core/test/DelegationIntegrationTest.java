@@ -62,8 +62,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         testClient = omm.testClient();
 
         ownerClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
-
-
+        ownerClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
 
     }
 
@@ -102,7 +101,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
         PrepDelegations[] userDelegations = testClient.delegation.getUserDelegationDetails(testClient.getAddress());
 
-        score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
+        score.Address[] prepSet = Environment.contributors.keySet().toArray(score.Address[]::new);
 
         for (int i = 0; i < prepDelegatedList.size(); i++) {
             assertEquals(prepSet[i],userDelegations[i]._address);

@@ -86,3 +86,6 @@ findProject(":FeeDistribution").projectDir = file("core-contracts/FeeDistributio
 
 include(":Staking")
 findProject(":Staking").projectDir = file("core-contracts/Staking")
+
+include(":Sicx")
+findProject(":Sicx").projectDir = file("token-contracts/Sicx")
