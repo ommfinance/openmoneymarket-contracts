@@ -32,6 +32,16 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         return collectedFee.getOrDefault(address,BigInteger.ZERO);
     }
 
+    @External(readonly = true)
+    public BigInteger getValidatorCollectedFee(){
+        return validatorRewards.getOrDefault(BigInteger.ZERO);
+    }
+
+    @External(readonly = true)
+    public BigInteger getAccumulatedFee(Address address){
+        return accumulatedFee.getOrDefault(address,BigInteger.ZERO);
+    }
+
     @External
     public void setFeeDistribution(Address[] addresses, BigInteger[] weights){
         onlyOwner();

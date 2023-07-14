@@ -8,6 +8,7 @@ import finance.omm.utils.db.EnumerableDictDB;
 import score.Address;
 import score.Context;
 import score.DictDB;
+import score.VarDB;
 import score.annotation.EventLog;
 
 import java.math.BigInteger;
@@ -19,6 +20,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
     public static final String TAG = "Fee Distribution";
     protected final DictDB<Address, BigInteger> collectedFee = Context.newDictDB("fee_collected", BigInteger.class);
+    protected final VarDB<BigInteger> validatorRewards = Context.newVarDB("validator_fee_collected",BigInteger.class);
     protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB("accumulated_fee", BigInteger.class);
     protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
             EnumerableDictDB<>("fee_distribution_weight", Address.class, BigInteger.class);
@@ -37,7 +39,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
             if (receiver.equals(lendingPoolCoreAddr)) {
                 distributeFeeToValidator(amountToDistribute);
-
+                validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
             } else if (receiver.equals(daoFundAddr)) {
                 BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
                 collectedFee.set(receiver, feeCollected.add(amountToDistribute));
