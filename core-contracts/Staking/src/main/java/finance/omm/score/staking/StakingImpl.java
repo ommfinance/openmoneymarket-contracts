@@ -114,6 +114,10 @@ public class StakingImpl implements Staking {
     }
 
     @EventLog(indexed = 2)
+    public void UnstakingUpdate(BigInteger currentBlock, BigInteger nextUnstakeBlock) {
+    }
+
+    @EventLog(indexed = 2)
     public void UnstakeRequest(Address sender, BigInteger amount) {
     }
 
@@ -775,9 +779,26 @@ public class StakingImpl implements Staking {
         BigInteger newTotalStake = this.totalStake.getOrDefault(BigInteger.ZERO).add(addedIcx);
         this.totalStake.set(newTotalStake);
         stakeAndDelegateInNetwork(newTotalStake, finalDelegation);
+
+        BigInteger nextUnstakeBlock = getNextUnstakeHeight();
+        if (!(nextUnstakeBlock == null)) {
+            BigInteger currentBlockHeight = BigInteger.valueOf(Context.getBlockHeight());
+            UnstakingUpdate(currentBlockHeight, nextUnstakeBlock);
+        }
+
         Context.call(sicxAddress.get(), "mintTo", _to, sicxToMint, _data);
         TokenTransfer(_to, sicxToMint, sicxToMint + " sICX minted to " + _to);
         return sicxToMint;
+    }
+
+    private BigInteger getNextUnstakeHeight(){
+        List<UnstakeDetails> unstakeDetails = unstakeRequestList.iterate();
+        if (unstakeDetails.isEmpty()){
+            return null;
+        }
+        UnstakeDetails topUnstake = unstakeDetails.get(0);
+        return topUnstake.unstakeBlockHeight;
+
     }
 
     @External
