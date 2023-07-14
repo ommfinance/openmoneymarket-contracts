@@ -105,15 +105,19 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
 
 //        BigInteger val = BigInteger.valueOf(10).multiply(ICX);
-//        assertEquals(val,score.call("getFeeDistributed",testScore.getAddress()));
+//        assertEquals(val,score.call("getCollectedFee",testScore.getAddress()));
         BigInteger val = BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN);
-        assertEquals(val,score.call("getFeeDistributed",daoFund));
+        assertEquals(val,score.call("getCollectedFee",daoFund));
 
+        /* validators -> 67.5
+        * validator1-> 10% of 67.5 ==> 6.75
+        * validator2-> 90% of 67.5 ==>60.75*/
+        assertEquals(BigInteger.valueOf(675).multiply(ICX).divide(HUNDRED),
+                score.call("getAccumulatedFee",validator1.getAddress()));
+        assertEquals(BigInteger.valueOf(6075).multiply(ICX).divide(HUNDRED),
+                score.call("getAccumulatedFee",validator2.getAddress()));
 
         verify(spyScore).FeeDistributed(BigInteger.valueOf(100).multiply(ICX));
-
-
-
     }
 
     @Test
@@ -141,9 +145,9 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         contextMock.when(mockCaller()).thenReturn(sicx_calim_address.getAddress());
         score.invoke(sicx_calim_address,"claimRewards",sicx_calim_address.getAddress());
 
-        assertEquals(calimAmountValidator1,score.call("getFeeDistributed",validator1_claim_address));
-        assertEquals(calimAmountValidator2,score.call("getFeeDistributed",validator2.getAddress()));
-        assertEquals(calimSicx,score.call("getFeeDistributed",sicx_calim_address.getAddress()));
+        assertEquals(calimAmountValidator1,score.call("getCollectedFee",validator1_claim_address));
+        assertEquals(calimAmountValidator2,score.call("getCollectedFee",validator2.getAddress()));
+        assertEquals(calimSicx,score.call("getCollectedFee",sicx_calim_address.getAddress()));
 
 
         verify(spyScore).FeeClaimed(validator1.getAddress(),validator1_claim_address,calimAmountValidator1);
