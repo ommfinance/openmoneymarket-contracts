@@ -13,7 +13,11 @@ public interface FeeDistribution {
 
     BigInteger getFeeDistributionOf(Address address);
 
-    BigInteger getFeeDistributed(Address address);
+    BigInteger getCollectedFee(Address address);
+
+    BigInteger getValidatorCollectedFee();
+
+    BigInteger getAccumulatedFee(Address address);
 
     void setFeeDistribution(Address[] addresses, BigInteger[] weights);
 

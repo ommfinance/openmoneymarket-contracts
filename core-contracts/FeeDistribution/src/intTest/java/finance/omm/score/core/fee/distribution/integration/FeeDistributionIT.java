@@ -147,11 +147,11 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
 
         System.out.println("daaa " + daoFund);
         assertEquals(BigInteger.valueOf(100).multiply(ICX),
-                ownerClient.feeDistribution.getFeeDistributed(daoFund));
+                ownerClient.feeDistribution.getCollectedFee(daoFund));
         assertEquals(BigInteger.valueOf(100).multiply(ICX),
                 ownerClient.sICX.balanceOf(daoFund));
 //        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
-        assertEquals(BigInteger.ZERO, ownerClient.feeDistribution.getFeeDistributed(lendingPoolCore));
+        assertEquals(BigInteger.ZERO, ownerClient.feeDistribution.getCollectedFee(lendingPoolCore));
     }
 
 
@@ -172,11 +172,11 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         contributor2.feeDistribution.claimRewards(testClient.getAddress());
 
         assertEquals(BigInteger.valueOf(200).multiply(ICX),ownerClient.feeDistribution.
-                getFeeDistributed(contributor1.getAddress()));
+                getCollectedFee(contributor1.getAddress()));
         assertEquals(BigInteger.valueOf(200).multiply(ICX),ownerClient.feeDistribution.
-                getFeeDistributed(testClient.getAddress()));
+                getCollectedFee(testClient.getAddress()));
         assertEquals(BigInteger.ZERO,ownerClient.feeDistribution.
-                getFeeDistributed(contributor2.getAddress()));
+                getCollectedFee(contributor2.getAddress()));
 
         // can not claim when there is collected amount is zero
         assertUserRevert(FeeDistributionException.unknown(
@@ -185,7 +185,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
 
 
         assertEquals(BigInteger.valueOf(200).multiply(ICX),ownerClient.feeDistribution.
-                getFeeDistributed(contributor1.getAddress()));
+                getCollectedFee(contributor1.getAddress()));
 
     }
 
@@ -206,7 +206,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         sendSicxInFeeDistribution(feeDistribution,amount);
 
         assertEquals(BigInteger.valueOf(200).multiply(ICX),
-                ownerClient.feeDistribution.getFeeDistributed(daoFund));
+                ownerClient.feeDistribution.getCollectedFee(daoFund));
         assertEquals(BigInteger.valueOf(200).multiply(ICX),
                 ownerClient.sICX.balanceOf(daoFund));
 
@@ -217,7 +217,7 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
 
         // 200+200
         assertEquals(BigInteger.valueOf(400).multiply(ICX),ownerClient.feeDistribution.
-                getFeeDistributed(contributor1.getAddress()));
+                getCollectedFee(contributor1.getAddress()));
 
     }
 
@@ -247,15 +247,15 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         contributor3.feeDistribution.claimRewards(contributor3.getAddress());
 //        contributor4.feeDistribution.claimValidatorsRewards(contributor4.getAddress());
 
-        System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor1.getAddress()));
-        System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor2.getAddress()));
-        System.out.println(ownerClient.feeDistribution.getFeeDistributed(contributor3.getAddress()));
+        System.out.println(ownerClient.feeDistribution.getCollectedFee(contributor1.getAddress()));
+        System.out.println(ownerClient.feeDistribution.getCollectedFee(contributor2.getAddress()));
+        System.out.println(ownerClient.feeDistribution.getCollectedFee(contributor3.getAddress()));
 
         assertEquals(BigInteger.valueOf(200).multiply(ICX),
-                ownerClient.feeDistribution.getFeeDistributed(testClient.getAddress()));
+                ownerClient.feeDistribution.getCollectedFee(testClient.getAddress()));
 
         // has not claimed
-        assertEquals(BigInteger.ZERO,ownerClient.feeDistribution.getFeeDistributed(contributor4.getAddress()));
+        assertEquals(BigInteger.ZERO,ownerClient.feeDistribution.getCollectedFee(contributor4.getAddress()));
 
     }
 

@@ -24,11 +24,11 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
 
     @External(readonly = true)
     public BigInteger getFeeDistributionOf(Address address){
-        return feeDistribution.getOrDefault(address,BigInteger.ZERO);
+        return feeDistributionWeight.getOrDefault(address,BigInteger.ZERO);
     }
 
     @External(readonly = true)
-    public BigInteger getFeeDistributed(Address address){
+    public BigInteger getCollectedFee(Address address){
         return collectedFee.getOrDefault(address,BigInteger.ZERO);
     }
 
@@ -38,10 +38,10 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         if (!(addresses.length == weights.length)){
             throw FeeDistributionException.unknown(TAG + " :: Invalid pair length of arrays");
         }
-        feeDistribution.clear();
+        feeDistributionWeight.clear();
         BigInteger totalWeight = BigInteger.ZERO;
         for (int i = 0; i < addresses.length; i++) {
-            feeDistribution.put(addresses[i],weights[i]);
+            feeDistributionWeight.put(addresses[i],weights[i]);
 
             totalWeight = totalWeight.add(weights[i]);
         }

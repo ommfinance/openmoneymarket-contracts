@@ -20,8 +20,8 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     public static final String TAG = "Fee Distribution";
     protected final DictDB<Address, BigInteger> collectedFee = Context.newDictDB("fee_collected", BigInteger.class);
     protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB("accumulated_fee", BigInteger.class);
-    protected final EnumerableDictDB<Address, BigInteger> feeDistribution = new EnumerableDictDB<>("fee_distribution",
-            Address.class, BigInteger.class);
+    protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
+            EnumerableDictDB<>("fee_distribution_weight", Address.class, BigInteger.class);
 
     public AbstractFeeDistribution(Address addressProvider) {
         super(addressProvider, false);
@@ -29,8 +29,8 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
 
     protected void distributeFee(BigInteger amount) {
-        for (Address receiver : feeDistribution.keySet()) {
-            BigInteger percentageToDistribute = feeDistribution.get(receiver);
+        for (Address receiver : feeDistributionWeight.keySet()) {
+            BigInteger percentageToDistribute = feeDistributionWeight.get(receiver);
             BigInteger amountToDistribute = (percentageToDistribute.multiply(amount)).divide(ICX);
 
             Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
