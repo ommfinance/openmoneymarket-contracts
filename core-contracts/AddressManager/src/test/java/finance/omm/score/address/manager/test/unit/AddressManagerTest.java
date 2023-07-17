@@ -59,6 +59,7 @@ public class AddressManagerTest extends TestBase {
         put(Contracts.DEX,Account.newScoreAccount(220));
         put(Contracts.BOOSTED_OMM,Account.newScoreAccount(221));
         put(Contracts.REWARD_WEIGHT_CONTROLLER,Account.newScoreAccount(222));
+        put(Contracts.FEE_DISTRIBUTION,Account.newScoreAccount(223));
     }};
 
     @BeforeEach
@@ -176,7 +177,9 @@ public class AddressManagerTest extends TestBase {
                 Map.entry("StakedLp",MOCK_CONTRACT_ADDRESS.get(Contracts.STAKED_LP).getAddress()),
                 Map.entry("DEX",MOCK_CONTRACT_ADDRESS.get(Contracts.DEX).getAddress()),
                 Map.entry("bOMM",MOCK_CONTRACT_ADDRESS.get(Contracts.BOOSTED_OMM).getAddress()),
-                Map.entry("RewardWeightController",MOCK_CONTRACT_ADDRESS.get(Contracts.REWARD_WEIGHT_CONTROLLER).getAddress())
+                Map.entry("RewardWeightController",MOCK_CONTRACT_ADDRESS.get(Contracts.REWARD_WEIGHT_CONTROLLER).getAddress()),
+                Map.entry("FeeDistribution",MOCK_CONTRACT_ADDRESS.get(Contracts.FEE_DISTRIBUTION).getAddress()),
+                Map.entry("DaoFund",MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress())
         );
 
         Map<String,Address> oToken = Map.of("test_otoken_1",Account.newScoreAccount(3).getAddress());
