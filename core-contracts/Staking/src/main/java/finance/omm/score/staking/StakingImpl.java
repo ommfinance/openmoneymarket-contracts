@@ -58,6 +58,7 @@ public class StakingImpl implements Staking {
     private final VarDB<BigInteger> feePercentage = Context.newVarDB(FEE_PERCENTAGE, BigInteger.class);
     private final VarDB<Address> feeDistributionAddress = Context.newVarDB(FEE_ADDRESS, Address.class);
     private final VarDB<Address> ommLendingPoolCore = Context.newVarDB(OMM_LENDING_POOL_CORE, Address.class);
+    private final VarDB<Address> ommDelegation = Context.newVarDB("omm_delegation", Address.class);
 
 
 
@@ -223,9 +224,22 @@ public class StakingImpl implements Staking {
         ommLendingPoolCore.set(_address);
     }
 
+    @External
+    public void setOmmDelegation(Address _address) {
+        onlyOwner();
+        Context.require(_address.isContract(), TAG + ": Address provided is an EOA address. A contract " +
+                "address is required.");
+        ommDelegation.set(_address);
+    }
+
     @External(readonly = true)
     public Address getOmmLendingPoolCore() {
         return ommLendingPoolCore.get();
+    }
+
+    @External(readonly = true)
+    public Address getOmmDelegation() {
+        return ommDelegation.get();
     }
 
     @External
@@ -311,6 +325,7 @@ public class StakingImpl implements Staking {
 
 
         Map<String, BigInteger> allPrepDelegations = new HashMap<>();
+        BigInteger topPrepSpecification = BigInteger.ZERO;
         if (ommPrepSize.compareTo(BigInteger.ZERO) > 0) {
             for (Map.Entry<String, BigInteger> prepSet : ommDelegations.entrySet()) {
                 Address prep = Address.fromString(prepSet.getKey());
@@ -320,9 +335,15 @@ public class StakingImpl implements Staking {
                     BigInteger amountToAdd = unspecifiedICX.multiply(percentageDelegation).divide(HUNDRED_PERCENTAGE);
 
                     remaining = remaining.subtract(amountToAdd);
+                    if (prep.toString().equals(topPreps.get(0).toString())) {
+                        topPrepSpecification = amountToAdd;
+                    }
                     allPrepDelegations.put(prep.toString(), amountToAdd);
                 }
             }
+        }
+        if (remaining.compareTo(BigInteger.ZERO) > 0) {
+            allPrepDelegations.put(topPreps.get(0).toString(), remaining.add(topPrepSpecification));
         }
         return allPrepDelegations;
     }
@@ -581,9 +602,21 @@ public class StakingImpl implements Staking {
     }
 
     @External
+    public void delegateAtOnce(PrepDelegations[] _user_delegations, Address to){
+        if (!Context.getCaller().equals(getOmmDelegation())) {
+            Context.revert(TAG + ": Only delegation contract can call this function.");
+        }
+        delegation(_user_delegations,to);
+    }
+
+    @External
     public void delegate(PrepDelegations[] _user_delegations) {
         stakingOn();
         Address to = Context.getCaller();
+        delegation(_user_delegations,to);
+    }
+
+    private void delegation(PrepDelegations[] _user_delegations, Address to){
         performChecksForIscoreAndUnstakedBalance();
         Map<String, BigInteger> previousDelegations = userDelegationInPercentage.getOrDefault(to,
                 DEFAULT_DELEGATION_LIST).toMap();

@@ -242,6 +242,14 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External
+    public void updateDelegationAtOnce(PrepDelegations[] _delegations){
+        Address user = Context.getCaller();
+        PrepDelegations[] updatedDelegation = updateUserDelegations(_delegations,user,null); // bOMM
+
+        call(Contracts.STAKING,"delegateAtOnce",updatedDelegation,user); // delegate //
+    }
+
+    @External
     public void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user) {
         Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
         Address currentUser;
@@ -252,7 +260,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         updateUserDelegations(_delegations, currentUser, null);
     }
 
-    private void updateUserDelegations(PrepDelegations[] _delegations, Address _user, BigInteger bOMMUserBalance) {
+    private PrepDelegations[] updateUserDelegations(PrepDelegations[] _delegations, Address _user, BigInteger bOMMUserBalance) {
 
         PrepDelegations[] userDelegations;
 
@@ -272,10 +280,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             userDelegations = distributeVoteToContributors();
         }
 
-        calculatePREPDelegation(userDelegations, _user, bOMMUserBalance);
+        return calculatePREPDelegation(userDelegations, _user, bOMMUserBalance);
     }
 
-    private void calculatePREPDelegation(PrepDelegations[] userDelegations, Address user, BigInteger bOMMUserBalance) {
+    private PrepDelegations[] calculatePREPDelegation(PrepDelegations[] userDelegations, Address user, BigInteger bOMMUserBalance) {
         BigInteger totalPercentage = BigInteger.ZERO;
 
         resetUserVotes(user);
@@ -312,10 +320,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                     "sum total of percentages " + totalPercentage +
                     " delegation preferences " + userDelegations.length);
         }
-        updatePREPDelegations();
+        return updatePREPDelegations();
     }
 
-    private void updatePREPDelegations() {
+    private PrepDelegations[] updatePREPDelegations() {
         PrepDelegations[] updatedDelegation = computeDelegationPercentages();
 
         Object[] params = new Object[]{
@@ -323,6 +331,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         };
 
         call(Contracts.LENDING_POOL_CORE, "updatePrepDelegations", params);
+        return updatedDelegation;
     }
 
     public PrepDelegations[] distributeVoteToContributors() {

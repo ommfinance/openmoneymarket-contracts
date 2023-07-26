@@ -109,6 +109,9 @@ public interface Staking {
     void setOmmLendingPoolCore(Address _address);
 
     @External
+    void setOmmDelegation(Address _address);
+
+    @External
     public void setPrepProductivity(BigInteger _productivity);
 
     @External
@@ -125,4 +128,7 @@ public interface Staking {
 
     @External(readonly = true)
     Map<String, BigInteger> getbOMMDelegations();
+
+    @External(readonly = true)
+    Address getOmmDelegation();
 }
