@@ -6,8 +6,10 @@ import score.Address;
 import score.Context;
 import score.annotation.External;
 import score.annotation.Optional;
+import scorex.util.HashMap;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 import static finance.omm.utils.math.MathUtils.ICX;
 
@@ -32,6 +34,14 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         return collectedFee.getOrDefault(address,BigInteger.ZERO);
     }
 
+    @External(readonly = true)
+    public Map<String,BigInteger> getAllCollectedFees(){
+        Map<String,BigInteger> collectedFeeMap = new HashMap<>();
+        for (Address key: collectedFee.keySet()) {
+            collectedFeeMap.put(key.toString(),collectedFee.get(key));
+        }
+        return collectedFeeMap;
+    }
     @External(readonly = true)
     public BigInteger getValidatorCollectedFee(){
         return validatorRewards.getOrDefault(BigInteger.ZERO);
@@ -89,7 +99,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         accumulatedFee.set(caller,null);
 
         BigInteger feeCollected = collectedFee.getOrDefault(receiverAddress,BigInteger.ZERO);
-        collectedFee.set(receiverAddress,feeCollected.add(amountToClaim));
+        collectedFee.put(receiverAddress,feeCollected.add(amountToClaim));
 
         call(Contracts.sICX,"transfer",receiverAddress,amountToClaim);
 

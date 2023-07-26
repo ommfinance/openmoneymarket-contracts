@@ -19,7 +19,8 @@ import static finance.omm.utils.math.MathUtils.ICX;
 public abstract class AbstractFeeDistribution extends AddressProvider implements FeeDistribution {
 
     public static final String TAG = "Fee Distribution";
-    protected final DictDB<Address, BigInteger> collectedFee = Context.newDictDB("fee_collected", BigInteger.class);
+    protected final EnumerableDictDB<Address, BigInteger> collectedFee =
+            new EnumerableDictDB<>("fee_collected", Address.class,BigInteger.class);
     protected final VarDB<BigInteger> validatorRewards = Context.newVarDB("validator_fee_collected",BigInteger.class);
     protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB("accumulated_fee", BigInteger.class);
     protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
@@ -42,7 +43,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
             } else if (receiver.equals(daoFundAddr)) {
                 BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
-                collectedFee.set(receiver, feeCollected.add(amountToDistribute));
+                collectedFee.put(receiver, feeCollected.add(amountToDistribute));
                 call(Contracts.sICX, "transfer", receiver, amountToDistribute);
 
             } else {
