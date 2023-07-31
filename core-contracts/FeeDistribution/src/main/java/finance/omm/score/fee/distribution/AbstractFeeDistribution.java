@@ -20,7 +20,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
     public static final String TAG = "Fee Distribution";
     protected final EnumerableDictDB<Address, BigInteger> collectedFee =
-            new EnumerableDictDB<>("fee_collected", Address.class,BigInteger.class);
+            new EnumerableDictDB<>("collected_fee", Address.class,BigInteger.class);
     protected final VarDB<BigInteger> validatorRewards = Context.newVarDB("validator_fee_collected",BigInteger.class);
     protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB("accumulated_fee", BigInteger.class);
     protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
