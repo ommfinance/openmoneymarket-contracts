@@ -1201,6 +1201,34 @@ public class DelegationTest extends TestBase {
         assertEquals(expected, user3IcxDelegations.get(1)._votes_in_icx);
     }
 
+    @DisplayName("Test user delgates by bOMM and sicx at once")
+    @Test
+    public void delgationAtOnce(){
+        initialize();
+        Account user1 = sm.createAccount();
+        PrepDelegations[] prepDelegations = getPrepDelegations1(10);
+
+        Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
+
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
+
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
+        doNothing().when(scoreSpy).call(eq(Contracts.STAKING), eq("delegateForUser"), any(),any());
+
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user1.getAddress());
+
+        delegationScore.invoke(user1,"updateDelegationAtOnce", (Object) prepDelegations);
+
+        PrepDelegations[] scoreDelegations = (PrepDelegations[]) delegationScore
+                .call("getUserDelegationDetails", user1.getAddress());
+        assertArrayEquals(prepDelegations, scoreDelegations);
+    }
+
     @Test
     public void initializeVoteToContributors() {
         initialize();
