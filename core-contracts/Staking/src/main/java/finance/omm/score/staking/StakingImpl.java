@@ -815,13 +815,13 @@ public class StakingImpl implements Staking {
         this.totalStake.set(newTotalStake);
         stakeAndDelegateInNetwork(newTotalStake, finalDelegation);
 
-        updateUnstakingEvent();
+        emitUnstakingEvent();
         Context.call(sicxAddress.get(), "mintTo", _to, sicxToMint, _data);
         TokenTransfer(_to, sicxToMint, sicxToMint + " sICX minted to " + _to);
         return sicxToMint;
     }
 
-    private void updateUnstakingEvent(){
+    private void emitUnstakingEvent(){
         List<UnstakeDetails> unstakeDetails = unstakeRequestList.iterate();
         if (!unstakeDetails.isEmpty()){
             UnstakeDetails topUnstake = unstakeDetails.get(0);
