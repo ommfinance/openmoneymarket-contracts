@@ -58,12 +58,12 @@ public class StakingImpl implements Staking {
     private final VarDB<BigInteger> feePercentage = Context.newVarDB(FEE_PERCENTAGE, BigInteger.class);
     private final VarDB<Address> feeDistributionAddress = Context.newVarDB(FEE_ADDRESS, Address.class);
     private final VarDB<Address> ommLendingPoolCore = Context.newVarDB(OMM_LENDING_POOL_CORE, Address.class);
-    private final VarDB<Address> ommDelegation = Context.newVarDB("omm_delegation", Address.class);
+    private final VarDB<Address> ommDelegation = Context.newVarDB(OMM_DELEGATION, Address.class);
 
 
 
     public StakingImpl( @Optional BigInteger _feePercentage, @Optional BigInteger _productivity, 
-                        @Optional Address lendingPoolCore, @Optional Address feeDistribution) {
+                        @Optional Address lendingPoolCore, @Optional Address feeDistribution, @Optional Address delegation) {
 
         if (blockHeightWeek.get() == null) {
             @SuppressWarnings("unchecked")
@@ -86,6 +86,7 @@ public class StakingImpl implements Staking {
             feePercentage.set(_feePercentage);
             feeDistributionAddress.set(feeDistribution);
             ommLendingPoolCore.set(lendingPoolCore);
+            ommDelegation.set(delegation);
 
         }
 
@@ -602,7 +603,8 @@ public class StakingImpl implements Staking {
     }
 
     @External
-    public void delegateAtOnce(PrepDelegations[] _user_delegations, Address to){
+    public void delegateForUser(PrepDelegations[] _user_delegations, Address to){
+        stakingOn();
         if (!Context.getCaller().equals(getOmmDelegation())) {
             Context.revert(TAG + ": Only delegation contract can call this function.");
         }
@@ -813,25 +815,21 @@ public class StakingImpl implements Staking {
         this.totalStake.set(newTotalStake);
         stakeAndDelegateInNetwork(newTotalStake, finalDelegation);
 
-        BigInteger nextUnstakeBlock = getNextUnstakeHeight();
-        if (!(nextUnstakeBlock == null)) {
-            BigInteger currentBlockHeight = BigInteger.valueOf(Context.getBlockHeight());
-            UnstakingUpdate(currentBlockHeight, nextUnstakeBlock);
-        }
-
+        updateUnstakingEvent();
         Context.call(sicxAddress.get(), "mintTo", _to, sicxToMint, _data);
         TokenTransfer(_to, sicxToMint, sicxToMint + " sICX minted to " + _to);
         return sicxToMint;
     }
 
-    private BigInteger getNextUnstakeHeight(){
+    private void updateUnstakingEvent(){
         List<UnstakeDetails> unstakeDetails = unstakeRequestList.iterate();
-        if (unstakeDetails.isEmpty()){
-            return null;
-        }
-        UnstakeDetails topUnstake = unstakeDetails.get(0);
-        return topUnstake.unstakeBlockHeight;
+        if (!unstakeDetails.isEmpty()){
+            UnstakeDetails topUnstake = unstakeDetails.get(0);
+            BigInteger nextUnstakeBlock =  topUnstake.unstakeBlockHeight;
 
+            BigInteger currentBlockHeight = BigInteger.valueOf(Context.getBlockHeight());
+            UnstakingUpdate(currentBlockHeight, nextUnstakeBlock);
+        }
     }
 
     @External
