@@ -5,6 +5,7 @@ import score.Address;
 import score.annotation.Optional;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 @ScoreInterface(suffix = "Client")
 public interface FeeDistribution {
@@ -24,4 +25,8 @@ public interface FeeDistribution {
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
 
     void claimRewards(@Optional Address receiverAddress);
+
+    Map<String, BigInteger> getFeeDistributionWeight();
+
+    Map<String, BigInteger> getAllCollectedFees();
 }

@@ -30,6 +30,15 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     }
 
     @External(readonly = true)
+    public Map<String, BigInteger> getFeeDistributionWeight() {
+        Map<String, BigInteger> weight = new HashMap<>();
+        for (Address key : feeDistributionWeight.keySet()) {
+            weight.put(key.toString(), feeDistributionWeight.get(key));
+        }
+        return weight;
+    }
+
+    @External(readonly = true)
     public BigInteger getCollectedFee(Address address){
         return collectedFee.getOrDefault(address,BigInteger.ZERO);
     }
