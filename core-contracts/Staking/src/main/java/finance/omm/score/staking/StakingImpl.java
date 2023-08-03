@@ -58,11 +58,12 @@ public class StakingImpl implements Staking {
     private final VarDB<BigInteger> feePercentage = Context.newVarDB(FEE_PERCENTAGE, BigInteger.class);
     private final VarDB<Address> feeDistributionAddress = Context.newVarDB(FEE_ADDRESS, Address.class);
     private final VarDB<Address> ommLendingPoolCore = Context.newVarDB(OMM_LENDING_POOL_CORE, Address.class);
+    private final VarDB<Address> ommDelegation = Context.newVarDB(OMM_DELEGATION, Address.class);
 
 
 
     public StakingImpl( @Optional BigInteger _feePercentage, @Optional BigInteger _productivity, 
-                        @Optional Address lendingPoolCore, @Optional Address feeDistribution) {
+                        @Optional Address lendingPoolCore, @Optional Address feeDistribution, @Optional Address delegation) {
 
         if (blockHeightWeek.get() == null) {
             @SuppressWarnings("unchecked")
@@ -85,6 +86,7 @@ public class StakingImpl implements Staking {
             feePercentage.set(_feePercentage);
             feeDistributionAddress.set(feeDistribution);
             ommLendingPoolCore.set(lendingPoolCore);
+            ommDelegation.set(delegation);
 
         }
 
@@ -111,6 +113,10 @@ public class StakingImpl implements Staking {
 
     @EventLog(indexed = 2)
     public void TokenTransfer(Address recipient, BigInteger amount, String note) {
+    }
+
+    @EventLog(indexed = 2)
+    public void UnstakingUpdate(BigInteger currentBlock, BigInteger nextUnstakeBlock) {
     }
 
     @EventLog(indexed = 2)
@@ -219,9 +225,22 @@ public class StakingImpl implements Staking {
         ommLendingPoolCore.set(_address);
     }
 
+    @External
+    public void setOmmDelegation(Address _address) {
+        onlyOwner();
+        Context.require(_address.isContract(), TAG + ": Address provided is an EOA address. A contract " +
+                "address is required.");
+        ommDelegation.set(_address);
+    }
+
     @External(readonly = true)
     public Address getOmmLendingPoolCore() {
         return ommLendingPoolCore.get();
+    }
+
+    @External(readonly = true)
+    public Address getOmmDelegation() {
+        return ommDelegation.get();
     }
 
     @External
@@ -277,6 +296,23 @@ public class StakingImpl implements Staking {
     }
 
     @External(readonly = true)
+    public BigInteger getUndelegatedICX(){
+        Map<String, BigInteger> prepDelegationInIcx =
+                this.prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
+        BigInteger delegatedICX = BigInteger.ZERO;
+        List<Address> topPreps = getTopPreps();
+        for (Map.Entry<String, BigInteger> prepDelegation : prepDelegationInIcx.entrySet()) {
+            Address prep = Address.fromString(prepDelegation.getKey());
+            if (topPreps.contains(prep)) {
+                delegatedICX = delegatedICX.add(prepDelegation.getValue());
+            }
+        }
+        BigInteger totalStake = getTotalStake();
+
+        return totalStake.subtract(delegatedICX);
+    }
+
+    @External(readonly = true)
     public List<Address> getTopPreps() {
         List<Address> topPreps = new ArrayList<>();
         int topPrepsCount = this.topPreps.size();
@@ -307,6 +343,7 @@ public class StakingImpl implements Staking {
 
 
         Map<String, BigInteger> allPrepDelegations = new HashMap<>();
+        BigInteger topPrepSpecification = BigInteger.ZERO;
         if (ommPrepSize.compareTo(BigInteger.ZERO) > 0) {
             for (Map.Entry<String, BigInteger> prepSet : ommDelegations.entrySet()) {
                 Address prep = Address.fromString(prepSet.getKey());
@@ -316,9 +353,15 @@ public class StakingImpl implements Staking {
                     BigInteger amountToAdd = unspecifiedICX.multiply(percentageDelegation).divide(HUNDRED_PERCENTAGE);
 
                     remaining = remaining.subtract(amountToAdd);
+                    if (prep.toString().equals(topPreps.get(0).toString())) {
+                        topPrepSpecification = amountToAdd;
+                    }
                     allPrepDelegations.put(prep.toString(), amountToAdd);
                 }
             }
+        }
+        if (remaining.compareTo(BigInteger.ZERO) > 0) {
+            allPrepDelegations.put(topPreps.get(0).toString(), remaining.add(topPrepSpecification));
         }
         return allPrepDelegations;
     }
@@ -577,9 +620,22 @@ public class StakingImpl implements Staking {
     }
 
     @External
+    public void delegateForUser(PrepDelegations[] _user_delegations, Address to){
+        stakingOn();
+        if (!Context.getCaller().equals(getOmmDelegation())) {
+            Context.revert(TAG + ": Only delegation contract can call this function.");
+        }
+        delegation(_user_delegations,to);
+    }
+
+    @External
     public void delegate(PrepDelegations[] _user_delegations) {
         stakingOn();
         Address to = Context.getCaller();
+        delegation(_user_delegations,to);
+    }
+
+    private void delegation(PrepDelegations[] _user_delegations, Address to){
         performChecksForIscoreAndUnstakedBalance();
         Map<String, BigInteger> previousDelegations = userDelegationInPercentage.getOrDefault(to,
                 DEFAULT_DELEGATION_LIST).toMap();
@@ -775,9 +831,22 @@ public class StakingImpl implements Staking {
         BigInteger newTotalStake = this.totalStake.getOrDefault(BigInteger.ZERO).add(addedIcx);
         this.totalStake.set(newTotalStake);
         stakeAndDelegateInNetwork(newTotalStake, finalDelegation);
+
+        emitUnstakingEvent();
         Context.call(sicxAddress.get(), "mintTo", _to, sicxToMint, _data);
         TokenTransfer(_to, sicxToMint, sicxToMint + " sICX minted to " + _to);
         return sicxToMint;
+    }
+
+    private void emitUnstakingEvent(){
+        List<UnstakeDetails> unstakeDetails = unstakeRequestList.iterate();
+        if (!unstakeDetails.isEmpty()){
+            UnstakeDetails topUnstake = unstakeDetails.get(0);
+            BigInteger nextUnstakeBlock =  topUnstake.unstakeBlockHeight;
+
+            BigInteger currentBlockHeight = BigInteger.valueOf(Context.getBlockHeight());
+            UnstakingUpdate(currentBlockHeight, nextUnstakeBlock);
+        }
     }
 
     @External

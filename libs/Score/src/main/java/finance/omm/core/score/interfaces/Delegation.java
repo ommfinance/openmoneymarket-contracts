@@ -2,9 +2,11 @@ package finance.omm.core.score.interfaces;
 
 import finance.omm.libs.structs.PrepDelegations;
 import finance.omm.libs.structs.PrepICXDelegations;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+
 import score.Address;
 import score.annotation.Optional;
 
@@ -47,5 +49,7 @@ public interface Delegation extends BoostedOMMCallback {
     List<PrepICXDelegations> getUserICXDelegation(Address _user);
 
     PrepDelegations[] computeDelegationPercentages();
+
+    void updateDelegationAtOnce(PrepDelegations[] _delegations);
 }
 

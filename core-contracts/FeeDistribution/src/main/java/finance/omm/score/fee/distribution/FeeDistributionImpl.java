@@ -6,8 +6,10 @@ import score.Address;
 import score.Context;
 import score.annotation.External;
 import score.annotation.Optional;
+import scorex.util.HashMap;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 import static finance.omm.utils.math.MathUtils.ICX;
 
@@ -24,12 +26,39 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
 
     @External(readonly = true)
     public BigInteger getFeeDistributionOf(Address address){
-        return feeDistribution.getOrDefault(address,BigInteger.ZERO);
+        return feeDistributionWeight.getOrDefault(address,BigInteger.ZERO);
     }
 
     @External(readonly = true)
-    public BigInteger getFeeDistributed(Address address){
+    public Map<String, BigInteger> getFeeDistributionWeight() {
+        Map<String, BigInteger> weight = new HashMap<>();
+        for (Address key : feeDistributionWeight.keySet()) {
+            weight.put(key.toString(), feeDistributionWeight.get(key));
+        }
+        return weight;
+    }
+
+    @External(readonly = true)
+    public BigInteger getCollectedFee(Address address){
         return collectedFee.getOrDefault(address,BigInteger.ZERO);
+    }
+
+    @External(readonly = true)
+    public Map<String,BigInteger> getAllCollectedFees(){
+        Map<String,BigInteger> collectedFeeMap = new HashMap<>();
+        for (Address key: collectedFee.keySet()) {
+            collectedFeeMap.put(key.toString(),collectedFee.get(key));
+        }
+        return collectedFeeMap;
+    }
+    @External(readonly = true)
+    public BigInteger getValidatorCollectedFee(){
+        return validatorRewards.getOrDefault(BigInteger.ZERO);
+    }
+
+    @External(readonly = true)
+    public BigInteger getAccumulatedFee(Address address){
+        return accumulatedFee.getOrDefault(address,BigInteger.ZERO);
     }
 
     @External
@@ -38,10 +67,10 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         if (!(addresses.length == weights.length)){
             throw FeeDistributionException.unknown(TAG + " :: Invalid pair length of arrays");
         }
-        feeDistribution.clear();
+        feeDistributionWeight.clear();
         BigInteger totalWeight = BigInteger.ZERO;
         for (int i = 0; i < addresses.length; i++) {
-            feeDistribution.put(addresses[i],weights[i]);
+            feeDistributionWeight.put(addresses[i],weights[i]);
 
             totalWeight = totalWeight.add(weights[i]);
         }
@@ -79,7 +108,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         accumulatedFee.set(caller,null);
 
         BigInteger feeCollected = collectedFee.getOrDefault(receiverAddress,BigInteger.ZERO);
-        collectedFee.set(receiverAddress,feeCollected.add(amountToClaim));
+        collectedFee.put(receiverAddress,feeCollected.add(amountToClaim));
 
         call(Contracts.sICX,"transfer",receiverAddress,amountToClaim);
 

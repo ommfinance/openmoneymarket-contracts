@@ -242,6 +242,23 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External
+    public void updateDelegationAtOnce(PrepDelegations[] _delegations){
+        Address user = Context.getCaller();
+        updateUserDelegations(_delegations,user,null);
+
+        int delegationsLength = _delegations.length;
+        PrepDelegations[] updatedDelegations = new PrepDelegations[delegationsLength];
+        for (int i = 0; i < delegationsLength; i++) {
+
+            Address _address = _delegations[i]._address;
+            BigInteger _votes_in_per = _delegations[i]._votes_in_per.multiply(BigInteger.valueOf(100));
+            updatedDelegations[i] = new PrepDelegations(_address,_votes_in_per);
+        }
+
+        call(Contracts.STAKING,"delegateForUser",updatedDelegations,user);
+    }
+
+    @External
     public void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user) {
         Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
         Address currentUser;

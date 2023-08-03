@@ -115,7 +115,9 @@ public class AddressManagerImpl implements AddressManager {
                 Map.entry("StakedLp", getAddress(Contracts.STAKED_LP.getKey())),
                 Map.entry("DEX", getAddress(Contracts.DEX.getKey())),
                 Map.entry("bOMM", getAddress(Contracts.BOOSTED_OMM.getKey())),
-                Map.entry("RewardWeightController", getAddress(Contracts.REWARD_WEIGHT_CONTROLLER.getKey()))
+                Map.entry("RewardWeightController", getAddress(Contracts.REWARD_WEIGHT_CONTROLLER.getKey())),
+                Map.entry("FeeDistribution",getAddress(Contracts.FEE_DISTRIBUTION.getKey())),
+                Map.entry("DaoFund",getAddress(Contracts.DAO_FUND.getKey()))
         );
         return Map.of(
                 "collateral", getAllReserveAddresses(),
