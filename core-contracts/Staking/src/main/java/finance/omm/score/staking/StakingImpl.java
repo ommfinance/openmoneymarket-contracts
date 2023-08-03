@@ -296,20 +296,20 @@ public class StakingImpl implements Staking {
     }
 
     @External(readonly = true)
-    public BigInteger getFreeICX(){
+    public BigInteger getUndelegatedICX(){
         Map<String, BigInteger> prepDelegationInIcx =
                 this.prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
-        BigInteger specifiedIcxSum = BigInteger.ZERO;
+        BigInteger delegatedICX = BigInteger.ZERO;
         List<Address> topPreps = getTopPreps();
         for (Map.Entry<String, BigInteger> prepDelegation : prepDelegationInIcx.entrySet()) {
             Address prep = Address.fromString(prepDelegation.getKey());
             if (topPreps.contains(prep)) {
-                specifiedIcxSum = specifiedIcxSum.add(prepDelegation.getValue());
+                delegatedICX = delegatedICX.add(prepDelegation.getValue());
             }
         }
         BigInteger totalStake = getTotalStake();
 
-        return totalStake.subtract(specifiedIcxSum);
+        return totalStake.subtract(delegatedICX);
     }
 
     @External(readonly = true)
