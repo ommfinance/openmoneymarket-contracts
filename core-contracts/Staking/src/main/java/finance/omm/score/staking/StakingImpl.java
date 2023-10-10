@@ -446,7 +446,8 @@ public class StakingImpl implements Staking {
         stakingOn();
         Context.require(Context.getCaller().equals(sicxAddress.get()), TAG + ": The Staking contract only accepts " +
                 "sICX tokens.: " + sicxAddress.get());
-
+        Context.require(_value.compareTo(BigInteger.ZERO) >0,TAG+ ": The Staking contract cannot unstake " +
+                "value less than or equal to 0");
         String unpackedData = new String(_data);
         JsonObject json = Json.parse(unpackedData).asObject();
         String method = json.get("method").asString();
