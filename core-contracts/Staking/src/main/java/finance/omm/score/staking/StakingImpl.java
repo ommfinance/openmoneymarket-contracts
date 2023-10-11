@@ -572,21 +572,32 @@ public class StakingImpl implements Staking {
         return delegationIcx;
     }
 
+    public boolean checkValidPrep(Address prepAddr){
+        Map<String, Object> prepDict = (Map<String, Object>) Context.call(SYSTEM_SCORE_ADDRESS, "getPRep", prepAddr);
+        if (!prepDict.isEmpty()){
+            return true;
+        }
+        return false;
+    }
+
     private Map<String, BigInteger> verifyUserDelegation(PrepDelegations[] userDelegations) {
         Map<String, BigInteger> prepDelegations = new HashMap<>();
         BigInteger totalPercentage = BigInteger.ZERO;
         if (userDelegations.length == 0) {
             return prepDelegations;
         }
+        List<Address> topPreps = getTopPreps();
         for (PrepDelegations userDelegation : userDelegations) {
-            String prepAddress = userDelegation._address.toString();
-            BigInteger votesInPercentage = userDelegation._votes_in_per;
-            Context.require(votesInPercentage.compareTo(MINIMUM_DELEGATION_PERCENTAGE) >= 0, TAG + ": You " +
-                    "should provide delegation percentage more than 0.001%.");
-            Context.require(prepDelegations.get(prepAddress) == null, TAG + ": You can not delegate same " +
-                    "P-Rep twice in a transaction.");
-            prepDelegations.put(prepAddress, votesInPercentage);
-            totalPercentage = totalPercentage.add(votesInPercentage);
+            Address prepAddress = userDelegation._address;
+            if (topPreps.contains(prepAddress) || checkValidPrep(prepAddress)){
+                BigInteger votesInPercentage = userDelegation._votes_in_per;
+                Context.require(votesInPercentage.compareTo(MINIMUM_DELEGATION_PERCENTAGE) >= 0, TAG + ": You " +
+                        "should provide delegation percentage more than 0.001%.");
+                Context.require(prepDelegations.get(prepAddress.toString()) == null, TAG + ": You can not delegate same " +
+                        "P-Rep twice in a transaction.");
+                prepDelegations.put(prepAddress.toString(), votesInPercentage);
+                totalPercentage = totalPercentage.add(votesInPercentage);
+            }
         }
         Context.require(totalPercentage.equals(HUNDRED_PERCENTAGE), TAG + ": Total delegations should be 100%.");
         return prepDelegations;
@@ -625,6 +636,9 @@ public class StakingImpl implements Staking {
         if (!Context.getCaller().equals(getOmmDelegation())) {
             Context.revert(TAG + ": Only delegation contract can call this function.");
         }
+        if (_user_delegations.length > 100){
+            Context.revert(TAG + ": Cannot set more than 100 delegations");
+        }
         delegation(_user_delegations,to);
     }
 
@@ -632,6 +646,9 @@ public class StakingImpl implements Staking {
     public void delegate(PrepDelegations[] _user_delegations) {
         stakingOn();
         Address to = Context.getCaller();
+        if (_user_delegations.length > 100){
+            Context.revert(TAG + ": Cannot set more than 100 delegations");
+        }
         delegation(_user_delegations,to);
     }
 
