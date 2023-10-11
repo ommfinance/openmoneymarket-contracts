@@ -137,7 +137,7 @@ public class StakingIT implements ScoreIntegrationTest {
         List<score.Address> topPreps = readerClient.staking.getTopPreps();
 
         BigInteger amountToStake = BigInteger.valueOf(100).multiply(ICX);
-        ((StakingScoreClient) ownerClient.staking).stakeICX(amountToStake, null, null);
+        ((StakingScoreClient) ownerClient.staking).stakeICX(amountToStake, null, null); // ownerClient staked 100
 
         BigInteger afterTotalStake = readerClient.staking.getTotalStake();
         BigInteger afterTotalSupply = readerClient.sICX.totalSupply();
@@ -203,12 +203,13 @@ public class StakingIT implements ScoreIntegrationTest {
 
         List<score.Address> ommContributors = readerClient.delegation.getContributors();
         // totalStake -> 300 ICX
-        // contributor percetage = 25%
+        // contributor percentage = 25%
         // each contributor 25 % of 300 ICX = 75 ICX
         Map<String,BigInteger> expectedOmmDelgations = new java.util.HashMap<>();
         for (score.Address ommContributor: ommContributors) {
             if (contains(ommContributor,topPreps)){
-                expectedOmmDelgations.put(ommContributor.toString(),BigInteger.valueOf(75).multiply(ICX));
+                // only one prep of ommContributor exist in topPrep
+                expectedOmmDelgations.put(ommContributor.toString(),BigInteger.valueOf(300).multiply(ICX));
             }
         }
 
@@ -265,7 +266,7 @@ public class StakingIT implements ScoreIntegrationTest {
         Map<String,BigInteger> expectedOmmDelegations = new java.util.HashMap<>();
         for (score.Address ommContributor: ommContributors) {
             if (contains(ommContributor,topPreps)){
-                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(125).multiply(ICX));
+                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(500).multiply(ICX));
             }
         }
 
@@ -324,7 +325,7 @@ public class StakingIT implements ScoreIntegrationTest {
         Map<String,BigInteger> expectedOmmDelegations = new java.util.HashMap<>();
         for (score.Address ommContributor: ommContributors) {
             if (contains(ommContributor,topPreps)){
-                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(125).multiply(ICX));
+                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(500).multiply(ICX));
             }
         }
 
@@ -387,7 +388,7 @@ public class StakingIT implements ScoreIntegrationTest {
         Map<String,BigInteger> expectedOmmDelegations = new java.util.HashMap<>();
         for (score.Address ommContributor: ommContributors) {
             if (contains(ommContributor,topPreps)){
-                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(150).multiply(ICX));
+                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(600).multiply(ICX));
             }
         }
 
@@ -511,11 +512,11 @@ public class StakingIT implements ScoreIntegrationTest {
 
         List<score.Address> ommContributors = readerClient.delegation.getContributors();
         /* total Staked -> 550 , 4 contributors each percentage = 25%
-         * 25% of 600 = 137.5 ICX */
+         * 25% of 550 = 137.5 ICX */
         Map<String,BigInteger> expectedOmmDelegations = new java.util.HashMap<>();
         for (score.Address ommContributor: ommContributors) {
             if (contains(ommContributor,topPreps)){
-                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(1375).multiply(ICX).divide(BigInteger.TEN));
+                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(550).multiply(ICX));
             }
         }
 
@@ -603,7 +604,7 @@ public class StakingIT implements ScoreIntegrationTest {
         Map<String,BigInteger> expectedOmmDelegations = new java.util.HashMap<>();
         for (score.Address ommContributor: ommContributors) {
             if (contains(ommContributor,topPreps)){
-                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(75).multiply(ICX));
+                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(300).multiply(ICX));
             }
         }
 
@@ -690,7 +691,7 @@ public class StakingIT implements ScoreIntegrationTest {
         Map<String,BigInteger> expectedOmmDelegations = new java.util.HashMap<>();
         for (score.Address ommContributor: ommContributors) {
             if (contains(ommContributor,topPreps)){
-                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(775).multiply(ICX).divide(BigInteger.TEN));
+                expectedOmmDelegations.put(ommContributor.toString(),BigInteger.valueOf(310).multiply(ICX));
             }
         }
 
