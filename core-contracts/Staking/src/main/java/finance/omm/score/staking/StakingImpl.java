@@ -325,23 +325,12 @@ public class StakingImpl implements Staking {
 
     @External(readonly = true)
     public Map<String, BigInteger> getbOMMDelegations() {
-        Map<String, BigInteger> prepDelegationInIcx =
-                this.prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
-        BigInteger specifiedIcxSum = BigInteger.ZERO;
-        List<Address> topPreps = getTopPreps();
-        for (Map.Entry<String, BigInteger> prepDelegation : prepDelegationInIcx.entrySet()) {
-            Address prep = Address.fromString(prepDelegation.getKey());
-            if (topPreps.contains(prep)) {
-                specifiedIcxSum = specifiedIcxSum.add(prepDelegation.getValue());
-            }
-        }
-        BigInteger totalStake = getTotalStake();
-        BigInteger unspecifiedICX = totalStake.subtract(specifiedIcxSum);
+        BigInteger unspecifiedICX = getUndelegatedICX();
         Map<String, BigInteger> ommDelegations = getActualUserDelegationPercentage(getOmmLendingPoolCore());
         BigInteger ommPrepSize = BigInteger.valueOf(ommDelegations.size());
         BigInteger remaining = unspecifiedICX;
 
-
+        List<Address> topPreps = getTopPreps();
         Map<String, BigInteger> allPrepDelegations = new HashMap<>();
         BigInteger topPrepSpecification = BigInteger.ZERO;
         if (ommPrepSize.compareTo(BigInteger.ZERO) > 0) {
@@ -369,50 +358,19 @@ public class StakingImpl implements Staking {
 
     @External(readonly = true)
     public Map<String, BigInteger> getPrepDelegations() {
-        Map<String, BigInteger> prepDelegationInIcx =
-                this.prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
-        BigInteger specifiedIcxSum = BigInteger.ZERO;
-        List<Address> addressInSpecification = new ArrayList<>();
-        for (Map.Entry<String, BigInteger> prepDelegation : prepDelegationInIcx.entrySet()) {
-            specifiedIcxSum = specifiedIcxSum.add(prepDelegation.getValue());
-            addressInSpecification.add(Address.fromString(prepDelegation.getKey()));
-        }
-        BigInteger totalStake = getTotalStake();
-        BigInteger unspecifiedICX = totalStake.subtract(specifiedIcxSum);
-        Map<String, BigInteger> ommDelegations = getActualUserDelegationPercentage(getOmmLendingPoolCore());
-        BigInteger ommPrepSize = BigInteger.valueOf(ommDelegations.size());
-        BigInteger remaining = unspecifiedICX;
         List<Address> topPreps = getTopPreps();
 
-        BigInteger topPrepSpecification = BigInteger.ZERO;
-        Map<String, BigInteger> allPrepDelegations = new HashMap<>();
-        if (ommPrepSize.compareTo(BigInteger.ZERO) > 0) {
-            for (Map.Entry<String, BigInteger> prepSet : ommDelegations.entrySet()) {
-                Address prep = Address.fromString(prepSet.getKey());
-                if (topPreps.contains(prep)) {
+        Map<String, BigInteger> allPrepDelegations = getbOMMDelegations();
+        Map<String, BigInteger> actualPrepDelegations = getActualPrepDelegations();
 
-                    BigInteger percentageDelegation = prepSet.getValue();
-                    BigInteger amountToAdd = unspecifiedICX.multiply(percentageDelegation).divide(HUNDRED_PERCENTAGE);
 
-                    remaining = remaining.subtract(amountToAdd);
-                    if (prep.toString().equals(topPreps.get(0).toString())) {
-                        topPrepSpecification = amountToAdd;
+        for (String prep : actualPrepDelegations.keySet()) {
+                    if (topPreps.contains(Address.fromString(prep))) {
+                       BigInteger amount = allPrepDelegations.getOrDefault(prep, BigInteger.ZERO);
+                       allPrepDelegations.put(prep, amount.add(actualPrepDelegations.get(prep)));
                     }
-                    allPrepDelegations.put(prep.toString(), amountToAdd);
-                }
-            }
         }
 
-        if (remaining.compareTo(BigInteger.ZERO) > 0) {
-            allPrepDelegations.put(topPreps.get(0).toString(), remaining.add(topPrepSpecification));
-        }
-
-        for (Address prep : addressInSpecification) {
-            BigInteger amountInDelegation = allPrepDelegations.get(prep.toString());
-            if (amountInDelegation == null) {
-                allPrepDelegations.put(prep.toString(), prepDelegationInIcx.get(prep.toString()));
-            }
-        }
         return allPrepDelegations;
     }
 
