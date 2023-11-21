@@ -33,13 +33,13 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
     protected void distributeFee(BigInteger amount) {
         BigInteger remaining = amount;
+        Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
+        Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
         for (Address receiver : feeDistributionWeight.keySet()) {
             BigInteger percentageToDistribute = feeDistributionWeight.get(receiver);
             BigInteger amountToDistribute = (percentageToDistribute.multiply(amount)).divide(ICX);
             remaining = remaining.subtract(amountToDistribute);
 
-            Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
-            Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
             if (receiver.equals(lendingPoolCoreAddr)) {
                 distributeFeeToValidator(amountToDistribute);
                 validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
@@ -54,7 +54,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             }
         }
         if (remaining.compareTo(BigInteger.ZERO) > 0){
-            distributeFeeToValidator(remaining);
+            call(Contracts.sICX, "transfer", daoFundAddr, remaining);
         }
         FeeDistributed(amount);
     }
