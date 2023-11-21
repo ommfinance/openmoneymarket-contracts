@@ -28,7 +28,7 @@ public interface Delegation extends BoostedOMMCallback {
 
     void addAllContributors(Address[] _preps);
 
-    void clearPrevious(Address _user);
+    void clearPrevious();
 
     boolean userDefaultDelegation(Address _user);
 
