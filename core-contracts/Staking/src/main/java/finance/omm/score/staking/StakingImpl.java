@@ -314,8 +314,8 @@ public class StakingImpl implements Staking {
 
     @External(readonly = true)
     public List<Address> getTopPreps() {
-        List<Address> topPreps = new ArrayList<>();
         int topPrepsCount = this.topPreps.size();
+        List<Address> topPreps = new ArrayList<>(topPrepsCount);
         for (int i = 0; i < topPrepsCount; i++) {
             Address prep = this.topPreps.get(i);
             topPreps.add(prep);
@@ -372,7 +372,7 @@ public class StakingImpl implements Staking {
         Map<String, BigInteger> prepDelegationInIcx =
                 this.prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
         BigInteger specifiedIcxSum = BigInteger.ZERO;
-        List<Address> addressInSpecification = new ArrayList<>();
+        List<Address> addressInSpecification = new ArrayList<>(prepDelegationInIcx.size());
         for (Map.Entry<String, BigInteger> prepDelegation : prepDelegationInIcx.entrySet()) {
             specifiedIcxSum = specifiedIcxSum.add(prepDelegation.getValue());
             addressInSpecification.add(Address.fromString(prepDelegation.getKey()));
@@ -504,7 +504,7 @@ public class StakingImpl implements Staking {
         Map<String, Object> prepDict = (Map<String, Object>) Context.call(SYSTEM_SCORE_ADDRESS, "getPReps",
                 BigInteger.ONE, Constant.TOP_PREP_COUNT);
         List<Map<String, Object>> prepDetails = (List<Map<String, Object>>) prepDict.get("preps");
-        List<Address> topPreps = new ArrayList<>();
+        List<Address> topPreps = new ArrayList<>(prepDetails.size());
         BigInteger productivity = this.productivity.get();
         for (Map<String, Object> preps : prepDetails) {
             Address prepAddress = (Address) preps.get("address");
@@ -793,7 +793,7 @@ public class StakingImpl implements Staking {
             }
         }
 
-        List<SystemInterface.Delegation> finalNetworkDelegations = new ArrayList<>();
+        List<SystemInterface.Delegation> finalNetworkDelegations = new ArrayList<>(networkDelegationMap.size());
         for (Map.Entry<String, SystemInterface.Delegation> networkDelegation : networkDelegationMap.entrySet()) {
             SystemInterface.Delegation value = networkDelegation.getValue();
             finalNetworkDelegations.add(value);
@@ -1020,8 +1020,8 @@ public class StakingImpl implements Staking {
 
     @External(readonly = true)
     public List<List<Object>> getUnstakeInfo() {
-        List<List<Object>> unstakeResponse = new ArrayList<>();
         List<UnstakeDetails> unstakeDetails = unstakeRequestList.iterate();
+        List<List<Object>> unstakeResponse = new ArrayList<>(unstakeDetails.size());
         for (UnstakeDetails unstakeDetail : unstakeDetails) {
             unstakeResponse.add(List.of(unstakeDetail.nodeId, unstakeDetail.unstakeAmount, unstakeDetail.key,
                     unstakeDetail.unstakeBlockHeight, unstakeDetail.receiverAddress));
@@ -1032,7 +1032,7 @@ public class StakingImpl implements Staking {
     @External(readonly = true)
     public List<Map<String, Object>> getUserUnstakeInfo(Address _address) {
         List<UnstakeDetails> linkedListIter = unstakeRequestList.iterate();
-        List<Map<String, Object>> response = new ArrayList<>();
+        List<Map<String, Object>> response = new ArrayList<>(linkedListIter.size());
         for (UnstakeDetails unstakeData : linkedListIter) {
             if (unstakeData.receiverAddress.equals(_address)) {
                 response.add(Map.of("amount", unstakeData.unstakeAmount, "from", unstakeData.key, "blockHeight",
