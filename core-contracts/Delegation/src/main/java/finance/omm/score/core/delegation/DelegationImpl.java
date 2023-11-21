@@ -314,10 +314,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
                 throw DelegationException.unknown(TAG + " Negative vote percentage");
             }
 
-            if (votes.compareTo(BigInteger.ZERO) < 0 ){
-                throw DelegationException.unknown(TAG + " Delegation can not be less than zero");
-            }
-
             _preps.add(address);
 
             if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
