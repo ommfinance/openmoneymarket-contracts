@@ -217,10 +217,10 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
      */
     void clearPrevious(){
 
-        assertUserRevert(DelegationException.unknown(TAG+" :You are not authorized to clear others delegation preference"),
-                () -> ownerClient.delegation.clearPrevious(testClient.getAddress()),null);
+//        assertUserRevert(DelegationException.unknown(TAG+" :You are not authorized to clear others delegation preference"),
+//                () -> ownerClient.delegation.clearPrevious(testClient.getAddress()),null);
 
-        testClient.delegation.clearPrevious(testClient.getAddress());
+        testClient.delegation.clearPrevious();
 
 
         score.Address[] contributors = Environment.contributors.keySet().toArray(score.Address[]::new);
