@@ -104,9 +104,6 @@ public class StakingImpl implements Staking {
     }
 
     // Event logs
-    @EventLog(indexed = 3)
-    public void Transfer(Address _from, Address _to, BigInteger _value, byte[] _data) {
-    }
 
     @EventLog(indexed = 2)
     public void FundTransfer(Address destination, BigInteger amount, String note) {
