@@ -537,6 +537,10 @@ class StakingTest extends TestBase {
         BigInteger icxToClaim = BigInteger.valueOf(599L);
         BigInteger icxPayable = BigInteger.valueOf(401L);
 
+        doReturn(BigInteger.ZERO).when(stakingSpy).claimableICX(any(Address.class));
+        Executable claimZeroIcx = () -> staking.invoke(owner, "claimUnstakedICX", owner.getAddress());
+        expectErrorMessage(claimZeroIcx, "Staked ICX Manager: No claimable icx to claim");
+
         doReturn(BigInteger.TEN).when(stakingSpy).claimableICX(any(Address.class));
         doReturn(BigInteger.TWO).when(stakingSpy).totalClaimableIcx();
         String expectedErrorMessage = "Staked ICX Manager: No sufficient icx to claim. Requested: 10 " +
