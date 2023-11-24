@@ -63,6 +63,12 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         BigInteger[] percentages = new BigInteger[]{val,val.divide(BigInteger.TEN)};
         call = () -> score.invoke(owner,"setFeeDistribution",addresses,percentages);
         expectErrorMessage(call,"Fee Distribution :: Sum of percentages not equal to 100 550000000000000000");
+
+        Address[] duplicateAddress = new Address[]{testScore.getAddress(),testScore.getAddress()};
+        BigInteger[] weight2 = new BigInteger[]{val,val};
+        call = () -> score.invoke(owner,"setFeeDistribution",duplicateAddress,weight2);
+        expectErrorMessage(call,"Fee Distribution :: Array has duplicate addresses");
+
     }
 
     @Test
