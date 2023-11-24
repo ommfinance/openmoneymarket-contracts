@@ -480,7 +480,7 @@ public class StakingImpl implements Staking {
             _to = Context.getCaller();
         }
         BigInteger payableIcx = claimableICX(_to);
-        Context.require(payableIcx.compareTo(BigInteger.ZERO) > 0,
+        Context.require(payableIcx.signum() > 0,
                 TAG + ": No claimable icx to claim");
         BigInteger icxToClaim = totalClaimableIcx();
         Context.require(payableIcx.compareTo(icxToClaim) <= 0,
