@@ -171,15 +171,11 @@ public class BoostedOMM extends AbstractBoostedOMM {
         LockedBalance locked = getLockedBalance(sender);
         Context.require(blockTimestamp.compareTo(locked.getEnd()) >= 0, "Withdraw: The lock didn't expire");
         BigInteger value = locked.amount;
-
-        LockedBalance oldLocked = locked.newLockedBalance();
-        locked.end = UnsignedBigInteger.ZERO;
-        locked.amount = BigInteger.ZERO;
-        this.locked.set(sender, locked);
+        this.locked.set(sender, null);
         BigInteger supplyBefore = this.supply.get();
         this.supply.set(supplyBefore.subtract(value));
         this.ommTokenBalance.set(this.ommTokenBalance.get().subtract(value));
-        this.checkpoint(sender, oldLocked, locked);
+        this.checkpoint(sender, locked, new LockedBalance());
         callToken("transfer", sender, value, "withdraw".getBytes());
         users.remove(sender);
         Withdraw(sender, value, blockTimestamp);
