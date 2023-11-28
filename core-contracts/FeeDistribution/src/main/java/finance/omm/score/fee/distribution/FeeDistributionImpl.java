@@ -9,8 +9,10 @@ import score.annotation.Optional;
 import scorex.util.HashMap;
 
 import java.math.BigInteger;
+import java.util.HashSet;
 import java.util.Map;
 
+import static finance.omm.utils.checks.ArrayChecks.containsDuplicate;
 import static finance.omm.utils.math.MathUtils.ICX;
 
 public class FeeDistributionImpl extends AbstractFeeDistribution {
@@ -66,6 +68,9 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         onlyOwner();
         if (!(addresses.length == weights.length)){
             throw FeeDistributionException.unknown(TAG + " :: Invalid pair length of arrays");
+        }
+        if (containsDuplicate(addresses)){
+            throw FeeDistributionException.unknown(TAG + " :: Array has duplicate addresses");
         }
         feeDistributionWeight.clear();
         BigInteger totalWeight = BigInteger.ZERO;

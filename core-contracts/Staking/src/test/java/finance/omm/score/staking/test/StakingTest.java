@@ -40,6 +40,7 @@ class StakingTest extends TestBase {
     public static final Account sicx = Account.newScoreAccount(scoreAccountCount++);
     public static final Account feeDistribution = Account.newScoreAccount(scoreAccountCount++);
     public static final Account ommLendingPoolCore = Account.newScoreAccount(scoreAccountCount++);
+    public static final Account ommDelegation = Account.newScoreAccount(scoreAccountCount++);
     private final MockedStatic<Context> contextMock = Mockito.mockStatic(Context.class, Mockito.CALLS_REAL_METHODS);
 
     private Score staking;
@@ -90,8 +91,8 @@ class StakingTest extends TestBase {
 
     private void setupStakingScore() throws Exception {
         staking = sm.deploy(owner, StakingImpl.class,new BigInteger("10").multiply(ONE_EXA),
-                new BigInteger("90").multiply(ONE_EXA),feeDistribution.getAddress(),
-                ommLendingPoolCore.getAddress());
+                new BigInteger("90").multiply(ONE_EXA),ommLendingPoolCore.getAddress(),feeDistribution.getAddress(),
+                ommDelegation.getAddress());
         stakingSpy = (StakingImpl) spy(staking.getInstance());
         staking.setInstance(stakingSpy);
 
@@ -294,6 +295,12 @@ class StakingTest extends TestBase {
                 data.toString().getBytes());
         expectedErrorMessage = "Staked ICX Manager: Total staked amount can't be set negative";
         expectErrorMessage(negativeTotalStake, expectedErrorMessage);
+
+        // Trying to unstake zero amount
+
+        Executable zeroUnstake = () -> staking.invoke(sicx, "tokenFallback", owner.getAddress(), BigInteger.ZERO,
+                "unstake".getBytes());
+        expectErrorMessage(zeroUnstake,"Staked ICX Manager: The Staking contract cannot unstake value less than or equal to 0");
 
         //Successful unstake
         doReturn(unstakedAmount).when(stakingSpy).getTotalStake();
@@ -529,6 +536,10 @@ class StakingTest extends TestBase {
     void claimUnstakedICX() {
         BigInteger icxToClaim = BigInteger.valueOf(599L);
         BigInteger icxPayable = BigInteger.valueOf(401L);
+
+        doReturn(BigInteger.ZERO).when(stakingSpy).claimableICX(any(Address.class));
+        Executable claimZeroIcx = () -> staking.invoke(owner, "claimUnstakedICX", owner.getAddress());
+        expectErrorMessage(claimZeroIcx, "Staked ICX Manager: No claimable icx to claim");
 
         doReturn(BigInteger.TEN).when(stakingSpy).claimableICX(any(Address.class));
         doReturn(BigInteger.TWO).when(stakingSpy).totalClaimableIcx();

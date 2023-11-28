@@ -3,6 +3,7 @@ package finance.omm.score.staking.utils;
 import finance.omm.score.staking.StakingImpl;
 import score.Address;
 import score.Context;
+import score.VarDB;
 
 public class Checks {
 
@@ -18,5 +19,20 @@ public class Checks {
         if (!StakingImpl.stakingOn.get()) {
             Context.revert(Constant.TAG + ": ICX Staking SCORE is not active.");
         }
+    }
+
+
+    public static void checkStatus(VarDB<Address> address) {
+        Address handler = address.get();
+        if (handler == null) {
+            return;
+        }
+
+        checkStatus(handler);
+    }
+
+    public static void checkStatus(Address handler) {
+        String caller = Context.getCaller().toString();
+        Context.call(handler, "checkStatus", caller);
     }
 }

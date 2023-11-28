@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import static finance.omm.score.staking.db.LinkedListDB.DEFAULT_NODE_ID;
+import static finance.omm.score.staking.utils.Checks.checkStatus;
 import static finance.omm.score.staking.utils.Checks.onlyOwner;
 import static finance.omm.score.staking.utils.Checks.stakingOn;
 import static finance.omm.score.staking.utils.Constant.*;
@@ -103,9 +104,6 @@ public class StakingImpl implements Staking {
     }
 
     // Event logs
-    @EventLog(indexed = 3)
-    public void Transfer(Address _from, Address _to, BigInteger _value, byte[] _data) {
-    }
 
     @EventLog(indexed = 2)
     public void FundTransfer(Address destination, BigInteger amount, String note) {
@@ -314,8 +312,8 @@ public class StakingImpl implements Staking {
 
     @External(readonly = true)
     public List<Address> getTopPreps() {
-        List<Address> topPreps = new ArrayList<>();
         int topPrepsCount = this.topPreps.size();
+        List<Address> topPreps = new ArrayList<>(topPrepsCount);
         for (int i = 0; i < topPrepsCount; i++) {
             Address prep = this.topPreps.get(i);
             topPreps.add(prep);
@@ -372,7 +370,7 @@ public class StakingImpl implements Staking {
         Map<String, BigInteger> prepDelegationInIcx =
                 this.prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
         BigInteger specifiedIcxSum = BigInteger.ZERO;
-        List<Address> addressInSpecification = new ArrayList<>();
+        List<Address> addressInSpecification = new ArrayList<>(prepDelegationInIcx.size());
         for (Map.Entry<String, BigInteger> prepDelegation : prepDelegationInIcx.entrySet()) {
             specifiedIcxSum = specifiedIcxSum.add(prepDelegation.getValue());
             addressInSpecification.add(Address.fromString(prepDelegation.getKey()));
@@ -438,15 +436,18 @@ public class StakingImpl implements Staking {
 
     @Payable
     public void fallback() {
+        checkStatus(statusManager);
         stakeICX(Context.getCaller(), null);
     }
 
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
+        checkStatus(statusManager);
         stakingOn();
         Context.require(Context.getCaller().equals(sicxAddress.get()), TAG + ": The Staking contract only accepts " +
                 "sICX tokens.: " + sicxAddress.get());
-
+        Context.require(_value.compareTo(BigInteger.ZERO) >0,TAG+ ": The Staking contract cannot unstake " +
+                "value less than or equal to 0");
         String unpackedData = new String(_data);
         JsonObject json = Json.parse(unpackedData).asObject();
         String method = json.get("method").asString();
@@ -476,10 +477,13 @@ public class StakingImpl implements Staking {
 
     @External
     public void claimUnstakedICX(@Optional Address _to) {
+        checkStatus(statusManager);
         if (_to == null) {
             _to = Context.getCaller();
         }
         BigInteger payableIcx = claimableICX(_to);
+        Context.require(payableIcx.signum() > 0,
+                TAG + ": No claimable icx to claim");
         BigInteger icxToClaim = totalClaimableIcx();
         Context.require(payableIcx.compareTo(icxToClaim) <= 0,
                 TAG + ": No sufficient icx to claim. Requested: " + payableIcx + " Available: " + icxToClaim);
@@ -504,7 +508,7 @@ public class StakingImpl implements Staking {
         Map<String, Object> prepDict = (Map<String, Object>) Context.call(SYSTEM_SCORE_ADDRESS, "getPReps",
                 BigInteger.ONE, Constant.TOP_PREP_COUNT);
         List<Map<String, Object>> prepDetails = (List<Map<String, Object>>) prepDict.get("preps");
-        List<Address> topPreps = new ArrayList<>();
+        List<Address> topPreps = new ArrayList<>(prepDetails.size());
         BigInteger productivity = this.productivity.get();
         for (Map<String, Object> preps : prepDetails) {
             Address prepAddress = (Address) preps.get("address");
@@ -621,6 +625,7 @@ public class StakingImpl implements Staking {
 
     @External
     public void delegateForUser(PrepDelegations[] _user_delegations, Address to){
+        checkStatus(statusManager);
         stakingOn();
         if (!Context.getCaller().equals(getOmmDelegation())) {
             Context.revert(TAG + ": Only delegation contract can call this function.");
@@ -630,6 +635,7 @@ public class StakingImpl implements Staking {
 
     @External
     public void delegate(PrepDelegations[] _user_delegations) {
+        checkStatus(statusManager);
         stakingOn();
         Address to = Context.getCaller();
         delegation(_user_delegations,to);
@@ -681,11 +687,10 @@ public class StakingImpl implements Staking {
                 .subtract(icxToClaim.getOrDefault(BigInteger.ZERO));
 
         // If there is I-Score generated then update the rate
+        BigInteger sicxToMint = BigInteger.ZERO;
         if (dailyReward.compareTo(BigInteger.ZERO) > 0) {
             BigInteger feeAmt = getFeePercentage().multiply(dailyReward).divide(HUNDRED_PERCENTAGE);
-            BigInteger sicxToMint = (ONE_EXA.multiply(feeAmt)).divide(getTodayRate());
-            Context.call(sicxAddress.get(), "mintTo", getFeeDistributionAddress(), sicxToMint,
-                    "staking fee".getBytes());
+            sicxToMint = (ONE_EXA.multiply(feeAmt)).divide(getTodayRate());
 
             totalLifetimeReward.set(getLifetimeReward().add(dailyReward));
             BigInteger totalStake = getTotalStake();
@@ -722,6 +727,10 @@ public class StakingImpl implements Staking {
         }
         checkForIscore();
         checkForUnstakedBalance(unstakedICX, totalUnstakeAmount);
+        if (sicxToMint.compareTo(BigInteger.ZERO)>0){
+            Context.call(sicxAddress.get(), "mintTo", getFeeDistributionAddress(), sicxToMint,
+                    "staking fee".getBytes());
+        }
     }
 
     private void updateDelegationInNetwork(Map<String, BigInteger> prepDelegations, List<Address> topPreps,
@@ -793,7 +802,7 @@ public class StakingImpl implements Staking {
             }
         }
 
-        List<SystemInterface.Delegation> finalNetworkDelegations = new ArrayList<>();
+        List<SystemInterface.Delegation> finalNetworkDelegations = new ArrayList<>(networkDelegationMap.size());
         for (Map.Entry<String, SystemInterface.Delegation> networkDelegation : networkDelegationMap.entrySet()) {
             SystemInterface.Delegation value = networkDelegation.getValue();
             finalNetworkDelegations.add(value);
@@ -807,6 +816,7 @@ public class StakingImpl implements Staking {
     @External
     @Payable
     public BigInteger stakeICX(@Optional Address _to, @Optional byte[] _data) {
+        checkStatus(statusManager);
         stakingOn();
         if (_data == null) {
             _data = new byte[0];
@@ -851,6 +861,7 @@ public class StakingImpl implements Staking {
 
     @External
     public void transferUpdateDelegations(Address _from, Address _to, BigInteger _value) {
+        checkStatus(statusManager);
         stakingOn();
         if (!Context.getCaller().equals(sicxAddress.get())) {
             Context.revert(TAG + ": Only sicx token contract can call this function.");
@@ -1020,8 +1031,8 @@ public class StakingImpl implements Staking {
 
     @External(readonly = true)
     public List<List<Object>> getUnstakeInfo() {
-        List<List<Object>> unstakeResponse = new ArrayList<>();
         List<UnstakeDetails> unstakeDetails = unstakeRequestList.iterate();
+        List<List<Object>> unstakeResponse = new ArrayList<>(unstakeDetails.size());
         for (UnstakeDetails unstakeDetail : unstakeDetails) {
             unstakeResponse.add(List.of(unstakeDetail.nodeId, unstakeDetail.unstakeAmount, unstakeDetail.key,
                     unstakeDetail.unstakeBlockHeight, unstakeDetail.receiverAddress));
@@ -1032,7 +1043,7 @@ public class StakingImpl implements Staking {
     @External(readonly = true)
     public List<Map<String, Object>> getUserUnstakeInfo(Address _address) {
         List<UnstakeDetails> linkedListIter = unstakeRequestList.iterate();
-        List<Map<String, Object>> response = new ArrayList<>();
+        List<Map<String, Object>> response = new ArrayList<>(linkedListIter.size());
         for (UnstakeDetails unstakeData : linkedListIter) {
             if (unstakeData.receiverAddress.equals(_address)) {
                 response.add(Map.of("amount", unstakeData.unstakeAmount, "from", unstakeData.key, "blockHeight",
