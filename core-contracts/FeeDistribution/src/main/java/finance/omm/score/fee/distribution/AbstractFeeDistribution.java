@@ -53,7 +53,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 accumulatedFee.set(receiver, feeAccumulatedAfterClaim.add(amountToDistribute));
             }
         }
-        if (remaining.compareTo(BigInteger.ZERO) > 0){
+        if (remaining.signum() > 0){
             call(Contracts.sICX, "transfer", daoFundAddr, remaining);
         }
         FeeDistributed(amount);
