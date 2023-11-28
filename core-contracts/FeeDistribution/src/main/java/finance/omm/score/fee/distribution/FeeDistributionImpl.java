@@ -69,7 +69,8 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         }
         feeDistributionWeight.clear();
         BigInteger totalWeight = BigInteger.ZERO;
-        for (int i = 0; i < addresses.length; i++) {
+        int size = addresses.length;
+        for (int i = 0; i <size; i++) {
             feeDistributionWeight.put(addresses[i],weights[i]);
 
             totalWeight = totalWeight.add(weights[i]);
