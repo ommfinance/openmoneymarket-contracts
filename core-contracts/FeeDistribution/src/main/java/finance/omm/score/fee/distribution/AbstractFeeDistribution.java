@@ -60,12 +60,20 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
         Map<String, BigInteger> ommValidators = call(Map.class, Contracts.STAKING,
                 "getActualUserDelegationPercentage", lendingPoolCoreAddr);
+        BigInteger amountToDistribute = amount;
+        BigInteger denominator = BigInteger.valueOf(100).multiply(ICX);
+        Address validatorAddr = lendingPoolCoreAddr;
         for (String validator : ommValidators.keySet()) {
-            Address validatorAddr = Address.fromString(validator);
-            BigInteger feePortion = (ommValidators.get(validator).multiply(amount)).divide(ICX).divide(BigInteger.valueOf(100));
+            validatorAddr = Address.fromString(validator);
+            BigInteger feePortion = (ommValidators.get(validator).multiply(amount)).divide(denominator);
+            amountToDistribute = amountToDistribute.subtract(feePortion);
             BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
             accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(feePortion));
 
+        }
+        if (amountToDistribute.signum() > 0 && amountToDistribute.compareTo(amount) < 0 ){
+            BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
+            accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(amountToDistribute));
         }
 
     }
