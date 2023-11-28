@@ -687,10 +687,13 @@ public class StakingImpl implements Staking {
                 .subtract(icxToClaim.getOrDefault(BigInteger.ZERO));
 
         // If there is I-Score generated then update the rate
-        BigInteger sicxToMint = BigInteger.ZERO;
         if (dailyReward.compareTo(BigInteger.ZERO) > 0) {
             BigInteger feeAmt = getFeePercentage().multiply(dailyReward).divide(HUNDRED_PERCENTAGE);
-            sicxToMint = (ONE_EXA.multiply(feeAmt)).divide(getTodayRate());
+
+            // possible reentry in the future in case of additional features are added to the daofund or feeProvider
+            BigInteger sicxToMint = (ONE_EXA.multiply(feeAmt)).divide(getTodayRate());
+            Context.call(sicxAddress.get(), "mintTo", getFeeDistributionAddress(), sicxToMint,
+                    "staking fee".getBytes());
 
             totalLifetimeReward.set(getLifetimeReward().add(dailyReward));
             BigInteger totalStake = getTotalStake();
@@ -727,10 +730,6 @@ public class StakingImpl implements Staking {
         }
         checkForIscore();
         checkForUnstakedBalance(unstakedICX, totalUnstakeAmount);
-        if (sicxToMint.compareTo(BigInteger.ZERO)>0){
-            Context.call(sicxAddress.get(), "mintTo", getFeeDistributionAddress(), sicxToMint,
-                    "staking fee".getBytes());
-        }
     }
 
     private void updateDelegationInNetwork(Map<String, BigInteger> prepDelegations, List<Address> topPreps,
