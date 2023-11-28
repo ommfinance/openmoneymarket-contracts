@@ -878,15 +878,11 @@ public class StakingImpl implements Staking {
         Map<String, BigInteger> prepDelegationInIcx =
                 this.prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
 
-        if (senderDelegationsInPercentage.isEmpty()) {
+        if (!receiverDelegationsInPercentage.isEmpty()) {
             prepDelegationInIcx = addUserDelegationToPrepDelegation(prepDelegationInIcx,
                     receiverDelegationsInPercentage, icxValue);
-        } else if (receiverDelegationsInPercentage.isEmpty()) {
-            prepDelegationInIcx = subtractUserDelegationFromPrepDelegation(prepDelegationInIcx,
-                    senderDelegationsInPercentage, icxValue);
-        } else {
-            prepDelegationInIcx = addUserDelegationToPrepDelegation(prepDelegationInIcx,
-                    receiverDelegationsInPercentage, icxValue);
+                   }
+        if (!senderDelegationsInPercentage.isEmpty()) {
             prepDelegationInIcx = subtractUserDelegationFromPrepDelegation(prepDelegationInIcx,
                     senderDelegationsInPercentage, icxValue);
         }
