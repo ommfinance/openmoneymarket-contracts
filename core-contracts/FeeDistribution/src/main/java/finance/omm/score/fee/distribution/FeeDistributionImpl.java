@@ -66,7 +66,8 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     @External
     public void setFeeDistribution(Address[] addresses, BigInteger[] weights){
         onlyOwner();
-        if (!(addresses.length == weights.length)){
+        int addressSize = addresses.length;
+        if (!(addressSize == weights.length)){
             throw FeeDistributionException.unknown(TAG + " :: Invalid pair length of arrays");
         }
         if (containsDuplicate(addresses)){
@@ -74,7 +75,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         }
         feeDistributionWeight.clear();
         BigInteger totalWeight = BigInteger.ZERO;
-        for (int i = 0; i < addresses.length; i++) {
+        for (int i = 0; i < addressSize; i++) {
             feeDistributionWeight.put(addresses[i],weights[i]);
 
             totalWeight = totalWeight.add(weights[i]);
