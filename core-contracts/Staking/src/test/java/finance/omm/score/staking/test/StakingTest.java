@@ -296,6 +296,12 @@ class StakingTest extends TestBase {
         expectedErrorMessage = "Staked ICX Manager: Total staked amount can't be set negative";
         expectErrorMessage(negativeTotalStake, expectedErrorMessage);
 
+        // Trying to unstake zero amount
+
+        Executable zeroUnstake = () -> staking.invoke(sicx, "tokenFallback", owner.getAddress(), BigInteger.ZERO,
+                "unstake".getBytes());
+        expectErrorMessage(zeroUnstake,"Staked ICX Manager: The Staking contract cannot unstake value less than or equal to 0");
+
         //Successful unstake
         doReturn(unstakedAmount).when(stakingSpy).getTotalStake();
         staking.invoke(sicx, "tokenFallback", owner.getAddress(), unstakedAmount, data.toString().getBytes());
@@ -530,6 +536,10 @@ class StakingTest extends TestBase {
     void claimUnstakedICX() {
         BigInteger icxToClaim = BigInteger.valueOf(599L);
         BigInteger icxPayable = BigInteger.valueOf(401L);
+
+        doReturn(BigInteger.ZERO).when(stakingSpy).claimableICX(any(Address.class));
+        Executable claimZeroIcx = () -> staking.invoke(owner, "claimUnstakedICX", owner.getAddress());
+        expectErrorMessage(claimZeroIcx, "Staked ICX Manager: No claimable icx to claim");
 
         doReturn(BigInteger.TEN).when(stakingSpy).claimableICX(any(Address.class));
         doReturn(BigInteger.TWO).when(stakingSpy).totalClaimableIcx();
