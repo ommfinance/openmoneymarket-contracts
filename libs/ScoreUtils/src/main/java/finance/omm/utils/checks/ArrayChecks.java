@@ -1,6 +1,6 @@
 package finance.omm.utils.checks;
 
-import java.util.HashSet;
+import scorex.util.HashSet;
 
 public class ArrayChecks {
 
