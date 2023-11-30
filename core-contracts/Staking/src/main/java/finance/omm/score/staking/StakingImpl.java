@@ -737,43 +737,15 @@ public class StakingImpl implements Staking {
 
                     BigInteger percentageDelegation = prepSet.getValue();
                     BigInteger amountToAdd = equallyDistributableIcx.multiply(percentageDelegation).divide(HUNDRED_PERCENTAGE);
-                    BigInteger currentAmount = prepDelegations.get(prep.toString());
-                    BigInteger value = currentAmount != null ? currentAmount.add(amountToAdd) : amountToAdd;
-                    if (networkDelegationMap.containsKey(prep.toString())) {
-                        SystemInterface.Delegation delegation = networkDelegationMap.get(prep.toString());
-
-                        BigInteger previousDelegation = delegation.value;
-                        delegation.address = prep;
-                        delegation.value = previousDelegation.add(amountToAdd);
-                        networkDelegationMap.put(prep.toString(), delegation);
-                    } else {
-                        SystemInterface.Delegation delegation = new SystemInterface.Delegation();
-                        delegation.address = prep;
-                        delegation.value = value;
-                        networkDelegationMap.put(prep.toString(), delegation);
-                    }
+                    updateDelegationMap(networkDelegationMap, prep, amountToAdd);
                     remaining = remaining.subtract(amountToAdd);
                 }
             }
         }
         if (remaining.compareTo(BigInteger.ZERO) > 0) {
-            BigInteger currentAmount = prepDelegations.get(topPreps.get(0).toString());
-            BigInteger value = currentAmount != null ? currentAmount.add(remaining) : remaining;
 
             Address topPrep = topPreps.get(0);
-            if (networkDelegationMap.containsKey(topPrep.toString())) {
-                SystemInterface.Delegation delegation = networkDelegationMap.get(topPrep.toString());
-
-                BigInteger previousDelgation = delegation.value;
-                delegation.address = topPrep;
-                delegation.value = previousDelgation.add(remaining);
-                networkDelegationMap.put(topPrep.toString(), delegation);
-            } else {
-                SystemInterface.Delegation delegation = new SystemInterface.Delegation();
-                delegation.address = topPrep;
-                delegation.value = value;
-                networkDelegationMap.put(topPrep.toString(), delegation);
-            }
+            updateDelegationMap(networkDelegationMap, topPrep, remaining);
         }
 
         List<SystemInterface.Delegation> finalNetworkDelegations = new ArrayList<>(networkDelegationMap.size());
@@ -783,8 +755,20 @@ public class StakingImpl implements Staking {
         }
 
         Context.call(SYSTEM_SCORE_ADDRESS, "setDelegation", finalNetworkDelegations);
+    }
 
-
+    private void updateDelegationMap(Map<String, SystemInterface.Delegation> delegationMap,
+                                     Address prep, BigInteger amountToAdd) {
+        SystemInterface.Delegation delegation = delegationMap.get(prep.toString());
+        if (delegation != null) {
+            BigInteger previousDelegation = delegation.value;
+            delegation.value = previousDelegation.add(amountToAdd);
+        } else {
+            delegation = new SystemInterface.Delegation();
+            delegation.address = prep;
+            delegation.value = amountToAdd;
+        }
+        delegationMap.put(prep.toString(), delegation);
     }
 
     @External
