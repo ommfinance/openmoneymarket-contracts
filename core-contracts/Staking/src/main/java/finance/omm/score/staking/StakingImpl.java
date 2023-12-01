@@ -367,7 +367,7 @@ public class StakingImpl implements Staking {
                         //  Unsupported JCL method: getOrDefault in java.util.Map
                        BigInteger amount = allPrepDelegations.get(prep);
                        if (amount == null){
-                           continue;
+                           amount = BigInteger.ZERO;
                        }
                        allPrepDelegations.put(prep, amount.add(actualPrepDelegations.get(prep)));
                     }
