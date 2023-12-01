@@ -62,18 +62,18 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 "getActualUserDelegationPercentage", lendingPoolCoreAddr);
         BigInteger amountToDistribute = amount;
         BigInteger denominator = BigInteger.valueOf(100).multiply(ICX);
-        Address validatorAddr = lendingPoolCoreAddr;
         for (String validator : ommValidators.keySet()) {
-            validatorAddr = Address.fromString(validator);
-            BigInteger feePortion = (ommValidators.get(validator).multiply(amount)).divide(denominator);
+            Address validatorAddr = Address.fromString(validator);
+
+            BigInteger currentPercentage = ommValidators.get(validator);
+            BigInteger feePortion = (currentPercentage.multiply(amountToDistribute)).divide(denominator);
+
             amountToDistribute = amountToDistribute.subtract(feePortion);
+            denominator = denominator.subtract(currentPercentage);
+
             BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
             accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(feePortion));
 
-        }
-        if (amountToDistribute.signum() > 0 && amountToDistribute.compareTo(amount) < 0 ){
-            BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
-            accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(amountToDistribute));
         }
 
     }
