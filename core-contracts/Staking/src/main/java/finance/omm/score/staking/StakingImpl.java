@@ -364,7 +364,11 @@ public class StakingImpl implements Staking {
 
         for (String prep : actualPrepDelegations.keySet()) {
                     if (topPreps.contains(Address.fromString(prep))) {
-                       BigInteger amount = allPrepDelegations.getOrDefault(prep, BigInteger.ZERO);
+                        //  Unsupported JCL method: getOrDefault in java.util.Map
+                       BigInteger amount = allPrepDelegations.get(prep);
+                       if (amount == null){
+                           amount = BigInteger.ZERO;
+                       }
                        allPrepDelegations.put(prep, amount.add(actualPrepDelegations.get(prep)));
                     }
         }
