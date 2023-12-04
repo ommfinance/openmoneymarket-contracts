@@ -339,15 +339,9 @@ public class StakingIT implements ScoreIntegrationTest {
         }
         if (contains(outsidePrep, ommContributors) && !contains(outsidePrep, topPreps)) {
             userExpectedDelegations.put(outsidePrep.toString(), new BigInteger("300").multiply(ICX));
-//            expectedPrepDelegations.put(outsidePrep.toString(), new BigInteger("500").multiply(ICX));
             expectedPrepDelegations.put(topPreps.get(0).toString(), new BigInteger("500").multiply(ICX));
             expectedNetworkDelegations.put(topPreps.get(0).toString(), new BigInteger("500").multiply(ICX));
         }
-//        for (score.Address prep : prepList) {
-//            if (contains(prep, topPreps)) {
-//                expectedPrepDelegations.put(prep.toString(), new BigInteger("500").multiply(ICX));
-//            }
-//        }
 
         assertEquals(expectedOmmDelegations, readerClient.staking.getbOMMDelegations());
         assertEquals(userDelegations, userExpectedDelegations);
@@ -536,11 +530,6 @@ public class StakingIT implements ScoreIntegrationTest {
             expectedNetworkDelegations.put(topPreps.get(0).toString(), new BigInteger("550").multiply(ICX));
         }
 
-//        for (score.Address prep : prepList) {
-//            if (contains(prep, topPreps)) {
-//                expectedPrepDelegations.put(prep.toString(), new BigInteger("0").multiply(ICX));
-//            }
-//        }
 
         assertEquals(expectedOmmDelegations, readerClient.staking.getbOMMDelegations());
         assertEquals(userDelegations, userExpectedDelegations);
@@ -625,11 +614,6 @@ public class StakingIT implements ScoreIntegrationTest {
             expectedNetworkDelegations.put(topPreps.get(0).toString(), new BigInteger("300").multiply(ICX));
         }
 
-//        for (score.Address prep : prepList) {
-//            if (contains(prep, topPreps)) {
-//                expectedPrepDelegations.put(prep.toString(), new BigInteger("0").multiply(ICX));
-//            }
-//        }
 
         assertEquals(expectedOmmDelegations, readerClient.staking.getbOMMDelegations());
         assertEquals(userDelegations, userExpectedDelegations);
@@ -711,11 +695,7 @@ public class StakingIT implements ScoreIntegrationTest {
             expectedNetworkDelegations.put(topPreps.get(0).toString(), new BigInteger("310").multiply(ICX));
         }
 
-//        for (score.Address prep : prepList) {
-//            if (contains(prep, topPreps)) {
-//                expectedPrepDelegations.put(prep.toString(), new BigInteger("0").multiply(ICX));
-//            }
-//        }
+
         assertEquals(expectedOmmDelegations, readerClient.staking.getbOMMDelegations());
         assertEquals(userDelegations, userExpectedDelegations);
         assertEquals(prepDelegations, expectedPrepDelegations);
@@ -813,7 +793,6 @@ public class StakingIT implements ScoreIntegrationTest {
         userExpectedDelegations.put(prepList.get(0).toString(), new BigInteger("50").multiply(ICX));
         expectedPrepDelegations.put(prepList.get(0).toString(), new BigInteger("710").multiply(ICX));
         expectedNetworkDelegations.put(prepList.get(0).toString(), new BigInteger("710").multiply(ICX));
-//        expectedPrepDelegations.put(outsidePrep.toString(), BigInteger.valueOf(660).multiply(ICX));
 
         assertEquals(userDelegations, userExpectedDelegations);
         assertEquals(prepDelegations, expectedPrepDelegations);
@@ -857,8 +836,6 @@ public class StakingIT implements ScoreIntegrationTest {
         userExpectedDelegations.put(outsidePrep.toString(), receiverBalance.add(amountToTransfer));
         expectedNetworkDelegations.put(prepList.get(0).toString(), new BigInteger("710").multiply(ICX));
         expectedPrepDelegations.put(prepList.get(0).toString(), new BigInteger("710").multiply(ICX));
-//        expectedPrepDelegations.put(outsidePrep.toString(), BigInteger.valueOf(660).multiply(ICX));
-//        expectedPrepDelegations.put(prepList.get(0).toString(), BigInteger.valueOf(50).multiply(ICX));
 
         assertEquals(userDelegations, userExpectedDelegations);
         assertEquals(prepDelegations, expectedPrepDelegations);
@@ -911,7 +888,6 @@ public class StakingIT implements ScoreIntegrationTest {
         receiverExpectedDelegations.put(prepList.get(0).toString(), BigInteger.valueOf(50).multiply(ICX));
         expectedNetworkDelegations.put(prepList.get(0).toString(), new BigInteger("810").multiply(ICX));
         expectedPrepDelegations.put(prepList.get(0).toString(), BigInteger.valueOf(810).multiply(ICX));
-//        expectedPrepDelegations.put(outsidePrep.toString(), BigInteger.valueOf(660).multiply(ICX));
 
         assertEquals(userDelegations, userExpectedDelegations);
         assertEquals(receiverDelegations, receiverExpectedDelegations);
@@ -954,7 +930,6 @@ public class StakingIT implements ScoreIntegrationTest {
         receiverExpectedDelegations.put(outsidePrep.toString(), receiverBalance.add(BigInteger.valueOf(50).multiply(ICX)));
         expectedNetworkDelegations.put(prepList.get(0).toString(), new BigInteger("810").multiply(ICX));
         expectedPrepDelegations.put(prepList.get(0).toString(), BigInteger.valueOf(810).multiply(ICX));
-//        expectedPrepDelegations.put(outsidePrep.toString(), BigInteger.valueOf(710).multiply(ICX));
 
         assertEquals(userDelegations, userExpectedDelegations);
         assertEquals(receiverDelegations, receiverExpectedDelegations);
