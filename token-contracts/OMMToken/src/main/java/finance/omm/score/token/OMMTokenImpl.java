@@ -45,8 +45,8 @@ public class OMMTokenImpl extends AbstractOMMToken {
 
     @External
     public void mint(BigInteger _amount, @Optional byte[] _data) {
-        onlyContractOrElseThrow(Contracts.REWARDS,
-                OMMTokenException.unauthorized("Only reward distribution contract can call mint method"));
+        Address rewardContract = getAddress(Contracts.REWARDS.getKey());
+        onlyOrElseThrow(rewardContract, OMMTokenException.unauthorized("Only reward distribution contract can call mint method"));
 
         if (_data == null) {
             _data = "minted by reward".getBytes();
@@ -56,14 +56,12 @@ public class OMMTokenImpl extends AbstractOMMToken {
             throw OMMTokenException.unknown("ZeroValueError: _amount: " + _amount);
         }
 
-        Address to = Context.getCaller();
-
         BigInteger newTotalSupply = this.totalSupply.getOrDefault(BigInteger.ZERO).add(_amount);
         this.totalSupply.set(newTotalSupply);
-        BigInteger newBalance = this.balances.getOrDefault(to, BigInteger.ZERO).add(_amount);
-        this.balances.set(to, newBalance);
+        BigInteger newBalance = this.balances.getOrDefault(rewardContract, BigInteger.ZERO).add(_amount);
+        this.balances.set(rewardContract, newBalance);
 
-        this.Transfer(ZERO_SCORE_ADDRESS, to, _amount, _data);
+        this.Transfer(ZERO_SCORE_ADDRESS, rewardContract, _amount, _data);
     }
 
     @External(readonly = true)
