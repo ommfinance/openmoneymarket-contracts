@@ -430,9 +430,6 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
         onlyOrElseThrow(Contracts.BOOSTED_OMM,
                 RewardDistributionException.unauthorized("Only bOMM contract is allowed to call onKick method"));
 
-        if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
-            throw RewardDistributionException.unknown(user + " OMM locking has not expired");
-        }
         BigInteger bOMMTotalSupply = getBOMMTotalSupply();
 
         List<Address> assets = this.assets.keySet(this.platformRecipientMap.keySet());

@@ -266,7 +266,7 @@ public class OMMTokenImpl extends AbstractOMMToken {
 
         Map<String, BigInteger> userBalances = this.details_balanceOf(user);
         BigInteger unstakingBalance = userBalances.get("unstakingBalance");
-        BigInteger userOldStake = userBalances.get("'stakedBalance'");
+        BigInteger userOldStake = userBalances.get("stakedBalance");
 
         if (_value.compareTo(unstakingBalance) > 0) {
             throw OMMTokenException.insufficientBalance(
