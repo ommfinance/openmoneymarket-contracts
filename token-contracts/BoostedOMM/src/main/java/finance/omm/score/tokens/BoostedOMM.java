@@ -67,7 +67,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
 
     @External(readonly = true)
     public BigInteger getTotalLocked() {
-        return this.ommTokenBalance.get();
+        return this.supply.get();
     }
 
     @External(readonly = true)
@@ -178,7 +178,6 @@ public class BoostedOMM extends AbstractBoostedOMM {
         this.locked.set(sender, locked);
         BigInteger supplyBefore = this.supply.get();
         this.supply.set(supplyBefore.subtract(value));
-        this.ommTokenBalance.set(this.ommTokenBalance.get().subtract(value));
         this.checkpoint(sender, oldLocked, locked);
         callToken("transfer", sender, value, "withdraw".getBytes());
         users.remove(sender);
