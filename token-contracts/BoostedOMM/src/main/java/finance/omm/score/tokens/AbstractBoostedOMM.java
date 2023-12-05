@@ -96,7 +96,7 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     }
 
     @EventLog(indexed = 2)
-    public void Deposit(Address provider, BigInteger locktime, BigInteger value, int type, BigInteger timestamp) {
+    public void Deposit(Address provider, BigInteger value,BigInteger locktime, int type, BigInteger timestamp) {
     }
 
     @EventLog(indexed = 1)
