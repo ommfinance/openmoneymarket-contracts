@@ -56,7 +56,7 @@ public class OMMTokenImpl extends AbstractOMMToken {
             throw OMMTokenException.unknown("ZeroValueError: _amount: " + _amount);
         }
 
-        Address to = Context.getCaller();
+        Address to = Address.fromString(Contracts.REWARDS.getKey());
 
         BigInteger newTotalSupply = this.totalSupply.getOrDefault(BigInteger.ZERO).add(_amount);
         this.totalSupply.set(newTotalSupply);
