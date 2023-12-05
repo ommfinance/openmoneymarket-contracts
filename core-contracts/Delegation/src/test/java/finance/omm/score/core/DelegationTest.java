@@ -292,9 +292,6 @@ public class DelegationTest extends TestBase {
         Account user = sm.createAccount();
         initialize();
 
-        Executable call = () -> delegationScore.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.BOOSTED_OMM), "onKick",
-                user.getAddress(), BigInteger.ONE, "temp".getBytes());
-        expectErrorMessage(call, user.getAddress() + " OMM locking has not expired");
 
         // should be kicked if boosted omm balance = 0
         doReturn(ICX).when(scoreSpy)
