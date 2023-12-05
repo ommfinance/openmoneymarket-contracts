@@ -227,9 +227,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public void onKick(Address user, BigInteger bOMMUserBalance, @Optional byte[] data) {
         onlyOrElseThrow(Contracts.BOOSTED_OMM,
                 DelegationException.unauthorized("Only bOMM contract is allowed to call onKick method"));
-        if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
-            throw DelegationException.unknown(user + " OMM locking has not expired");
-        }
         updateUserDelegations(null, user, bOMMUserBalance);
         UserKicked(user, data);
     }
