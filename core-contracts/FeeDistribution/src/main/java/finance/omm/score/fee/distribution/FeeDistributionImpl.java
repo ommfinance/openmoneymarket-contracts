@@ -87,8 +87,16 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         if (!caller.equals(sICX)){
             throw FeeDistributionException.unauthorized();
         }
-        distributeFee(_value);
+        BigInteger currentFeeInSystem = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
+        this.feeToDistribute.set(currentFeeInSystem.add(_value));
 
+    }
+
+    @External
+    public void disburseFee(){
+        BigInteger fee = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
+        Context.require(fee.signum() >= 0, TAG + ": No fee to distribute.");
+        distributeFee(fee);
     }
 
     @External

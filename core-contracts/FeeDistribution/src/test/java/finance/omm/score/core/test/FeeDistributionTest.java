@@ -102,6 +102,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         contextMock.when(mockCaller()).thenReturn(sicx);
         System.out.println(sicx);
         score.invoke(owner,"tokenFallback",owner.getAddress(),feeAmount,"b".getBytes());
+        score.invoke(owner,"disburseFee");
 
 
 //        BigInteger val = BigInteger.valueOf(10).multiply(ICX);
