@@ -51,6 +51,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 accumulatedFee.set(receiver, feeAccumulatedAfterClaim.add(amountToDistribute));
             }
         }
+        this.feeToDistribute.set(BigInteger.ZERO);
         FeeDistributed(amount);
     }
 
