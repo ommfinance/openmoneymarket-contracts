@@ -29,4 +29,6 @@ public interface FeeDistribution {
     Map<String, BigInteger> getFeeDistributionWeight();
 
     Map<String, BigInteger> getAllCollectedFees();
+
+    void disburseFee();
 }
