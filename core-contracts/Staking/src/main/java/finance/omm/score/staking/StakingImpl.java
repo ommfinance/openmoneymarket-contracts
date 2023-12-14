@@ -581,8 +581,6 @@ public class StakingImpl implements Staking {
         for (PrepDelegations userDelegation : userDelegations) {
             String prepAddress = userDelegation._address.toString();
             BigInteger votesInPercentage = userDelegation._votes_in_per;
-            Context.require(votesInPercentage.signum() > 0 , TAG + ": You should not provide negative" +
-                    "delegation percentage");
             Context.require(votesInPercentage.compareTo(MINIMUM_DELEGATION_PERCENTAGE) >= 0, TAG + ": You " +
                     "should provide delegation percentage more than 0.001%.");
             Context.require(prepDelegations.get(prepAddress) == null, TAG + ": You can not delegate same " +
