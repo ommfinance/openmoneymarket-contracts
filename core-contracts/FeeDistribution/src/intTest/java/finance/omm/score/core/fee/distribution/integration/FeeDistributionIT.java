@@ -145,15 +145,8 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         Address feeDistribution = addressMap.get(Contracts.FEE_DISTRIBUTION.getKey());
         sendSicxInFeeDistribution(feeDistribution,amount);
 
-        ownerClient.feeDistribution.disburseFee();
-
-        System.out.println("daaa " + daoFund);
-        assertEquals(BigInteger.valueOf(100).multiply(ICX),
-                ownerClient.feeDistribution.getCollectedFee(daoFund));
-        assertEquals(BigInteger.valueOf(100).multiply(ICX),
-                ownerClient.sICX.balanceOf(daoFund));
-//        Address lendingPoolCore = addressMap.get(Contracts.LENDING_POOL_CORE.getKey());
-        assertEquals(BigInteger.ZERO, ownerClient.feeDistribution.getCollectedFee(lendingPoolCore));
+        assertEquals(BigInteger.valueOf(1000).multiply(ICX),
+                ownerClient.sICX.balanceOf(feeDistribution));
     }
 
 
@@ -206,12 +199,6 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         BigInteger amount = BigInteger.valueOf(1000).multiply(ICX);
         Address feeDistribution = addressMap.get(Contracts.FEE_DISTRIBUTION.getKey());
         sendSicxInFeeDistribution(feeDistribution,amount);
-        ownerClient.feeDistribution.disburseFee();
-
-        assertEquals(BigInteger.valueOf(200).multiply(ICX),
-                ownerClient.feeDistribution.getCollectedFee(daoFund));
-        assertEquals(BigInteger.valueOf(200).multiply(ICX),
-                ownerClient.sICX.balanceOf(daoFund));
 
         OMMClient contributor1 = clientMap.get("393f6548d472787138ebc6ac54ee38ace1b8a4dd46c3edfb3122b35db589286f");
 
@@ -221,6 +208,11 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         // 200+200
         assertEquals(BigInteger.valueOf(400).multiply(ICX),ownerClient.feeDistribution.
                 getCollectedFee(contributor1.getAddress()));
+
+        assertEquals(BigInteger.valueOf(200).multiply(ICX),
+                ownerClient.feeDistribution.getCollectedFee(daoFund));
+        assertEquals(BigInteger.valueOf(200).multiply(ICX),
+                ownerClient.sICX.balanceOf(daoFund));
 
     }
 
@@ -238,7 +230,6 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         BigInteger amount = BigInteger.valueOf(1000).multiply(ICX);
         Address feeDistribution = addressMap.get(Contracts.FEE_DISTRIBUTION.getKey());
         sendSicxInFeeDistribution(feeDistribution,amount);
-        ownerClient.feeDistribution.disburseFee();
 
         OMMClient contributor1 = clientMap.get("393f6548d472787138ebc6ac54ee38ace1b8a4dd46c3edfb3122b35db589286f");
         OMMClient contributor2 = clientMap.get("f639b497bbf871d4f0bdeb6b86a72282edb1bfb30f6ee7e78cfdc95a6ddc5d43");
@@ -249,7 +240,6 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         contributor1.feeDistribution.claimRewards(contributor1.getAddress());
         contributor2.feeDistribution.claimRewards(contributor2.getAddress());
         contributor3.feeDistribution.claimRewards(contributor3.getAddress());
-//        contributor4.feeDistribution.claimValidatorsRewards(contributor4.getAddress());
 
         System.out.println(ownerClient.feeDistribution.getCollectedFee(contributor1.getAddress()));
         System.out.println(ownerClient.feeDistribution.getCollectedFee(contributor2.getAddress()));

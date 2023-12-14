@@ -79,7 +79,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
         Address validator = MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL_CORE).getAddress();
         Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
-        BigInteger HUNDRED = BigInteger.valueOf(100);
+
         BigInteger weight1 = BigInteger.TEN.multiply(ICX).divide(HUNDRED);
         BigInteger weight2 = (BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN)).divide(HUNDRED);
         BigInteger weight3 = (BigInteger.valueOf(675).multiply(ICX).divide(BigInteger.TEN)).divide(HUNDRED);
@@ -102,21 +102,6 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         contextMock.when(mockCaller()).thenReturn(sicx);
         System.out.println(sicx);
         score.invoke(owner,"tokenFallback",owner.getAddress(),feeAmount,"b".getBytes());
-        score.invoke(owner,"disburseFee");
-
-
-//        BigInteger val = BigInteger.valueOf(10).multiply(ICX);
-//        assertEquals(val,score.call("getCollectedFee",testScore.getAddress()));
-        BigInteger val = BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN);
-        assertEquals(val,score.call("getCollectedFee",daoFund));
-
-        /* validators -> 67.5
-        * validator1-> 10% of 67.5 ==> 6.75
-        * validator2-> 90% of 67.5 ==>60.75*/
-        assertEquals(BigInteger.valueOf(675).multiply(ICX).divide(HUNDRED),
-                score.call("getAccumulatedFee",validator1.getAddress()));
-        assertEquals(BigInteger.valueOf(6075).multiply(ICX).divide(HUNDRED),
-                score.call("getAccumulatedFee",validator2.getAddress()));
 
         verify(spyScore).FeeDistributed(BigInteger.valueOf(100).multiply(ICX));
     }
@@ -129,16 +114,40 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         // validator 2 = 90% of 67.5 = 60.75 ICX
         tokenFallback();
 
-        BigInteger calimSicx = BigInteger.valueOf(10).multiply(ICX);
-        Account sicx_calim_address = testScore;
 
         BigInteger calimAmountValidator1 = BigInteger.valueOf(675).multiply(ICX).divide(BigInteger.valueOf(100));
-        BigInteger calimAmountValidator2 = BigInteger.valueOf(6075).multiply(ICX).divide(BigInteger.valueOf(100));
 
         Address validator1_claim_address = sm.createAccount().getAddress();
 
         contextMock.when(mockCaller()).thenReturn(validator1.getAddress());
+        // fee will be disbursed here
         score.invoke(validator1,"claimRewards",validator1_claim_address);
+
+        assertEquals(BigInteger.valueOf(6075).multiply(ICX).divide(HUNDRED),
+                score.call("getAccumulatedFee",validator2.getAddress()));
+
+
+        Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
+        BigInteger val = BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN);
+        assertEquals(val,score.call("getCollectedFee",daoFund));
+
+
+        assertEquals(calimAmountValidator1,score.call("getCollectedFee",validator1_claim_address));
+
+
+        verify(spyScore).FeeDisbursed(BigInteger.valueOf(100).multiply(ICX));
+        verify(spyScore).FeeClaimed(validator1.getAddress(),validator1_claim_address,calimAmountValidator1);
+
+    }
+
+    @Test
+    void claimRewards_without_fee_disburse(){
+        claimRewards();
+        BigInteger calimSicx = BigInteger.valueOf(10).multiply(ICX);
+        Account sicx_calim_address = testScore;
+
+        BigInteger calimAmountValidator2 = BigInteger.valueOf(6075).multiply(ICX).divide(BigInteger.valueOf(100));
+
 
         contextMock.when(mockCaller()).thenReturn(validator2.getAddress());
         score.invoke(validator2,"claimRewards",validator2.getAddress());
@@ -146,16 +155,11 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         contextMock.when(mockCaller()).thenReturn(sicx_calim_address.getAddress());
         score.invoke(sicx_calim_address,"claimRewards",sicx_calim_address.getAddress());
 
-        assertEquals(calimAmountValidator1,score.call("getCollectedFee",validator1_claim_address));
         assertEquals(calimAmountValidator2,score.call("getCollectedFee",validator2.getAddress()));
         assertEquals(calimSicx,score.call("getCollectedFee",sicx_calim_address.getAddress()));
 
-
-        verify(spyScore).FeeClaimed(validator1.getAddress(),validator1_claim_address,calimAmountValidator1);
         verify(spyScore).FeeClaimed(validator2.getAddress(),validator2.getAddress(),calimAmountValidator2);
         verify(spyScore).FeeClaimed(sicx_calim_address.getAddress(),sicx_calim_address.getAddress(),calimSicx);
-
-
 
     }
 
