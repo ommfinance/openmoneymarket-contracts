@@ -52,7 +52,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             }
         }
         this.feeToDistribute.set(BigInteger.ZERO);
-        FeeDistributed(amount);
+        FeeDisbursed(amount);
     }
 
 
@@ -76,6 +76,10 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
     @EventLog(indexed = 1)
     public void FeeDistributed(BigInteger _value) {
+    }
+
+    @EventLog(indexed = 1)
+    public void FeeDisbursed(BigInteger _value) {
     }
 
     protected void onlyOwner() {

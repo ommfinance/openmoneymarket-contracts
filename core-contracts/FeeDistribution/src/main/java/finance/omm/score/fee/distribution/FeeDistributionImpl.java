@@ -89,15 +89,9 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         }
         BigInteger currentFeeInSystem = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
         this.feeToDistribute.set(currentFeeInSystem.add(_value));
-
+        FeeDistributed(_value);
     }
 
-    @External
-    public void disburseFee(){
-        BigInteger fee = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
-        Context.require(fee.signum() >= 0, TAG + ": No fee to distribute.");
-        distributeFee(fee);
-    }
 
     @External
     public void claimRewards(@Optional Address receiverAddress){
@@ -105,6 +99,11 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         Address caller = Context.getCaller();
         if (receiverAddress == null) {
             receiverAddress = caller;
+        }
+
+        BigInteger fee = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
+        if(fee.signum() > 0){
+            distributeFee(fee);
         }
 
         BigInteger amountToClaim = accumulatedFee.getOrDefault(caller,BigInteger.ZERO);

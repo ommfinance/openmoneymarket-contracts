@@ -30,5 +30,4 @@ public interface FeeDistribution {
 
     Map<String, BigInteger> getAllCollectedFees();
 
-    void disburseFee();
 }
