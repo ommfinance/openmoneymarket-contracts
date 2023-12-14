@@ -33,14 +33,16 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
 
     protected void distributeFee(BigInteger amount) {
+        BigInteger remaining = amount;
+        Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
+        Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
         for (Address receiver : feeDistributionWeight.keySet()) {
             BigInteger percentageToDistribute = feeDistributionWeight.get(receiver);
             BigInteger amountToDistribute = (percentageToDistribute.multiply(amount)).divide(ICX);
+            remaining = remaining.subtract(amountToDistribute);
 
-            Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
-            Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
             if (receiver.equals(lendingPoolCoreAddr)) {
-                distributeFeeToValidator(amountToDistribute);
+                distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
                 validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
             } else if (receiver.equals(daoFundAddr)) {
                 BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
@@ -51,20 +53,34 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 accumulatedFee.set(receiver, feeAccumulatedAfterClaim.add(amountToDistribute));
             }
         }
+        if (remaining.signum() > 0){
+            call(Contracts.sICX, "transfer", daoFundAddr, remaining);
+        }
+        
         this.feeToDistribute.set(BigInteger.ZERO);
         FeeDisbursed(amount);
+
+        
     }
 
 
-    private void distributeFeeToValidator(BigInteger amount) {
+    private void distributeFeeToValidator(Address lendingPoolCoreAddr,BigInteger amount) {
 
-        Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
         Map<String, BigInteger> ommValidators = call(Map.class, Contracts.STAKING,
                 "getActualUserDelegationPercentage", lendingPoolCoreAddr);
+        BigInteger amountToDistribute = amount;
+        BigInteger denominator = BigInteger.valueOf(100).multiply(ICX);
         for (String validator : ommValidators.keySet()) {
-            BigInteger feePortion = (ommValidators.get(validator).multiply(amount)).divide(ICX).divide(BigInteger.valueOf(100));
-            BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(Address.fromString(validator), BigInteger.ZERO);
-            accumulatedFee.set(Address.fromString(validator), feeAccumulatedAfterClaim.add(feePortion));
+            Address validatorAddr = Address.fromString(validator);
+
+            BigInteger currentPercentage = ommValidators.get(validator);
+            BigInteger feePortion = (currentPercentage.multiply(amountToDistribute)).divide(denominator);
+
+            amountToDistribute = amountToDistribute.subtract(feePortion);
+            denominator = denominator.subtract(currentPercentage);
+
+            BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
+            accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(feePortion));
 
         }
 

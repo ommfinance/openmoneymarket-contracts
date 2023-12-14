@@ -296,6 +296,12 @@ class StakingTest extends TestBase {
         expectedErrorMessage = "Staked ICX Manager: Total staked amount can't be set negative";
         expectErrorMessage(negativeTotalStake, expectedErrorMessage);
 
+        // Trying to unstake zero amount
+
+        Executable zeroUnstake = () -> staking.invoke(sicx, "tokenFallback", owner.getAddress(), BigInteger.ZERO,
+                "unstake".getBytes());
+        expectErrorMessage(zeroUnstake,"Staked ICX Manager: The Staking contract cannot unstake value less than or equal to 0");
+
         //Successful unstake
         doReturn(unstakedAmount).when(stakingSpy).getTotalStake();
         staking.invoke(sicx, "tokenFallback", owner.getAddress(), unstakedAmount, data.toString().getBytes());
@@ -410,7 +416,7 @@ class StakingTest extends TestBase {
         doReturn(totalStaked).when(stakingSpy).getTotalStake();
         staking.invoke(owner, "delegate", (Object) new PrepDelegations[]{delegation});
         actualPrepDelegation.put(newPrep.getAddress().toString(), BigInteger.TEN);
-        expectedPrepDelegations.put(newPrep.getAddress().toString(), BigInteger.TEN);
+        expectedPrepDelegations.put(topPreps.get(0).toString(), BigInteger.TEN);
         assertEquals(expectedPrepDelegations, staking.call("getPrepDelegations"));
         assertEquals(actualPrepDelegation, staking.call("getActualPrepDelegations"));
 
@@ -422,7 +428,7 @@ class StakingTest extends TestBase {
         doReturn(totalStaked).when(stakingSpy).getTotalStake();
 
         Address topRankPrep = topPreps.get(0);
-        expectedPrepDelegations.put(topRankPrep.toString(), stakedAmount);
+        expectedPrepDelegations.put(topRankPrep.toString(), stakedAmount.add(BigInteger.TEN));
 
         assertEquals(expectedPrepDelegations, staking.call("getPrepDelegations"));
         assertEquals(actualPrepDelegation, staking.call("getActualPrepDelegations"));
@@ -431,7 +437,7 @@ class StakingTest extends TestBase {
         delegation._address = topPreps.get(10);
         contextMock.when(sicxBalanceOf).thenReturn(stakedAmount);
         staking.invoke(alice, "delegate", (Object) new PrepDelegations[]{delegation});
-        expectedPrepDelegations.remove(topPreps.get(0).toString());
+        expectedPrepDelegations.put(topPreps.get(0).toString(), BigInteger.TEN);
         expectedPrepDelegations.put(topPreps.get(10).toString(), stakedAmount);
 
         actualPrepDelegation.put(topPreps.get(10).toString(), stakedAmount);
@@ -530,6 +536,10 @@ class StakingTest extends TestBase {
     void claimUnstakedICX() {
         BigInteger icxToClaim = BigInteger.valueOf(599L);
         BigInteger icxPayable = BigInteger.valueOf(401L);
+
+        doReturn(BigInteger.ZERO).when(stakingSpy).claimableICX(any(Address.class));
+        Executable claimZeroIcx = () -> staking.invoke(owner, "claimUnstakedICX", owner.getAddress());
+        expectErrorMessage(claimZeroIcx, "Staked ICX Manager: No claimable icx to claim");
 
         doReturn(BigInteger.TEN).when(stakingSpy).claimableICX(any(Address.class));
         doReturn(BigInteger.TWO).when(stakingSpy).totalClaimableIcx();
@@ -760,13 +770,11 @@ class StakingTest extends TestBase {
         actualUserDelegation.put(address.toString(),amountToStake);
         assertEquals(actualUserDelegation,staking.call("getAddressDelegations",caller.getAddress()));
 
-        expectedDelegations.put(ommPrep2,BigInteger.ZERO);
-        expectedDelegations.put(ommPrep,BigInteger.ZERO);
-        expectedDelegations.put(address.toString(),amountToStake);
+        expectedDelegations.put(ommPrep2,BigInteger.valueOf(6).multiply(ICX));
+        expectedDelegations.put(ommPrep,BigInteger.valueOf(6).multiply(ICX));
+        expectedDelegations.remove(address.toString());
         assertEquals(expectedDelegations,staking.call("getPrepDelegations"));
 
-        expectedOmmPreps.put(ommPrep2,BigInteger.ZERO);
-        expectedOmmPreps.put(ommPrep,BigInteger.ZERO);
     }
 
     @Test
@@ -822,10 +830,11 @@ class StakingTest extends TestBase {
 
         expectedDelegations = new HashMap<>();
 
-//        expectedDelegations.put(topPreps.get(0).toString(),BigInteger.valueOf(25).multiply(ICX).divide(BigInteger.TEN));
-        expectedDelegations.put(topPreps.get(2).toString(),BigInteger.ZERO);
+        expectedDelegations.put(topPreps.get(0).toString(),BigInteger.valueOf(25).multiply(ICX).divide(BigInteger.TEN));
+        expectedDelegations.put(topPreps.get(2).toString(),BigInteger.valueOf(25).multiply(ICX).divide(BigInteger.TEN));
+//        expectedDelegations.put(topPreps.get(2).toString(),BigInteger.ZERO);
         expectedDelegations.put(delegations2._address.toString(),BigInteger.valueOf(5).multiply(ICX));
-        expectedDelegations.put(address.toString(),BigInteger.valueOf(5).multiply(ICX));
+//        expectedDelegations.put(address.toString(),BigInteger.valueOf(5).multiply(ICX));
 
         assertEquals(expectedDelegations,staking.call("getPrepDelegations"));
 

@@ -64,8 +64,8 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     protected final EnumerableSet<Address> allowedContracts = new EnumerableSet<>(KeyConstants.bOMM_ALLOWED_CONTRACTS,
             Address.class);
 
-    protected final VarDB<BigInteger> ommTokenBalance = Context.newVarDB(KeyConstants.bOMM_OMM_BALANCE,
-            BigInteger.class);
+//    protected final VarDB<BigInteger> ommTokenBalance = Context.newVarDB(KeyConstants.bOMM_OMM_BALANCE,
+//            BigInteger.class);
 
 
     public AbstractBoostedOMM(Address addressProvider, Address tokenAddress, String name, String symbol) {
@@ -89,14 +89,13 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
         point.timestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
         this.pointHistory.set(BigInteger.ZERO, point);
 
-        this.ommTokenBalance.set(BigInteger.ZERO);
         this.supply.set(BigInteger.ZERO);
         this.epoch.set(BigInteger.ZERO);
         this.minimumLockingAmount.set(ICX);
     }
 
     @EventLog(indexed = 2)
-    public void Deposit(Address provider, BigInteger locktime, BigInteger value, int type, BigInteger timestamp) {
+    public void Deposit(Address provider, BigInteger value,BigInteger locktime, int type, BigInteger timestamp) {
     }
 
     @EventLog(indexed = 1)
@@ -332,7 +331,6 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
         BigInteger supplyBefore = this.supply.get();
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
 
-        this.supply.set(supplyBefore.add(value));
         LockedBalance oldLocked = locked.newLockedBalance();
 
         locked.amount = locked.amount.add(value);
@@ -342,7 +340,7 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
 
         this.locked.set(address, locked);
         if (value.compareTo(BigInteger.ZERO) > 0) {
-            this.ommTokenBalance.set(this.ommTokenBalance.get().add(value));
+            this.supply.set(supplyBefore.add(value));
         }
         this.checkpoint(address, oldLocked, locked);
 
