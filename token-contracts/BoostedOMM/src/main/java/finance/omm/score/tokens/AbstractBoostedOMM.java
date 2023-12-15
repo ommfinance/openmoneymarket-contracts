@@ -328,24 +328,28 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     protected void depositFor(Address address, BigInteger value, BigInteger unlockTime, LockedBalance lockedBalance,
             int type) {
         LockedBalance locked = lockedBalance.newLockedBalance();
-        BigInteger supplyBefore = this.supply.get();
-        BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
-
         LockedBalance oldLocked = locked.newLockedBalance();
+        BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
+        BigInteger supplyBefore = this.supply.get();
+        BigInteger supplyAfter;
 
-        locked.amount = locked.amount.add(value);
+        if (value.signum() > 0) {
+            supplyAfter = supplyBefore.add(value);
+            locked.amount = locked.amount.add(value);
+            this.supply.set(supplyAfter);
+        }
+        else {
+            supplyAfter = supplyBefore;
+        }
         if (!unlockTime.equals(BigInteger.ZERO)) {
             locked.end = new UnsignedBigInteger(unlockTime);
         }
 
         this.locked.set(address, locked);
-        if (value.compareTo(BigInteger.ZERO) > 0) {
-            this.supply.set(supplyBefore.add(value));
-        }
         this.checkpoint(address, oldLocked, locked);
 
         Deposit(address, value, locked.getEnd(), type, blockTimestamp);
-        Supply(supplyBefore, supplyBefore.add(value));
+        Supply(supplyBefore, supplyAfter);
 
         onBalanceUpdate(address);
     }
