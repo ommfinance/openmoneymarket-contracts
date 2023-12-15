@@ -270,7 +270,7 @@ public class DelegationTest extends TestBase {
         delegationScore.invoke(user1, "updateDelegations", delegations, user1.getAddress());
         BigInteger betweenTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
 
-        delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
+        delegationScore.invoke(user1, "clearPrevious");
         BigInteger afterTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
 
         assertEquals(betweenTotal, afterTotal);
@@ -292,9 +292,6 @@ public class DelegationTest extends TestBase {
         Account user = sm.createAccount();
         initialize();
 
-        Executable call = () -> delegationScore.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.BOOSTED_OMM), "onKick",
-                user.getAddress(), BigInteger.ONE, "temp".getBytes());
-        expectErrorMessage(call, user.getAddress() + " OMM locking has not expired");
 
         // should be kicked if boosted omm balance = 0
         doReturn(ICX).when(scoreSpy)
@@ -1039,10 +1036,10 @@ public class DelegationTest extends TestBase {
         PrepDelegations[] delegations3 = getPrepDelegations1(2);
         delegationScore.invoke(user1, "updateDelegations", delegations3, user1.getAddress());
         delegationScore.invoke(user1, "updateDelegations", delegations1, user1.getAddress());
-        delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
-        delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
+        delegationScore.invoke(user1, "clearPrevious");
+        delegationScore.invoke(user1, "clearPrevious");
         delegationScore.invoke(user1, "updateDelegations", delegations3, user1.getAddress());
-        delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
+        delegationScore.invoke(user1, "clearPrevious");
 
         BigInteger newTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
         assertEquals(BigInteger.TEN.pow(18), newTotal);

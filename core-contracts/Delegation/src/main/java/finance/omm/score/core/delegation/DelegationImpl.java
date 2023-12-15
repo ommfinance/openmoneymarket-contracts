@@ -150,13 +150,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External
-    public void clearPrevious(Address _user) {
-        if (!_user.equals(Context.getCaller())) {
-            throw DelegationException.unknown(TAG +
-                    " :You are not authorized to clear others delegation preference");
-        }
+    public void clearPrevious() {
         PrepDelegations[] defaultDelegation = distributeVoteToContributors();
-        updateDelegations(defaultDelegation, _user);
+        updateDelegations(defaultDelegation, Context.getCaller());
     }
 
     @External(readonly = true)
