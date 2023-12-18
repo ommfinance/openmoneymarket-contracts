@@ -94,7 +94,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     public void FeeDistributed(BigInteger _value) {
     }
 
-    @EventLog(indexed = 1)
+    @EventLog
     public void FeeDisbursed(BigInteger _value) {
     }
 
