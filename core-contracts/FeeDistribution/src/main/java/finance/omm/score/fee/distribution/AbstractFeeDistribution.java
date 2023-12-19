@@ -25,6 +25,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB("accumulated_fee", BigInteger.class);
     protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
             EnumerableDictDB<>("fee_distribution_weight", Address.class, BigInteger.class);
+    protected final VarDB<BigInteger> feeToDistribute = Context.newVarDB("fee_to_distribute",BigInteger.class);
 
     public AbstractFeeDistribution(Address addressProvider) {
         super(addressProvider, false);
@@ -47,7 +48,6 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
                 collectedFee.put(receiver, feeCollected.add(amountToDistribute));
                 call(Contracts.sICX, "transfer", receiver, amountToDistribute);
-
             } else {
                 BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(receiver, BigInteger.ZERO);
                 accumulatedFee.set(receiver, feeAccumulatedAfterClaim.add(amountToDistribute));
@@ -56,7 +56,11 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
         if (remaining.signum() > 0){
             call(Contracts.sICX, "transfer", daoFundAddr, remaining);
         }
-        FeeDistributed(amount);
+        
+        this.feeToDistribute.set(BigInteger.ZERO);
+        FeeDisbursed(amount);
+
+        
     }
 
 
@@ -88,6 +92,10 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
     @EventLog(indexed = 1)
     public void FeeDistributed(BigInteger _value) {
+    }
+
+    @EventLog
+    public void FeeDisbursed(BigInteger _value) {
     }
 
     protected void onlyOwner() {

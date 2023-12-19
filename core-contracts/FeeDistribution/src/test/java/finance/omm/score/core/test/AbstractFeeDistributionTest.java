@@ -15,6 +15,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import score.Context;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,6 +32,7 @@ public class AbstractFeeDistributionTest extends TestBase {
     protected static final Account testScore3 =Account.newScoreAccount(3);
     protected static final Account validator1 = sm.createAccount();
     protected static final Account validator2 = sm.createAccount();
+    protected static final BigInteger HUNDRED = BigInteger.valueOf(100);
 
     protected static MockedStatic<Context> contextMock;
 
