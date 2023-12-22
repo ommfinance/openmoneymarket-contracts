@@ -25,6 +25,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB("accumulated_fee", BigInteger.class);
     protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
             EnumerableDictDB<>("fee_distribution_weight", Address.class, BigInteger.class);
+    protected final VarDB<BigInteger> feeToDistribute = Context.newVarDB("fee_to_distribute",BigInteger.class);
 
     public AbstractFeeDistribution(Address addressProvider) {
         super(addressProvider, false);
@@ -34,6 +35,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     protected void distributeFee(BigInteger amount) {
         Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
         Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
+
 
         BigInteger remaining = amount;
         BigInteger denominator = ICX;
@@ -64,7 +66,11 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             }
             denominator = denominator.subtract(percentageToDistribute);
         }
-        FeeDistributed(amount);
+        
+        this.feeToDistribute.set(BigInteger.ZERO);
+        FeeDisbursed(amount);
+
+        
     }
 
 
@@ -72,9 +78,17 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
         Map<String, BigInteger> ommValidators = call(Map.class, Contracts.STAKING,
                 "getActualUserDelegationPercentage", lendingPoolCoreAddr);
+        BigInteger amountToDistribute = amount;
+        BigInteger denominator = BigInteger.valueOf(100).multiply(ICX);
         for (String validator : ommValidators.keySet()) {
             Address validatorAddr = Address.fromString(validator);
-            BigInteger feePortion = (ommValidators.get(validator).multiply(amount)).divide(ICX).divide(BigInteger.valueOf(100));
+
+            BigInteger currentPercentage = ommValidators.get(validator);
+            BigInteger feePortion = (currentPercentage.multiply(amountToDistribute)).divide(denominator);
+
+            amountToDistribute = amountToDistribute.subtract(feePortion);
+            denominator = denominator.subtract(currentPercentage);
+
             BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
             accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(feePortion));
 
@@ -88,6 +102,10 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
     @EventLog(indexed = 1)
     public void FeeDistributed(BigInteger _value) {
+    }
+
+    @EventLog
+    public void FeeDisbursed(BigInteger _value) {
     }
 
     protected void onlyOwner() {

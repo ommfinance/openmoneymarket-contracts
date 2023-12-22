@@ -416,7 +416,7 @@ class StakingTest extends TestBase {
         doReturn(totalStaked).when(stakingSpy).getTotalStake();
         staking.invoke(owner, "delegate", (Object) new PrepDelegations[]{delegation});
         actualPrepDelegation.put(newPrep.getAddress().toString(), BigInteger.TEN);
-        expectedPrepDelegations.put(newPrep.getAddress().toString(), BigInteger.TEN);
+        expectedPrepDelegations.put(topPreps.get(0).toString(), BigInteger.TEN);
         assertEquals(expectedPrepDelegations, staking.call("getPrepDelegations"));
         assertEquals(actualPrepDelegation, staking.call("getActualPrepDelegations"));
 
@@ -428,7 +428,7 @@ class StakingTest extends TestBase {
         doReturn(totalStaked).when(stakingSpy).getTotalStake();
 
         Address topRankPrep = topPreps.get(0);
-        expectedPrepDelegations.put(topRankPrep.toString(), stakedAmount);
+        expectedPrepDelegations.put(topRankPrep.toString(), stakedAmount.add(BigInteger.TEN));
 
         assertEquals(expectedPrepDelegations, staking.call("getPrepDelegations"));
         assertEquals(actualPrepDelegation, staking.call("getActualPrepDelegations"));
@@ -437,7 +437,7 @@ class StakingTest extends TestBase {
         delegation._address = topPreps.get(10);
         contextMock.when(sicxBalanceOf).thenReturn(stakedAmount);
         staking.invoke(alice, "delegate", (Object) new PrepDelegations[]{delegation});
-        expectedPrepDelegations.remove(topPreps.get(0).toString());
+        expectedPrepDelegations.put(topPreps.get(0).toString(), BigInteger.TEN);
         expectedPrepDelegations.put(topPreps.get(10).toString(), stakedAmount);
 
         actualPrepDelegation.put(topPreps.get(10).toString(), stakedAmount);
@@ -770,13 +770,11 @@ class StakingTest extends TestBase {
         actualUserDelegation.put(address.toString(),amountToStake);
         assertEquals(actualUserDelegation,staking.call("getAddressDelegations",caller.getAddress()));
 
-        expectedDelegations.put(ommPrep2,BigInteger.ZERO);
-        expectedDelegations.put(ommPrep,BigInteger.ZERO);
-        expectedDelegations.put(address.toString(),amountToStake);
+        expectedDelegations.put(ommPrep2,BigInteger.valueOf(6).multiply(ICX));
+        expectedDelegations.put(ommPrep,BigInteger.valueOf(6).multiply(ICX));
+        expectedDelegations.remove(address.toString());
         assertEquals(expectedDelegations,staking.call("getPrepDelegations"));
 
-        expectedOmmPreps.put(ommPrep2,BigInteger.ZERO);
-        expectedOmmPreps.put(ommPrep,BigInteger.ZERO);
     }
 
     @Test
@@ -832,10 +830,11 @@ class StakingTest extends TestBase {
 
         expectedDelegations = new HashMap<>();
 
-//        expectedDelegations.put(topPreps.get(0).toString(),BigInteger.valueOf(25).multiply(ICX).divide(BigInteger.TEN));
-        expectedDelegations.put(topPreps.get(2).toString(),BigInteger.ZERO);
+        expectedDelegations.put(topPreps.get(0).toString(),BigInteger.valueOf(25).multiply(ICX).divide(BigInteger.TEN));
+        expectedDelegations.put(topPreps.get(2).toString(),BigInteger.valueOf(25).multiply(ICX).divide(BigInteger.TEN));
+//        expectedDelegations.put(topPreps.get(2).toString(),BigInteger.ZERO);
         expectedDelegations.put(delegations2._address.toString(),BigInteger.valueOf(5).multiply(ICX));
-        expectedDelegations.put(address.toString(),BigInteger.valueOf(5).multiply(ICX));
+//        expectedDelegations.put(address.toString(),BigInteger.valueOf(5).multiply(ICX));
 
         assertEquals(expectedDelegations,staking.call("getPrepDelegations"));
 

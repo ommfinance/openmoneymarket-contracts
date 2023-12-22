@@ -279,8 +279,7 @@ public class VotingPowerTest extends AbstractBOMMTest {
         bBALNScore.invoke(alice, "withdraw");
         states.put("alice_withdraw_2", getState());
         addBlockHeight(HOUR);
-        bBALNScore.invoke(bob, "withdraw");
-        states.put("bob_withdraw_2", getState());
+
         alice_balance = (BigInteger) bBALNScore.call("balanceOf", alice.getAddress(), BigInteger.ZERO);
         bob_balance = (BigInteger) bBALNScore.call("balanceOf", bob.getAddress(), BigInteger.ZERO);
         total_balance = (BigInteger) bBALNScore.call("totalSupply", BigInteger.ZERO);

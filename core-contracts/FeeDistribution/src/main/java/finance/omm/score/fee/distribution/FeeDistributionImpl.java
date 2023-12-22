@@ -66,7 +66,8 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     @External
     public void setFeeDistribution(Address[] addresses, BigInteger[] weights){
         onlyOwner();
-        if (!(addresses.length == weights.length)){
+        int addressSize = addresses.length;
+        if (!(addressSize == weights.length)){
             throw FeeDistributionException.unknown(TAG + " :: Invalid pair length of arrays");
         }
         if (containsDuplicate(addresses)){
@@ -74,7 +75,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         }
         feeDistributionWeight.clear();
         BigInteger totalWeight = BigInteger.ZERO;
-        for (int i = 0; i < addresses.length; i++) {
+        for (int i = 0; i < addressSize; i++) {
             feeDistributionWeight.put(addresses[i],weights[i]);
 
             totalWeight = totalWeight.add(weights[i]);
@@ -92,9 +93,11 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         if (!caller.equals(sICX)){
             throw FeeDistributionException.unauthorized();
         }
-        distributeFee(_value);
-
+        BigInteger currentFeeInSystem = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
+        this.feeToDistribute.set(currentFeeInSystem.add(_value));
+        FeeDistributed(_value);
     }
+
 
     @External
     public void claimRewards(@Optional Address receiverAddress){
@@ -102,6 +105,11 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         Address caller = Context.getCaller();
         if (receiverAddress == null) {
             receiverAddress = caller;
+        }
+
+        BigInteger fee = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
+        if(fee.signum() > 0){
+            distributeFee(fee);
         }
 
         BigInteger amountToClaim = accumulatedFee.getOrDefault(caller,BigInteger.ZERO);
