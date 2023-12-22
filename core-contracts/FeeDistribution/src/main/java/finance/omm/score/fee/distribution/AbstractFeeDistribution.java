@@ -37,24 +37,31 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
         BigInteger remaining = amount;
         BigInteger denominator = ICX;
+        BigInteger amountToDistribute;
 
         for (Address receiver : feeDistributionWeight.keySet()) {
             BigInteger percentageToDistribute = feeDistributionWeight.get(receiver);
-            BigInteger amountToDistribute = (percentageToDistribute.multiply(remaining)).divide(denominator);
-
-            if (receiver.equals(lendingPoolCoreAddr)) {
-                distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
-                validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
-            } else if (receiver.equals(daoFundAddr)) {
-                BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
-                collectedFee.put(receiver, feeCollected.add(amountToDistribute));
-                call(Contracts.sICX, "transfer", receiver, amountToDistribute);
-
+            if (percentageToDistribute.signum() > 0) {
+                amountToDistribute = (percentageToDistribute.multiply(remaining)).divide(denominator);
             } else {
-                BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(receiver, BigInteger.ZERO);
-                accumulatedFee.set(receiver, feeAccumulatedAfterClaim.add(amountToDistribute));
+                amountToDistribute = BigInteger.ZERO;
             }
-            remaining = remaining.subtract(amountToDistribute);
+
+            if (amountToDistribute.signum() > 0) {
+                if (receiver.equals(lendingPoolCoreAddr)) {
+                    distributeFeeToValidator(lendingPoolCoreAddr, amountToDistribute);
+                    validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
+                } else if (receiver.equals(daoFundAddr)) {
+                    BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
+                    collectedFee.put(receiver, feeCollected.add(amountToDistribute));
+                    call(Contracts.sICX, "transfer", receiver, amountToDistribute);
+
+                } else {
+                    BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(receiver, BigInteger.ZERO);
+                    accumulatedFee.set(receiver, feeAccumulatedAfterClaim.add(amountToDistribute));
+                }
+                remaining = remaining.subtract(amountToDistribute);
+            }
             denominator = denominator.subtract(percentageToDistribute);
         }
         FeeDistributed(amount);
