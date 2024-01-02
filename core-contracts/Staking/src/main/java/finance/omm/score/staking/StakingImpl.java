@@ -95,7 +95,7 @@ public class StakingImpl implements Staking {
 
     @External
     public void updatePreps(){
-
+        onlyOwner();
         int totalPreps = this.topPreps.size();
         for (int i = 0; i < totalPreps; i++) {
             this.topPreps.removeLast();
