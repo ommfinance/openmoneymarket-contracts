@@ -464,12 +464,12 @@ public class StakingImpl implements Staking {
     }
 
     private boolean checkCriteria(BigInteger jailFlags, BigInteger commissionRate){
-        boolean isJailed = false;
+        boolean notJailed = true;
 
         if (jailFlags == null){
-            isJailed = false;
+            notJailed = true;
         }else if (!jailFlags.equals(BigInteger.ZERO)){
-            isJailed = true;
+            notJailed = false;
         }
 
         boolean validRate = true;
@@ -479,7 +479,7 @@ public class StakingImpl implements Staking {
             validRate = false;
         }
 
-        return isJailed && validRate;
+        return notJailed && validRate;
     }
 
     @External
@@ -522,8 +522,8 @@ public class StakingImpl implements Staking {
             BigInteger totalBlocks = (BigInteger) preps.get("totalBlocks");
             BigInteger validatedBlocks = (BigInteger) preps.get("validatedBlocks");
             BigInteger power = (BigInteger) preps.get("power");
-            BigInteger jailFlags = (BigInteger) prepDict.get("jailFlags");
-            BigInteger commissionRate = (BigInteger) prepDict.get("commissionRate");
+            BigInteger jailFlags = (BigInteger) preps.get("jailFlags");
+            BigInteger commissionRate = (BigInteger) preps.get("commissionRate");
             if (power.equals(BigInteger.ZERO) || totalBlocks.compareTo(BigInteger.ZERO) <= 0) {
                 continue;
             }
