@@ -12,6 +12,7 @@ import score.VarDB;
 import score.annotation.EventLog;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
 import static finance.omm.utils.math.MathUtils.ICX;
@@ -70,6 +71,11 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 "getActualUserDelegationPercentage", lendingPoolCoreAddr);
         BigInteger amountToDistribute = amount;
         BigInteger denominator = BigInteger.valueOf(100).multiply(ICX);
+
+        BigInteger remaining = BigInteger.ZERO;
+
+        List<Address> validPreps = call(List.class, Contracts.STAKING,
+                "getValidPreps");
         for (String validator : ommValidators.keySet()) {
             Address validatorAddr = Address.fromString(validator);
 
@@ -78,10 +84,19 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
             amountToDistribute = amountToDistribute.subtract(feePortion);
             denominator = denominator.subtract(currentPercentage);
+            if (validPreps.contains(validatorAddr)){
+                BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
+                accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(feePortion));
+            }else {
+                remaining = remaining.add(feePortion);
+            }
 
-            BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
-            accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(feePortion));
-
+        }
+        if (remaining.signum() > 0){
+            Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
+            BigInteger feeCollected = collectedFee.getOrDefault(daoFundAddr, BigInteger.ZERO);
+            collectedFee.put(daoFundAddr, feeCollected.add(remaining));
+            call(Contracts.sICX,"transfer",daoFundAddr,remaining);
         }
 
     }
