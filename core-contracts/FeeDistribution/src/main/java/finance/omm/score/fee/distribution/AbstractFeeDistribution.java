@@ -74,8 +74,6 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
         BigInteger remaining = BigInteger.ZERO;
 
-        List<Address> validPreps = call(List.class, Contracts.STAKING,
-                "getValidPreps");
         for (String validator : ommValidators.keySet()) {
             Address validatorAddr = Address.fromString(validator);
 
@@ -84,7 +82,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
             amountToDistribute = amountToDistribute.subtract(feePortion);
             denominator = denominator.subtract(currentPercentage);
-            if (validPreps.contains(validatorAddr)){
+            if (checkPrepStatus(validatorAddr)){
                 BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(validatorAddr, BigInteger.ZERO);
                 accumulatedFee.set(validatorAddr, feeAccumulatedAfterClaim.add(feePortion));
             }else {
@@ -99,6 +97,16 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             call(Contracts.sICX,"transfer",daoFundAddr,remaining);
         }
 
+    }
+
+    private boolean checkPrepStatus(Address prepAddr){
+        Map<String, Object> prepDict = (Map<String, Object>) Context.call(ZERO_SCORE_ADDRESS, "getPRep", prepAddr);
+        BigInteger jailFlags = (BigInteger) prepDict.get("jailFlags");
+
+        if (jailFlags == null || jailFlags.equals(BigInteger.ZERO)) {
+            return true;
+        }
+        return false;
     }
 
     @EventLog(indexed = 3)
