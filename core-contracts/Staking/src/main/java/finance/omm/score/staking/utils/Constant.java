@@ -30,6 +30,7 @@ public class Constant {
     public static final String DISTRIBUTING = "_distributing";
     public static final String LINKED_LIST_VAR = "_linked_list_var";
     public static final String TOP_PREPS = "_top_preps";
+    public static final String VALID_PREPS = "_valid_preps";
     public static final String PREP_LIST = "_prep_list";
     public static final String ADDRESS_DELEGATIONS = "_address_delegations";
     public static final String PREP_DELEGATIONS = "_prep_delegations";
