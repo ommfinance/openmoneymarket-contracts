@@ -61,11 +61,13 @@ public class StakingImpl implements Staking {
     private final VarDB<Address> feeDistributionAddress = Context.newVarDB(FEE_ADDRESS, Address.class);
     private final VarDB<Address> ommLendingPoolCore = Context.newVarDB(OMM_LENDING_POOL_CORE, Address.class);
     private final VarDB<Address> ommDelegation = Context.newVarDB(OMM_DELEGATION, Address.class);
+    private final VarDB<BigInteger> commissionRate = Context.newVarDB(COMMISSION_RATE,BigInteger.class);
 
 
 
     public StakingImpl( @Optional BigInteger _feePercentage, @Optional BigInteger _productivity, 
-                        @Optional Address lendingPoolCore, @Optional Address feeDistribution, @Optional Address delegation) {
+                        @Optional Address lendingPoolCore, @Optional Address feeDistribution, @Optional Address delegation,
+                        @Optional BigInteger _commissionRate) {
 
         if (blockHeightWeek.get() == null) {
             @SuppressWarnings("unchecked")
@@ -89,6 +91,7 @@ public class StakingImpl implements Staking {
             feeDistributionAddress.set(feeDistribution);
             ommLendingPoolCore.set(lendingPoolCore);
             ommDelegation.set(delegation);
+            commissionRate.set(_commissionRate);
 
         }
 
@@ -271,6 +274,17 @@ public class StakingImpl implements Staking {
     @External(readonly = true)
     public BigInteger getUnstakeBatchLimit() {
         return unstakeBatchLimit.get();
+    }
+
+    @External
+    public void setCommissionRate(BigInteger rate){
+        onlyOwner();
+        commissionRate.set(rate);
+    }
+
+    @External(readonly = true)
+    public BigInteger getCommissionRate(){
+        return commissionRate.getOrDefault(BigInteger.ZERO);
     }
 
     @External(readonly = true)
@@ -486,8 +500,8 @@ public class StakingImpl implements Staking {
 
         boolean validRate = true;
         if (commissionRate == null){
-            validRate = true;// TODO: getAcceptableCommissionRate
-        }  else if (commissionRate.compareTo(BigInteger.TEN) > 0) {
+            validRate = true;
+        }  else if (commissionRate.compareTo(getCommissionRate()) > 0) {
             validRate = false;
         }
 

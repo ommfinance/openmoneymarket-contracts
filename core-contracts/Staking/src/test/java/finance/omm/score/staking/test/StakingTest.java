@@ -93,7 +93,7 @@ class StakingTest extends TestBase {
     private void setupStakingScore() throws Exception {
         staking = sm.deploy(owner, StakingImpl.class,new BigInteger("10").multiply(ONE_EXA),
                 new BigInteger("90").multiply(ONE_EXA),ommLendingPoolCore.getAddress(),feeDistribution.getAddress(),
-                ommDelegation.getAddress());
+                ommDelegation.getAddress(), BigInteger.TEN);
         stakingSpy = (StakingImpl) spy(staking.getInstance());
         staking.setInstance(stakingSpy);
 
@@ -101,6 +101,9 @@ class StakingTest extends TestBase {
         staking.invoke(owner, "setSicxAddress", sicx.getAddress());
 
         staking.invoke(owner,"toggleStakingOn");
+        staking.invoke(owner,"setCommissionRate",BigInteger.TEN);
+        staking.invoke(owner,"updatePreps");
+
     }
 
     void setupSystemScore() {
