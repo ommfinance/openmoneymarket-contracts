@@ -54,6 +54,7 @@ class StakingTest extends TestBase {
     Map<String, Object> prepDict = new HashMap<>();
     BigInteger nextPrepTerm;
     BigInteger unlockPeriod;
+    List<Address> prepAddress = new ArrayList();
 
     Verification getIISSInfo = () -> Context.call(SYSTEM_SCORE_ADDRESS, "getIISSInfo");
     Verification getPreps = () -> Context.call(SYSTEM_SCORE_ADDRESS, "getPReps", BigInteger.ONE,
@@ -148,11 +149,16 @@ class StakingTest extends TestBase {
     void setupGetPrepsResponse() {
         prepsResponse.put("blockHeight", BigInteger.valueOf(123456L));
         List<Map<String, Object>> prepsList = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            prepAddress.add(sm.createAccount().getAddress());
+        }
         for (int i = 0; i < 100; i++) { // BigInteger.valueOf((int)(Math.random() * 1000)+1)
-            Map<String, Object> prep = Map.of("address", sm.createAccount().getAddress(),
+            Map<String, Object> prep = Map.of("address", prepAddress.get(i),
                     "totalBlocks", BigInteger.valueOf(1000),
                     "validatedBlocks",BigInteger.valueOf(950),
-                    "power", BigInteger.valueOf(10));
+                    "power", BigInteger.valueOf(10),
+                    "jailFlags",BigInteger.ZERO,
+                    "commissionRate",BigInteger.ONE);
             prepsList.add(prep);
         }
         prepsResponse.put("preps", prepsList);
@@ -884,6 +890,303 @@ class StakingTest extends TestBase {
         sm.call(sm.createAccount(), BigInteger.valueOf(12).multiply(ICX), staking.getAddress(), "stakeICX",
                 new Address(new byte[Address.LENGTH]), new byte[0]);
 
+    }
+
+    @Test
+    void updateValidPreps(){
+
+        // initially all top Preps are valid preps
+        List<Address> validPrep = (List<Address>) staking.call("getValidPreps");
+        assertEquals(validPrep,prepAddress);
+
+        /* out of 18 topPreps
+         * 2 preps -> null jailFlag, null commissionRate
+         * 2 preps -> null jailFlag, valid commissionRate
+         * 2 preps -> not jailed, valid commissionRate
+         * 2 preps ->  not jailed, null commissionRate
+         *
+         * 2 preps ->  jailed, valid commissionRate
+         * 2 preps ->  jailed, invalid commissionRate
+         * 2 preps ->  jailed, null commissionRate
+         * 2 preps -> null jailFlag, invalid commissionRate
+         * 2 preps ->  not jailed, invalid commissionRate */
+
+        List<Address> prepAddr = new ArrayList<>();
+        Map<String,Object> prepResponse = new HashMap<>();
+        prepResponse.put("blockHeight", BigInteger.valueOf(123456L));
+        List<Map<String, Object>> prepsList = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10));
+            prepsList.add(prep);
+            prepAddr.add(prepAddress.get(i));
+        }
+
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i+2),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10),
+                    "commissionRate",BigInteger.TEN);
+            prepsList.add(prep);
+            prepAddr.add(prepAddress.get(i+2));
+        }
+
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i+4),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10),
+                    "jailFlags",BigInteger.ZERO,
+                    "commissionRate",BigInteger.TEN);
+            prepsList.add(prep);
+            prepAddr.add(prepAddress.get(i+4));
+        }
+
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i+6),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10),
+                    "jailFlags",BigInteger.ZERO);
+            prepsList.add(prep);
+            prepAddr.add(prepAddress.get(i+6));
+        }
+
+        // invalid Preps
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i+8),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10),
+                    "jailFlags",BigInteger.ONE,
+                    "commissionRate",BigInteger.TEN);
+            prepsList.add(prep);
+        }
+
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i+10),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10),
+                    "jailFlags",BigInteger.ONE,
+                    "commissionRate",BigInteger.valueOf(50));
+            prepsList.add(prep);
+        }
+
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i+12),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10),
+                    "jailFlags",BigInteger.ONE);
+            prepsList.add(prep);
+        }
+
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i+14),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10),
+                    "commissionRate",BigInteger.valueOf(50));
+            prepsList.add(prep);
+        }
+
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> prep = Map.of("address",prepAddress.get(i+16),
+                    "totalBlocks", BigInteger.valueOf(1000),
+                    "validatedBlocks",BigInteger.valueOf(950),
+                    "power", BigInteger.valueOf(10),
+                    "jailFlags",BigInteger.ONE,
+                    "commissionRate",BigInteger.valueOf(50));
+            prepsList.add(prep);
+        }
+
+        prepResponse.put("preps", prepsList);
+
+        contextMock.when(getPreps).thenReturn(prepResponse);
+        staking.invoke(owner,"updatePreps");
+        validPrep = (List<Address>) staking.call("getValidPreps");
+        assertEquals(validPrep,prepAddr);
+        assertEquals(validPrep.size(),8);
+
+
+    }
+
+    @Test
+    void claimIscore_withChangeInValidPreps(){
+
+        List<Address> validPrep = (List<Address>) staking.call("getValidPreps");
+        assertEquals(validPrep,prepAddress);
+
+        iScore.put("estimatedICX", BigInteger.TEN);
+        contextMock.when(queryIscore).thenReturn(iScore);
+
+        // all preps except prepAddress.get(0) is jailed
+        Map<String, Object> prepDict = Map.of("jailFlags",BigInteger.TEN,
+                "commissionRate",BigInteger.valueOf(50));
+        contextMock.when(() -> Context.call(eq(SYSTEM_SCORE_ADDRESS), eq("getPRep"),
+                any(Address.class))).thenReturn(prepDict);
+
+        prepDict = new HashMap<>();
+        contextMock.when(() -> Context.call(SYSTEM_SCORE_ADDRESS, "getPRep",
+                prepAddress.get(0))).thenReturn(prepDict);
+
+        contextMock.when(sicxBalanceOf).thenReturn(BigInteger.TEN.multiply(ICX));
+        doReturn(BigInteger.TEN.multiply(ICX)).when(stakingSpy).getTotalStake();
+        staking.invoke(owner, "delegate", (Object) new PrepDelegations[]{});
+
+        validPrep = (List<Address>) staking.call("getValidPreps");
+
+        assertEquals(validPrep.size(),1);
+        assertEquals(validPrep.get(0),prepAddress.get(0));
+
+        Map<String,BigInteger> expectedPrepDelegation = Map.of(
+                prepAddress.get(0).toString(),BigInteger.valueOf(10).multiply(ICX)
+        );
+
+        assertEquals(expectedPrepDelegation, staking.call("getPrepDelegations"));
+
+    }
+
+    @Test
+    void stakeICX_checkDelegation_forValidPreps(){
+        List<Address> validPrep = (List<Address>) staking.call("getValidPreps");
+        assertEquals(validPrep,prepAddress);
+        List<Address> topPreps = (List<Address>) staking.call("getTopPreps");
+        assertEquals(topPreps.size(),100);
+
+        sm.call(alice, BigInteger.TEN.multiply(ICX), staking.getAddress(), "stakeICX",alice.getAddress(), new byte[0]);
+
+        Map<String,BigInteger> expectedPrepDelegation = Map.of(
+                prepAddress.get(0).toString(),BigInteger.valueOf(10).multiply(ICX)
+        );
+        assertEquals(expectedPrepDelegation, staking.call("getPrepDelegations"));
+        assertEquals(expectedPrepDelegation, staking.call("getbOMMDelegations"));
+        assertEquals(Map.of(), staking.call("getActualPrepDelegations"));
+    }
+
+    @Test
+    void freeICX_withFewValidPreps(){
+        List<Address> validPrep = (List<Address>) staking.call("getValidPreps");
+        assertEquals(validPrep,prepAddress);
+        List<Address> topPreps = (List<Address>) staking.call("getTopPreps");
+        assertEquals(topPreps.size(),100);
+
+        // change valid preps when claimming iScore
+        iScore.put("estimatedICX", BigInteger.TEN);
+        contextMock.when(queryIscore).thenReturn(iScore);
+
+        // mock all preps as invalid
+        Map<String, Object> prepDict = Map.of("jailFlags",BigInteger.TEN,
+                "commissionRate",BigInteger.valueOf(50));
+        contextMock.when(() -> Context.call(eq(SYSTEM_SCORE_ADDRESS), eq("getPRep"),
+                any(Address.class))).thenReturn(prepDict);
+
+        // mock 4 prep as valid Preps
+        prepDict = new HashMap<>();
+        contextMock.when(() -> Context.call(SYSTEM_SCORE_ADDRESS, "getPRep",
+                prepAddress.get(0))).thenReturn(prepDict);
+
+        prepDict = Map.of("jailFlags",BigInteger.ZERO,
+                "commissionRate",BigInteger.valueOf(0));
+        contextMock.when(() -> Context.call(SYSTEM_SCORE_ADDRESS, "getPRep",
+                prepAddress.get(1))).thenReturn(prepDict);
+
+        prepDict = Map.of("jailFlags",BigInteger.ZERO,
+                "commissionRate",BigInteger.TEN);
+        contextMock.when(() -> Context.call(SYSTEM_SCORE_ADDRESS, "getPRep",
+                prepAddress.get(2))).thenReturn(prepDict);
+
+        prepDict = Map.of(
+                "commissionRate",BigInteger.valueOf(5));
+        contextMock.when(() -> Context.call(SYSTEM_SCORE_ADDRESS, "getPRep",
+                prepAddress.get(3))).thenReturn(prepDict);
+
+        List<Address> validPrepList = new ArrayList<>();
+        validPrepList.add(prepAddress.get(0));
+        validPrepList.add(prepAddress.get(1));
+        validPrepList.add(prepAddress.get(2));
+        validPrepList.add(prepAddress.get(3));
+
+
+        // setting omm lending pool core delegations
+        // 3 preps out of 5 are valid preps
+        doReturn(Map.of(
+                prepAddress.get(1).toString(),BigInteger.valueOf(300000000000000000L).multiply(BigInteger.valueOf(100)),
+                prepAddress.get(2).toString(),BigInteger.valueOf(200000000000000000L).multiply(BigInteger.valueOf(100)),
+                prepAddress.get(3).toString(),BigInteger.valueOf(200000000000000000L).multiply(BigInteger.valueOf(100)),
+                prepAddress.get(4).toString(),BigInteger.valueOf(200000000000000000L).multiply(BigInteger.valueOf(100)),
+                prepAddress.get(5).toString(),BigInteger.valueOf(100000000000000000L).multiply(BigInteger.valueOf(100))
+                )).when(stakingSpy).getActualUserDelegationPercentage(ommLendingPoolCore.getAddress());
+
+        sm.call(alice, BigInteger.TEN.multiply(ICX), staking.getAddress(), "stakeICX",alice.getAddress(), new byte[0]);
+
+        assertEquals(Map.of(),staking.call("getActualPrepDelegations"));
+
+        Map<String,BigInteger> expectedPrepDelegation = Map.of(
+                prepAddress.get(1).toString(),BigInteger.valueOf(3).multiply(ICX),
+                prepAddress.get(2).toString(),BigInteger.valueOf(2).multiply(ICX),
+                prepAddress.get(3).toString(),BigInteger.valueOf(2).multiply(ICX),
+                prepAddress.get(0).toString(),BigInteger.valueOf(3).multiply(ICX)
+        );
+
+        assertEquals(expectedPrepDelegation,staking.call("getPrepDelegations"));
+        assertEquals(expectedPrepDelegation,staking.call("getbOMMDelegations"));
+
+        validPrep = (List<Address>) staking.call("getValidPreps");
+        assertEquals(validPrepList,validPrep);
+    }
+
+    @Test
+    void delegation_withFewValidPreps(){
+        freeICX_withFewValidPreps();
+
+
+        // alice delegates to preps
+
+        PrepDelegations delegation = new PrepDelegations();
+        delegation._address = prepAddress.get(0);
+        delegation._votes_in_per = BigInteger.valueOf(30).multiply(ONE_EXA);
+
+        PrepDelegations delegation2 = new PrepDelegations();
+        delegation2._address = prepAddress.get(1);
+        delegation2._votes_in_per = BigInteger.valueOf(30).multiply(ONE_EXA);
+
+        PrepDelegations delegation3 = new PrepDelegations();
+        delegation3._address = prepAddress.get(4);
+        delegation3._votes_in_per = BigInteger.valueOf(40).multiply(ONE_EXA);
+
+        contextMock.when(sicxBalanceOf).thenReturn(BigInteger.TEN.multiply(ICX));
+        doReturn(BigInteger.TEN.multiply(ICX)).when(stakingSpy).getTotalStake();
+        staking.invoke(alice, "delegate", (Object) new PrepDelegations[]{
+                delegation,delegation2,delegation3});
+
+        Map<String,BigInteger> expectedUserDelegation = Map.of(
+                prepAddress.get(0).toString(),BigInteger.valueOf(3).multiply(ICX),
+                prepAddress.get(1).toString(),BigInteger.valueOf(3).multiply(ICX),
+                prepAddress.get(4).toString(),BigInteger.valueOf(4).multiply(ICX)
+        );
+
+        assertEquals(expectedUserDelegation,staking.call("getActualPrepDelegations"));
+
+        Map<String,BigInteger> expectedPrepDelegation = Map.of(
+                prepAddress.get(0).toString(),BigInteger.valueOf(42).multiply(ICX).divide(BigInteger.TEN),
+                prepAddress.get(1).toString(),BigInteger.valueOf(42).multiply(ICX).divide(BigInteger.TEN),
+                prepAddress.get(2).toString(),BigInteger.valueOf(8).multiply(ICX).divide(BigInteger.TEN),
+                prepAddress.get(3).toString(),BigInteger.valueOf(8).multiply(ICX).divide(BigInteger.TEN)
+        );
+        assertEquals(expectedPrepDelegation,staking.call("getPrepDelegations"));
+
+        Map<String,BigInteger> expectedBommDelegation = Map.of(
+                prepAddress.get(0).toString(),BigInteger.valueOf(12).multiply(ICX).divide(BigInteger.TEN),
+                prepAddress.get(1).toString(),BigInteger.valueOf(12).multiply(ICX).divide(BigInteger.TEN),
+                prepAddress.get(2).toString(),BigInteger.valueOf(8).multiply(ICX).divide(BigInteger.TEN),
+                prepAddress.get(3).toString(),BigInteger.valueOf(8).multiply(ICX).divide(BigInteger.TEN)
+        );
+        assertEquals(expectedBommDelegation,staking.call("getbOMMDelegations"));
     }
 
     @AfterEach
