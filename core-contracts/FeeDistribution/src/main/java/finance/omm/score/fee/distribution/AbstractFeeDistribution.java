@@ -12,9 +12,9 @@ import score.VarDB;
 import score.annotation.EventLog;
 
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Map;
 
+import static finance.omm.utils.constants.AddressConstant.ZERO_SCORE_ADDRESS;
 import static finance.omm.utils.math.MathUtils.ICX;
 
 public abstract class AbstractFeeDistribution extends AddressProvider implements FeeDistribution {
