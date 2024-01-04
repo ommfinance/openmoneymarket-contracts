@@ -7,10 +7,9 @@ import org.junit.jupiter.api.function.Executable;
 import score.Address;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
+import static finance.omm.utils.constants.AddressConstant.ZERO_SCORE_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -100,7 +99,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         doReturn(Map.of(
                 validator1.getAddress().toString(),BigInteger.valueOf(10).multiply(ICX),
                 validator2.getAddress().toString(),BigInteger.valueOf(90).multiply(ICX)
-        )).when(spyScore).call(eq(Map.class),any(),eq("getActualUserDelegationPercentage"),any());
+        )).when(spyScore).call(eq(Map.class),any(Contracts.class),eq("getActualUserDelegationPercentage"),any());
 
 
 
@@ -121,11 +120,8 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         // validator 2 = 90% of 67.5 = 60.75 ICX
         tokenFallback();
 
-        List<Address> validPrepAddres = new ArrayList<>();
-        validPrepAddres.add(validator1.getAddress());
-        validPrepAddres.add(validator2.getAddress());
-        doReturn(validPrepAddres).when(spyScore).call(List.class, Contracts.STAKING,
-                "getValidPreps");
+        doReturn(Map.of()).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator1.getAddress());
+        doReturn(Map.of("jailFlags",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator2.getAddress());
 
         BigInteger calimAmountValidator1 = BigInteger.valueOf(675).multiply(ICX).divide(BigInteger.valueOf(100));
 
@@ -183,18 +179,18 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         // validator 2 = 50% of 67.5 = 33.75 ICX
         // validator 3 = 20% of 67.5 = 13.5 ICX
 
-        List<Address> validPrepAddres = new ArrayList<>();
-        validPrepAddres.add(validator1.getAddress());
-        validPrepAddres.add(validator2.getAddress());
-        doReturn(validPrepAddres).when(spyScore).call(List.class, Contracts.STAKING,
-                "getValidPreps");
+
+        doReturn(Map.of()).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator1.getAddress());
+        doReturn(Map.of("jailFlags",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator2.getAddress());
+        doReturn(Map.of("jailFlags",BigInteger.TEN)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator3.getAddress());
+
 
         // only 2 validators of omm are in valid Preps of staking
         doReturn(Map.of(
                 validator1.getAddress().toString(),BigInteger.valueOf(30).multiply(ICX),
                 validator2.getAddress().toString(),BigInteger.valueOf(50).multiply(ICX),
                 validator3.getAddress().toString(),BigInteger.valueOf(20).multiply(ICX)
-        )).when(spyScore).call(eq(Map.class),any(),eq("getActualUserDelegationPercentage"),any());
+        )).when(spyScore).call(eq(Map.class),any(Contracts.class),eq("getActualUserDelegationPercentage"),any());
 
         contextMock.when(mockCaller()).thenReturn(validator1.getAddress());
 

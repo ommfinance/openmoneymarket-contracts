@@ -100,7 +100,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     }
 
     private boolean checkPrepStatus(Address prepAddr){
-        Map<String, Object> prepDict = (Map<String, Object>) Context.call(ZERO_SCORE_ADDRESS, "getPRep", prepAddr);
+        Map<String, Object> prepDict = call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", prepAddr);
         BigInteger jailFlags = (BigInteger) prepDict.get("jailFlags");
 
         if (jailFlags == null || jailFlags.equals(BigInteger.ZERO)) {
@@ -127,6 +127,10 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
         if (!sender.equals(owner)) {
             throw FeeDistributionException.notOwner();
         }
+    }
+
+    public <K> K call(Class<K> kClass, Address address, String method, Object... params) {
+        return Context.call(kClass, address, method, params);
     }
 
 }
