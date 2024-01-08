@@ -289,14 +289,14 @@ public class StakingImpl implements Staking {
 
     @External(readonly = true)
     public List<Address> getPrepList() {
-        List<Address> validPreps = getValidPreps();
+        List<Address> topPreps = getTopPreps();
         Map<String, BigInteger> prepDelegations = prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
         for (String prep : prepDelegations.keySet()) {
-            if (!validPreps.contains(Address.fromString(prep))) {
-                validPreps.add(Address.fromString(prep));
+            if (!topPreps.contains(Address.fromString(prep))) {
+                topPreps.add(Address.fromString(prep));
             }
         }
-        return validPreps;
+        return topPreps;
     }
 
     @External(readonly = true)
