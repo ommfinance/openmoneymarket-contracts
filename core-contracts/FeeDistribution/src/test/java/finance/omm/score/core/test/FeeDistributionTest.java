@@ -91,8 +91,8 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         BigInteger weight2 = (BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN)).divide(HUNDRED);
         BigInteger weight3 = (BigInteger.valueOf(675).multiply(ICX).divide(BigInteger.TEN)).divide(HUNDRED);
 
-        Address[] receiverAddr = new Address[]{testScore.getAddress(),daoFund,validator};
-        BigInteger[] weight = new BigInteger[]{weight1,weight2,weight3};
+        Address[] receiverAddr = new Address[]{testScore.getAddress(),validator,daoFund};
+        BigInteger[] weight = new BigInteger[]{weight1,weight3,weight2};
 
         doNothing().when(spyScore).call(any(Contracts.class),eq("transfer"),any(),any());
 
