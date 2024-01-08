@@ -652,7 +652,6 @@ public class StakingImpl implements Staking {
         prepDelegationInIcx.set(prepDelegationsList);
 
         Context.call(SYSTEM_SCORE_ADDRESS, "setStake", stakeAmount);
-        Context.require(!validPreps.isEmpty(), TAG + ": Valid preps list is empty. Can not stake/delegate");
         updateDelegationInNetwork(prepDelegations, validPreps, stakeAmount);
     }
 
@@ -790,6 +789,7 @@ public class StakingImpl implements Staking {
 
     private void updateDelegationInNetwork(Map<String, BigInteger> prepDelegations, List<Address> validPreps,
                                            BigInteger totalStake) {
+        Context.require(!validPreps.isEmpty(), TAG + ": Valid preps list is empty. Can not stake/delegate");
         Map<String, SystemInterface.Delegation> networkDelegationMap = new HashMap<>();
 
         BigInteger icxPreferredToTopPreps = BigInteger.ZERO;
@@ -1048,7 +1048,6 @@ public class StakingImpl implements Staking {
         prepDelegationInIcx.set(prepDelegationsList);
 
         // First set the decreased delegation and stake
-        Context.require(!validPreps.isEmpty(), TAG + ": Valid preps list is empty. Can not stake/delegate");
         updateDelegationInNetwork(finalDelegation, validPreps, newTotalStake);
         Context.call(SYSTEM_SCORE_ADDRESS, "setStake", newTotalStake);
 
