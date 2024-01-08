@@ -1192,6 +1192,27 @@ class StakingTest extends TestBase {
         assertEquals(expectedBommDelegation,staking.call("getbOMMDelegations"));
     }
 
+    @Test
+    void staking_withNoValidPreps(){
+        List<Address> validPrep = (List<Address>) staking.call("getValidPreps");
+        assertEquals(validPrep,prepAddress);
+        List<Address> topPreps = (List<Address>) staking.call("getTopPreps");
+        assertEquals(topPreps.size(),100);
+
+        // change valid preps when claimming iScore
+        iScore.put("estimatedICX", BigInteger.TEN);
+        contextMock.when(queryIscore).thenReturn(iScore);
+
+        // mock all preps as invalid
+        Map<String, Object> prepDict = Map.of("jailFlags",BigInteger.TEN,
+                "commissionRate",BigInteger.valueOf(50));
+        contextMock.when(() -> Context.call(eq(SYSTEM_SCORE_ADDRESS), eq("getPRep"),
+                any(Address.class))).thenReturn(prepDict);
+
+        Executable call = () -> sm.call(alice, BigInteger.TEN.multiply(ICX), staking.getAddress(), "stakeICX",alice.getAddress(), new byte[0]);
+        expectErrorMessage(call,"Staked ICX Manager: Valid preps list is empty. Can not stake/delegate");
+    }
+
     @AfterEach
     void closeMock() {
         contextMock.close();

@@ -628,7 +628,7 @@ public class StakingImpl implements Staking {
         if (userDelegations.length == 0) {
             return prepDelegations;
         }
-        List<Address> topPreps = getTopPreps();// TODO: should this be valid preps
+        List<Address> topPreps = getTopPreps();
         for (PrepDelegations userDelegation : userDelegations) {
             Address prepAddress = userDelegation._address;
             if (topPreps.contains(prepAddress) || checkValidPrep(prepAddress)){
@@ -652,6 +652,7 @@ public class StakingImpl implements Staking {
         prepDelegationInIcx.set(prepDelegationsList);
 
         Context.call(SYSTEM_SCORE_ADDRESS, "setStake", stakeAmount);
+        Context.require(!validPreps.isEmpty(), TAG + ": Valid preps list is empty. Can not stake/delegate");
         updateDelegationInNetwork(prepDelegations, validPreps, stakeAmount);
     }
 
@@ -1041,13 +1042,14 @@ public class StakingImpl implements Staking {
         // Unstake in network. Reverse order of stake.
         BigInteger newTotalStake = getTotalStake().subtract(amountToUnstake);
         Context.require(newTotalStake.signum() >= 0, TAG + ": Total staked amount can't be set negative");
-        List<Address> topPreps = updateTopPreps();
+        List<Address> validPreps = updateTopPreps();
         totalStake.set(newTotalStake);
         DelegationListDBSdo prepDelegationsList = DelegationListDBSdo.fromMap(finalDelegation);
         prepDelegationInIcx.set(prepDelegationsList);
 
         // First set the decreased delegation and stake
-        updateDelegationInNetwork(finalDelegation, topPreps, newTotalStake);
+        Context.require(!validPreps.isEmpty(), TAG + ": Valid preps list is empty. Can not stake/delegate");
+        updateDelegationInNetwork(finalDelegation, validPreps, newTotalStake);
         Context.call(SYSTEM_SCORE_ADDRESS, "setStake", newTotalStake);
 
         // Add unstake details to unstake request list
