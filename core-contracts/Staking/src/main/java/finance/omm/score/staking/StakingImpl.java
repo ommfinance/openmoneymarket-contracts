@@ -477,17 +477,13 @@ public class StakingImpl implements Staking {
             BigInteger totalBlocks = (BigInteger) preps.get("totalBlocks");
             BigInteger validatedBlocks = (BigInteger) preps.get("validatedBlocks");
             BigInteger power = (BigInteger) preps.get("power");
-//            Context.println("power is " + power);
-//            Context.println("total blocks is " + totalBlocks);
+
 //            if (power.equals(BigInteger.ZERO) || totalBlocks.compareTo(BigInteger.ZERO) <= 0) {
 //                continue;
 //            }
 
             BigInteger prepProductivity = validatedBlocks.multiply(HUNDRED_PERCENTAGE).divide(totalBlocks);
-            Context.println("prep productivity "+ prepProductivity);
-            Context.println("productivity from netwotk "+ productivity);
             if (prepProductivity.compareTo(productivity) >= 0) {
-                Context.println("adding top preps ");
                 topPreps.add(prepAddress);
                 this.topPreps.add(prepAddress);
             }
