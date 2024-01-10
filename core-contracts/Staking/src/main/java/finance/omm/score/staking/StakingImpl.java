@@ -713,6 +713,8 @@ public class StakingImpl implements Staking {
 
     private void updateDelegationInNetwork(Map<String, BigInteger> prepDelegations, List<Address> topPreps,
                                            BigInteger totalStake) {
+        Context.println("inside update delegation ");
+        Context.println("the top preps size is " + topPreps.size());
         Map<String, SystemInterface.Delegation> networkDelegationMap = new HashMap<>();
 
         BigInteger icxPreferredToTopPreps = BigInteger.ZERO;
