@@ -254,7 +254,7 @@ public class OMM {
             SYSTEM_INTERFACE = new SystemInterfaceScoreClient(godClient);
             Map<String, Object> result = SYSTEM_INTERFACE.getPReps(BigInteger.ONE, BigInteger.valueOf(100));
             List<Object> registeredPReps = (List<Object>) result.get("preps");
-            System.out.println("check the prep list "+ registeredPReps.size());
+//            System.out.println("check the prep list "+ registeredPReps.size());
             if (registeredPReps.size() >= 100) {
                 return true;
             }
@@ -265,12 +265,12 @@ public class OMM {
     }
 
     public void deployPrep() {
-        System.out.println("is preps registered " + isPRepRegistered());
+//        System.out.println("is preps registered " + isPRepRegistered());
         if (isPRepRegistered()) {
             return;
         }
         try {
-            System.out.println("trying to register new prep ");
+//            System.out.println("trying to register new prep ");
             for (Entry<Address, String> prep : preps.entrySet()) {
                 KeyWallet wallet = KeyWallet.load(new Bytes(prep.getValue()));
                 transfer(foundation.icon.jsonrpc.Address.of(wallet), BigInteger.TEN.pow(24));

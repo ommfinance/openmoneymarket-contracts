@@ -477,8 +477,8 @@ public class StakingImpl implements Staking {
             BigInteger totalBlocks = (BigInteger) preps.get("totalBlocks");
             BigInteger validatedBlocks = (BigInteger) preps.get("validatedBlocks");
             BigInteger power = (BigInteger) preps.get("power");
-            Context.println("power is " + power);
-            Context.println("total blocks is " + totalBlocks);
+//            Context.println("power is " + power);
+//            Context.println("total blocks is " + totalBlocks);
 //            if (power.equals(BigInteger.ZERO) || totalBlocks.compareTo(BigInteger.ZERO) <= 0) {
 //                continue;
 //            }
