@@ -91,6 +91,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     check if user has default delegation after locking omm
      */
     void checkUserDefaultDelegation(){
+        ((StakingScoreClient)ownerClient.staking).updatePreps();
+
         ((LendingPoolScoreClient)ownerClient.lendingPool).
                 deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
         userLockOMM();
