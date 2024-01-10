@@ -801,6 +801,8 @@ public class StakingImpl implements Staking {
         if (_to == null) {
             _to = Context.getCaller();
         }
+        Context.println("the top preps at stake ICX " + topPreps.size());
+        Context.println("the preps at stake ICX " + getTopPreps());
         performChecksForIscoreAndUnstakedBalance();
         BigInteger addedIcx = Context.getValue();
 
