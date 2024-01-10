@@ -485,7 +485,7 @@ public class StakingImpl implements Staking {
 //            }
 
             BigInteger prepProductivity = validatedBlocks.multiply(HUNDRED_PERCENTAGE).divide(totalBlocks);
-            if (prepProductivity.compareTo(productivity) > 0) {
+            if (prepProductivity.compareTo(productivity) >= 0) {
                 topPreps.add(prepAddress);
                 this.topPreps.add(prepAddress);
             }
