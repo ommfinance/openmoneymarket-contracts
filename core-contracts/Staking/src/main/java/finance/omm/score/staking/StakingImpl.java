@@ -316,11 +316,13 @@ public class StakingImpl implements Staking {
     @External(readonly = true)
     public List<Address> getTopPreps() {
         int topPrepsCount = this.topPreps.size();
+        Context.println(" thr top preps size is  "+ topPrepsCount);
         List<Address> topPreps = new ArrayList<>(topPrepsCount);
         for (int i = 0; i < topPrepsCount; i++) {
             Address prep = this.topPreps.get(i);
             topPreps.add(prep);
         }
+        Context.println("checking the size " + topPreps.size());
         return topPreps;
     }
 
