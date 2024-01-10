@@ -103,6 +103,7 @@ public class StakingImpl implements Staking {
             this.topPreps.removeLast();
         }
         setTopPreps();
+        Context.revert("custom revert we are");
     }
 
     // Event logs
@@ -471,9 +472,11 @@ public class StakingImpl implements Staking {
     private List<Address> setTopPreps() {
         Map<String, Object> prepDict = (Map<String, Object>) Context.call(SYSTEM_SCORE_ADDRESS, "getPReps",
                 BigInteger.ONE, Constant.TOP_PREP_COUNT);
+        Context.println("the size of prepDict " + prepDict);
         List<Map<String, Object>> prepDetails = (List<Map<String, Object>>) prepDict.get("preps");
         List<Address> topPreps = new ArrayList<>(prepDetails.size());
         BigInteger productivity = this.productivity.get();
+        Context.println("CHCHHC "+ productivity);
         for (Map<String, Object> preps : prepDetails) {
             Address prepAddress = (Address) preps.get("address");
             BigInteger totalBlocks = (BigInteger) preps.get("totalBlocks");
@@ -482,6 +485,7 @@ public class StakingImpl implements Staking {
             if (totalBlocks.compareTo(BigInteger.ZERO) <= 0){
                 continue;
             }
+            Context.println("after the total blocks " + totalBlocks);
 //            if (power.equals(BigInteger.ZERO)) {
 //                continue;
 //            }

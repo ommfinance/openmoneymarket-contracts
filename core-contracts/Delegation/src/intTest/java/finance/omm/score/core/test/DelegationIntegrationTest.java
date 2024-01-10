@@ -117,7 +117,6 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
      */
     void updateDelegation(){
         ((StakingScoreClient)ownerClient.staking).updatePreps();
-        ((StakingScoreClient)testClient.staking).updatePreps();
 
 
         // default contributors
