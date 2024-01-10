@@ -103,7 +103,6 @@ public class StakingImpl implements Staking {
             this.topPreps.removeLast();
         }
         setTopPreps();
-        Context.revert("custom revert we are");
     }
 
     // Event logs
@@ -492,10 +491,13 @@ public class StakingImpl implements Staking {
 
             BigInteger prepProductivity = validatedBlocks.multiply(HUNDRED_PERCENTAGE).divide(totalBlocks);
             if (prepProductivity.compareTo(productivity) >= 0) {
+                Context.println("inside this productivity");
                 topPreps.add(prepAddress);
                 this.topPreps.add(prepAddress);
             }
         }
+        Context.println("the prep size should be there " + topPreps.size());
+        Context.revert("custom revert we are");
         return topPreps;
     }
 
