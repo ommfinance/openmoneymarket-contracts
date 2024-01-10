@@ -72,7 +72,7 @@ public class StakingImpl implements Staking {
             BigInteger nextPrepTerm = (BigInteger) termDetails.get("nextPRepTerm");
             blockHeightWeek.set(nextPrepTerm);
             rate.set(ONE_EXA);
-            productivity.set(new BigInteger("90").multiply(ONE_EXA));
+            productivity.set(new BigInteger("0").multiply(ONE_EXA));
             setTopPreps();
             unstakeBatchLimit.set(DEFAULT_UNSTAKE_BATCH_LIMIT);
             stakingOn.set(false);
