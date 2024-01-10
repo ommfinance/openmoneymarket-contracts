@@ -95,6 +95,7 @@ public class StakingImpl implements Staking {
 
     @External
     public void updatePreps(){
+        Context.println("before reverts ");
         onlyOwner();
         Context.println("trying to set top preps ");
         int totalPreps = this.topPreps.size();
