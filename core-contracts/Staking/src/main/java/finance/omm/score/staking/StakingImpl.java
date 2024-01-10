@@ -476,8 +476,11 @@ public class StakingImpl implements Staking {
             Address prepAddress = (Address) preps.get("address");
             BigInteger totalBlocks = (BigInteger) preps.get("totalBlocks");
             BigInteger validatedBlocks = (BigInteger) preps.get("validatedBlocks");
-//            BigInteger power = (BigInteger) preps.get("power");
-//            if (power.equals(BigInteger.ZERO) || totalBlocks.compareTo(BigInteger.ZERO) <= 0) {
+            BigInteger power = (BigInteger) preps.get("power");
+            if (totalBlocks.compareTo(BigInteger.ZERO) <= 0){
+                continue;
+            }
+//            if (power.equals(BigInteger.ZERO)) {
 //                continue;
 //            }
 
