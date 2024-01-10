@@ -74,4 +74,6 @@ public interface Staking {
 
     @External(readonly = true)
     Map<String, BigInteger> getbOMMDelegations();
+
+    void updatePreps();
 }

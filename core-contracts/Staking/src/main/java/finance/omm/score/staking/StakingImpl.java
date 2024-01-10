@@ -96,6 +96,7 @@ public class StakingImpl implements Staking {
     @External
     public void updatePreps(){
         onlyOwner();
+        Context.println("trying to set top preps ");
         int totalPreps = this.topPreps.size();
         for (int i = 0; i < totalPreps; i++) {
             this.topPreps.removeLast();

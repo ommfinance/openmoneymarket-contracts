@@ -16,6 +16,7 @@ import finance.omm.libs.test.integration.OMMClient;
 import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
+import finance.omm.libs.test.integration.scores.StakingScoreClient;
 import finance.omm.score.core.delegation.exception.DelegationException;
 import finance.omm.score.core.test.config.DelegationConfig;
 import org.junit.jupiter.api.BeforeAll;
@@ -85,7 +86,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(6)
+    @Order(3)
     /*
     check if user has default delegation after locking omm
      */
@@ -109,12 +110,14 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(7)
+    @Order(4)
     /*
     after user locks OMM
     user updates delegation to their desired prep
      */
     void updateDelegation(){
+        ((StakingScoreClient)ownerClient.staking).updatePreps();
+        
 
         // default contributors
         List<score.Address> prepDelegatedList=  testClient.delegation.getPrepList();
@@ -147,7 +150,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(8)
+    @Order(5)
     void updateDelagationHundredPrep(){
 
         // testClient has delegated to 10 preps
@@ -183,7 +186,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(3)
+    @Order(5)
     void updateDelegationShouldFail(){
 
         score.Address[] prepSet = Environment.preps.keySet().toArray(score.Address[]::new);
@@ -210,7 +213,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(9)
+    @Order(6)
     /*
     delegate votes to different preps
     clearPrevious set delegation to default
@@ -235,7 +238,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(4)
+    @Order(7)
     /*
     this method is called from Boosted OMM
      */
@@ -246,7 +249,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
 
     }
     @Test
-    @Order(5)
+    @Order(7)
     /*
     onBalanceUpdate is called on bOMM when omm is locked
      */
@@ -258,7 +261,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(10)
+    @Order(8)
     /*
     user votes other than contributors
     on calling initializeVoteToContributor the vote should be to contributors
@@ -275,7 +278,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(11)
+    @Order(9)
     void addContributor(){
         // contributors are the default preps
         score.Address[] contributorSet = Environment.contributors.keySet().toArray(score.Address[]::new);
@@ -301,7 +304,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(12)
+    @Order(10)
     void addAllContributor(){
 
         score.Address[] contributorSet = Environment.contributors.keySet().toArray(score.Address[]::new);
@@ -327,7 +330,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     }
 
     @Test
-    @Order(13)
+    @Order(11)
     /*
     addAllContributor() and remove of the address
     should throw exception when trying to remove same address
@@ -401,7 +404,7 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         ownerClient.governance.transferOmmToDaoFund(BigInteger.valueOf(4000000).multiply(ICX));
 
         ownerClient.governance.transferOmmFromDaoFund(BigInteger.valueOf(40000).multiply(ICX),ownerClient.getAddress(),
-        "reward".getBytes());
+                "reward".getBytes());
     }
 
 
