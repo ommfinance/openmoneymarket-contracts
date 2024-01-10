@@ -85,7 +85,7 @@ public class StakingIT implements ScoreIntegrationTest {
         BigInteger feePercentage = BigInteger.valueOf(10).multiply(ONE_EXA);
         assertEquals(feePercentage,readerClient.staking.getFeePercentage());
 
-        BigInteger prepProductivity = BigInteger.valueOf(90).multiply(ONE_EXA);
+        BigInteger prepProductivity = BigInteger.valueOf(0).multiply(ONE_EXA);
         assertEquals(prepProductivity,readerClient.staking.getPrepProductivity());
     }
 
