@@ -67,6 +67,7 @@ public class DelegationTest extends TestBase {
         setAddresses();
         contributor1 = sm.createAccount().getAddress();
         contributor2 = sm.createAccount().getAddress();
+        temp();
     }
 
     public static final Map<Contracts, Account> MOCK_CONTRACT_ADDRESS = new java.util.HashMap<>() {{
@@ -205,6 +206,13 @@ public class DelegationTest extends TestBase {
             delegations[i] = prepDelegation;
         }
         return delegations;
+    }
+
+    private void temp(){
+
+        doReturn(List.of(Address.fromString("hx28715c1fa884875df8c6f912a02f0ad4d4846d2a"))).when(scoreSpy).
+                call(List.class,Contracts.STAKING,"getTopPreps");
+
     }
 
     @DisplayName("invalid preps")
