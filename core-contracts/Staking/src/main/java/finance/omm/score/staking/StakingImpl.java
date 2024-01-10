@@ -104,7 +104,6 @@ public class StakingImpl implements Staking {
         }
         List<Address> topPreps = setTopPreps();
         Context.println("top preps "+ topPreps.size());
-        Context.revert("revrting here ");
     }
 
     // Event logs
