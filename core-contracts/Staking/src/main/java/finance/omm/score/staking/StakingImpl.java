@@ -102,7 +102,9 @@ public class StakingImpl implements Staking {
         for (int i = 0; i < totalPreps; i++) {
             this.topPreps.removeLast();
         }
-        setTopPreps();
+        List<Address> topPreps = setTopPreps();
+        Context.println("top preps "+ topPreps.size());
+        Context.revert("revrting here ");
     }
 
     // Event logs
@@ -497,7 +499,6 @@ public class StakingImpl implements Staking {
             }
         }
         Context.println("the prep size should be there " + topPreps.size());
-        Context.revert("custom revert we are");
         return topPreps;
     }
 
