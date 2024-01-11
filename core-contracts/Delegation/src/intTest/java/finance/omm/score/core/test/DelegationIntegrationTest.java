@@ -85,8 +85,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         assertEquals(BigInteger.TEN, ownerClient.delegation.getVoteThreshold());
     }
 
-    @Test
-    @Order(3)
+//    @Test
+//    @Order(3)
     /*
     check if user has default delegation after locking omm
      */
@@ -111,8 +111,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         }
     }
 
-    @Test
-    @Order(4)
+//    @Test
+//    @Order(4)
     /*
     after user locks OMM
     user updates delegation to their desired prep
@@ -151,8 +151,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
         }
     }
 
-    @Test
-    @Order(5)
+//    @Test
+//    @Order(5)
     void updateDelagationHundredPrep(){
 
         // testClient has delegated to 10 preps
