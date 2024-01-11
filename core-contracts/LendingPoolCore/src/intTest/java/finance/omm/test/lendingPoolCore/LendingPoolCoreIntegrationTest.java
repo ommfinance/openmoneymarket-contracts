@@ -763,7 +763,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         @Test
         @Order(10)
         @DisplayName("Liquidation 2: Multi collateral multi borrow")
-        void liquidation2() {
+        void liquidation2() throws InterruptedException {
             // transaction another client :> clint
 
             // set price of ICX to 1$
@@ -812,7 +812,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             Address iusdc = addressMap.get(Contracts.IUSDC.getKey());
             ownerClient.sICX.transfer(lendingPool, amtToLiquidate,
                     createLiquidationByteData(iusdc, sicx, clint.getAddress().toString()));
-
+            Thread.sleep(2000);
             Map<String, Object> lqdnDataAfter = ownerClient.lendingPoolDataProvider.
                     getUserLiquidationData(clint.getAddress());
             Map<String, Object> reserveDataAfter = getReserveData(reserve);
