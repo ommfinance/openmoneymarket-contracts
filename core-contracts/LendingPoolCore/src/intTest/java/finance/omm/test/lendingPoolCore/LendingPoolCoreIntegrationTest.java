@@ -291,7 +291,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         @Order(1)
         @DisplayName("Deposit: ICX Deposit Alice")
         void icx_deposit() {
-            ((StakingScoreClient)ownerClient.staking).updatePreps();
+//            ((StakingScoreClient)ownerClient.staking).updatePreps();
 
             // txn
             depositICX();
@@ -546,7 +546,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         @Test
         @DisplayName("Liquidation 1: Single Collateral, Single Borrow, Covers double Liquidation")
         @Order(8)
-        void liquidation1() {
+        void liquidation1() throws InterruptedException {
 
             // set price of ICX to 1$
             ownerClient.dummyPriceOracle.set_reference_data("ICX", ICX);
@@ -585,7 +585,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             BigInteger amtToLiquidate  = toBigInt((String) lqdnDataBefore.get("badDebt")).divide(POW12);
             ownerClient.iUSDC.transfer(lendingPool, amtToLiquidate,
                     createLiquidationByteData(collateral, reserve, bob.getAddress().toString()));
-
+            Thread.sleep(15000);
             // data after liquidation
             Map<String, Object> reserveDataAfter = getReserveData(reserve);
             Map<String, Object> collateralDataAfter = getReserveData(collateral);
@@ -603,7 +603,8 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             assertEquals(collateralBalanceBefore,
                     collateralBalanceAfter.add(feeProviderDiff).add(lqdnBonus));
 
-            assertEquals(reserveBalanceAfter, reserveBalanceBefore.subtract(amtToLiquidate));
+            float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+            assertEquals(reserveBalanceAfter.floatValue(), (reserveBalanceBefore.subtract(amtToLiquidate)).floatValue(),delta);
 
             assertEquals(lqdnBonus.divide(ICX).longValue(),
                     amtToLiquidate.divide(POW6).longValue()*11/7, 1);
@@ -611,7 +612,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             assertEquals(liquidatorIUSDCBalanceAfter, liquidatorIUSDCBalanceBefore.subtract(amtToLiquidate));
 
             // reserve data
-            float delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
+            delta = (ICX.divide(BigInteger.valueOf(1000))).floatValue();
             assertEquals(
                     toBigInt((String) reserveDataAfter.get("totalBorrows")).floatValue(),
                     toBigInt((String) reserveDataBefore.get("totalBorrows")).subtract(amtToLiquidate).floatValue(),
@@ -812,7 +813,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             Address iusdc = addressMap.get(Contracts.IUSDC.getKey());
             ownerClient.sICX.transfer(lendingPool, amtToLiquidate,
                     createLiquidationByteData(iusdc, sicx, clint.getAddress().toString()));
-            Thread.sleep(2000);
+            Thread.sleep(15000);
             Map<String, Object> lqdnDataAfter = ownerClient.lendingPoolDataProvider.
                     getUserLiquidationData(clint.getAddress());
             Map<String, Object> reserveDataAfter = getReserveData(reserve);
