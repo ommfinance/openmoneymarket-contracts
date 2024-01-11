@@ -291,7 +291,6 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         @Order(1)
         @DisplayName("Deposit: ICX Deposit Alice")
         void icx_deposit() {
-//            ((StakingScoreClient)ownerClient.staking).updatePreps();
 
             // txn
             depositICX();
@@ -585,7 +584,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             BigInteger amtToLiquidate  = toBigInt((String) lqdnDataBefore.get("badDebt")).divide(POW12);
             ownerClient.iUSDC.transfer(lendingPool, amtToLiquidate,
                     createLiquidationByteData(collateral, reserve, bob.getAddress().toString()));
-            Thread.sleep(15000);
+            Thread.sleep(20000);
             // data after liquidation
             Map<String, Object> reserveDataAfter = getReserveData(reserve);
             Map<String, Object> collateralDataAfter = getReserveData(collateral);
@@ -813,7 +812,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
             Address iusdc = addressMap.get(Contracts.IUSDC.getKey());
             ownerClient.sICX.transfer(lendingPool, amtToLiquidate,
                     createLiquidationByteData(iusdc, sicx, clint.getAddress().toString()));
-            Thread.sleep(15000);
+            Thread.sleep(20000);
             Map<String, Object> lqdnDataAfter = ownerClient.lendingPoolDataProvider.
                     getUserLiquidationData(clint.getAddress());
             Map<String, Object> reserveDataAfter = getReserveData(reserve);

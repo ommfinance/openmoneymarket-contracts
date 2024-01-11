@@ -44,6 +44,16 @@
     "order": 1.0
   },
   {
+    "name": "delegation",
+    "contract": "Delegation",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
     "name": "lendingPoolCore",
     "contract": "LendingPoolCore",
     "params": {
@@ -172,16 +182,6 @@
   {
     "name": "governance",
     "contract": "Governance",
-    "params": {
-    },
-    "addressParams": {
-      "addressProvider": "addressProvider"
-    },
-    "order": 1.0
-  },
-  {
-    "name": "delegation",
-    "contract": "Delegation",
     "params": {
     },
     "addressParams": {

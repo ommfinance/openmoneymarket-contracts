@@ -76,4 +76,5 @@ public interface Staking {
     Map<String, BigInteger> getbOMMDelegations();
 
     void updatePreps();
+    void setPrepProductivity(BigInteger _productivity);
 }

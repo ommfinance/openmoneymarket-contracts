@@ -72,7 +72,7 @@ public class StakingImpl implements Staking {
             BigInteger nextPrepTerm = (BigInteger) termDetails.get("nextPRepTerm");
             blockHeightWeek.set(nextPrepTerm);
             rate.set(ONE_EXA);
-            productivity.set(new BigInteger("0").multiply(ONE_EXA));
+            productivity.set(new BigInteger("90").multiply(ONE_EXA));
             setTopPreps();
             unstakeBatchLimit.set(DEFAULT_UNSTAKE_BATCH_LIMIT);
             stakingOn.set(false);
@@ -95,15 +95,12 @@ public class StakingImpl implements Staking {
 
     @External
     public void updatePreps(){
-        Context.println("before reverts ");
         onlyOwner();
-        Context.println("trying to set top preps ");
         int totalPreps = this.topPreps.size();
         for (int i = 0; i < totalPreps; i++) {
             this.topPreps.removeLast();
         }
-        List<Address> topPreps = setTopPreps();
-        Context.println("top preps "+ topPreps.size());
+        setTopPreps();
     }
 
     // Event logs
@@ -316,13 +313,11 @@ public class StakingImpl implements Staking {
     @External(readonly = true)
     public List<Address> getTopPreps() {
         int topPrepsCount = this.topPreps.size();
-        Context.println(" thr top preps size is  "+ topPrepsCount);
         List<Address> topPreps = new ArrayList<>(topPrepsCount);
         for (int i = 0; i < topPrepsCount; i++) {
             Address prep = this.topPreps.get(i);
             topPreps.add(prep);
         }
-        Context.println("checking the size " + topPreps.size());
         return topPreps;
     }
 
@@ -474,32 +469,23 @@ public class StakingImpl implements Staking {
     private List<Address> setTopPreps() {
         Map<String, Object> prepDict = (Map<String, Object>) Context.call(SYSTEM_SCORE_ADDRESS, "getPReps",
                 BigInteger.ONE, Constant.TOP_PREP_COUNT);
-        Context.println("the size of prepDict " + prepDict);
         List<Map<String, Object>> prepDetails = (List<Map<String, Object>>) prepDict.get("preps");
         List<Address> topPreps = new ArrayList<>(prepDetails.size());
         BigInteger productivity = this.productivity.get();
-        Context.println("CHCHHC "+ productivity);
         for (Map<String, Object> preps : prepDetails) {
             Address prepAddress = (Address) preps.get("address");
             BigInteger totalBlocks = (BigInteger) preps.get("totalBlocks");
             BigInteger validatedBlocks = (BigInteger) preps.get("validatedBlocks");
             BigInteger power = (BigInteger) preps.get("power");
-            if (totalBlocks.compareTo(BigInteger.ZERO) <= 0){
+            if (power.equals(BigInteger.ZERO) || totalBlocks.compareTo(BigInteger.ZERO) <= 0) {
                 continue;
             }
-            Context.println("after the total blocks " + totalBlocks);
-//            if (power.equals(BigInteger.ZERO)) {
-//                continue;
-//            }
-
             BigInteger prepProductivity = validatedBlocks.multiply(HUNDRED_PERCENTAGE).divide(totalBlocks);
-            if (prepProductivity.compareTo(productivity) >= 0) {
-                Context.println("inside this productivity");
+            if (prepProductivity.compareTo(productivity) > 0) {
                 topPreps.add(prepAddress);
                 this.topPreps.add(prepAddress);
             }
         }
-        Context.println("the prep size should be there " + topPreps.size());
         return topPreps;
     }
 
@@ -726,8 +712,6 @@ public class StakingImpl implements Staking {
 
     private void updateDelegationInNetwork(Map<String, BigInteger> prepDelegations, List<Address> topPreps,
                                            BigInteger totalStake) {
-        Context.println("inside update delegation ");
-        Context.println("the top preps size is " + topPreps.size());
         Map<String, SystemInterface.Delegation> networkDelegationMap = new HashMap<>();
 
         BigInteger icxPreferredToTopPreps = BigInteger.ZERO;
@@ -801,8 +785,6 @@ public class StakingImpl implements Staking {
         if (_to == null) {
             _to = Context.getCaller();
         }
-        Context.println("the top preps at stake ICX " + topPreps.size());
-        Context.println("the preps at stake ICX " + getTopPreps());
         performChecksForIscoreAndUnstakedBalance();
         BigInteger addedIcx = Context.getValue();
 

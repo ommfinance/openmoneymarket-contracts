@@ -253,8 +253,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
     @External
     public void updateDelegations(@Optional PrepDelegations[] _delegations, @Optional Address _user) {
-        List<Address> topPreps = call(List.class,Contracts.STAKING,"getTopPreps");
-        Context.println("top prep size "+ topPreps.size());
         Address bOMMAddress = getAddress(Contracts.BOOSTED_OMM.getKey());
         Address currentUser;
         Address caller = currentUser = Context.getCaller();
