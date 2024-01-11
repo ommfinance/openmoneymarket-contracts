@@ -15,6 +15,7 @@ import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.configs.Constant;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
+import finance.omm.libs.test.integration.scores.StakingScoreClient;
 import finance.omm.test.lendingPoolCore.config.LendingPoolCoreConfig;
 import finance.omm.utils.math.MathUtils;
 import foundation.icon.jsonrpc.Address;
@@ -290,6 +291,7 @@ public class LendingPoolCoreIntegrationTest implements ScoreIntegrationTest {
         @Order(1)
         @DisplayName("Deposit: ICX Deposit Alice")
         void icx_deposit() {
+            ((StakingScoreClient)ownerClient.staking).updatePreps();
 
             // txn
             depositICX();
