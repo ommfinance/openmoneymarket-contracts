@@ -63,6 +63,32 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         return accumulatedFee.getOrDefault(address,BigInteger.ZERO);
     }
 
+    @External(readonly = true)
+    public BigInteger getClaimableFee(Address user){
+        BigInteger currentFeeInSystem = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
+        BigInteger accumulated = accumulatedFee.getOrDefault(user,BigInteger.ZERO);
+        BigInteger distributionPercentage = feeDistributionWeight.get(user);
+        if (distributionPercentage == null){
+            Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
+            BigInteger validatorWeightInPercentage = feeDistributionWeight.get(lendingPoolCoreAddr);
+            BigInteger amountToDistribute = validatorWeightInPercentage.multiply(currentFeeInSystem).divide(ICX);
+
+            Map<String, BigInteger> ommValidators = call(Map.class, Contracts.STAKING,
+                    "getActualUserDelegationPercentage", lendingPoolCoreAddr);
+            BigInteger ommValidatorPercentage = ommValidators.get(user.toString());
+
+            if (ommValidatorPercentage != null){
+                return ommValidatorPercentage.multiply(amountToDistribute).divide(ICX).add(accumulated);
+            }
+            else {
+                return accumulated;
+            }
+        }else {
+
+            return accumulated.add(distributionPercentage.multiply(currentFeeInSystem).divide(ICX));
+        }
+    }
+
     @External
     public void setFeeDistribution(Address[] addresses, BigInteger[] weights){
         onlyOwner();
@@ -115,7 +141,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         BigInteger amountToClaim = accumulatedFee.getOrDefault(caller,BigInteger.ZERO);
 
         if (amountToClaim.compareTo(BigInteger.ZERO)<=0){
-            throw FeeDistributionException.unknown(TAG + " :: Caller has no reward to claim");
+            return;
         }
 
         accumulatedFee.set(caller,null);
