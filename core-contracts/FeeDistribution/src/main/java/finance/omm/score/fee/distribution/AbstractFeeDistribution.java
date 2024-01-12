@@ -36,34 +36,42 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     protected void distributeFee(BigInteger amount) {
         BigInteger remaining = amount;
         BigInteger remainingDaoFund = BigInteger.ZERO;
+        BigInteger denominator = ICX;
+        BigInteger amountToDistribute;
 
         Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
         Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
 
         for (Address receiver : feeDistributionWeight.keySet()) {
             BigInteger percentageToDistribute = feeDistributionWeight.get(receiver);
-            BigInteger amountToDistribute = (percentageToDistribute.multiply(amount)).divide(ICX);
-
-            remaining = remaining.subtract(amountToDistribute);
-
-            if (receiver.equals(lendingPoolCoreAddr)) {
-
-                remainingDaoFund = distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
-                validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
-
-            } else if (receiver.equals(daoFundAddr)) {
-
-                BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
-                BigInteger totalDistributionFee = amountToDistribute.add(remainingDaoFund);
-                collectedFee.put(receiver, feeCollected.add(totalDistributionFee));
-
-                call(Contracts.sICX, "transfer", receiver, totalDistributionFee);
-
+            if (percentageToDistribute.signum() > 0) {
+                amountToDistribute = (percentageToDistribute.multiply(remaining)).divide(denominator);
             } else {
-
-                BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(receiver, BigInteger.ZERO);
-                accumulatedFee.set(receiver, feeAccumulatedAfterClaim.add(amountToDistribute));
+                amountToDistribute = BigInteger.ZERO;
             }
+
+            if (amountToDistribute.signum() > 0) {
+                if (receiver.equals(lendingPoolCoreAddr)) {
+
+                    remainingDaoFund = distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
+                    validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
+
+                } else if (receiver.equals(daoFundAddr)) {
+
+                    BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
+                    BigInteger totalDistributionFee = amountToDistribute.add(remainingDaoFund);
+                    collectedFee.put(receiver, feeCollected.add(totalDistributionFee));
+
+                    call(Contracts.sICX, "transfer", receiver, totalDistributionFee);
+
+                } else {
+
+                    BigInteger feeAccumulatedAfterClaim = accumulatedFee.getOrDefault(receiver, BigInteger.ZERO);
+                    accumulatedFee.set(receiver, feeAccumulatedAfterClaim.add(amountToDistribute));
+                }
+                remaining = remaining.subtract(amountToDistribute);
+            }
+            denominator = denominator.subtract(percentageToDistribute);
         }
         if (remaining.signum() > 0){
             call(Contracts.sICX, "transfer", daoFundAddr, remaining);
