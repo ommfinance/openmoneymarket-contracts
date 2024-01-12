@@ -10,6 +10,7 @@ import score.annotation.Optional;
 
 import java.math.BigInteger;
 
+import static finance.omm.utils.checks.Check.checkStatus;
 import static finance.omm.utils.checks.Check.onlyOwner;
 
 public class SicxImpl extends IRC2Burnable implements Sicx {
@@ -90,6 +91,7 @@ public class SicxImpl extends IRC2Burnable implements Sicx {
     @Override
     @External
     public void transfer(Address _to, BigInteger _value, @Optional byte[] _data) {
+        checkStatus(statusManager);
         _transfer(Context.getCaller(), _to, _value, _data);
     }
 
