@@ -330,7 +330,7 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
         LockedBalance locked = lockedBalance.newLockedBalance();
         LockedBalance oldLocked = locked.newLockedBalance();
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
-        BigInteger supplyBefore = this.supply.get();
+        BigInteger supplyBefore = this.supply.getOrDefault(BigInteger.ZERO);
         BigInteger supplyAfter;
 
         if (value.signum() > 0) {

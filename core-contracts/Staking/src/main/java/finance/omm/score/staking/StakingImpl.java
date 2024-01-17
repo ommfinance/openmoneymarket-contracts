@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.Map;
 
 import static finance.omm.score.staking.db.LinkedListDB.DEFAULT_NODE_ID;
-import static finance.omm.score.staking.utils.Checks.checkStatus;
 import static finance.omm.score.staking.utils.Checks.onlyOwner;
 import static finance.omm.score.staking.utils.Checks.stakingOn;
 import static finance.omm.score.staking.utils.Constant.*;
 import static finance.omm.score.staking.utils.Constant.TAG;
+import static finance.omm.utils.checks.Check.checkStatus;
 
 public class StakingImpl implements Staking {
 

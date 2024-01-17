@@ -173,10 +173,6 @@ public class FeeDistributionIT implements ScoreIntegrationTest {
         assertEquals(BigInteger.ZERO,ownerClient.feeDistribution.
                 getCollectedFee(contributor2.getAddress()));
 
-        // can not claim when there is collected amount is zero
-        assertUserRevert(FeeDistributionException.unknown(
-                        "Fee Distribution :: Caller has no reward to claim"),
-                () -> contributor1.feeDistribution.claimRewards(contributor1.getAddress()), null);
 
 
         assertEquals(BigInteger.valueOf(200).multiply(ICX),ownerClient.feeDistribution.

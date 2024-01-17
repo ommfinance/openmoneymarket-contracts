@@ -22,17 +22,5 @@ public class Checks {
     }
 
 
-    public static void checkStatus(VarDB<Address> address) {
-        Address handler = address.get();
-        if (handler == null) {
-            return;
-        }
 
-        checkStatus(handler);
-    }
-
-    public static void checkStatus(Address handler) {
-        String caller = Context.getCaller().toString();
-        Context.call(handler, "checkStatus", caller);
-    }
 }
