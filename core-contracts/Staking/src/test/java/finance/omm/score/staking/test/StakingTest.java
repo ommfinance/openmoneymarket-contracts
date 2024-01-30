@@ -533,6 +533,35 @@ class StakingTest extends TestBase {
     }
 
     @Test
+    void checkIScoreInfo(){
+
+        Account newPrep = sm.createAccount();
+        PrepDelegations delegation = new PrepDelegations();
+        delegation._address = newPrep.getAddress();
+        delegation._votes_in_per = HUNDRED_PERCENTAGE;
+
+        iScore.put("estimatedICX", BigInteger.TEN);
+        contextMock.when(queryIscore).thenReturn(iScore);
+        staking.invoke(owner, "delegate", (Object) new PrepDelegations[]{delegation});
+        contextMock.verify(claimIScore, times(1));
+
+        Map<String,BigInteger> iScoreInfo = (Map<String, BigInteger>) staking.call("getIScoreClaimInfo");
+        assertEquals(iScoreInfo.get("icx_claimed"),BigInteger.TEN);
+        assertEquals(iScoreInfo.get("previous_block_height"),BigInteger.ZERO);
+
+        // claimimg 100 iScore again
+        iScore.put("estimatedICX", BigInteger.valueOf(100));
+        contextMock.when(queryIscore).thenReturn(iScore);
+        staking.invoke(owner, "delegate", (Object) new PrepDelegations[]{delegation});
+        contextMock.verify(claimIScore, times(2));
+
+        Map<String,BigInteger> iScoreInfo2 = (Map<String, BigInteger>) staking.call("getIScoreClaimInfo");
+        assertEquals(iScoreInfo2.get("icx_claimed"),BigInteger.valueOf(100));
+        assertEquals(iScoreInfo2.get("previous_block_height"),iScoreInfo.get("block_height"));
+        System.out.println( staking.call("getIScoreClaimInfo"));
+    }
+
+    @Test
     void claimUnstakedICX() {
         BigInteger icxToClaim = BigInteger.valueOf(599L);
         BigInteger icxPayable = BigInteger.valueOf(401L);
