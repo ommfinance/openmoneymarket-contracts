@@ -97,6 +97,9 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
         BigInteger remaining = BigInteger.ZERO;
 
         for (String validator : ommValidators.keySet()) {
+            if (denominator.signum() == 0){
+                break;
+            }
             Address validatorAddr = Address.fromString(validator);
 
             BigInteger currentPercentage = ommValidators.get(validator);
@@ -112,13 +115,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             }
 
         }
-        if (remaining.signum() > 0){
-            return remaining;
-//            Address daoFundAddr = getAddress(Contracts.DAO_FUND.getKey());
-//            BigInteger feeCollected = collectedFee.getOrDefault(daoFundAddr, BigInteger.ZERO);
-//            collectedFee.put(daoFundAddr, feeCollected.add(remaining));
-//            call(Contracts.sICX,"transfer",daoFundAddr,remaining);
-        }
+
         return remaining;
     }
 
@@ -126,10 +123,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
         Map<String, Object> prepDict = call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", prepAddr);
         BigInteger jailFlags = (BigInteger) prepDict.get("jailFlags");
 
-        if (jailFlags == null || jailFlags.equals(BigInteger.ZERO)) {
-            return true;
-        }
-        return false;
+        return jailFlags == null || jailFlags.signum() == 0;
     }
 
     @EventLog(indexed = 3)

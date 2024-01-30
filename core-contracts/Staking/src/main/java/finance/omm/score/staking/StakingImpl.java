@@ -104,8 +104,7 @@ public class StakingImpl implements Staking {
         for (int i = 0; i < totalPreps; i++) {
             this.topPreps.removeLast();
         }
-        List<Address> validPreps = getValidPreps();
-        int size = validPreps.size();
+        int size = this.validPreps.size();
 
         for (int i = 0; i < size; i++) {
             this.validPreps.removeLast();
@@ -467,8 +466,7 @@ public class StakingImpl implements Staking {
             Context.call(SYSTEM_SCORE_ADDRESS, "claimIScore");
 
             List<Address> topPrep = getTopPreps();
-            List<Address> validPreps = getValidPreps();
-            int size = validPreps.size();
+            int size = this.validPreps.size();
             for (int i = 0; i < size; i++) {
                 this.validPreps.removeLast();
             }
