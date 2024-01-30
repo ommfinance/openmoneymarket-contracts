@@ -49,6 +49,9 @@ public class Constant {
     public static final String FEE_ADDRESS ="fee_distribution_address";
     public static final String OMM_LENDING_POOL_CORE ="omm_lending_pool_address";
     public static final String OMM_DELEGATION ="omm_delegation_address";
+    public static final String BLOCK_HEIGHT = "block_height";
+    public static final String PREVIOUS_BLOCK_HEIGHT = "previous_block_height";
+    public static final String ICX_CLAIMED = "icx_claimed";
 
     public static DelegationListDBSdo DEFAULT_DELEGATION_LIST = getDelegationList();
 

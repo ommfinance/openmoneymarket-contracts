@@ -60,7 +60,9 @@ public class StakingImpl implements Staking {
     private final VarDB<Address> feeDistributionAddress = Context.newVarDB(FEE_ADDRESS, Address.class);
     private final VarDB<Address> ommLendingPoolCore = Context.newVarDB(OMM_LENDING_POOL_CORE, Address.class);
     private final VarDB<Address> ommDelegation = Context.newVarDB(OMM_DELEGATION, Address.class);
-
+    private final VarDB<BigInteger> blockHeight = Context.newVarDB(BLOCK_HEIGHT, BigInteger.class);
+    private final VarDB<BigInteger> icxClaimed = Context.newVarDB(ICX_CLAIMED, BigInteger.class);
+    private final VarDB<BigInteger> previousBlockHeight = Context.newVarDB(PREVIOUS_BLOCK_HEIGHT, BigInteger.class);
 
 
     public StakingImpl( @Optional BigInteger _feePercentage, @Optional BigInteger _productivity, 
@@ -93,15 +95,6 @@ public class StakingImpl implements Staking {
 
     }
 
-    @External
-    public void updatePreps(){
-        onlyOwner();
-        int totalPreps = this.topPreps.size();
-        for (int i = 0; i < totalPreps; i++) {
-            this.topPreps.removeLast();
-        }
-        setTopPreps();
-    }
 
     // Event logs
 
@@ -264,6 +257,11 @@ public class StakingImpl implements Staking {
     @External(readonly = true)
     public BigInteger getUnstakeBatchLimit() {
         return unstakeBatchLimit.get();
+    }
+
+    @External(readonly = true)
+    public BigInteger getCurrentClaimBlockHeight(){
+        return this.blockHeight.getOrDefault(BigInteger.ZERO);
     }
 
     @External(readonly = true)
@@ -432,9 +430,30 @@ public class StakingImpl implements Staking {
                 Context.getAddress());
         BigInteger iscoreGenerated = (BigInteger) iscoreDetails.get("estimatedICX");
         if (iscoreGenerated.compareTo(BigInteger.ZERO) > 0) {
+            this.previousBlockHeight.set(getCurrentClaimBlockHeight());
+           
+            BigInteger currentBlockHeight = BigInteger.valueOf(Context.getBlockHeight());
+            this.blockHeight.set(currentBlockHeight);
+            this.icxClaimed.set(iscoreGenerated);
+
             Context.call(SYSTEM_SCORE_ADDRESS, "claimIScore");
-            IscoreClaimed(BigInteger.valueOf(Context.getBlockHeight()), iscoreGenerated);
+            IscoreClaimed(currentBlockHeight, iscoreGenerated);
         }
+    }
+
+
+    @External(readonly = true)
+    public Map<String,BigInteger> getIScoreClaimInfo(){
+        Map<String,BigInteger> iScoreClaimInfo = new HashMap<>();
+        BigInteger amount = this.icxClaimed.getOrDefault(BigInteger.ZERO);
+        BigInteger blockHeight = getCurrentClaimBlockHeight();
+        BigInteger previousBlockHeight = this.previousBlockHeight.getOrDefault(BigInteger.ZERO);
+       
+        iScoreClaimInfo.put(ICX_CLAIMED,amount);
+        iScoreClaimInfo.put(BLOCK_HEIGHT,blockHeight);
+        iScoreClaimInfo.put(PREVIOUS_BLOCK_HEIGHT, previousBlockHeight);
+
+        return iScoreClaimInfo;
     }
 
     @External
@@ -463,6 +482,16 @@ public class StakingImpl implements Staking {
         }
         Context.transfer(to, amount);
         FundTransfer(to, amount, msg + amount + " ICX sent to " + to + ".");
+    }
+
+    @External
+    public void updatePreps(){
+        onlyOwner();
+        int totalPreps = this.topPreps.size();
+        for (int i = 0; i < totalPreps; i++) {
+            this.topPreps.removeLast();
+        }
+        setTopPreps();
     }
 
     @SuppressWarnings("unchecked")
