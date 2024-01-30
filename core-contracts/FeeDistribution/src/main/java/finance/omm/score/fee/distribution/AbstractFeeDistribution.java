@@ -74,6 +74,9 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             denominator = denominator.subtract(percentageToDistribute);
         }
         if (remaining.signum() > 0){
+            BigInteger feeCollected = collectedFee.getOrDefault(daoFundAddr, BigInteger.ZERO);
+            collectedFee.put(daoFundAddr, feeCollected.add(remaining));
+
             call(Contracts.sICX, "transfer", daoFundAddr, remaining);
         }
         
