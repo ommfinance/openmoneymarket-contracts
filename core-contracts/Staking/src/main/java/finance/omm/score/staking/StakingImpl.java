@@ -480,12 +480,12 @@ public class StakingImpl implements Staking {
     }
 
     private boolean checkCriteria(BigInteger jailFlags, BigInteger commissionRate){
-        boolean notJailed = true;
+        boolean jailed = false;
 
         if (jailFlags == null){
-            notJailed = true;
+            jailed = false;
         }else if (!jailFlags.equals(BigInteger.ZERO)){
-            notJailed = false;
+            jailed = true;
         }
 
         boolean validRate = true;
@@ -495,7 +495,7 @@ public class StakingImpl implements Staking {
             validRate = false;
         }
 
-        return notJailed && validRate;
+        return !jailed && validRate;
     }
 
     @External
