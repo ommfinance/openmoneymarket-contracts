@@ -55,7 +55,7 @@ public class StakingImpl implements Staking {
     private final VarDB<DelegationListDBSdo> prepDelegationInIcx = Context.newVarDB(PREP_DELEGATION_ICX,
             DelegationListDBSdo.class);
     private final VarDB<String> currentVersion = Context.newVarDB(VERSION, String.class);
-    public final static String STAKING_VERSION = "v1.0.2";
+    public final static String STAKING_VERSION = "v1.0.3";
     private final VarDB<Address> statusManager = Context.newVarDB(STATUS_MANAGER, Address.class);
     private final VarDB<BigInteger> feePercentage = Context.newVarDB(FEE_PERCENTAGE, BigInteger.class);
     private final VarDB<Address> feeDistributionAddress = Context.newVarDB(FEE_ADDRESS, Address.class);
@@ -65,9 +65,7 @@ public class StakingImpl implements Staking {
 
 
 
-    public StakingImpl( @Optional BigInteger _feePercentage, @Optional BigInteger _productivity, 
-                        @Optional Address lendingPoolCore, @Optional Address feeDistribution, @Optional Address delegation,
-                        @Optional BigInteger _commissionRate) {
+    public StakingImpl(@Optional BigInteger _commissionRate) {
 
         if (blockHeightWeek.get() == null) {
             @SuppressWarnings("unchecked")
@@ -85,14 +83,8 @@ public class StakingImpl implements Staking {
             Context.revert("Can't Update same version of code");
         }
         currentVersion.set(STAKING_VERSION);
-        if (STAKING_VERSION.equals("v1.0.2")) {
-            productivity.set(_productivity);
-            feePercentage.set(_feePercentage);
-            feeDistributionAddress.set(feeDistribution);
-            ommLendingPoolCore.set(lendingPoolCore);
-            ommDelegation.set(delegation);
+        if (STAKING_VERSION.equals("v1.0.3")) {
             commissionRate.set(_commissionRate);
-
         }
 
     }
