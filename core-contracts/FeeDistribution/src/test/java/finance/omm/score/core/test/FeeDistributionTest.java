@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
@@ -150,6 +151,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
     @Test
     void claimRewards_without_fee_disburse(){
+        // user has accumulated rewards
         claimRewards();
         BigInteger calimSicx = BigInteger.valueOf(10).multiply(ICX);
         Account sicx_calim_address = testScore;
@@ -172,6 +174,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
     }
 
     @Test
+
     void distributeFeeToValidator_withJailedPreps(){
         tokenFallback();
         // validator = 67.5 ICX
@@ -223,5 +226,26 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
     public void claimZeroReward(){
         Executable call = () -> score.invoke(validator2,"claimRewards",validator2.getAddress());
         expectErrorMessage(call,"Fee Distribution :: Caller has no reward to claim");
+
+    void distributeFee_withClaimRewards(){
+        tokenFallback();
+
+        Account claimAddress = testScore;
+
+        assertEquals(BigInteger.ZERO,score.call("getCollectedFee",claimAddress.getAddress()));
+        assertEquals(BigInteger.ZERO,score.call("getAccumulatedFee",claimAddress.getAddress()));
+
+        assertEquals(BigInteger.ZERO,score.call("getCollectedFee",validator2.getAddress()));
+        assertEquals(BigInteger.ZERO,score.call("getAccumulatedFee",validator2.getAddress()));
+
+        score.invoke(validator2,"claimRewards",validator2.getAddress());
+
+        assertEquals(BigInteger.ZERO,score.call("getCollectedFee",claimAddress.getAddress()));
+        assertEquals(BigInteger.valueOf(10).multiply(ICX),score.call("getAccumulatedFee",claimAddress.getAddress()));
+
+        verify(spyScore).FeeDisbursed(BigInteger.valueOf(100).multiply(ICX));
+        verify(spyScore,never()).FeeClaimed(validator2.getAddress(),validator2.getAddress(),BigInteger.ZERO);
+
     }
+
 }
