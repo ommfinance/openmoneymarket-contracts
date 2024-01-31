@@ -27,6 +27,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
             EnumerableDictDB<>("fee_distribution_weight", Address.class, BigInteger.class);
     protected final VarDB<BigInteger> feeToDistribute = Context.newVarDB("fee_to_distribute",BigInteger.class);
+    protected final VarDB<BigInteger> validatorShare = Context.newVarDB("jailed_validator_share",BigInteger.class);
 
     public AbstractFeeDistribution(Address addressProvider) {
         super(addressProvider, false);
@@ -35,7 +36,6 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
     protected void distributeFee(BigInteger amount) {
         BigInteger remaining = amount;
-        BigInteger remainingDaoFund = BigInteger.ZERO;
         BigInteger denominator = ICX;
         BigInteger amountToDistribute;
 
@@ -53,13 +53,17 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             if (amountToDistribute.signum() > 0) {
                 if (receiver.equals(lendingPoolCoreAddr)) {
 
-                    remainingDaoFund = distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
+                    BigInteger remainingFee = distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
                     validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
+
+                    if (remainingFee.compareTo(BigInteger.ZERO) > 0){
+                        this.validatorShare.set(getValidatorShare().add(remainingFee));
+                    }
 
                 } else if (receiver.equals(daoFundAddr)) {
 
                     BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
-                    BigInteger totalDistributionFee = amountToDistribute.add(remainingDaoFund);
+                    BigInteger totalDistributionFee = amountToDistribute.add(getValidatorShare());
                     collectedFee.put(receiver, feeCollected.add(totalDistributionFee));
 
                     call(Contracts.sICX, "transfer", receiver, totalDistributionFee);
@@ -124,6 +128,10 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
         BigInteger jailFlags = (BigInteger) prepDict.get("jailFlags");
 
         return jailFlags == null || jailFlags.signum() == 0;
+    }
+
+    private BigInteger getValidatorShare(){
+        return this.validatorShare.getOrDefault(BigInteger.ZERO);
     }
 
     @EventLog(indexed = 3)

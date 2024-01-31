@@ -65,7 +65,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
 
     @External
     public void setFeeDistribution(Address[] addresses, BigInteger[] weights){
-        // Note: when setting addresses validator address should always precede daoFund address
+        // Note: when setting addresses validator address should precede daoFund address for complete distribution
         onlyOwner();
         int addressSize = addresses.length;
         if (!(addressSize == weights.length)){
