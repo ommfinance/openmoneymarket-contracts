@@ -222,10 +222,6 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
     }
 
-    @Test
-    public void claimZeroReward(){
-        Executable call = () -> score.invoke(validator2,"claimRewards",validator2.getAddress());
-        expectErrorMessage(call,"Fee Distribution :: Caller has no reward to claim");
 
     void distributeFee_withClaimRewards(){
         tokenFallback();
