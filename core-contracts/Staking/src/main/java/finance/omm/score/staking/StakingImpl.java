@@ -130,7 +130,7 @@ public class StakingImpl implements Staking {
     }
 
     @EventLog(indexed = 3)
-    public void IscoreSnapshot(BigInteger block_height, BigInteger rewards, BigInteger totalStaked) {
+    public void IscoreSnapshot(BigInteger blockHeight, BigInteger rewards, BigInteger totalStaked) {
     }
 
     // Read Only methods
