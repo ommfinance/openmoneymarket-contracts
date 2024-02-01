@@ -70,6 +70,9 @@ public class StakingIT implements ScoreIntegrationTest {
 
         ownerClient.staking.setOmmLendingPoolCore(lendingPoolCore);
         ownerClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
+        ownerClient.staking.setPrepProductivity(BigInteger.ZERO);
+        ownerClient.staking.setFeePercentage(BigInteger.valueOf(10).multiply(ONE_EXA));
+
 
     }
 

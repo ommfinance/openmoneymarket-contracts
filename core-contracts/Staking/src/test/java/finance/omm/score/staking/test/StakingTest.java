@@ -91,9 +91,7 @@ class StakingTest extends TestBase {
     }
 
     private void setupStakingScore() throws Exception {
-        staking = sm.deploy(owner, StakingImpl.class,new BigInteger("10").multiply(ONE_EXA),
-                new BigInteger("90").multiply(ONE_EXA),ommLendingPoolCore.getAddress(),feeDistribution.getAddress(),
-                ommDelegation.getAddress(), BigInteger.TEN);
+        staking = sm.deploy(owner, StakingImpl.class,new BigInteger("10"));
         stakingSpy = (StakingImpl) spy(staking.getInstance());
         staking.setInstance(stakingSpy);
 
