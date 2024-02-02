@@ -129,6 +129,10 @@ public class StakingImpl implements Staking {
     public void IscoreClaimed(BigInteger block_height, BigInteger rewards) {
     }
 
+    @EventLog(indexed = 3)
+    public void IscoreSnapshot(BigInteger blockHeight, BigInteger rewards, BigInteger totalStaked) {
+    }
+
     // Read Only methods
     @External(readonly = true)
     public String name() {
@@ -433,7 +437,10 @@ public class StakingImpl implements Staking {
         BigInteger iscoreGenerated = (BigInteger) iscoreDetails.get("estimatedICX");
         if (iscoreGenerated.compareTo(BigInteger.ZERO) > 0) {
             Context.call(SYSTEM_SCORE_ADDRESS, "claimIScore");
-            IscoreClaimed(BigInteger.valueOf(Context.getBlockHeight()), iscoreGenerated);
+
+            BigInteger currentBlockHeight = BigInteger.valueOf(Context.getBlockHeight());
+            IscoreClaimed(currentBlockHeight, iscoreGenerated);
+            IscoreSnapshot(currentBlockHeight,iscoreGenerated,getTotalStake());
         }
     }
 

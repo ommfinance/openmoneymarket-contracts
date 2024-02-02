@@ -19,13 +19,19 @@ import static finance.omm.utils.math.MathUtils.ICX;
 public abstract class AbstractFeeDistribution extends AddressProvider implements FeeDistribution {
 
     public static final String TAG = "Fee Distribution";
+
+    public static final String COLLECTED_FEE = "collected_fee";
+    public static final String VALIDATOR_FEE_COLLECTED = "validator_fee_collected";
+    public static final String ACCUMULATED_FEE = "accumulated_fee";
+    public static final String FEE_DISTRIBUTION_WEIGHT = "fee_distribution_weight";
+    public static final String FEE_TO_DISTRIBUTE = "fee_to_distribute";
     protected final EnumerableDictDB<Address, BigInteger> collectedFee =
-            new EnumerableDictDB<>("collected_fee", Address.class,BigInteger.class);
-    protected final VarDB<BigInteger> validatorRewards = Context.newVarDB("validator_fee_collected",BigInteger.class);
-    protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB("accumulated_fee", BigInteger.class);
+            new EnumerableDictDB<>(COLLECTED_FEE, Address.class, BigInteger.class);
+    protected final VarDB<BigInteger> validatorRewards = Context.newVarDB(VALIDATOR_FEE_COLLECTED, BigInteger.class);
+    protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB(ACCUMULATED_FEE, BigInteger.class);
     protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
-            EnumerableDictDB<>("fee_distribution_weight", Address.class, BigInteger.class);
-    protected final VarDB<BigInteger> feeToDistribute = Context.newVarDB("fee_to_distribute",BigInteger.class);
+            EnumerableDictDB<>(FEE_DISTRIBUTION_WEIGHT, Address.class, BigInteger.class);
+    protected final VarDB<BigInteger> feeToDistribute = Context.newVarDB(FEE_TO_DISTRIBUTE, BigInteger.class);
 
     public AbstractFeeDistribution(Address addressProvider) {
         super(addressProvider, false);
@@ -66,15 +72,15 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             }
             denominator = denominator.subtract(percentageToDistribute);
         }
-        
+
         this.feeToDistribute.set(BigInteger.ZERO);
         FeeDisbursed(amount);
 
-        
+
     }
 
 
-    private void distributeFeeToValidator(Address lendingPoolCoreAddr,BigInteger amount) {
+    private void distributeFeeToValidator(Address lendingPoolCoreAddr, BigInteger amount) {
 
         Map<String, BigInteger> ommValidators = call(Map.class, Contracts.STAKING,
                 "getActualUserDelegationPercentage", lendingPoolCoreAddr);
