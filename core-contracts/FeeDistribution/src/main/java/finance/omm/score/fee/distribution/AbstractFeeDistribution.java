@@ -53,11 +53,11 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
             if (amountToDistribute.signum() > 0) {
                 if (receiver.equals(lendingPoolCoreAddr)) {
 
-                    BigInteger remainingFee = distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
+                    BigInteger validatorFee = distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
                     validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
 
-                    if (remainingFee.compareTo(BigInteger.ZERO) > 0){
-                        this.validatorShare.set(getValidatorShare().add(remainingFee));
+                    if (validatorFee.compareTo(BigInteger.ZERO) > 0){
+                        this.validatorShare.set(getValidatorShare().add(validatorFee));
                     }
 
                 } else if (receiver.equals(daoFundAddr)) {
@@ -65,7 +65,7 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                     BigInteger feeCollected = collectedFee.getOrDefault(receiver, BigInteger.ZERO);
                     BigInteger totalDistributionFee = amountToDistribute.add(getValidatorShare());
                     collectedFee.put(receiver, feeCollected.add(totalDistributionFee));
-
+                    this.validatorShare.set(BigInteger.ZERO);
                     call(Contracts.sICX, "transfer", receiver, totalDistributionFee);
 
                 } else {
