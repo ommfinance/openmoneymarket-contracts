@@ -9,6 +9,16 @@ import score.annotation.Payable;
 
 public interface SystemInterface {
 
+    public class Delegation{
+        public Address address;
+        public BigInteger value;
+    }
+
+    public class Bond{
+        public Address address;
+        public BigInteger value;
+    }
+
     Map<String, Object> getIISSInfo();
 
     Map<String, Object> queryIScore(Address address);
@@ -21,5 +31,17 @@ public interface SystemInterface {
 
     @Payable
     void registerPRep(String name, String email, String country, String city, String website, String details,
-            String p2pEndpoint);
+                      String p2pEndpoint);
+
+
+    void setDelegation(Delegation[] delegations);
+
+    void setBond(Bond[] bonds);
+
+    void setBonderList(Address[] bonderList);
+
+    void setStake(BigInteger value);
+
+    Map<String, Object> getPRep(Address address);
+
 }

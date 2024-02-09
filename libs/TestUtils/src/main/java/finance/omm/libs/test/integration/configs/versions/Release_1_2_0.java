@@ -48,12 +48,25 @@ public class Release_1_2_0 extends Release {
                 Contracts.REWARD_WEIGHT_CONTROLLER.getKey(),
         });
 
+        ommClient.addressManager.addAddressToScore(Contracts.FEE_DISTRIBUTION.getKey(), new String[]{
+                Contracts.sICX.getKey(),
+                Contracts.STAKING.getKey(),
+                Contracts.LENDING_POOL_CORE.getKey(),
+                Contracts.DAO_FUND.getKey()
+        });
+
         ommClient.addressManager.addAddressToScore(Contracts.DELEGATION.getKey(), new String[]{
                 Contracts.BOOSTED_OMM.getKey(),
         });
 
         ommClient.addressManager.addAddressToScore(Contracts.OMM_TOKEN.getKey(), new String[]{
                 Contracts.BOOSTED_OMM.getKey(),
+        });
+
+        ommClient.addressManager.addAddressToScore(Contracts.FEE_DISTRIBUTION.getKey(),new String[]{
+                Contracts.sICX.getKey(),
+                Contracts.STAKING.getKey(),
+                Contracts.LENDING_POOL_CORE.getKey(),
         });
 
         ommClient.governance.addType("daoFund", true);

@@ -45,6 +45,7 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public static final String LOCKED_PREPS = "lockedPreps";
     public static final String LOCKED_PREP_VOTES = "lockedPrepVotes";
     public static final String CALLED_BEFORE = "calledBefore";
+    public static final int PREP_COUNT = 100;
 
     private final EnumerableSet<Address> _preps = new PREPEnumerableSet(LOCKED_PREPS, Address.class);
     private final BranchDB<Address, DictDB<Integer, Address>> _userPreps = Context.newBranchDB(
@@ -149,13 +150,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External
-    public void clearPrevious(Address _user) {
-        if (!_user.equals(Context.getCaller())) {
-            throw DelegationException.unknown(TAG +
-                    " :You are not authorized to clear others delegation preference");
-        }
+    public void clearPrevious() {
         PrepDelegations[] defaultDelegation = distributeVoteToContributors();
-        updateDelegations(defaultDelegation, _user);
+        updateDelegations(defaultDelegation, Context.getCaller());
     }
 
     @External(readonly = true)
@@ -183,7 +180,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         DictDB<Integer, Address> userPrep = _userPreps.at(_user);
         DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < PREP_COUNT; i++) {
+            if (userPrep.get(i) == null ){
+                break;
+            }
             BigInteger prepVote = exaMultiply(percentageDelegationsOfUser
                     .getOrDefault(i, BigInteger.ZERO), userWorkingBalance);
 
@@ -223,9 +223,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public void onKick(Address user, BigInteger bOMMUserBalance, @Optional byte[] data) {
         onlyOrElseThrow(Contracts.BOOSTED_OMM,
                 DelegationException.unauthorized("Only bOMM contract is allowed to call onKick method"));
-        if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
-            throw DelegationException.unknown(user + " OMM locking has not expired");
-        }
         updateUserDelegations(null, user, bOMMUserBalance);
         UserKicked(user, data);
     }
@@ -235,6 +232,23 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         onlyOrElseThrow(Contracts.BOOSTED_OMM,
                 DelegationException.unauthorized("Only bOMM contract is allowed to call onBalanceUpdate method"));
         updateUserDelegations(null, user, null);
+    }
+
+    @External
+    public void updateDelegationAtOnce(PrepDelegations[] _delegations){
+        Address user = Context.getCaller();
+        updateUserDelegations(_delegations,user,null);
+
+        int delegationsLength = _delegations.length;
+        PrepDelegations[] updatedDelegations = new PrepDelegations[delegationsLength];
+        for (int i = 0; i < delegationsLength; i++) {
+
+            Address _address = _delegations[i]._address;
+            BigInteger _votes_in_per = _delegations[i]._votes_in_per.multiply(BigInteger.valueOf(100));
+            updatedDelegations[i] = new PrepDelegations(_address,_votes_in_per);
+        }
+
+        call(Contracts.STAKING,"delegateForUser",updatedDelegations,user);
     }
 
     @External
@@ -256,9 +270,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             userDelegations = getUserDelegationDetails(_user);
         } else {
             int delegationsLength = _delegations.length;
-            if (delegationsLength > 5) {
+            if (delegationsLength > PREP_COUNT) {
                 throw DelegationException.unknown(TAG +
-                        " updating delegation unsuccessful, more than 5 preps provided by user" +
+                        " updating delegation unsuccessful, more than 100 preps provided by user" +
                         " delegations provided " + delegationsLength);
             }
             userDelegations = _delegations;
@@ -288,6 +302,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             PrepDelegations userDelegation = userDelegations[i];
             Address address = userDelegation._address;
             BigInteger votes = userDelegation._votes_in_per;
+
+            if (votes.signum() == -1 ){
+                throw DelegationException.unknown(TAG + " Negative vote percentage");
+            }
 
             _preps.add(address);
 
@@ -368,13 +386,15 @@ public class DelegationImpl extends AddressProvider implements Delegation {
 
         Map<String, BigInteger> response = new HashMap<>();
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < PREP_COUNT; i++) {
             Address prep = userPreps.getOrDefault(i, ZERO_SCORE_ADDRESS);
-            if (!prep.equals(ZERO_SCORE_ADDRESS)) {
-                BigInteger vote = exaMultiply(percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO),
-                        userWorkingBalance);
-                response.put(prep.toString(), vote);
+            if (prep.equals(ZERO_SCORE_ADDRESS)){
+                break;
             }
+            BigInteger vote = exaMultiply(percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO),
+                    userWorkingBalance);
+            response.put(prep.toString(), vote);
+
         }
 
         return response;
@@ -387,13 +407,15 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
         DictDB<Integer, Address> userPreps = _userPreps.at(_user);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < PREP_COUNT; i++) {
             Address prep = userPreps.getOrDefault(i, ZERO_SCORE_ADDRESS);
-            if (!prep.equals(ZERO_SCORE_ADDRESS)) {
-                BigInteger votesInPer = percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO);
-                PrepDelegations prepDelegation = new PrepDelegations(prep, votesInPer);
-                userDetails.add(prepDelegation);
+            if (prep.equals(ZERO_SCORE_ADDRESS)){
+                break;
             }
+            BigInteger votesInPer = percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO);
+            PrepDelegations prepDelegation = new PrepDelegations(prep, votesInPer);
+            userDetails.add(prepDelegation);
+
         }
 
         return getPrepDelegations(userDetails);
@@ -415,14 +437,16 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
         DictDB<Integer, Address> userPreps = _userPreps.at(_user);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < PREP_COUNT; i++) {
             Address prep = userPreps.getOrDefault(i, ZERO_SCORE_ADDRESS);
-            if (!prep.equals(ZERO_SCORE_ADDRESS)) {
-                BigInteger votesInPer = percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO);
-                BigInteger voteInICX = exaMultiply(ommICXPower, exaMultiply(votesInPer, userWorkingBalance));
-                PrepICXDelegations prepICXDelegation = new PrepICXDelegations(prep, votesInPer, voteInICX);
-                userDetails.add(prepICXDelegation);
+            if (prep.equals(ZERO_SCORE_ADDRESS)){
+                break;
             }
+            BigInteger votesInPer = percentageDelegationsOfUser.getOrDefault(i, BigInteger.ZERO);
+            BigInteger voteInICX = exaMultiply(ommICXPower, exaMultiply(votesInPer, userWorkingBalance));
+            PrepICXDelegations prepICXDelegation = new PrepICXDelegations(prep, votesInPer, voteInICX);
+            userDetails.add(prepICXDelegation);
+
         }
         return userDetails;
     }

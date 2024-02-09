@@ -76,7 +76,7 @@ subprojects {
         javaeeUnittestVersion = findProperty("javaee-unittest.version") ?: '0.9.2'
         scoreClientVersion = findProperty("score-client.version") ?: '0.9.0'
         iconsdkVersion = findProperty("iconsdk.version") ?: '2.0.0'
-        jacksonVersion = findProperty("jackson.version") ?: '2.9.6'
+        jacksonVersion = findProperty("jackson.version") ?: '2.13.2'
         mockitoVersion = findProperty("mockito.version") ?: '4.3.1'
         junitVersion = findProperty("junit.version") ?: '5.8.1'
         javafakerVersion = findProperty("javafaker.version") ?: '1.0.2'
@@ -133,8 +133,8 @@ subprojects {
     loadProperties()
 
     //dummy
-    scoreIntegrationTest.put('sICX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/sicx.zip");
-    scoreIntegrationTest.put('Staking', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/staking.jar");
+//    scoreIntegrationTest.put('sICX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/sicx.zip");
+//    scoreIntegrationTest.put('Staking', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/staking.jar");
     scoreIntegrationTest.put('BandOracle', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/proxy-band-oracle.zip");
     scoreIntegrationTest.put('StableCoin', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/stable-coin.zip");
     scoreIntegrationTest.put('DEX', "https://raw.githubusercontent.com/openmoneymarket/omm-scores/master/dummy/dex.jar");

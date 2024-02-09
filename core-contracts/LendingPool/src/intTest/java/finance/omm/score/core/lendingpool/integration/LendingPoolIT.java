@@ -53,6 +53,8 @@ public class LendingPoolIT implements ScoreIntegrationTest {
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
         alice = omm.newClient(BigInteger.TEN.pow(24));
+        ommClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
+        ommClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
         mintToken();
         reserveSetup();
     }
@@ -213,6 +215,7 @@ public class LendingPoolIT implements ScoreIntegrationTest {
         byte[] data = createByteArray("liquidationCall", null, collateral, reserve, user);
         BigInteger value = BigInteger.valueOf(50).multiply(BigInteger.valueOf(1000_000));
 
+        ommClient.lendingPool.setLiquidationStatus(true);
 
         Address iusdcAddr = addressMap.get(Contracts.IUSDC.getKey());
         ommClient.governance.setReserveActiveStatus(iusdcAddr, false);
@@ -359,7 +362,7 @@ public class LendingPoolIT implements ScoreIntegrationTest {
         depositICX(ommClient, BigInteger.valueOf(1000));
         // 1000 ICX deposited in reserve setup
         //total liquidity available = 2000
-        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
 
         BigInteger amount = BigInteger.valueOf(1000).multiply(ICX);
         BigInteger availableLiquidity = BigInteger.valueOf(2000).multiply(ICX);
@@ -374,11 +377,11 @@ public class LendingPoolIT implements ScoreIntegrationTest {
     @Order(12)
     void redeem_waitForUnstaking() {
 
-        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
 
         ommClient.lendingPool.redeem(icxAddr, BigInteger.valueOf(50).multiply(ICX), true);
 
-        Address iusdcaddr = addressMap.get(Contracts.oIUSDC.getKey());
+        Address iusdcaddr = addressMap.get(Contracts.IUSDC.getKey());
 
         assertUserRevert(LendingPoolException.unknown("Redeem with wait for unstaking failed: Invalid token"),
                 () -> ommClient.lendingPool.redeem(iusdcaddr, BigInteger.valueOf(50), true),
@@ -388,7 +391,7 @@ public class LendingPoolIT implements ScoreIntegrationTest {
     @Test
     @Order(13)
     void redeem_success_test() {
-        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
 
         BigInteger amount = BigInteger.valueOf(500).multiply(ICX);
 
@@ -410,7 +413,7 @@ public class LendingPoolIT implements ScoreIntegrationTest {
 
         depositICX(testClient, BigInteger.valueOf(1000));
 
-        Address icxAddr = addressMap.get(Contracts.oICX.getKey());
+        Address icxAddr = addressMap.get(Contracts.sICX.getKey());
 
         Thread.sleep(2000L);
 

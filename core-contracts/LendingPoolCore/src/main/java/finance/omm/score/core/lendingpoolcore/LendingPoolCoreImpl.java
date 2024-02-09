@@ -1,9 +1,12 @@
 package finance.omm.score.core.lendingpoolcore;
 
 
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
+import static finance.omm.score.core.lendingpoolcore.reservedata.AbstractReserve.addDataToReserve;
+import static finance.omm.score.core.lendingpoolcore.reservedata.AbstractReserve.createReserveDataObject;
+import static finance.omm.score.core.lendingpoolcore.reservedata.AbstractReserve.getDataFromReserve;
+import static finance.omm.score.core.lendingpoolcore.userreserve.AbstractUserReserve.getDataFromUserReserve;
+import static finance.omm.utils.math.MathUtils.ICX;
+import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 import finance.omm.libs.address.Contracts;
 import finance.omm.libs.structs.Constant;
@@ -11,21 +14,16 @@ import finance.omm.libs.structs.PrepDelegations;
 import finance.omm.libs.structs.governance.ReserveAttributes;
 import finance.omm.score.core.lendingpoolcore.exception.LendingPoolCoreException;
 import finance.omm.score.core.lendingpoolcore.reservedata.ReserveDataObject;
-import score.Context;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
 import score.Address;
+import score.Context;
 import score.DictDB;
 import score.annotation.External;
 import score.annotation.Optional;
-import score.annotation.Payable;
 import scorex.util.ArrayList;
 import scorex.util.HashMap;
-
-import static finance.omm.score.core.lendingpoolcore.reservedata.AbstractReserve.addDataToReserve;
-import static finance.omm.score.core.lendingpoolcore.reservedata.AbstractReserve.createReserveDataObject;
-import static finance.omm.score.core.lendingpoolcore.reservedata.AbstractReserve.getDataFromReserve;
-import static finance.omm.score.core.lendingpoolcore.userreserve.AbstractUserReserve.getDataFromUserReserve;
-import static finance.omm.utils.math.MathUtils.ICX;
-import static finance.omm.utils.math.MathUtils.exaMultiply;
 
 public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
@@ -108,6 +106,16 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
         return reserves;
     }
 
+    public boolean isValidReserve(Address _reserve) {
+        int reserveListSize = reserveList.size();
+        for (int i = 0; i < reserveListSize; i++) {
+            if (reserveList.get(i).equals(_reserve)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @External(readonly = true)
     public BigInteger getReserveLiquidityCumulativeIndex(Address _reserve) {
         String prefix = reservePrefix(_reserve);
@@ -186,6 +194,9 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External(readonly = true)
     public BigInteger getReserveAvailableLiquidity(Address _reserve) {
+        if (!isValidReserve(_reserve)) {
+            return BigInteger.ZERO;
+        }
         return call(BigInteger.class, _reserve,
                 "balanceOf", Context.getAddress());
     }
@@ -404,11 +415,12 @@ public class LendingPoolCoreImpl extends AbstractLendingPoolCore {
 
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
+        Address reserve = Context.getCaller();
+        if (!isValidReserve(reserve)) {
+            throw LendingPoolCoreException.invalidReserve(reserve);
+        }
     }
 
-    @Payable
-    public void fallback() {
-    }
 
     private void onlyGovernance() {
         onlyContractOrElseThrow(Contracts.GOVERNANCE, LendingPoolCoreException.unauthorized(

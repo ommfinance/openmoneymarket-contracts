@@ -20,7 +20,7 @@ public interface LendingPool {
 
     void borrow(Address _reserve, BigInteger _amount);
 
-    void redeem(Address _oToken, BigInteger _amount, @Optional boolean _waitForUnstaking);
+    void redeem(Address _reserve, BigInteger _amount, @Optional boolean _waitForUnstaking);
 
     void claimRewards();
 
@@ -33,5 +33,9 @@ public interface LendingPool {
     List<Address> getDepositWallets(int _index);
 
     List<Address> getBorrowWallets(int _index);
+
+    void setLiquidationStatus(boolean _status);
+
+    boolean isLiquidationEnabled();
     
 }

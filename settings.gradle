@@ -69,6 +69,8 @@ findProject(":PriceOracle").projectDir = file("core-contracts/PriceOracle")
 include(":LendingPool")
 findProject(":LendingPool").projectDir = file("core-contracts/LendingPool")
 
+include(":KarmaDAOWallet")
+findProject(":KarmaDAOWallet").projectDir = file("core-contracts/KarmaDAOWallet")
 
 include(":LendingPoolCore")
 findProject(":LendingPoolCore").projectDir = file("core-contracts/LendingPoolCore")
@@ -76,6 +78,14 @@ findProject(":LendingPoolCore").projectDir = file("core-contracts/LendingPoolCor
 include(":LendingPoolDataProvider")
 findProject(":LendingPoolDataProvider").projectDir = file("core-contracts/LendingPoolDataProvider")
 
-
 include(":LPInventory")
 findProject(":LPInventory").projectDir = file("core-contracts/LPInventory")
+
+include(":FeeDistribution")
+findProject(":FeeDistribution").projectDir = file("core-contracts/FeeDistribution")
+
+include(":Staking")
+findProject(":Staking").projectDir = file("core-contracts/Staking")
+
+include(":Sicx")
+findProject(":Sicx").projectDir = file("token-contracts/Sicx")

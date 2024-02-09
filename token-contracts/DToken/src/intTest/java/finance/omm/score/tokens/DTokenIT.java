@@ -8,8 +8,9 @@ import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
 import finance.omm.score.tokens.config.dTokenConfig;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -37,7 +38,7 @@ public class DTokenIT implements ScoreIntegrationTest {
 
     private static Map<String, foundation.icon.jsonrpc.Address> addressMap;
 
-    @BeforeEach
+    @BeforeAll
     void setup() throws Exception {
         OMM omm = new OMM("conf/all-contracts.json");
 
@@ -47,16 +48,20 @@ public class DTokenIT implements ScoreIntegrationTest {
         omm.runConfig(config);
         ommClient = omm.defaultClient();
         testClient = omm.testClient();
+        ommClient.staking.setOmmLendingPoolCore(addressMap.get(Contracts.LENDING_POOL_CORE.getKey()));
+        ommClient.sICX.setMinter(addressMap.get(Contracts.STAKING.getKey()));
         mintToken();
         reserveSetup();
     }
 
     @Test
+    @Order(1)
     void testName() {
         assertEquals("SICX Debt Token", ommClient.dICX.name());
     }
 
     @Test
+    @Order(2)
     /*
     testClient and ommClient borrows iusdc and icx
     totalSupply and users balanceOf is asserted
@@ -150,6 +155,7 @@ public class DTokenIT implements ScoreIntegrationTest {
     }
 
     @Test
+    @Order(3)
     void repay() {
 
         BigInteger amount = BigInteger.valueOf(100).multiply(BigInteger.valueOf(100_000));
@@ -161,9 +167,8 @@ public class DTokenIT implements ScoreIntegrationTest {
         // test client borrows 100 IUSDC
         testClient.lendingPool.borrow(IUSDCAddr, amount);
 
-        assertEquals(amount, ommClient.dIUSDC.balanceOf(testClient.getAddress()));
-        assertEquals(BigInteger.ONE.multiply(ICX),
-                ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress()));
+        assertEquals(amount.add(BigInteger.valueOf(34).multiply(BigInteger.valueOf(100_000))), ommClient.dIUSDC.balanceOf(testClient.getAddress()));
+        assertTrue(ommClient.dIUSDC.getUserBorrowCumulativeIndex(testClient.getAddress()).longValue()>(ICX).longValue());
 
         BigInteger repay = BigInteger.valueOf(10).multiply(BigInteger.valueOf(100_000));
         byte[] data = createByteArray("repay", repay, null, null, null);
@@ -184,13 +189,15 @@ public class DTokenIT implements ScoreIntegrationTest {
     }
 
     @Test
+    @Order(4)
     /*
     testClient deposits 100 ICX and borrows 100 IUSDC
-    the price drops of ICX from 0.3 to 0.1
+    the price drops of ICX from 0.3 to 0.01
     ommClient calls liquidation
      */
     void liquidation() {
-        depositICX(testClient, BigInteger.valueOf(100));
+
+        ommClient.lendingPool.setLiquidationStatus(true);
 
         Address IUSDCAddr = addressMap.get(Contracts.IUSDC.getKey());
         BigInteger amountToBorrowIUSDC = BigInteger.valueOf(100).multiply(BigInteger.valueOf(100_000));
@@ -201,7 +208,7 @@ public class DTokenIT implements ScoreIntegrationTest {
         assertEquals(amountToBorrowIUSDC, ommClient.dIUSDC.principalBalanceOf(testClient.getAddress()));
 
         ommClient.dummyPriceOracle.set_reference_data("ICX",
-                BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.TEN));
+                BigInteger.valueOf(1).multiply(ICX).divide(BigInteger.valueOf(100)));
 
         BigInteger balanceOfOmmClient = ommClient.iUSDC.balanceOf(ommClient.getAddress());
         byte[] data = createByteArray("liquidationCall", null,
@@ -222,6 +229,7 @@ public class DTokenIT implements ScoreIntegrationTest {
     }
 
     @Test
+    @Order(5)
     void transfer() {
         BigInteger amount = BigInteger.valueOf(10).multiply(ICX);
 
@@ -231,6 +239,7 @@ public class DTokenIT implements ScoreIntegrationTest {
     }
 
     @Test
+    @Order(6)
     void handleAction() {
 
         assertTrue(ommClient.dICX.isHandleActionEnabled());

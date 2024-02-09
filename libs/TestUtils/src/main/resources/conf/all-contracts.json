@@ -3,6 +3,8 @@
     "name": "staking",
     "contract": "Staking",
     "params": {
+      "_feePercentage": 10000000000000000000,
+      "_productivity": 0
     },
     "order": 1.0
   },
@@ -120,7 +122,7 @@
     },
     "addressParams": {
       "_addressProvider": "addressProvider"
-  },
+    },
     "order": 1.0
   },
   {
@@ -151,6 +153,16 @@
     },
     "addressParams": {
       "_addressProvider": "addressProvider"
+    },
+    "order": 1.0
+  },
+  {
+    "name": "feeDistribution",
+    "contract": "FeeDistribution",
+    "params": {
+    },
+    "addressParams": {
+      "addressProvider": "addressProvider"
     },
     "order": 1.0
   },
@@ -244,7 +256,7 @@
   },
   {
     "name": "sICX",
-    "contract": "sICX",
+    "contract": "Sicx",
     "params": {
     },
     "addressParams": {
