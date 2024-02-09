@@ -26,15 +26,16 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
     public static final String ACCUMULATED_FEE = "accumulated_fee";
     public static final String FEE_DISTRIBUTION_WEIGHT = "fee_distribution_weight";
     public static final String FEE_TO_DISTRIBUTE = "fee_to_distribute";
+    public static final String JAILED_VALIDATOR_SHARE = "jailed_validator_share";
     protected final EnumerableDictDB<Address, BigInteger> collectedFee =
             new EnumerableDictDB<>(COLLECTED_FEE, Address.class, BigInteger.class);
     protected final VarDB<BigInteger> validatorRewards = Context.newVarDB(VALIDATOR_FEE_COLLECTED, BigInteger.class);
     protected final DictDB<Address, BigInteger> accumulatedFee = Context.newDictDB(ACCUMULATED_FEE, BigInteger.class);
     protected final EnumerableDictDB<Address, BigInteger> feeDistributionWeight = new
 
-            EnumerableDictDB<>("fee_distribution_weight", Address.class, BigInteger.class);
-    protected final VarDB<BigInteger> feeToDistribute = Context.newVarDB("fee_to_distribute",BigInteger.class);
-    protected final VarDB<BigInteger> validatorShare = Context.newVarDB("jailed_validator_share",BigInteger.class);
+            EnumerableDictDB<>(FEE_DISTRIBUTION_WEIGHT, Address.class, BigInteger.class);
+    protected final VarDB<BigInteger> feeToDistribute = Context.newVarDB(FEE_TO_DISTRIBUTE,BigInteger.class);
+    protected final VarDB<BigInteger> validatorShare = Context.newVarDB(JAILED_VALIDATOR_SHARE,BigInteger.class);
 
 
 
