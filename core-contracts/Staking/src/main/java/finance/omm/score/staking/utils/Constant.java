@@ -48,6 +48,7 @@ public class Constant {
     public static final String FEE_PERCENTAGE ="fee_percentage";
     public static final String FEE_ADDRESS ="fee_distribution_address";
     public static final String OMM_LENDING_POOL_CORE ="omm_lending_pool_address";
+    public static final String OMM_DELEGATION ="omm_delegation_address";
 
     public static DelegationListDBSdo DEFAULT_DELEGATION_LIST = getDelegationList();
 

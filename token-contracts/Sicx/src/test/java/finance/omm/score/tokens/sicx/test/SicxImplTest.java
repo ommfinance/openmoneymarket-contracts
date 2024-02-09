@@ -201,6 +201,29 @@ class SicxImplTest extends TestBase {
         contextMock.verify(tokenFallback);
     }
 
+    @Test
+    void govTransfer(){
+        Account user2 = sm.createAccount();
+        contextMock.when(transferUpdateDelegations).thenReturn(null);
+        sicxScore.invoke(staking, "mintTo", user.getAddress(), new BigInteger("50"), "data".getBytes());
+
+        assertEquals(new BigInteger("0"), sicxScore.call("balanceOf", owner.getAddress()));
+        assertEquals(new BigInteger("50"), sicxScore.call("balanceOf", user.getAddress()));
+
+        contextMock.when(caller()).thenReturn(owner.getAddress());
+        sicxScore.invoke(owner,"govTransfer",user.getAddress(),user2.getAddress(),BigInteger.TEN,
+                "transfer".getBytes());
+
+        assertEquals(new BigInteger("0"), sicxScore.call("balanceOf", owner.getAddress()));
+        assertEquals(new BigInteger("40"), sicxScore.call("balanceOf", user.getAddress()));
+        assertEquals(new BigInteger("10"), sicxScore.call("balanceOf", user2.getAddress()));
+
+    }
+
+    private MockedStatic.Verification caller(){
+        return Context::getCaller;
+    }
+
     @AfterEach
     void resetMock() {
         contextMock.reset();

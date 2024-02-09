@@ -16,6 +16,7 @@ import finance.omm.libs.test.integration.OMMClient;
 import finance.omm.libs.test.integration.ScoreIntegrationTest;
 import finance.omm.libs.test.integration.configs.Config;
 import finance.omm.libs.test.integration.scores.LendingPoolScoreClient;
+import finance.omm.libs.test.integration.scores.StakingScoreClient;
 import finance.omm.score.core.delegation.exception.DelegationException;
 import finance.omm.score.core.test.config.DelegationConfig;
 import org.junit.jupiter.api.BeforeAll;
@@ -90,6 +91,8 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
     check if user has default delegation after locking omm
      */
     void checkUserDefaultDelegation(){
+        ((StakingScoreClient)ownerClient.staking).updatePreps();
+
         ((LendingPoolScoreClient)ownerClient.lendingPool).
                 deposit(BigInteger.valueOf(1000).multiply(ICX),BigInteger.valueOf(1000).multiply(ICX));
         userLockOMM();
@@ -217,10 +220,10 @@ public class DelegationIntegrationTest implements ScoreIntegrationTest {
      */
     void clearPrevious(){
 
-        assertUserRevert(DelegationException.unknown(TAG+" :You are not authorized to clear others delegation preference"),
-                () -> ownerClient.delegation.clearPrevious(testClient.getAddress()),null);
+//        assertUserRevert(DelegationException.unknown(TAG+" :You are not authorized to clear others delegation preference"),
+//                () -> ownerClient.delegation.clearPrevious(testClient.getAddress()),null);
 
-        testClient.delegation.clearPrevious(testClient.getAddress());
+        testClient.delegation.clearPrevious();
 
 
         score.Address[] contributors = Environment.contributors.keySet().toArray(score.Address[]::new);

@@ -150,13 +150,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     }
 
     @External
-    public void clearPrevious(Address _user) {
-        if (!_user.equals(Context.getCaller())) {
-            throw DelegationException.unknown(TAG +
-                    " :You are not authorized to clear others delegation preference");
-        }
+    public void clearPrevious() {
         PrepDelegations[] defaultDelegation = distributeVoteToContributors();
-        updateDelegations(defaultDelegation, _user);
+        updateDelegations(defaultDelegation, Context.getCaller());
     }
 
     @External(readonly = true)
@@ -227,9 +223,6 @@ public class DelegationImpl extends AddressProvider implements Delegation {
     public void onKick(Address user, BigInteger bOMMUserBalance, @Optional byte[] data) {
         onlyOrElseThrow(Contracts.BOOSTED_OMM,
                 DelegationException.unauthorized("Only bOMM contract is allowed to call onKick method"));
-        if (!bOMMUserBalance.equals(BigInteger.ZERO)) {
-            throw DelegationException.unknown(user + " OMM locking has not expired");
-        }
         updateUserDelegations(null, user, bOMMUserBalance);
         UserKicked(user, data);
     }
@@ -239,6 +232,23 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         onlyOrElseThrow(Contracts.BOOSTED_OMM,
                 DelegationException.unauthorized("Only bOMM contract is allowed to call onBalanceUpdate method"));
         updateUserDelegations(null, user, null);
+    }
+
+    @External
+    public void updateDelegationAtOnce(PrepDelegations[] _delegations){
+        Address user = Context.getCaller();
+        updateUserDelegations(_delegations,user,null);
+
+        int delegationsLength = _delegations.length;
+        PrepDelegations[] updatedDelegations = new PrepDelegations[delegationsLength];
+        for (int i = 0; i < delegationsLength; i++) {
+
+            Address _address = _delegations[i]._address;
+            BigInteger _votes_in_per = _delegations[i]._votes_in_per.multiply(BigInteger.valueOf(100));
+            updatedDelegations[i] = new PrepDelegations(_address,_votes_in_per);
+        }
+
+        call(Contracts.STAKING,"delegateForUser",updatedDelegations,user);
     }
 
     @External
@@ -292,6 +302,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             PrepDelegations userDelegation = userDelegations[i];
             Address address = userDelegation._address;
             BigInteger votes = userDelegation._votes_in_per;
+
+            if (votes.signum() == -1 ){
+                throw DelegationException.unknown(TAG + " Negative vote percentage");
+            }
 
             _preps.add(address);
 

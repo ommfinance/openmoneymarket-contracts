@@ -64,8 +64,8 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     protected final EnumerableSet<Address> allowedContracts = new EnumerableSet<>(KeyConstants.bOMM_ALLOWED_CONTRACTS,
             Address.class);
 
-    protected final VarDB<BigInteger> ommTokenBalance = Context.newVarDB(KeyConstants.bOMM_OMM_BALANCE,
-            BigInteger.class);
+//    protected final VarDB<BigInteger> ommTokenBalance = Context.newVarDB(KeyConstants.bOMM_OMM_BALANCE,
+//            BigInteger.class);
 
 
     public AbstractBoostedOMM(Address addressProvider, Address tokenAddress, String name, String symbol) {
@@ -89,14 +89,13 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
         point.timestamp = UnsignedBigInteger.valueOf(Context.getBlockTimestamp());
         this.pointHistory.set(BigInteger.ZERO, point);
 
-        this.ommTokenBalance.set(BigInteger.ZERO);
         this.supply.set(BigInteger.ZERO);
         this.epoch.set(BigInteger.ZERO);
         this.minimumLockingAmount.set(ICX);
     }
 
     @EventLog(indexed = 2)
-    public void Deposit(Address provider, BigInteger locktime, BigInteger value, int type, BigInteger timestamp) {
+    public void Deposit(Address provider, BigInteger value,BigInteger locktime, int type, BigInteger timestamp) {
     }
 
     @EventLog(indexed = 1)
@@ -329,25 +328,28 @@ public abstract class AbstractBoostedOMM extends AddressProvider implements Boos
     protected void depositFor(Address address, BigInteger value, BigInteger unlockTime, LockedBalance lockedBalance,
             int type) {
         LockedBalance locked = lockedBalance.newLockedBalance();
-        BigInteger supplyBefore = this.supply.get();
-        BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
-
-        this.supply.set(supplyBefore.add(value));
         LockedBalance oldLocked = locked.newLockedBalance();
+        BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
+        BigInteger supplyBefore = this.supply.getOrDefault(BigInteger.ZERO);
+        BigInteger supplyAfter;
 
-        locked.amount = locked.amount.add(value);
+        if (value.signum() > 0) {
+            supplyAfter = supplyBefore.add(value);
+            locked.amount = locked.amount.add(value);
+            this.supply.set(supplyAfter);
+        }
+        else {
+            supplyAfter = supplyBefore;
+        }
         if (!unlockTime.equals(BigInteger.ZERO)) {
             locked.end = new UnsignedBigInteger(unlockTime);
         }
 
         this.locked.set(address, locked);
-        if (value.compareTo(BigInteger.ZERO) > 0) {
-            this.ommTokenBalance.set(this.ommTokenBalance.get().add(value));
-        }
         this.checkpoint(address, oldLocked, locked);
 
         Deposit(address, value, locked.getEnd(), type, blockTimestamp);
-        Supply(supplyBefore, supplyBefore.add(value));
+        Supply(supplyBefore, supplyAfter);
 
         onBalanceUpdate(address);
     }

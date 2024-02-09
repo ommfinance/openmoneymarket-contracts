@@ -3,6 +3,7 @@ package finance.omm.score.staking.utils;
 import finance.omm.score.staking.StakingImpl;
 import score.Address;
 import score.Context;
+import score.VarDB;
 
 public class Checks {
 
@@ -19,4 +20,7 @@ public class Checks {
             Context.revert(Constant.TAG + ": ICX Staking SCORE is not active.");
         }
     }
+
+
+
 }

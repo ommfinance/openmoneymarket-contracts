@@ -270,7 +270,7 @@ public class DelegationTest extends TestBase {
         delegationScore.invoke(user1, "updateDelegations", delegations, user1.getAddress());
         BigInteger betweenTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
 
-        delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
+        delegationScore.invoke(user1, "clearPrevious");
         BigInteger afterTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
 
         assertEquals(betweenTotal, afterTotal);
@@ -292,9 +292,6 @@ public class DelegationTest extends TestBase {
         Account user = sm.createAccount();
         initialize();
 
-        Executable call = () -> delegationScore.invoke(MOCK_CONTRACT_ADDRESS.get(Contracts.BOOSTED_OMM), "onKick",
-                user.getAddress(), BigInteger.ONE, "temp".getBytes());
-        expectErrorMessage(call, user.getAddress() + " OMM locking has not expired");
 
         // should be kicked if boosted omm balance = 0
         doReturn(ICX).when(scoreSpy)
@@ -1039,10 +1036,10 @@ public class DelegationTest extends TestBase {
         PrepDelegations[] delegations3 = getPrepDelegations1(2);
         delegationScore.invoke(user1, "updateDelegations", delegations3, user1.getAddress());
         delegationScore.invoke(user1, "updateDelegations", delegations1, user1.getAddress());
-        delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
-        delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
+        delegationScore.invoke(user1, "clearPrevious");
+        delegationScore.invoke(user1, "clearPrevious");
         delegationScore.invoke(user1, "updateDelegations", delegations3, user1.getAddress());
-        delegationScore.invoke(user1, "clearPrevious", user1.getAddress());
+        delegationScore.invoke(user1, "clearPrevious");
 
         BigInteger newTotal = (BigInteger) delegationScore.call("getWorkingTotalSupply");
         assertEquals(BigInteger.TEN.pow(18), newTotal);
@@ -1201,6 +1198,34 @@ public class DelegationTest extends TestBase {
         assertEquals(expected, user3IcxDelegations.get(1)._votes_in_icx);
     }
 
+    @DisplayName("Test user delgates by bOMM and sicx at once")
+    @Test
+    public void delgationAtOnce(){
+        initialize();
+        Account user1 = sm.createAccount();
+        PrepDelegations[] prepDelegations = getPrepDelegations1(10);
+
+        Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
+
+        contextMock
+                .when(() -> Context.call(eq(Map.class), eq(AddressConstant.ZERO_SCORE_ADDRESS),
+                        eq("getPRep"), any()))
+                .thenReturn(prepDetails);
+
+        doNothing().when(scoreSpy).call(eq(Contracts.LENDING_POOL_CORE), eq("updatePrepDelegations"), any());
+        doNothing().when(scoreSpy).call(eq(Contracts.STAKING), eq("delegateForUser"), any(),any());
+
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", user1.getAddress());
+
+        delegationScore.invoke(user1,"updateDelegationAtOnce", (Object) prepDelegations);
+
+        PrepDelegations[] scoreDelegations = (PrepDelegations[]) delegationScore
+                .call("getUserDelegationDetails", user1.getAddress());
+        assertArrayEquals(prepDelegations, scoreDelegations);
+    }
+
     @Test
     public void initializeVoteToContributors() {
         initialize();
@@ -1212,6 +1237,31 @@ public class DelegationTest extends TestBase {
         Executable call = () -> delegationScore.invoke(owner, "initializeVoteToContributors");
 
         expectErrorMessage(call, "Delegation : This method cannot be called again.");
+    }
+
+    @Test
+    public void delegateNegativeVote(){
+        initialize();
+
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", owner.getAddress());
+
+        PrepDelegations[] delegations = new PrepDelegations[2];
+
+        // negative delegation
+        Address prep = sm.createAccount().getAddress();
+        BigInteger votesInPer = BigInteger.valueOf(20).multiply(BigInteger.valueOf(10).pow(16).negate());
+        delegations[0]  = new PrepDelegations(prep, votesInPer);
+
+
+        // positive delegation
+        prep = sm.createAccount().getAddress();
+        votesInPer = BigInteger.valueOf(120).multiply(BigInteger.valueOf(10).pow(16));
+        delegations[1] = new PrepDelegations(prep, votesInPer);
+
+        Executable call = () -> delegationScore.invoke(owner, "updateDelegations", delegations, owner.getAddress());
+        expectErrorMessage(call,"Delegation Negative vote percentage");
     }
 
 
