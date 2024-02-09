@@ -278,7 +278,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         doReturn(Map.of(
                 validator1.getAddress().toString(),BigInteger.valueOf(10).multiply(ICX),
                 validator2.getAddress().toString(),BigInteger.valueOf(90).multiply(ICX)
-        )).when(spyScore).call(eq(Map.class),any(),eq("getActualUserDelegationPercentage"),any());
+        )).when(spyScore).call(eq(Map.class),any(Contracts.class),eq("getActualUserDelegationPercentage"),any());
 
 
 
