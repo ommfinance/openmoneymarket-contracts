@@ -79,7 +79,8 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
             BigInteger ommValidatorPercentage = ommValidators.get(user.toString());
 
             if (ommValidatorPercentage != null) {
-                return ommValidatorPercentage.multiply(amountToDistribute).divide(ICX).add(accumulated);
+                return ommValidatorPercentage.multiply(amountToDistribute).divide(ICX).
+                        divide(BigInteger.valueOf(100)).add(accumulated);
             } else {
                 return accumulated;
             }
