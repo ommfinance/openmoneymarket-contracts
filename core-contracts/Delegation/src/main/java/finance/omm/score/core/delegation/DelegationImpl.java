@@ -303,6 +303,10 @@ public class DelegationImpl extends AddressProvider implements Delegation {
             Address address = userDelegation._address;
             BigInteger votes = userDelegation._votes_in_per;
 
+            if (votes.signum() == -1 ){
+                throw DelegationException.unknown(TAG + " Negative vote percentage");
+            }
+
             _preps.add(address);
 
             if (!bOMMUserBalance.equals(BigInteger.ZERO)) {

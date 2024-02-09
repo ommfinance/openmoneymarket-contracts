@@ -244,4 +244,55 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
     }
 
+    @Test
+    void check_claimableFee(){
+        BigInteger feeAmount = BigInteger.valueOf(1100).multiply(ICX);
+
+//        1100 ICX ->
+        // 40% -> validator
+//        10% to sICX wallet,
+        // 25% -> daoFund,
+        // 25% -> test wallet,
+
+        // validator -> 440 ICX
+        // sicx wallet -> 110 ICX
+        // test wallet -> 275 ICX
+        // daoFund -> 275 ICX
+
+        Address validator = MOCK_CONTRACT_ADDRESS.get(Contracts.LENDING_POOL_CORE).getAddress();
+        Address sicxWallet = testScore.getAddress();
+        Address test = testScore1.getAddress();
+        Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
+
+        BigInteger weight1 = (BigInteger.valueOf(40).multiply(ICX)).divide(HUNDRED);
+        BigInteger weight2 = BigInteger.TEN.multiply(ICX).divide(HUNDRED);
+        BigInteger weight3 = (BigInteger.valueOf(25).multiply(ICX)).divide(HUNDRED);
+        BigInteger weight4 = (BigInteger.valueOf(25).multiply(ICX)).divide(HUNDRED);
+
+        Address[] receiverAddr = new Address[]{validator,sicxWallet,test,daoFund};
+        BigInteger[] weight = new BigInteger[]{weight1,weight2,weight3,weight4};
+        score.invoke(owner,"setFeeDistribution",receiverAddr,weight);
+
+        doNothing().when(spyScore).call(any(Contracts.class),eq("transfer"),any(),any());
+
+        doReturn(Map.of(
+                validator1.getAddress().toString(),BigInteger.valueOf(10).multiply(ICX),
+                validator2.getAddress().toString(),BigInteger.valueOf(90).multiply(ICX)
+        )).when(spyScore).call(eq(Map.class),any(),eq("getActualUserDelegationPercentage"),any());
+
+
+
+
+        Address sicx = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
+        contextMock.when(mockCaller()).thenReturn(sicx);
+        score.invoke(owner,"tokenFallback",owner.getAddress(),feeAmount,"b".getBytes());
+
+        verify(spyScore).FeeDistributed(BigInteger.valueOf(1100).multiply(ICX));
+
+        assertEquals(BigInteger.valueOf(44).multiply(ICX),score.call("getClaimableFee",validator1.getAddress()));
+        assertEquals(BigInteger.valueOf(110).multiply(ICX),score.call("getClaimableFee",sicxWallet));
+        assertEquals(BigInteger.valueOf(275).multiply(ICX),score.call("getClaimableFee",test));
+
+    }
+
 }

@@ -27,8 +27,8 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     }
 
     @External(readonly = true)
-    public BigInteger getFeeDistributionOf(Address address){
-        return feeDistributionWeight.getOrDefault(address,BigInteger.ZERO);
+    public BigInteger getFeeDistributionOf(Address address) {
+        return feeDistributionWeight.getOrDefault(address, BigInteger.ZERO);
     }
 
     @External(readonly = true)
@@ -41,34 +41,35 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     }
 
     @External(readonly = true)
-    public BigInteger getCollectedFee(Address address){
-        return collectedFee.getOrDefault(address,BigInteger.ZERO);
+    public BigInteger getCollectedFee(Address address) {
+        return collectedFee.getOrDefault(address, BigInteger.ZERO);
     }
 
     @External(readonly = true)
-    public Map<String,BigInteger> getAllCollectedFees(){
-        Map<String,BigInteger> collectedFeeMap = new HashMap<>();
-        for (Address key: collectedFee.keySet()) {
-            collectedFeeMap.put(key.toString(),collectedFee.get(key));
+    public Map<String, BigInteger> getAllCollectedFees() {
+        Map<String, BigInteger> collectedFeeMap = new HashMap<>();
+        for (Address key : collectedFee.keySet()) {
+            collectedFeeMap.put(key.toString(), collectedFee.get(key));
         }
         return collectedFeeMap;
     }
+
     @External(readonly = true)
-    public BigInteger getValidatorCollectedFee(){
+    public BigInteger getValidatorCollectedFee() {
         return validatorRewards.getOrDefault(BigInteger.ZERO);
     }
 
     @External(readonly = true)
-    public BigInteger getAccumulatedFee(Address address){
-        return accumulatedFee.getOrDefault(address,BigInteger.ZERO);
+    public BigInteger getAccumulatedFee(Address address) {
+        return accumulatedFee.getOrDefault(address, BigInteger.ZERO);
     }
 
     @External(readonly = true)
-    public BigInteger getClaimableFee(Address user){
+    public BigInteger getClaimableFee(Address user) {
         BigInteger currentFeeInSystem = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
-        BigInteger accumulated = accumulatedFee.getOrDefault(user,BigInteger.ZERO);
+        BigInteger accumulated = accumulatedFee.getOrDefault(user, BigInteger.ZERO);
         BigInteger distributionPercentage = feeDistributionWeight.get(user);
-        if (distributionPercentage == null){
+        if (distributionPercentage == null) {
             Address lendingPoolCoreAddr = getAddress(Contracts.LENDING_POOL_CORE.getKey());
             BigInteger validatorWeightInPercentage = feeDistributionWeight.get(lendingPoolCoreAddr);
             BigInteger amountToDistribute = validatorWeightInPercentage.multiply(currentFeeInSystem).divide(ICX);
@@ -77,13 +78,13 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
                     "getActualUserDelegationPercentage", lendingPoolCoreAddr);
             BigInteger ommValidatorPercentage = ommValidators.get(user.toString());
 
-            if (ommValidatorPercentage != null){
-                return ommValidatorPercentage.multiply(amountToDistribute).divide(ICX).add(accumulated);
-            }
-            else {
+            if (ommValidatorPercentage != null) {
+                return ommValidatorPercentage.multiply(amountToDistribute).divide(ICX).
+                        divide(BigInteger.valueOf(100)).add(accumulated);
+            } else {
                 return accumulated;
             }
-        }else {
+        } else {
 
             return accumulated.add(distributionPercentage.multiply(currentFeeInSystem).divide(ICX));
         }
@@ -92,32 +93,33 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
     @External
     public void setFeeDistribution(Address[] addresses, BigInteger[] weights){
         // Note: when setting addresses validator address should precede daoFund address for complete distribution
+
         onlyOwner();
         int addressSize = addresses.length;
-        if (!(addressSize == weights.length)){
+        if (!(addressSize == weights.length)) {
             throw FeeDistributionException.unknown(TAG + " :: Invalid pair length of arrays");
         }
-        if (containsDuplicate(addresses)){
+        if (containsDuplicate(addresses)) {
             throw FeeDistributionException.unknown(TAG + " :: Array has duplicate addresses");
         }
         feeDistributionWeight.clear();
         BigInteger totalWeight = BigInteger.ZERO;
         for (int i = 0; i < addressSize; i++) {
-            feeDistributionWeight.put(addresses[i],weights[i]);
+            feeDistributionWeight.put(addresses[i], weights[i]);
 
             totalWeight = totalWeight.add(weights[i]);
         }
 
-        if (!totalWeight.equals(ICX)){
+        if (!totalWeight.equals(ICX)) {
             throw FeeDistributionException.unknown(TAG + " :: Sum of percentages not equal to 100 " + totalWeight);
         }
     }
 
     @External
-    public void tokenFallback(Address _from, BigInteger _value, byte[] _data){
+    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
         Address caller = Context.getCaller();
         Address sICX = getAddress(Contracts.sICX.getKey());
-        if (!caller.equals(sICX)){
+        if (!caller.equals(sICX)) {
             throw FeeDistributionException.unauthorized();
         }
         BigInteger currentFeeInSystem = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
@@ -127,7 +129,7 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
 
 
     @External
-    public void claimRewards(@Optional Address receiverAddress){
+    public void claimRewards(@Optional Address receiverAddress) {
 
         Address caller = Context.getCaller();
         if (receiverAddress == null) {
@@ -135,23 +137,23 @@ public class FeeDistributionImpl extends AbstractFeeDistribution {
         }
 
         BigInteger fee = this.feeToDistribute.getOrDefault(BigInteger.ZERO);
-        if(fee.signum() > 0){
+        if (fee.signum() > 0) {
             distributeFee(fee);
         }
 
-        BigInteger amountToClaim = accumulatedFee.getOrDefault(caller,BigInteger.ZERO);
+        BigInteger amountToClaim = accumulatedFee.getOrDefault(caller, BigInteger.ZERO);
 
-        if (amountToClaim.compareTo(BigInteger.ZERO)<=0){
+        if (amountToClaim.compareTo(BigInteger.ZERO) <= 0) {
             return;
         }
 
-        accumulatedFee.set(caller,null);
+        accumulatedFee.set(caller, null);
 
-        BigInteger feeCollected = collectedFee.getOrDefault(receiverAddress,BigInteger.ZERO);
-        collectedFee.put(receiverAddress,feeCollected.add(amountToClaim));
+        BigInteger feeCollected = collectedFee.getOrDefault(receiverAddress, BigInteger.ZERO);
+        collectedFee.put(receiverAddress, feeCollected.add(amountToClaim));
 
-        call(Contracts.sICX,"transfer",receiverAddress,amountToClaim);
+        call(Contracts.sICX, "transfer", receiverAddress, amountToClaim);
 
-        FeeClaimed(caller,receiverAddress,amountToClaim);
+        FeeClaimed(caller, receiverAddress, amountToClaim);
     }
 }

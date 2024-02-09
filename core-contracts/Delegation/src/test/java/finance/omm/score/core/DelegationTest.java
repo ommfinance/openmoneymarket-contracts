@@ -1239,6 +1239,31 @@ public class DelegationTest extends TestBase {
         expectErrorMessage(call, "Delegation : This method cannot be called again.");
     }
 
+    @Test
+    public void delegateNegativeVote(){
+        initialize();
+
+        BigInteger workingBalance = BigInteger.TEN.pow(18);
+        doReturn(workingBalance).when(scoreSpy)
+                .call(BigInteger.class, Contracts.BOOSTED_OMM, "balanceOf", owner.getAddress());
+
+        PrepDelegations[] delegations = new PrepDelegations[2];
+
+        // negative delegation
+        Address prep = sm.createAccount().getAddress();
+        BigInteger votesInPer = BigInteger.valueOf(20).multiply(BigInteger.valueOf(10).pow(16).negate());
+        delegations[0]  = new PrepDelegations(prep, votesInPer);
+
+
+        // positive delegation
+        prep = sm.createAccount().getAddress();
+        votesInPer = BigInteger.valueOf(120).multiply(BigInteger.valueOf(10).pow(16));
+        delegations[1] = new PrepDelegations(prep, votesInPer);
+
+        Executable call = () -> delegationScore.invoke(owner, "updateDelegations", delegations, owner.getAddress());
+        expectErrorMessage(call,"Delegation Negative vote percentage");
+    }
+
 
     public void expectErrorMessage(Executable contractCall, String errorMessage) {
         AssertionError e = Assertions.assertThrows(AssertionError.class, contractCall);
