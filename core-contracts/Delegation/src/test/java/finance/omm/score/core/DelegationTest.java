@@ -1074,8 +1074,8 @@ public class DelegationTest extends TestBase {
         doReturn(twoExa).when(scoreSpy).
                 call(BigInteger.class, Contracts.STAKING, "getTodayRate");
 
-        doReturn(BigInteger.valueOf(1000L).multiply(BigInteger.TEN.pow(18))).when(scoreSpy).
-                call(eq(BigInteger.class), eq(Contracts.sICX), eq("balanceOf"), any());
+        doReturn(BigInteger.valueOf(2000L).multiply(BigInteger.TEN.pow(18))).when(scoreSpy).
+                call(eq(BigInteger.class), eq(Contracts.STAKING), eq("getUndelegatedICX"), any());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
         contextMock
@@ -1150,8 +1150,8 @@ public class DelegationTest extends TestBase {
         doReturn(twoExa).when(scoreSpy).
                 call(BigInteger.class, Contracts.STAKING, "getTodayRate");
 
-        doReturn(BigInteger.valueOf(1000L).multiply(BigInteger.TEN.pow(18))).when(scoreSpy).
-                call(eq(BigInteger.class), eq(Contracts.sICX), eq("balanceOf"), any());
+        doReturn(BigInteger.valueOf(2000).multiply(BigInteger.TEN.pow(18))).when(scoreSpy).
+                call(eq(BigInteger.class), eq(Contracts.STAKING), eq("getUndelegatedICX"), any());
 
         Map<String, ?> prepDetails = Map.of("status", BigInteger.ZERO);
         contextMock
