@@ -47,7 +47,6 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     public final TypeWeightDB typeWeightDB = new TypeWeightDB("types");
     public final AssetWeightDB assetWeightDB = new AssetWeightDB("assets");
-    public final VarDB<Boolean> isDistributionOff = Context.newVarDB("isDistributionOff",Boolean.class);
     public final VarDB<BigInteger> distributionStopDay = Context.newVarDB("distributionStopDay",BigInteger.class);
 
     private final VarDB<BigInteger> _timestampAtStart = Context.newVarDB(TIMESTAMP_AT_START, BigInteger.class);
@@ -66,16 +65,6 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     }
 
     @External
-    public void setDistributionStatus(boolean status) {
-        onlyOwner();
-        this.isDistributionOff.set(status);
-    }
-    @External(readonly = true)
-    public boolean getDistributionStatus(){
-        return this.isDistributionOff.getOrDefault(false);
-    }
-
-    @External
     public void setStopDay(BigInteger day) {
         onlyOwner();
         this.distributionStopDay.set(day);
@@ -83,7 +72,7 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
 
     @External(readonly = true)
     public BigInteger getStopDay(){
-        return this.distributionStopDay.getOrDefault(BigInteger.ZERO);
+        return this.distributionStopDay.get();
     }
 
     @External
@@ -168,9 +157,8 @@ public class RewardWeightControllerImpl extends AddressProvider implements Rewar
     public BigInteger tokenDistributionPerDay(BigInteger _day) {
 
         BigInteger stopDay = getStopDay();
-        boolean isDistributionOff = getDistributionStatus();
 
-        if (isDistributionOff && MathUtils.isGreaterThanEqual(_day, stopDay)) {
+        if (MathUtils.isGreaterThanEqual(_day, stopDay)) {
             return BigInteger.ZERO;
         } else {
             return _tokenDistributionDay(_day);
