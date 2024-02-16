@@ -339,6 +339,7 @@ public class RewardDistributionImpl extends AbstractRewardDistribution {
             BigInteger accruedRewards = calculateReward(HUNDRED_PERCENT, newIndex, oldIndex);
             transferToContract = transferToContract.add(accruedRewards);
 
+            // TODO: the reward of other recipient is sent to dao and worker. Need to fix this
             if (Contracts.WORKER_TOKEN.getKey().equals(platformRecipientMap.get(key))) {
                 distributeWorkerToken(accruedRewards);
             } else if (Contracts.DAO_FUND.getKey().equals(platformRecipientMap.get(key))) {
