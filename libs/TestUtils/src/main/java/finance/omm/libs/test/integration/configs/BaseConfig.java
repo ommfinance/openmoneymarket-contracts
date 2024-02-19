@@ -1,12 +1,7 @@
 package finance.omm.libs.test.integration.configs;
 
 import finance.omm.libs.test.integration.OMMClient;
-import finance.omm.libs.test.integration.configs.versions.Release;
-import finance.omm.libs.test.integration.configs.versions.Release_1_0_0;
-import finance.omm.libs.test.integration.configs.versions.Release_1_1_0;
-import finance.omm.libs.test.integration.configs.versions.Release_1_1_2;
-import finance.omm.libs.test.integration.configs.versions.Release_1_1_5_1;
-import finance.omm.libs.test.integration.configs.versions.Release_1_2_0;
+import finance.omm.libs.test.integration.configs.versions.*;
 
 public class BaseConfig implements Config {
 
@@ -22,7 +17,8 @@ public class BaseConfig implements Config {
         release.nextRelease(new Release_1_1_0())
                 .nextRelease(new Release_1_1_2())
                 .nextRelease(new Release_1_1_5_1())
-                .nextRelease(new Release_1_2_0());
+                .nextRelease(new Release_1_2_0())
+                .nextRelease(new Release_1_3_0());
 
         release.init();
 
