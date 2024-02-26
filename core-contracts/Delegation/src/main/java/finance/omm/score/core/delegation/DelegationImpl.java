@@ -428,11 +428,9 @@ public class DelegationImpl extends AddressProvider implements Delegation {
         BigInteger userWorkingBalance = getWorkingBalance(_user);
         BigInteger workingTotal = getWorkingTotalSupply();
 
-        Address lendingPoolCore = getAddress(Contracts.LENDING_POOL_CORE.getKey());
 
-        BigInteger sicxIcxRate = call(BigInteger.class, Contracts.STAKING, "getTodayRate");
-        BigInteger coresICXBalance = call(BigInteger.class, Contracts.sICX, "balanceOf", lendingPoolCore);
-        BigInteger ommICXPower = exaMultiply(sicxIcxRate, exaDivide(coresICXBalance, workingTotal));
+        BigInteger undelegatedICX = call(BigInteger.class, Contracts.STAKING, "getUndelegatedICX");
+        BigInteger ommICXPower = exaDivide(undelegatedICX, workingTotal);
 
         DictDB<Integer, BigInteger> percentageDelegationsOfUser = _percentageDelegations.at(_user);
         DictDB<Integer, Address> userPreps = _userPreps.at(_user);

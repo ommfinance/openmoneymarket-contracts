@@ -63,4 +63,6 @@ public interface RewardWeightController {
 
     Map<String, BigInteger> getEmissionRate(@Optional BigInteger timestamp);
 
+    void setStopDay(BigInteger day);
+
 }
