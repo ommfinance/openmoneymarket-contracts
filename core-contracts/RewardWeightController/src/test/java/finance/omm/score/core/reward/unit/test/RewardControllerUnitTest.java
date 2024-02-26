@@ -1,7 +1,9 @@
 package finance.omm.score.core.reward.unit.test;
 
 
+import static finance.omm.utils.constants.TimeConstants.DAYS_PER_YEAR;
 import static finance.omm.utils.constants.TimeConstants.SECOND;
+import static finance.omm.utils.math.MathUtils.HUNDRED_THOUSAND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,6 +102,7 @@ public class RewardControllerUnitTest extends TestBase {
 
         scoreSpy = (RewardWeightControllerImpl) spy(score.getInstance());
         score.setInstance(scoreSpy);
+        score.invoke(owner,"setStopDay",DAYS_PER_YEAR.multiply(BigInteger.TEN));
 
     }
 
@@ -677,6 +680,106 @@ public class RewardControllerUnitTest extends TestBase {
         //31st and 32nd day (30 400k)
         total = total.add(ICX.multiply(BigInteger.valueOf(400_000).multiply(BigInteger.TWO)));
         assertEquals(total, result.get("amountToMint"));
+
+    }
+
+    @DisplayName("verify token distribution after omm halt")
+    @Test
+    public void testZeroOmmDistribution(){
+        /* setting halt day as 900 and
+         * stopping omm distribution from 900 day
+         */
+
+        score.invoke(owner,"setStopDay", BigInteger.valueOf(900));
+
+        BigInteger tokenOn360Day = (BigInteger) this.score.call("tokenDistributionPerDay",
+                BigInteger.valueOf(360));
+        assertEquals(BigInteger.valueOf(4L).multiply(HUNDRED_THOUSAND),tokenOn360Day);
+
+        BigInteger tokenOn899Day = (BigInteger) this.score.call("tokenDistributionPerDay",
+                BigInteger.valueOf(899));
+        assertEquals(BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND),tokenOn899Day);
+
+        BigInteger tokenOn900Day = (BigInteger) this.score.call("tokenDistributionPerDay",
+                BigInteger.valueOf(900));
+        assertEquals(BigInteger.ZERO,tokenOn900Day);
+
+    }
+
+    @DisplayName("verify normal token distribution after inflation is turned off")
+    @Test
+    public void testReintialiaztionOfOmmDistribution(){
+        /* omm inflation is allowed
+         *  the token will distributed as designed
+         * */
+
+        testZeroOmmDistribution();
+        score.invoke(owner,"setStopDay", BigInteger.valueOf(1000));
+
+        BigInteger tokenOn999Day = (BigInteger) this.score.call("tokenDistributionPerDay",
+                BigInteger.valueOf(999));
+        assertEquals(BigInteger.valueOf(2L).multiply(HUNDRED_THOUSAND),tokenOn999Day);
+
+        BigInteger tokenOn1000Day = (BigInteger) this.score.call("tokenDistributionPerDay",
+                BigInteger.valueOf(1000));
+        assertEquals(BigInteger.ZERO,tokenOn1000Day);
+
+
+    }
+
+    @DisplayName("test token distribution incorporating the halt")
+    @Test
+    public void testTokenInfoAfterHalt(){
+
+        score.invoke(owner,"setStopDay", BigInteger.valueOf(10));
+
+        Map<String, ?> result = (Map<String, ?>) score.call("precompute", BigInteger.ZERO);
+
+        assertFalse((boolean) result.get("isValid"));
+
+        sm.getBlock().increase(86400 / 2);//1 day
+
+        result = (Map<String, ?>) score.call("precompute", BigInteger.ZERO);
+
+        assertTrue((boolean) result.get("isValid"));
+        assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)), result.get("amountToMint"));
+        assertEquals(BigInteger.valueOf(1L), result.get("day"));
+
+        sm.getBlock().increase(86400*8 / 2);// 8+1 days
+        result = (Map<String, ?>) score.call("precompute", BigInteger.ZERO);
+
+        assertTrue((boolean) result.get("isValid"));
+        assertEquals(ICX.multiply(BigInteger.valueOf(1_000_000)).multiply(BigInteger.valueOf(9L)),
+                result.get("amountToMint"));
+        assertEquals(BigInteger.valueOf(9L), result.get("day"));
+
+        sm.getBlock().increase(86400 / 2);// 1+8+1
+        result = (Map<String, ?>) score.call("precompute", BigInteger.ZERO);
+
+        assertTrue((boolean) result.get("isValid"));
+
+        BigInteger rewardTill10Days = ICX.multiply(BigInteger.valueOf(1_000_000)).multiply(BigInteger.valueOf(9L));
+        assertEquals(rewardTill10Days, result.get("amountToMint"));
+
+        assertEquals(BigInteger.valueOf(10L), result.get("day"));
+
+
+        sm.getBlock().increase(86400 / 2);// 1+1+8+1 days
+        result = (Map<String, ?>) score.call("precompute", BigInteger.ZERO);
+
+        assertTrue((boolean) result.get("isValid"));
+        assertEquals(rewardTill10Days, result.get("amountToMint"));
+        assertEquals(BigInteger.valueOf(11L), result.get("day"));
+
+
+        sm.getBlock().increase(86400*19 / 2);// 19+1+1+8+1 days
+        result = (Map<String, ?>) score.call("precompute", BigInteger.ZERO);
+
+        assertTrue((boolean) result.get("isValid"));
+        assertEquals(rewardTill10Days, result.get("amountToMint"));
+        assertEquals(BigInteger.valueOf(30L), result.get("day"));
+
+
 
     }
 
