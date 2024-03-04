@@ -64,7 +64,9 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
                 if (receiver.equals(lendingPoolCoreAddr)) {
 
                     BigInteger validatorFee = distributeFeeToValidator(lendingPoolCoreAddr,amountToDistribute);
-                    validatorRewards.set(getValidatorCollectedFee().add(amountToDistribute));
+
+                    BigInteger currentValidatorRewards = amountToDistribute.subtract(validatorFee);
+                    validatorRewards.set(getValidatorCollectedFee().add(currentValidatorRewards));
 
                     if (validatorFee.compareTo(BigInteger.ZERO) > 0){
                         this.validatorShare.set(getValidatorShare().add(validatorFee));
