@@ -104,6 +104,21 @@ public class StakingImpl implements Staking {
         setTopPreps();
     }
 
+    @External
+    public void updateValidPreps(){
+        onlyOwner();
+        List<Address> topPrep= getTopPreps();
+        int size = this.validPreps.size();
+        for (int i = 0; i < size; i++) {
+            this.validPreps.removeLast();
+        }
+        for (Address prep: topPrep) {
+            if (checkPrepStatus(prep)){
+                this.validPreps.add(prep);
+            }
+        }
+    }
+
     // Event logs
 
     @EventLog(indexed = 2)
