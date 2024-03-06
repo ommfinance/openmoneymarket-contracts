@@ -3,8 +3,7 @@
     "name": "staking",
     "contract": "Staking",
     "params": {
-      "_feePercentage": 10000000000000000000,
-      "_productivity": 0
+      "_commissionRate": 10000000000000000000
     },
     "order": 1.0
   },

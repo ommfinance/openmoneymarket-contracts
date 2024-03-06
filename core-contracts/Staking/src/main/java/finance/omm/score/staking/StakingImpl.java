@@ -44,6 +44,7 @@ public class StakingImpl implements Staking {
     private final VarDB<BigInteger> productivity = Context.newVarDB(PRODUCTIVITY, BigInteger.class);
     private final VarDB<BigInteger> totalUnstakeAmount = Context.newVarDB(TOTAL_UNSTAKE_AMOUNT, BigInteger.class);
     private final ArrayDB<Address> topPreps = Context.newArrayDB(TOP_PREPS, Address.class);
+    private final ArrayDB<Address> validPreps = Context.newArrayDB(VALID_PREPS, Address.class);
     private final VarDB<BigInteger> icxToClaim = Context.newVarDB(ICX_TO_CLAIM, BigInteger.class);
     private final DictDB<Address, BigInteger> icxPayable = Context.newDictDB(ICX_PAYABLE, BigInteger.class);
     private final VarDB<BigInteger> unstakeBatchLimit = Context.newVarDB(UNSTAKE_BATCH_LIMIT, BigInteger.class);
@@ -54,17 +55,17 @@ public class StakingImpl implements Staking {
     private final VarDB<DelegationListDBSdo> prepDelegationInIcx = Context.newVarDB(PREP_DELEGATION_ICX,
             DelegationListDBSdo.class);
     private final VarDB<String> currentVersion = Context.newVarDB(VERSION, String.class);
-    public final static String STAKING_VERSION = "v1.0.2";
+    public final static String STAKING_VERSION = "v1.0.3";
     private final VarDB<Address> statusManager = Context.newVarDB(STATUS_MANAGER, Address.class);
     private final VarDB<BigInteger> feePercentage = Context.newVarDB(FEE_PERCENTAGE, BigInteger.class);
     private final VarDB<Address> feeDistributionAddress = Context.newVarDB(FEE_ADDRESS, Address.class);
     private final VarDB<Address> ommLendingPoolCore = Context.newVarDB(OMM_LENDING_POOL_CORE, Address.class);
     private final VarDB<Address> ommDelegation = Context.newVarDB(OMM_DELEGATION, Address.class);
+    private final VarDB<BigInteger> commissionRate = Context.newVarDB(COMMISSION_RATE,BigInteger.class);
 
 
 
-    public StakingImpl( @Optional BigInteger _feePercentage, @Optional BigInteger _productivity, 
-                        @Optional Address lendingPoolCore, @Optional Address feeDistribution, @Optional Address delegation) {
+    public StakingImpl(@Optional BigInteger _commissionRate) {
 
         if (blockHeightWeek.get() == null) {
             @SuppressWarnings("unchecked")
@@ -82,13 +83,8 @@ public class StakingImpl implements Staking {
             Context.revert("Can't Update same version of code");
         }
         currentVersion.set(STAKING_VERSION);
-        if (STAKING_VERSION.equals("v1.0.2")) {
-            productivity.set(_productivity);
-            feePercentage.set(_feePercentage);
-            feeDistributionAddress.set(feeDistribution);
-            ommLendingPoolCore.set(lendingPoolCore);
-            ommDelegation.set(delegation);
-
+        if (STAKING_VERSION.equals("v1.0.3")) {
+            commissionRate.set(_commissionRate);
         }
 
     }
@@ -100,7 +96,27 @@ public class StakingImpl implements Staking {
         for (int i = 0; i < totalPreps; i++) {
             this.topPreps.removeLast();
         }
+        int size = this.validPreps.size();
+
+        for (int i = 0; i < size; i++) {
+            this.validPreps.removeLast();
+        }
         setTopPreps();
+    }
+
+    @External
+    public void updateValidPreps(){
+        onlyOwner();
+        List<Address> topPrep= getTopPreps();
+        int size = this.validPreps.size();
+        for (int i = 0; i < size; i++) {
+            this.validPreps.removeLast();
+        }
+        for (Address prep: topPrep) {
+            if (checkPrepStatus(prep)){
+                this.validPreps.add(prep);
+            }
+        }
     }
 
     // Event logs
@@ -270,6 +286,17 @@ public class StakingImpl implements Staking {
         return unstakeBatchLimit.get();
     }
 
+    @External
+    public void setCommissionRate(BigInteger rate){
+        onlyOwner();
+        commissionRate.set(rate);
+    }
+
+    @External(readonly = true)
+    public BigInteger getCommissionRate(){
+        return commissionRate.getOrDefault(BigInteger.ZERO);
+    }
+
     @External(readonly = true)
     public List<Address> getPrepList() {
         List<Address> topPreps = getTopPreps();
@@ -302,10 +329,10 @@ public class StakingImpl implements Staking {
         Map<String, BigInteger> prepDelegationInIcx =
                 this.prepDelegationInIcx.getOrDefault(DEFAULT_DELEGATION_LIST).toMap();
         BigInteger delegatedICX = BigInteger.ZERO;
-        List<Address> topPreps = getTopPreps();
+        List<Address> validPreps = getValidPreps();
         for (Map.Entry<String, BigInteger> prepDelegation : prepDelegationInIcx.entrySet()) {
             Address prep = Address.fromString(prepDelegation.getKey());
-            if (topPreps.contains(prep)) {
+            if (validPreps.contains(prep)) {
                 delegatedICX = delegatedICX.add(prepDelegation.getValue());
             }
         }
@@ -326,25 +353,36 @@ public class StakingImpl implements Staking {
     }
 
     @External(readonly = true)
+    public List<Address> getValidPreps() {
+        int validPrepsCount = this.validPreps.size();
+        List<Address> validPreps = new ArrayList<>(validPrepsCount);
+        for (int i = 0; i < validPrepsCount; i++) {
+            Address prep = this.validPreps.get(i);
+            validPreps.add(prep);
+        }
+        return validPreps;
+    }
+
+    @External(readonly = true)
     public Map<String, BigInteger> getbOMMDelegations() {
         BigInteger unspecifiedICX = getUndelegatedICX();
         Map<String, BigInteger> ommDelegations = getActualUserDelegationPercentage(getOmmLendingPoolCore());
         BigInteger ommPrepSize = BigInteger.valueOf(ommDelegations.size());
         BigInteger remaining = unspecifiedICX;
 
-        List<Address> topPreps = getTopPreps();
+        List<Address> validPreps = getValidPreps();
         Map<String, BigInteger> allPrepDelegations = new HashMap<>();
         BigInteger topPrepSpecification = BigInteger.ZERO;
         if (ommPrepSize.compareTo(BigInteger.ZERO) > 0) {
             for (Map.Entry<String, BigInteger> prepSet : ommDelegations.entrySet()) {
                 Address prep = Address.fromString(prepSet.getKey());
-                if (topPreps.contains(prep)) {
+                if (validPreps.contains(prep)) {
 
                     BigInteger percentageDelegation = prepSet.getValue();
                     BigInteger amountToAdd = unspecifiedICX.multiply(percentageDelegation).divide(HUNDRED_PERCENTAGE);
 
                     remaining = remaining.subtract(amountToAdd);
-                    if (prep.toString().equals(topPreps.get(0).toString())) {
+                    if (prep.toString().equals(validPreps.get(0).toString())) {
                         topPrepSpecification = amountToAdd;
                     }
                     allPrepDelegations.put(prep.toString(), amountToAdd);
@@ -352,7 +390,7 @@ public class StakingImpl implements Staking {
             }
         }
         if (remaining.compareTo(BigInteger.ZERO) > 0) {
-            allPrepDelegations.put(topPreps.get(0).toString(), remaining.add(topPrepSpecification));
+            allPrepDelegations.put(validPreps.get(0).toString(), remaining.add(topPrepSpecification));
         }
         return allPrepDelegations;
     }
@@ -360,14 +398,14 @@ public class StakingImpl implements Staking {
 
     @External(readonly = true)
     public Map<String, BigInteger> getPrepDelegations() {
-        List<Address> topPreps = getTopPreps();
+        List<Address> validPreps = getValidPreps();
 
         Map<String, BigInteger> allPrepDelegations = getbOMMDelegations();
         Map<String, BigInteger> actualPrepDelegations = getActualPrepDelegations();
 
 
         for (String prep : actualPrepDelegations.keySet()) {
-                    if (topPreps.contains(Address.fromString(prep))) {
+                    if (validPreps.contains(Address.fromString(prep))) {
                         //  Unsupported JCL method: getOrDefault in java.util.Map
                        BigInteger amount = allPrepDelegations.get(prep);
                        if (amount == null){
@@ -438,10 +476,50 @@ public class StakingImpl implements Staking {
         if (iscoreGenerated.compareTo(BigInteger.ZERO) > 0) {
             Context.call(SYSTEM_SCORE_ADDRESS, "claimIScore");
 
+
+            List<Address> topPrep = getTopPreps();
+            int size = this.validPreps.size();
+            for (int i = 0; i < size; i++) {
+                this.validPreps.removeLast();
+            }
+            for (Address prep: topPrep) {
+                if (checkPrepStatus(prep)){
+                    this.validPreps.add(prep);
+                }
+            }
+
             BigInteger currentBlockHeight = BigInteger.valueOf(Context.getBlockHeight());
             IscoreClaimed(currentBlockHeight, iscoreGenerated);
             IscoreSnapshot(currentBlockHeight,iscoreGenerated,getTotalStake());
+
         }
+    }
+
+    private boolean checkPrepStatus(Address prepAddr){
+        Map<String, Object> prepDict = (Map<String, Object>) Context.call(SYSTEM_SCORE_ADDRESS, "getPRep", prepAddr);
+        BigInteger jailFlags = (BigInteger) prepDict.get("jailFlags");
+        BigInteger commissionRate = (BigInteger) prepDict.get("commissionRate");
+
+        return checkCriteria(jailFlags,commissionRate);
+    }
+
+    private boolean checkCriteria(BigInteger jailFlags, BigInteger commissionRate){
+        boolean jailed = false;
+
+        if (jailFlags == null){
+            jailed = false;
+        }else if (!jailFlags.equals(BigInteger.ZERO)){
+            jailed = true;
+        }
+
+        boolean validRate = true;
+        if (commissionRate == null){
+            validRate = true;
+        }  else if (commissionRate.compareTo(getCommissionRate()) > 0) {
+            validRate = false;
+        }
+
+        return !jailed && validRate;
     }
 
     @External
@@ -477,24 +555,29 @@ public class StakingImpl implements Staking {
         Map<String, Object> prepDict = (Map<String, Object>) Context.call(SYSTEM_SCORE_ADDRESS, "getPReps",
                 BigInteger.ONE, Constant.TOP_PREP_COUNT);
         List<Map<String, Object>> prepDetails = (List<Map<String, Object>>) prepDict.get("preps");
-        List<Address> topPreps = new ArrayList<>(prepDetails.size());
+        List<Address> validPreps = new ArrayList<>();
         BigInteger productivity = this.productivity.get();
         for (Map<String, Object> preps : prepDetails) {
             Address prepAddress = (Address) preps.get("address");
             BigInteger totalBlocks = (BigInteger) preps.get("totalBlocks");
             BigInteger validatedBlocks = (BigInteger) preps.get("validatedBlocks");
             BigInteger power = (BigInteger) preps.get("power");
+            BigInteger jailFlags = (BigInteger) preps.get("jailFlags");
+            BigInteger commissionRate = (BigInteger) preps.get("commissionRate");
             if (power.equals(BigInteger.ZERO) || totalBlocks.compareTo(BigInteger.ZERO) <= 0) {
                 continue;
             }
 
             BigInteger prepProductivity = validatedBlocks.multiply(HUNDRED_PERCENTAGE).divide(totalBlocks);
             if (prepProductivity.compareTo(productivity) > 0) {
-                topPreps.add(prepAddress);
                 this.topPreps.add(prepAddress);
+                if (checkCriteria(jailFlags,commissionRate)){
+                    validPreps.add(prepAddress);
+                    this.validPreps.add(prepAddress);
+                }
             }
         }
-        return topPreps;
+        return validPreps;
     }
 
     @External(readonly = true)
@@ -508,8 +591,8 @@ public class StakingImpl implements Staking {
             if (totalIcxHold.compareTo(BigInteger.ZERO) <= 0) {
                 return Map.of();
             }
-            // return amount distributed to top 100
-            List<Address> topPreps = getTopPreps();
+            // return amount distributed to omm preps
+            List<Address> validPreps = getValidPreps();
             Map<String, BigInteger> ommDelegations = getActualUserDelegationPercentage(getOmmLendingPoolCore());
             BigInteger ommPrepSize = BigInteger.valueOf(ommDelegations.size());
             BigInteger remaining = totalIcxHold;
@@ -517,13 +600,13 @@ public class StakingImpl implements Staking {
             if (ommPrepSize.compareTo(BigInteger.ZERO) > 0) {
                 for (Map.Entry<String, BigInteger> prepSet : ommDelegations.entrySet()) {
                     Address prep = Address.fromString(prepSet.getKey());
-                    if (topPreps.contains(prep)) {
+                    if (validPreps.contains(prep)) {
                         BigInteger percentageDelegation = prepSet.getValue();
                         BigInteger amountToAdd = totalIcxHold.multiply(percentageDelegation).divide(HUNDRED_PERCENTAGE);
 
                         remaining = remaining.subtract(amountToAdd);
                         delegationIcx.put(prep.toString(),amountToAdd);
-                        if (prep.toString().equals(topPreps.get(0).toString())) {
+                        if (prep.toString().equals(validPreps.get(0).toString())) {
                             topPrepICXSpecification = amountToAdd;
                         }
 
@@ -531,7 +614,7 @@ public class StakingImpl implements Staking {
                 }
             }
             if (remaining.compareTo(BigInteger.ZERO)>0){
-                delegationIcx.put(topPreps.get(0).toString(),remaining.add(topPrepICXSpecification));
+                delegationIcx.put(validPreps.get(0).toString(),remaining.add(topPrepICXSpecification));
             }
         } else {
             BigInteger totalPercentage = HUNDRED_PERCENTAGE;
@@ -578,12 +661,12 @@ public class StakingImpl implements Staking {
 
 
     private void stakeAndDelegateInNetwork(BigInteger stakeAmount, Map<String, BigInteger> prepDelegations) {
-        List<Address> topPreps = updateTopPreps();
+        List<Address> validPreps = updateTopPreps();
         DelegationListDBSdo prepDelegationsList = DelegationListDBSdo.fromMap(prepDelegations);
         prepDelegationInIcx.set(prepDelegationsList);
 
         Context.call(SYSTEM_SCORE_ADDRESS, "setStake", stakeAmount);
-        updateDelegationInNetwork(prepDelegations, topPreps, stakeAmount);
+        updateDelegationInNetwork(prepDelegations, validPreps, stakeAmount);
     }
 
     @SuppressWarnings("unchecked")
@@ -599,7 +682,7 @@ public class StakingImpl implements Staking {
             }
             return setTopPreps();
         } else {
-            return getTopPreps();
+            return getValidPreps();
         }
     }
 
@@ -718,14 +801,15 @@ public class StakingImpl implements Staking {
         checkForUnstakedBalance(unstakedICX, totalUnstakeAmount);
     }
 
-    private void updateDelegationInNetwork(Map<String, BigInteger> prepDelegations, List<Address> topPreps,
+    private void updateDelegationInNetwork(Map<String, BigInteger> prepDelegations, List<Address> validPreps,
                                            BigInteger totalStake) {
+        Context.require(!validPreps.isEmpty(), TAG + ": Valid preps list is empty. Can not stake/delegate");
         Map<String, SystemInterface.Delegation> networkDelegationMap = new HashMap<>();
 
         BigInteger icxPreferredToTopPreps = BigInteger.ZERO;
         for (Map.Entry<String, BigInteger> prepDelegation : prepDelegations.entrySet()) {
             Address prep = Address.fromString(prepDelegation.getKey());
-            if (topPreps.contains(prep)) {
+            if (validPreps.contains(prep)) {
                 icxPreferredToTopPreps = icxPreferredToTopPreps.add(prepDelegation.getValue());
 
                 SystemInterface.Delegation delegation = new SystemInterface.Delegation();
@@ -744,7 +828,7 @@ public class StakingImpl implements Staking {
         if (ommPrepSize.compareTo(BigInteger.ZERO) > 0) {
             for (Map.Entry<String, BigInteger> prepSet : ommDelegations.entrySet()) {
                 Address prep = Address.fromString(prepSet.getKey());
-                if (topPreps.contains(prep)) {
+                if (validPreps.contains(prep)) {
 
                     BigInteger percentageDelegation = prepSet.getValue();
                     BigInteger amountToAdd = equallyDistributableIcx.multiply(percentageDelegation).divide(HUNDRED_PERCENTAGE);
@@ -755,8 +839,8 @@ public class StakingImpl implements Staking {
         }
         if (remaining.compareTo(BigInteger.ZERO) > 0) {
 
-            Address topPrep = topPreps.get(0);
-            updateDelegationMap(networkDelegationMap, topPrep, remaining);
+            Address validPrep = validPreps.get(0);
+            updateDelegationMap(networkDelegationMap, validPrep, remaining);
         }
 
         List<SystemInterface.Delegation> finalNetworkDelegations = new ArrayList<>(networkDelegationMap.size());
@@ -972,13 +1056,13 @@ public class StakingImpl implements Staking {
         // Unstake in network. Reverse order of stake.
         BigInteger newTotalStake = getTotalStake().subtract(amountToUnstake);
         Context.require(newTotalStake.signum() >= 0, TAG + ": Total staked amount can't be set negative");
-        List<Address> topPreps = updateTopPreps();
+        List<Address> validPreps = updateTopPreps();
         totalStake.set(newTotalStake);
         DelegationListDBSdo prepDelegationsList = DelegationListDBSdo.fromMap(finalDelegation);
         prepDelegationInIcx.set(prepDelegationsList);
 
         // First set the decreased delegation and stake
-        updateDelegationInNetwork(finalDelegation, topPreps, newTotalStake);
+        updateDelegationInNetwork(finalDelegation, validPreps, newTotalStake);
         Context.call(SYSTEM_SCORE_ADDRESS, "setStake", newTotalStake);
 
         // Add unstake details to unstake request list

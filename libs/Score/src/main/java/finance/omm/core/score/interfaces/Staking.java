@@ -118,6 +118,9 @@ public interface Staking {
     public void setFeePercentage(BigInteger _feePercentage);
 
     @External
+    public void setCommissionRate(BigInteger rate);
+
+    @External
     public void setFeeDistributionAddress(Address _address);
 
     @External(readonly = true)
@@ -125,6 +128,9 @@ public interface Staking {
 
     @External(readonly = true)
     public BigInteger getFeePercentage();
+
+    @External(readonly = true)
+    public BigInteger getCommissionRate();
 
     @External(readonly = true)
     Map<String, BigInteger> getbOMMDelegations();
