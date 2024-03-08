@@ -39,4 +39,8 @@ public interface LendingPool {
     void borrow(Address _reserve, BigInteger _amount);
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);
+
+    void addAdmin(Address _address);
+
+    Address getAdmin();
 }
