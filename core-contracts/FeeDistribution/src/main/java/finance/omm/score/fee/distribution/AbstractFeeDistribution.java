@@ -139,6 +139,10 @@ public abstract class AbstractFeeDistribution extends AddressProvider implements
 
     private boolean checkPrepStatus(Address prepAddr){
         Map<String, Object> prepDict = call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", prepAddr);
+        BigInteger status = (BigInteger) prepDict.get("status");
+        if (!status.equals(BigInteger.ZERO)){
+            return false;
+        }
         BigInteger jailFlags = (BigInteger) prepDict.get("jailFlags");
 
         return jailFlags == null || jailFlags.signum() == 0;
