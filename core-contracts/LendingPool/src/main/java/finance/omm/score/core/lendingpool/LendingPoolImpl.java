@@ -278,6 +278,13 @@ public class LendingPoolImpl extends AbstractLendingPool {
         }
     }
 
+    @External
+    public void transferToken(Address _reserve, Address _user, Address _amount){
+        onlyOwnerOrElseThrow(LendingPoolException.notOwner());
+        call(Contracts.LENDING_POOL_CORE, "transferToUser", _reserve, _user, _amount);
+
+    }
+
     private void liquidateUsers(Address collateral, Address reserve,Address user,BigInteger _value, Address _from){
                         if (!(_from.equals(admin.get()))){
                         Context.revert("Only admin can call this method");
@@ -289,4 +296,5 @@ public class LendingPoolImpl extends AbstractLendingPool {
                                 _value, admin.get());
                 this.liquidationStatus.set(false);
             }
+
 }

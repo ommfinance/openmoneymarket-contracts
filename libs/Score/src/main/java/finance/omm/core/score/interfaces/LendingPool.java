@@ -43,4 +43,6 @@ public interface LendingPool {
     void addAdmin(Address _address);
 
     Address getAdmin();
+
+    void transferToken(Address _reserve, Address _user, Address _amount);
 }
