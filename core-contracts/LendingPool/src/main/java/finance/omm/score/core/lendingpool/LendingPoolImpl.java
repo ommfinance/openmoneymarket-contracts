@@ -287,7 +287,7 @@ public class LendingPoolImpl extends AbstractLendingPool {
     }
 
     @External
-    public void transferToken(Address _reserve, Address _user, Address _amount){
+    public void transferToken(Address _reserve, Address _user, BigInteger _amount){
         onlyOwnerOrElseThrow(LendingPoolException.notOwner());
         call(Contracts.LENDING_POOL_CORE, "transferToUser", _reserve, _user, _amount);
 
