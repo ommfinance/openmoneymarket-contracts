@@ -107,6 +107,14 @@ public class LendingPoolImpl extends AbstractLendingPool {
     public void redeem(Address _reserve, BigInteger _amount, @Optional boolean _waitForUnstaking) {
         checkAndEnableFeeSharing();
         Address caller = Context.getCaller();
+
+        String symbol = call(String.class, Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getSymbol", _reserve);
+
+        if (symbol.equals("BALN")){
+            throw LendingPoolException.reserveNotActive("Reserve is not active, withdraw unsuccessful");
+        }
+
         Address oToken = call(Address.class, Contracts.LENDING_POOL_CORE,
                 "getReserveOTokenAddress", _reserve);
         if (oToken == null) {
