@@ -84,7 +84,8 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
                 "amountToRedeem",amountToRedeem
         )).when(scoreSpy).call(Map.class,oICX,"redeem",notOwner.getAddress(),amountToRedeem);
 
-
+        doReturn("sicx").when(scoreSpy).call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getSymbol", reserveAddress);
         doReturn(Map.of(
                 "isActive",false
         )).when(scoreSpy).call(Map.class, Contracts.LENDING_POOL_CORE,
@@ -149,6 +150,9 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
         doReturn(oToken).when(scoreSpy).call(Address.class, Contracts.LENDING_POOL_CORE,
                 "getReserveOTokenAddress", reserveAddres);
 
+        doReturn("sicx").when(scoreSpy).call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getSymbol", reserveAddres);
+
         doReturn(Map.of(
                 "isActive",true,
                 "availableLiquidity",BigInteger.valueOf(11).multiply(ICX)
@@ -200,6 +204,9 @@ public class LendingPoolTest extends AbstractLendingPoolTest{
 
         doReturn(BigInteger.ZERO.multiply(ICX)).when(scoreSpy).
                 call(BigInteger.class, Contracts.BRIDGE_O_TOKEN,"balanceOf", owner.getAddress());
+
+        doReturn("oICX").when(scoreSpy).call(String.class,Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getSymbol", invalidReserve);
 
         Executable call = () -> score.invoke(owner,"redeem",invalidReserve,amountToRedeem,false);
         expectErrorMessage(call, "Lending Pool " + invalidReserve + " is not valid");
