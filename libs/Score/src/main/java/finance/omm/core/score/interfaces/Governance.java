@@ -115,7 +115,7 @@ public interface Governance extends AddressProvider {
     Map<String, ?> getVotesOfUser(int vote_index, Address user);
 
 
-    BigInteger myVotingWeight(Address _address, BigInteger _day);
+    BigInteger myVotingWeight(Address _address, BigInteger _block);
 
 
     void tokenFallback(Address _from, BigInteger _value, byte[] _data);

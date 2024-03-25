@@ -494,7 +494,7 @@ public class GovernanceImpl extends AbstractGovernance {
         }
 
         if (!proposal.active.get()) {
-            throw GovernanceException.unknown("This proposal is not active.");
+            throw GovernanceException.proposalNotActive(vote_index);
         }
 
         Map<String, ?> result = this.checkVote(vote_index);
