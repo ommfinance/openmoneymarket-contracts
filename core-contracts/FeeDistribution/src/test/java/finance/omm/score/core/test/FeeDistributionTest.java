@@ -9,6 +9,7 @@ import score.Address;
 import java.math.BigInteger;
 import java.util.Map;
 
+import static finance.omm.utils.constants.AddressConstant.ZERO_SCORE_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -91,15 +92,15 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         BigInteger weight2 = (BigInteger.valueOf(225).multiply(ICX).divide(BigInteger.TEN)).divide(HUNDRED);
         BigInteger weight3 = (BigInteger.valueOf(675).multiply(ICX).divide(BigInteger.TEN)).divide(HUNDRED);
 
-        Address[] receiverAddr = new Address[]{testScore.getAddress(),daoFund,validator};
-        BigInteger[] weight = new BigInteger[]{weight1,weight2,weight3};
+        Address[] receiverAddr = new Address[]{testScore.getAddress(),validator,daoFund};
+        BigInteger[] weight = new BigInteger[]{weight1,weight3,weight2};
 
         doNothing().when(spyScore).call(any(Contracts.class),eq("transfer"),any(),any());
 
         doReturn(Map.of(
                 validator1.getAddress().toString(),BigInteger.valueOf(10).multiply(ICX),
                 validator2.getAddress().toString(),BigInteger.valueOf(90).multiply(ICX)
-        )).when(spyScore).call(eq(Map.class),any(),eq("getActualUserDelegationPercentage"),any());
+        )).when(spyScore).call(eq(Map.class),any(Contracts.class),eq("getActualUserDelegationPercentage"),any());
 
 
 
@@ -107,7 +108,6 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
         Address sicx = MOCK_CONTRACT_ADDRESS.get(Contracts.sICX).getAddress();
         contextMock.when(mockCaller()).thenReturn(sicx);
-        System.out.println(sicx);
         score.invoke(owner,"tokenFallback",owner.getAddress(),feeAmount,"b".getBytes());
 
         verify(spyScore).FeeDistributed(BigInteger.valueOf(100).multiply(ICX));
@@ -121,6 +121,10 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         // validator 2 = 90% of 67.5 = 60.75 ICX
         tokenFallback();
 
+        doReturn(Map.of("status",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator1.getAddress());
+        doReturn(Map.of(
+                "jailFlags",BigInteger.ZERO,
+                "status",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator2.getAddress());
 
         BigInteger calimAmountValidator1 = BigInteger.valueOf(675).multiply(ICX).divide(BigInteger.valueOf(100));
 
@@ -172,6 +176,58 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
     }
 
     @Test
+
+    void distributeFeeToValidator_withJailedPreps(){
+        tokenFallback();
+        // validator = 67.5 ICX
+        // validator1 = 30% of 67.5 = 20.25 ICX
+        // validator 2 = 50% of 67.5 = 33.75 ICX
+        // validator 3 = 20% of 67.5 = 13.5 ICX
+
+
+        doReturn(Map.of("status",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator1.getAddress());
+        doReturn(Map.of("jailFlags",BigInteger.ZERO,
+                "status",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator2.getAddress());
+        doReturn(Map.of("jailFlags",BigInteger.TEN,
+                "status",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator3.getAddress());
+
+
+        // only 2 validators of omm are in valid Preps of staking
+        doReturn(Map.of(
+                validator1.getAddress().toString(),BigInteger.valueOf(30).multiply(ICX),
+                validator2.getAddress().toString(),BigInteger.valueOf(50).multiply(ICX),
+                validator3.getAddress().toString(),BigInteger.valueOf(20).multiply(ICX)
+        )).when(spyScore).call(eq(Map.class),any(Contracts.class),eq("getActualUserDelegationPercentage"),any());
+
+        contextMock.when(mockCaller()).thenReturn(validator1.getAddress());
+
+        // fee will be disbursed here
+        score.invoke(validator1,"claimRewards",validator1.getAddress());
+
+        assertEquals(BigInteger.valueOf(3375).multiply(ICX).divide(HUNDRED),
+                score.call("getAccumulatedFee",validator2.getAddress()));
+        assertEquals(BigInteger.ZERO,
+                score.call("getAccumulatedFee",validator3.getAddress()));
+
+
+        Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
+        BigInteger val = BigInteger.valueOf(36).multiply(ICX);
+        assertEquals(val,score.call("getCollectedFee",daoFund));
+
+
+        assertEquals(BigInteger.valueOf(2025).multiply(ICX).divide(HUNDRED),
+                score.call("getCollectedFee",validator1.getAddress()));
+
+        verify(spyScore).FeeDisbursed(BigInteger.valueOf(100).multiply(ICX));
+        verify(spyScore).FeeClaimed(validator1.getAddress(),validator1.getAddress(),
+                BigInteger.valueOf(2025).multiply(ICX).divide(HUNDRED));
+
+
+
+    }
+
+
+    @Test
     void distributeFee_withClaimRewards(){
         tokenFallback();
 
@@ -183,6 +239,11 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         assertEquals(BigInteger.ZERO,score.call("getCollectedFee",validator2.getAddress()));
         assertEquals(BigInteger.ZERO,score.call("getAccumulatedFee",validator2.getAddress()));
 
+
+        doReturn(Map.of("status",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator1.getAddress());
+        doReturn(Map.of("jailFlags",BigInteger.ZERO,
+                "status",BigInteger.ZERO)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep", validator2.getAddress());
+
         score.invoke(validator2,"claimRewards",validator2.getAddress());
 
         assertEquals(BigInteger.ZERO,score.call("getCollectedFee",claimAddress.getAddress()));
@@ -190,6 +251,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
 
         verify(spyScore).FeeDisbursed(BigInteger.valueOf(100).multiply(ICX));
         verify(spyScore,never()).FeeClaimed(validator2.getAddress(),validator2.getAddress(),BigInteger.ZERO);
+
     }
 
     @Test
@@ -226,7 +288,7 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         doReturn(Map.of(
                 validator1.getAddress().toString(),BigInteger.valueOf(10).multiply(ICX),
                 validator2.getAddress().toString(),BigInteger.valueOf(90).multiply(ICX)
-        )).when(spyScore).call(eq(Map.class),any(),eq("getActualUserDelegationPercentage"),any());
+        )).when(spyScore).call(eq(Map.class),any(Contracts.class),eq("getActualUserDelegationPercentage"),any());
 
 
 
@@ -240,6 +302,45 @@ public class FeeDistributionTest extends AbstractFeeDistributionTest {
         assertEquals(BigInteger.valueOf(44).multiply(ICX),score.call("getClaimableFee",validator1.getAddress()));
         assertEquals(BigInteger.valueOf(110).multiply(ICX),score.call("getClaimableFee",sicxWallet));
         assertEquals(BigInteger.valueOf(275).multiply(ICX),score.call("getClaimableFee",test));
+
+    }
+
+    @Test
+    void distributeFeeToValidator_withUnregisteredPrep(){
+        // omm delegation has validator who was active validator once but
+        // now the validator is unregistered
+
+        tokenFallback();
+        // validator = 67.5 ICX
+        // validator1 = 100% of 67.5 = 67.5 ICX
+
+
+        doReturn(Map.of("status",BigInteger.ONE)).when(spyScore).call(Map.class,ZERO_SCORE_ADDRESS, "getPRep",
+                validator1.getAddress());
+
+
+        // the only validator of omm is unregistered prep
+        doReturn(Map.of(
+                validator1.getAddress().toString(),BigInteger.valueOf(100).multiply(ICX)
+        )).when(spyScore).call(eq(Map.class),any(Contracts.class),eq("getActualUserDelegationPercentage"),any());
+
+        contextMock.when(mockCaller()).thenReturn(validator1.getAddress());
+
+        // fee will be disbursed here
+        score.invoke(validator1,"claimRewards",validator1.getAddress());
+
+
+
+        Address daoFund = MOCK_CONTRACT_ADDRESS.get(Contracts.DAO_FUND).getAddress();
+        // daoFund = daoFund + validatorRewards
+        BigInteger val = BigInteger.valueOf(90).multiply(ICX);
+        assertEquals(val,score.call("getCollectedFee",daoFund));
+
+
+        assertEquals(BigInteger.ZERO,score.call("getCollectedFee",validator1.getAddress()));
+
+        verify(spyScore).FeeDisbursed(BigInteger.valueOf(100).multiply(ICX));
+
 
     }
 

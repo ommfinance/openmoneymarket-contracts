@@ -78,4 +78,6 @@ public interface Staking {
     void updatePreps();
 
     void setPrepProductivity(BigInteger _productivity);
+
+    void setFeePercentage(BigInteger _percentage);
 }
