@@ -345,11 +345,12 @@ public class LendingPoolIT implements ScoreIntegrationTest {
         depositICX(ommClient, BigInteger.valueOf(1000));
 
         Address icxAddr = addressMap.get(Contracts.sICX.getKey());
+        ommClient.lendingPoolDataProvider.setSymbol(icxAddr,"sICX");
 
         ommClient.governance.setReserveActiveStatus(icxAddr, false);
 
         assertUserRevert(LendingPoolException.reserveNotActive("Reserve is not active, redeem unsuccessful"),
-                () -> ommClient.lendingPool.redeem(addressMap.get(Contracts.oICX.getKey()), BigInteger.valueOf(50).
+                () -> ommClient.lendingPool.redeem(icxAddr, BigInteger.valueOf(50).
                         multiply(ICX), false), null);
 
         ommClient.governance.setReserveActiveStatus(icxAddr, true);
