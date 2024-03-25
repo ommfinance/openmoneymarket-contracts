@@ -37,6 +37,7 @@ public abstract class AbstractLendingPool extends AddressProvider
     public static final String FEE_SHARING_TXN_LIMIT = "feeSharingTxnLimit";
     public static final String BRIDGE_FEE_THRESHOLD = "bridgeFeeThreshold";
     public static final String LIQUIDATION_STATUS = "liquidationStatus";
+    public static final String LIQUIDATION_ADMIN = "liquidationAdmin";
 
     public final ArrayDB<Address> borrowWallets = Context.newArrayDB(BORROW_WALLETS, Address.class);
     public final ArrayDB<Address> depositWallets = Context.newArrayDB(DEPOSIT_WALLETS, Address.class);
@@ -46,6 +47,7 @@ public abstract class AbstractLendingPool extends AddressProvider
     public final VarDB<BigInteger> feeSharingTxnLimit = Context.newVarDB(FEE_SHARING_TXN_LIMIT, BigInteger.class);
     public final VarDB<BigInteger> bridgeFeeThreshold = Context.newVarDB(BRIDGE_FEE_THRESHOLD, BigInteger.class);
     public final VarDB<Boolean> liquidationStatus = Context.newVarDB(LIQUIDATION_STATUS,Boolean.class);
+    public final VarDB<Address> admin = Context.newVarDB(LIQUIDATION_ADMIN,Address.class);
 
     public AbstractLendingPool(Address addressProvider) {
         super(addressProvider, false);

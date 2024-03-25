@@ -39,6 +39,17 @@ public class LendingPoolImpl extends AbstractLendingPool {
         liquidationStatus.set(_status);
     }
 
+    @External
+    public void addAdmin(Address _address){
+        onlyOwnerOrElseThrow(LendingPoolException.notOwner());
+        admin.set(_address);
+    }
+
+    @External(readonly = true)
+    public Address getAdmin(){
+        return admin.get();
+    }
+
     @External(readonly = true)
     public boolean isLiquidationEnabled(){
         return this.liquidationStatus.getOrDefault(false);
@@ -96,6 +107,14 @@ public class LendingPoolImpl extends AbstractLendingPool {
     public void redeem(Address _reserve, BigInteger _amount, @Optional boolean _waitForUnstaking) {
         checkAndEnableFeeSharing();
         Address caller = Context.getCaller();
+
+        String symbol = call(String.class, Contracts.LENDING_POOL_DATA_PROVIDER,
+                "getSymbol", _reserve);
+
+        if (symbol.equals("BALN")){
+            throw LendingPoolException.reserveNotActive("Reserve is not active, withdraw unsuccessful");
+        }
+
         Address oToken = call(Address.class, Contracts.LENDING_POOL_CORE,
                 "getReserveOTokenAddress", _reserve);
         if (oToken == null) {
@@ -249,8 +268,41 @@ public class LendingPoolImpl extends AbstractLendingPool {
                     Address.fromString(user),
                     _value, _from);
 
+        } else if (method.equals("liquidateUsers") && params != null) {
+            JsonObject param = params.asObject();
+            String collateral = param.getString("_collateral", null);
+            String user = param.getString("_user", null);
+
+            if (collateral == null || user == null) {
+                throw LendingPoolException.unknown(TAG + " Invalid data: Collateral: " + collateral + " User: " + user);
+            }
+            liquidateUsers(Address.fromString(collateral),
+                    reserve,
+                    Address.fromString(user),
+                    _value, _from);
+
         } else {
             throw LendingPoolException.unknown(TAG + " No valid method called, data: " + _data.toString());
         }
     }
+
+    @External // TODO: remove this in future updates
+    public void transferToken(Address _reserve, Address _user, BigInteger _amount){
+        onlyOwnerOrElseThrow(LendingPoolException.notOwner());
+        call(Contracts.LENDING_POOL_CORE, "transferToUser", _reserve, _user, _amount);
+
+    }
+
+    private void liquidateUsers(Address collateral, Address reserve,Address user,BigInteger _value, Address _from){
+                        if (!(_from.equals(admin.get()))){
+                        Context.revert("Only admin can call this method");
+                    }
+                this.liquidationStatus.set(true);
+                liquidationCall(collateral,
+                                reserve,
+                                user,
+                                _value, admin.get());
+                this.liquidationStatus.set(false);
+            }
+
 }
