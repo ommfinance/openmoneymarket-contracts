@@ -495,7 +495,7 @@ public class GovernanceProposalTest extends AbstractGovernanceTest {
 
         // try to execute proposal which is not active
         Executable notActiveProposal = () -> score.invoke(owner, "execute_proposal", 1);
-        expectErrorMessage(notActiveProposal, "This proposal is not active.");
+        expectErrorMessage(notActiveProposal, "Proposal is not active index :: 1");
     }
 
     @Test
