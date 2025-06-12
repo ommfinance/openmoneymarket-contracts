@@ -19,6 +19,9 @@ jobs:
         with:
           submodules: true
 
+      - name: Assemble
+        run: ./gradlew clean assemble
+
       - name: Run unit tests
         run: ./gradlew clean build optimizedJar
 
