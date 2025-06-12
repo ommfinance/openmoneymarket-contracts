@@ -52,6 +52,14 @@ public class DaoFundImpl extends AddressProvider implements DAOFund {
     }
 
     @External
+    public void transferToken(Address _token, BigInteger _value, Address _to) {
+        onlyOrElseThrow(Contracts.GOVERNANCE,
+                OMMException.unknown(
+                        TAG + " | SenderNotGovernanceError: sender is not equals to governance"));
+        Context.call(_token, "transfer", _to, _value);
+    }
+
+    @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
         this.FundReceived(_value, Context.getCaller());
     }

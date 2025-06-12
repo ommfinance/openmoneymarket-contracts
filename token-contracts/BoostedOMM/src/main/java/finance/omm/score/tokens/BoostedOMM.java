@@ -169,7 +169,7 @@ public class BoostedOMM extends AbstractBoostedOMM {
         BigInteger blockTimestamp = BigInteger.valueOf(Context.getBlockTimestamp());
 
         LockedBalance locked = getLockedBalance(sender);
-        Context.require(blockTimestamp.compareTo(locked.getEnd()) >= 0, "Withdraw: The lock didn't expire");
+//        Context.require(blockTimestamp.compareTo(locked.getEnd()) >= 0, "Withdraw: The lock didn't expire");
         BigInteger value = locked.amount;
       
         Context.require(value.signum() > 0, "Withdraw: no locked amount");
