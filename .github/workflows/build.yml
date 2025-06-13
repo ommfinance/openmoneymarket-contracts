@@ -23,7 +23,7 @@ jobs:
         run: ./gradlew clean assemble
 
       - name: Run unit tests
-        run: ./gradlew clean build optimizedJar
+        run: ./gradlew build optimizedJar
 
   integration-test:
     needs: unit-test
