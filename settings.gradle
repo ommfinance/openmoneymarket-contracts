@@ -6,8 +6,8 @@ findProject(":BoostedOMM").projectDir = file("token-contracts/BoostedOMM")
 include(":RewardWeightController")
 findProject(":RewardWeightController").projectDir = file("core-contracts/RewardWeightController")
 
-include(":RewardDistribution")
-findProject(":RewardDistribution").projectDir = file("core-contracts/RewardDistribution")
+//include(":RewardDistribution")
+//findProject(":RewardDistribution").projectDir = file("core-contracts/RewardDistribution")
 
 include(":Delegation")
 findProject(":Delegation").projectDir = file("core-contracts/Delegation")
