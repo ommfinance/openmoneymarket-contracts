@@ -204,6 +204,14 @@ public class GovernanceImpl extends AbstractGovernance {
         feeProvider.transferFund(_token, _value, _to);
     }
 
+    @External
+    public void transferFundFromDaoFund(Address _token, BigInteger _value, Address _to) {
+        onlyOwnerOrElseThrow(GovernanceException.notOwner());
+
+        DAOFund daoFund = getInstance(DAOFund.class, Contracts.DAO_FUND);
+        daoFund.transferToken(_token, _value, _to);
+    }
+
     @External(readonly = true)
     public Map<String, BigInteger> getVotersCount(int vote_index) {
         ProposalDB proposal = ProposalDB.getByVoteIndex(vote_index);
